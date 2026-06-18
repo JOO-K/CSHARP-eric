@@ -219,12 +219,111 @@ async function exportPNG() {
 // ============================================================
 //  MOBILE PROTOTYPE
 // ============================================================
-function initMobile() { renderMobile(currentIdx); }
+const SVG_EXPAND   = `<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M1 5V1h4M9 1h4v4M13 9v4H9M5 13H1V9"/></svg>`;
+const SVG_COMPRESS = `<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 1v4H1M9 5V1h4M9 13v-4h4M5 9v4H1"/></svg>`;
 
-function renderMobile(idx) {
+let mobileViewMode = 'single';
+
+function initMobile() {
+  document.getElementById('mb-fs').innerHTML = SVG_EXPAND;
+  bindMobileBarEvents();
+  window.addEventListener('resize', debounce(scaleMobilePhone, 100));
+  setMobileView('single');
+}
+
+function bindMobileBarEvents() {
+  document.getElementById('mb-seg').addEventListener('click', e => {
+    const btn = e.target.closest('.mb-btn');
+    if (!btn) return;
+    setMobileView(btn.dataset.mview);
+  });
+
+  document.getElementById('mb-prev').addEventListener('click', () => {
+    if (currentIdx > 0) { currentIdx--; renderMobileSingle(); }
+  });
+  document.getElementById('mb-next').addEventListener('click', () => {
+    if (currentIdx < SCREENS.length - 1) { currentIdx++; renderMobileSingle(); }
+  });
+
+  const fsBtn = document.getElementById('mb-fs');
+  fsBtn.addEventListener('click', () => {
+    const el = document.documentElement;
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else if (el.requestFullscreen) {
+      el.requestFullscreen().catch(() => {});
+    } else if (el.webkitRequestFullscreen) {
+      el.webkitRequestFullscreen();
+    }
+  });
+
+  document.addEventListener('fullscreenchange', () => {
+    document.getElementById('mb-fs').innerHTML =
+      document.fullscreenElement ? SVG_COMPRESS : SVG_EXPAND;
+  });
+}
+
+function setMobileView(mode) {
+  mobileViewMode = mode;
+  document.querySelectorAll('.mb-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.mview === mode)
+  );
+  document.querySelectorAll('.mb-view').forEach(v => { v.style.display = 'none'; });
+  const view = document.getElementById('mb-' + mode);
+  if (view) view.style.display = 'flex';
+
+  if (mode === 'single') renderMobileSingle();
+  else if (mode === 'multi') renderMobileMultiGrid();
+  else if (mode === 'live') renderMobileLive(currentIdx);
+}
+
+function renderMobileSingle() {
+  const center = document.getElementById('mb-phone-center');
+  center.innerHTML = `<div class="phone-wrap">${buildPhoneHTML(currentScreen())}</div>`;
+  document.getElementById('mb-screen-name').textContent = currentScreen().name;
+  document.getElementById('mb-prev').disabled = currentIdx === 0;
+  document.getElementById('mb-next').disabled = currentIdx === SCREENS.length - 1;
+  requestAnimationFrame(scaleMobilePhone);
+}
+
+function scaleMobilePhone() {
+  const center = document.getElementById('mb-phone-center');
+  const wrap   = center && center.querySelector('.phone-wrap');
+  if (!wrap) return;
+  const scale  = Math.min((center.clientWidth - 8) / 393, (center.clientHeight - 8) / 852, 1.0);
+  const dead   = 852 * (scale - 1);
+  wrap.style.transform    = `scale(${scale})`;
+  wrap.style.marginTop    = dead / 2 + 'px';
+  wrap.style.marginBottom = dead / 2 + 'px';
+}
+
+function renderMobileMultiGrid() {
+  const grid  = document.getElementById('mb-multi-grid');
+  const stage = document.getElementById('mb-multi');
+  const colW  = (stage.clientWidth - 40) / 2;
+  const scale = Math.min(colW / 393, 0.42);
+  const dead  = 852 * (scale - 1);
+
+  grid.innerHTML = SCREENS.map((s, i) => `
+    <div style="display:flex;flex-direction:column;align-items:center">
+      <div class="phone-wrap" style="transform:scale(${scale});margin-top:${dead/2}px;margin-bottom:${dead/2}px;cursor:pointer"
+           onclick="goToMobileScreen(${i})">
+        ${buildPhoneHTML(s)}
+      </div>
+      <div class="phone-multi-label" style="display:block">${s.name}</div>
+    </div>
+  `).join('');
+}
+
+function renderMobileLive(idx) {
   document.getElementById('mobile-content').innerHTML = getVariant(SCREENS[idx]).html;
   currentIdx = idx;
 }
+
+window.goToMobileScreen = function(idx) {
+  currentIdx = idx;
+  setMobileView('single');
+};
 
 // ── navigate() — called from screen HTML onclick ─────────────
 window.navigate = function(targetId, direction) {
@@ -232,6 +331,12 @@ window.navigate = function(targetId, direction) {
   if (idx === -1) return;
 
   if (isMobile) {
+    if (mobileViewMode !== 'live') {
+      currentIdx = idx;
+      if (mobileViewMode === 'single') renderMobileSingle();
+      return;
+    }
+
     const content = document.getElementById('mobile-content');
     const isBack  = direction === 'back' || (navHistory.length && navHistory[navHistory.length-1] === idx);
     if (isBack) navHistory.pop(); else navHistory.push(currentIdx);

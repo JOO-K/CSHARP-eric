@@ -57,8 +57,42 @@
 
   <!-- ==================== MOBILE APP ==================== -->
   <div id="mobile-app">
-    <div id="mobile-wrap">
-      <div id="mobile-content"></div>
+
+    <header id="mobile-bar">
+      <div class="mb-seg" id="mb-seg">
+        <button class="mb-btn" data-mview="single">Single</button>
+        <button class="mb-btn" data-mview="multi">Multi</button>
+        <button class="mb-btn" data-mview="flow">Flow</button>
+        <button class="mb-btn" data-mview="live">Live</button>
+      </div>
+      <button id="mb-fs" title="Fullscreen"></button>
+    </header>
+
+    <div id="mb-stage">
+
+      <div id="mb-single" class="mb-view">
+        <div class="mb-subnav">
+          <button class="mb-nav-btn" id="mb-prev">&#8249;</button>
+          <span id="mb-screen-name"></span>
+          <button class="mb-nav-btn" id="mb-next">&#8250;</button>
+        </div>
+        <div id="mb-phone-center"></div>
+      </div>
+
+      <div id="mb-multi" class="mb-view">
+        <div id="mb-multi-grid"></div>
+      </div>
+
+      <div id="mb-flow" class="mb-view">
+        <iframe src="flowchart.html" id="mb-flow-frame" frameborder="0"></iframe>
+      </div>
+
+      <div id="mb-live" class="mb-view">
+        <div id="mobile-wrap">
+          <div id="mobile-content"></div>
+        </div>
+      </div>
+
     </div>
   </div>
 
