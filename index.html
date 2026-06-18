@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ENOCH — Mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;0,9..40,800;1,9..40,400&family=SUSE+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+  <!-- ==================== DESKTOP VIEWER ==================== -->
+  <div id="viewer">
+
+    <header id="toolbar">
+      <div class="tb-section">
+        <svg class="vinyl-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="12" cy="12" r="10"/>
+          <circle cx="12" cy="12" r="3.5"/>
+          <circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/>
+          <line x1="12" y1="8.5" x2="12" y2="2" opacity="0.4"/>
+        </svg>
+        <span class="tb-name">C-Sharp</span>
+        <span class="tb-tag">mockup</span>
+      </div>
+
+      <div class="tb-section center">
+        <button class="tb-nav" id="btn-prev" title="Previous  ← ">&#8249;</button>
+        <div class="tb-screen-info">
+          <span id="lbl-name">Auth / Login</span>
+          <span class="tb-idx" id="lbl-idx">1 / 11</span>
+        </div>
+        <button class="tb-nav" id="btn-next" title="Next  → ">&#8250;</button>
+        <div id="variant-bar" class="variant-bar" style="display:none"></div>
+      </div>
+
+      <div class="tb-section end">
+        <div class="view-seg" id="view-seg">
+          <button class="seg active" data-view="single">Single</button>
+          <button class="seg" data-view="multi">Multi</button>
+        </div>
+        <button class="tb-act" id="btn-export" title="Export current screen as PNG">⬇ PNG</button>
+        <a class="tb-act" href="flowchart.html" target="_blank">Page Map ↗</a>
+      </div>
+    </header>
+
+    <main id="stage">
+      <div id="phone-container"></div>
+    </main>
+
+    <nav id="thumb-tray" aria-label="Screen thumbnails"></nav>
+
+  </div>
+
+  <!-- ==================== MOBILE APP ==================== -->
+  <div id="mobile-app">
+    <div id="mobile-wrap">
+      <div id="mobile-content"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="screens.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
