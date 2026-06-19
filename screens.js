@@ -19,7 +19,7 @@ const SCREENS = [
               <circle cx="24" cy="24" r="3" fill="white" stroke="none"/>
             </svg>
           </div>
-          <div class="auth-appname">ENOCH</div>
+          <div class="auth-appname">CHARP</div>
         </div>
         <div class="auth-body">
           <div class="field-group">
@@ -72,128 +72,320 @@ const SCREENS = [
     }]
   },
 
-  // ── 3. HOME (BENTO) ─────────────────────────────────────────
+  // ── 3. HOME ──────────────────────────────────────────────────
   {
     id: 'home', name: 'Home', statusTheme: 'light',
-    variants: [{
-      label: 'v1',
-      thumb: ['w70','accent','w80','accent','w80'],
-      html: `
-      <div class="app-screen s-home-bento">
-        ${topNav('home')}
+    variants: [
 
-        <div class="home-bento-bar">
-          <div class="hbb-logo">ENOCH</div>
-          <div class="hbb-icons">
-            <button class="icon-btn" onclick="navigate('search')">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
-            </button>
-            <button class="icon-btn" onclick="navigate('profile')">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            </button>
-          </div>
-        </div>
+      // ── 3a. Bento (Charcoal look) ───────────────────────────
+      {
+        label: 'Bento',
+        thumb: ['w70','accent','w80','accent','w80'],
+        html: `
+        <div class="app-screen s-home-bento">
+          ${topNav('home')}
 
-        <div class="bento-wrap">
-        <div class="bento-grid">
-
-          <!-- Friend activity hero (tall left, spans 2 grid rows) -->
-          <div class="bento-card bc-hero" style="grid-row:span 2" onclick="navigate('album')">
-            <div class="bc-hero-art" style="background-image:url('images/album-crystalcastles1.png')"></div>
-            <div class="bc-hero-body">
-              <div class="bc-hero-who">
-                <div class="bc-hero-av" style="background:linear-gradient(135deg,#1c1c3e,#3b1fa8)">E</div>
-                <span class="bc-hero-name">echoplex</span>
-                <span class="bc-hero-verb">reviewed</span>
-              </div>
-              <div class="bc-hero-album">Crystal Castles</div>
-              <div style="margin-bottom:3px">${halfStars(4, 12)}</div>
-              <div class="bc-hero-quote">"chaotic and beautiful. alice's vocals hit like static shock"</div>
+          <div class="home-bento-bar">
+            <div class="hbb-logo">CHARP</div>
+            <div class="hbb-icons">
+              <button class="icon-btn" onclick="navigate('search')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+              </button>
+              <button class="icon-btn" onclick="navigate('profile')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </button>
             </div>
           </div>
 
-          <!-- Mini album tile (top right) -->
-          <div class="bento-card bc-mini" onclick="navigate('album')">
-            <div class="bc-mini-art" style="background-image:url('images/album-punisher.png')"></div>
-            <div class="bc-mini-body">
-              <div class="bc-mini-user">staticfog</div>
-              <div class="bc-mini-title">Punisher</div>
-              <div>${halfStars(5, 10)}</div>
-            </div>
-          </div>
+          <div class="bento-wrap">
+          <div class="bento-grid">
 
-          <!-- Stat tile (bottom right) -->
-          <div class="bento-card bc-stat">
-            <div class="bc-stat-num">3</div>
-            <div class="bc-stat-label">friends reviewed</div>
-            <div class="bc-stat-sub">this week</div>
-          </div>
-
-          <!-- People you may know (full width) -->
-          <div class="bento-card bc-pymk span2">
-            <div class="pymk-hd">
-              <span class="pymk-title">People You May Know</span>
-              <span class="pymk-sub">from contacts</span>
-            </div>
-            <div class="pymk-row">
-              <div class="pymk-person">
-                <div class="pymk-av" style="background:linear-gradient(135deg,#0c4a1e,#16a34a)">JK</div>
-                <div class="pymk-name">josekm</div>
-                <div class="pymk-count">24 reviews</div>
-              </div>
-              <div class="pymk-person">
-                <div class="pymk-av" style="background:linear-gradient(135deg,#164e63,#0284c7)">SF</div>
-                <div class="pymk-name">staticfog</div>
-                <div class="pymk-count">89 reviews</div>
-              </div>
-              <div class="pymk-person">
-                <div class="pymk-av" style="background:linear-gradient(135deg,#450a0a,#dc2626)">VB</div>
-                <div class="pymk-name">velvetblast</div>
-                <div class="pymk-count">212 reviews</div>
-              </div>
-              <div class="pymk-person">
-                <div class="pymk-av" style="background:linear-gradient(135deg,#3b0764,#9333ea)">KM</div>
-                <div class="pymk-name">kira_m</div>
-                <div class="pymk-count">41 reviews</div>
-              </div>
-              <div class="pymk-person">
-                <div class="pymk-add-btn">+</div>
-                <div class="pymk-name">find more</div>
-                <div class="pymk-count">&nbsp;</div>
+            <div class="bento-card bc-hero" style="grid-row:span 2" onclick="navigate('album')">
+              <div class="bc-hero-art" style="background-image:url('images/album-crystalcastles1.png')"></div>
+              <div class="bc-hero-body">
+                <div class="bc-hero-who">
+                  <div class="bc-hero-av" style="background:linear-gradient(135deg,#1c1c3e,#3b1fa8)">E</div>
+                  <span class="bc-hero-name">echoplex</span>
+                  <span class="bc-hero-verb">reviewed</span>
+                </div>
+                <div class="bc-hero-album">Crystal Castles</div>
+                <div style="margin-bottom:3px">${halfStars(4, 12)}</div>
+                <div class="bc-hero-quote">"chaotic and beautiful. alice's vocals hit like static shock"</div>
               </div>
             </div>
+
+            <div class="bento-card bc-mini" onclick="navigate('album')">
+              <div class="bc-mini-art" style="background-image:url('images/album-punisher.png')"></div>
+              <div class="bc-mini-body">
+                <div class="bc-mini-user">staticfog</div>
+                <div class="bc-mini-title">Punisher</div>
+                <div>${halfStars(5, 10)}</div>
+              </div>
+            </div>
+
+            <div class="bento-card bc-stat">
+              <div class="bc-stat-num">3</div>
+              <div class="bc-stat-label">friends reviewed</div>
+              <div class="bc-stat-sub">this week</div>
+            </div>
+
+            <div class="bento-card bc-pymk span2">
+              <div class="pymk-hd">
+                <span class="pymk-title">People You May Know</span>
+                <span class="pymk-sub">from contacts</span>
+              </div>
+              <div class="pymk-row">
+                <div class="pymk-person"><div class="pymk-av" style="background:linear-gradient(135deg,#0c4a1e,#16a34a)">JK</div><div class="pymk-name">josekm</div><div class="pymk-count">24 reviews</div></div>
+                <div class="pymk-person"><div class="pymk-av" style="background:linear-gradient(135deg,#164e63,#0284c7)">SF</div><div class="pymk-name">staticfog</div><div class="pymk-count">89 reviews</div></div>
+                <div class="pymk-person"><div class="pymk-av" style="background:linear-gradient(135deg,#450a0a,#dc2626)">VB</div><div class="pymk-name">velvetblast</div><div class="pymk-count">212 reviews</div></div>
+                <div class="pymk-person"><div class="pymk-av" style="background:linear-gradient(135deg,#3b0764,#9333ea)">KM</div><div class="pymk-name">kira_m</div><div class="pymk-count">41 reviews</div></div>
+                <div class="pymk-person"><div class="pymk-add-btn">+</div><div class="pymk-name">find more</div><div class="pymk-count">&nbsp;</div></div>
+              </div>
+            </div>
+
+            <div class="bento-card bc-trend span2" onclick="navigate('album')">
+              <div class="bc-tr-label">Trending Review</div>
+              <div class="bc-tr-quote">"this album rewired my brain. nothing before or after sounds like it"</div>
+              <div class="bc-tr-by">
+                <span>staticfog on <strong style="color:var(--text)">1000 gecs</strong></span>
+                <span>${halfStars(5, 11)}</span>
+              </div>
+              <div class="bc-tr-ghost-art" style="background:linear-gradient(135deg,#042a10,#6aff3a 120%)"></div>
+            </div>
+
+            <div class="bento-card bc-disc span2" onclick="navigate('wall')">
+              <div class="bc-disc-thumbs">
+                <div class="bc-disc-thumb" style="background-image:url('images/album-punisher.png')"></div>
+                <div class="bc-disc-thumb" style="background-image:url('images/album-crystalcastles1.png')"></div>
+                <div class="bc-disc-thumb" style="background:linear-gradient(135deg,#052e16,#86efac)"></div>
+                <div class="bc-disc-thumb" style="background:linear-gradient(135deg,#1a0533,#7e22ce)"></div>
+              </div>
+              <div class="bc-disc-text">
+                <div class="bc-disc-label">Popular Albums</div>
+                <div class="bc-disc-sub">89k logged this month</div>
+              </div>
+              <div class="bc-disc-arr">›</div>
+            </div>
+
+          </div>
+          </div>
+        </div>`
+      },
+
+      // ── 3b. TikTok Swipe (Editorial look) ──────────────────
+      {
+        label: 'TikTok',
+        thumb: ['accent','w80','accent','w60','w80'],
+        html: `
+        <div class="app-screen s-home-tiktok">
+          ${topNav('home')}
+
+          <div class="htok-scroll">
+
+            <div class="htok-card">
+              <div class="htok-bg" style="background-image:url('images/album-punisher.png')"></div>
+              <div class="htok-overlay"></div>
+              <div class="htok-content">
+                <div class="htok-who">
+                  <div class="htok-av" style="background:linear-gradient(135deg,#1c1c3e,#3b1fa8)">E</div>
+                  <span class="htok-name">echoplex</span>
+                  <span class="htok-verb">just reviewed</span>
+                </div>
+                <div class="htok-art-wrap">
+                  <div class="htok-art" style="background-image:url('images/album-punisher.png')"></div>
+                </div>
+                <div class="htok-info">
+                  <div class="htok-album">Punisher</div>
+                  <div class="htok-artist">PHOEBE BRIDGERS · 2020</div>
+                  <div style="margin-bottom:6px">${halfStars(5, 15)}</div>
+                  <div class="htok-quote">"funeral is the most heartbreaking song ive heard in years. she ruins you gently"</div>
+                </div>
+                <div class="htok-actions">
+                  <button class="htok-skip" onclick="navigate('home')">Skip</button>
+                  <button class="htok-log" onclick="navigate('review')">Log This Too ↗</button>
+                </div>
+                <div class="htok-hint">↑ · next friend's pick</div>
+              </div>
+            </div>
+
+            <div class="htok-card">
+              <div class="htok-bg" style="background-image:url('images/album-crystalcastles1.png')"></div>
+              <div class="htok-overlay"></div>
+              <div class="htok-content">
+                <div class="htok-who">
+                  <div class="htok-av" style="background:linear-gradient(135deg,#164e63,#0284c7)">SF</div>
+                  <span class="htok-name">staticfog</span>
+                  <span class="htok-verb">just reviewed</span>
+                </div>
+                <div class="htok-art-wrap">
+                  <div class="htok-art" style="background-image:url('images/album-crystalcastles1.png')"></div>
+                </div>
+                <div class="htok-info">
+                  <div class="htok-album">Crystal Castles</div>
+                  <div class="htok-artist">CRYSTAL CASTLES · 2008</div>
+                  <div style="margin-bottom:6px">${halfStars(4.5, 15)}</div>
+                  <div class="htok-quote">"chaotic and beautiful. alice's vocals hit like static shock every single time"</div>
+                </div>
+                <div class="htok-actions">
+                  <button class="htok-skip" onclick="navigate('home')">Skip</button>
+                  <button class="htok-log" onclick="navigate('review')">Log This Too ↗</button>
+                </div>
+                <div class="htok-hint">↑ · next friend's pick</div>
+              </div>
+            </div>
+
+            <div class="htok-card">
+              <div class="htok-bg" style="background:linear-gradient(135deg,#021a0b,#0f4a1a)"></div>
+              <div class="htok-overlay"></div>
+              <div class="htok-content">
+                <div class="htok-who">
+                  <div class="htok-av" style="background:linear-gradient(135deg,#3b0764,#9333ea)">KM</div>
+                  <span class="htok-name">kira_m</span>
+                  <span class="htok-verb">just reviewed</span>
+                </div>
+                <div class="htok-art-wrap">
+                  <div class="htok-art" style="background:linear-gradient(135deg,#042a10,#6aff3a 130%);display:flex;align-items:center;justify-content:center">
+                    <span style="font-size:40px;font-weight:800;color:#000;letter-spacing:-3px;opacity:0.8;font-family:var(--font-main)">gecs</span>
+                  </div>
+                </div>
+                <div class="htok-info">
+                  <div class="htok-album">1000 gecs</div>
+                  <div class="htok-artist">100 GECS · 2019</div>
+                  <div style="margin-bottom:6px">${halfStars(5, 15)}</div>
+                  <div class="htok-quote">"this album rewired my brain. nothing before or after sounds like it"</div>
+                </div>
+                <div class="htok-actions">
+                  <button class="htok-skip" onclick="navigate('home')">Skip</button>
+                  <button class="htok-log" style="background:#5adf1a;color:#000" onclick="navigate('review')">Log This Too ↗</button>
+                </div>
+                <div class="htok-hint">&nbsp;</div>
+              </div>
+            </div>
+
+          </div>
+        </div>`
+      },
+
+      // ── 3c. Dorfic / Frutiger Aero Orange (Dorfic look) ────
+      {
+        label: 'Dorfic',
+        thumb: ['accent','w70','w80','accent','w60'],
+        html: `
+        <div class="app-screen s-home-dorf">
+          ${topNav('home')}
+
+          <div class="dorf-topbar">
+            <div class="dorf-wordmark">CHARP</div>
+            <div style="display:flex;gap:6px">
+              <button class="icon-btn" onclick="navigate('search')" style="background:var(--surface);border:1px solid var(--border)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+              </button>
+              <button class="icon-btn" onclick="navigate('profile')" style="background:var(--surface);border:1px solid var(--border)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </button>
+            </div>
           </div>
 
-          <!-- Trending review quote (full width) -->
-          <div class="bento-card bc-trend span2" onclick="navigate('album')">
-            <div class="bc-tr-label">Trending Review</div>
-            <div class="bc-tr-quote">"this album rewired my brain. nothing before or after sounds like it"</div>
-            <div class="bc-tr-by">
-              <span>staticfog on <strong style="color:var(--text)">1000 gecs</strong></span>
-              <span>${halfStars(5, 11)}</span>
-            </div>
-            <div class="bc-tr-ghost-art" style="background:linear-gradient(135deg,#042a10,#6aff3a 120%)"></div>
-          </div>
+          <div class="dorf-scroll">
 
-          <!-- Discover / wall link (full width) -->
-          <div class="bento-card bc-disc span2" onclick="navigate('wall')">
-            <div class="bc-disc-thumbs">
-              <div class="bc-disc-thumb" style="background-image:url('images/album-punisher.png')"></div>
-              <div class="bc-disc-thumb" style="background-image:url('images/album-crystalcastles1.png')"></div>
-              <div class="bc-disc-thumb" style="background:linear-gradient(135deg,#052e16,#86efac)"></div>
-              <div class="bc-disc-thumb" style="background:linear-gradient(135deg,#1a0533,#7e22ce)"></div>
+            <!-- Hero: Rec of the day -->
+            <div class="dorf-hero" onclick="navigate('album')">
+              <div class="dorf-hero-inner">
+                <div class="dorf-hero-glow"></div>
+                <div class="dorf-hero-art" style="background-image:url('images/album-punisher.png')"></div>
+                <div class="dorf-hero-text">
+                  <div class="dorf-hero-label">REC. OF THE DAY</div>
+                  <div class="dorf-hero-title">Punisher</div>
+                  <div class="dorf-hero-artist">Phoebe Bridgers · 2020</div>
+                  <div style="margin-bottom:8px">${halfStars(4.5, 12)}</div>
+                  <button class="dorf-hero-btn" onclick="event.stopPropagation();navigate('review')">Log It</button>
+                </div>
+              </div>
             </div>
-            <div class="bc-disc-text">
-              <div class="bc-disc-label">Popular Albums</div>
-              <div class="bc-disc-sub">89k logged this month</div>
-            </div>
-            <div class="bc-disc-arr">›</div>
-          </div>
 
-        </div>
-        </div>
-      </div>`
-    }]
+            <!-- Friends lately -->
+            <div class="dorf-section-hd">
+              <span class="dorf-section-label">FRIENDS LATELY</span>
+            </div>
+            <div class="dorf-friend-row">
+              <div class="dorf-friend" onclick="navigate('album')">
+                <div class="dorf-friend-art" style="background-image:url('images/album-crystalcastles1.png')">
+                  <div class="dorf-friend-av" style="background:linear-gradient(135deg,#1c1c3e,#3b1fa8)">E</div>
+                </div>
+                <div class="dorf-friend-album">CC I</div>
+                <div style="display:flex;justify-content:center">${halfStars(4.5, 9)}</div>
+              </div>
+              <div class="dorf-friend" onclick="navigate('album')">
+                <div class="dorf-friend-art" style="background-image:url('images/album-punisher.png')">
+                  <div class="dorf-friend-av" style="background:linear-gradient(135deg,#164e63,#0284c7)">SF</div>
+                </div>
+                <div class="dorf-friend-album">Punisher</div>
+                <div style="display:flex;justify-content:center">${halfStars(5, 9)}</div>
+              </div>
+              <div class="dorf-friend" onclick="navigate('album')">
+                <div class="dorf-friend-art" style="background:linear-gradient(135deg,#042a10,#6aff3a 130%)">
+                  <div class="dorf-friend-av" style="background:linear-gradient(135deg,#3b0764,#9333ea)">KM</div>
+                </div>
+                <div class="dorf-friend-album">1000 gecs</div>
+                <div style="display:flex;justify-content:center">${halfStars(5, 9)}</div>
+              </div>
+              <div class="dorf-friend" onclick="navigate('album')">
+                <div class="dorf-friend-art" style="background:linear-gradient(135deg,#2a0044,#ff1a6e 200%)">
+                  <div class="dorf-friend-av" style="background:linear-gradient(135deg,#450a0a,#dc2626)">VB</div>
+                </div>
+                <div class="dorf-friend-album">Leather Teeth</div>
+                <div style="display:flex;justify-content:center">${halfStars(4, 9)}</div>
+              </div>
+              <div class="dorf-friend" onclick="navigate('album')">
+                <div class="dorf-friend-art" style="background:linear-gradient(135deg,#1a1a3e,#4c1d95)">
+                  <div class="dorf-friend-av" style="background:linear-gradient(135deg,#0c4a1e,#16a34a)">JK</div>
+                </div>
+                <div class="dorf-friend-album">Untrue</div>
+                <div style="display:flex;justify-content:center">${halfStars(5, 9)}</div>
+              </div>
+            </div>
+
+            <!-- Trending albums grid -->
+            <div class="dorf-section-hd">
+              <span class="dorf-section-label">TRENDING</span>
+              <button class="dorf-see-all" onclick="navigate('wall')">See all ›</button>
+            </div>
+            <div class="dorf-grid">
+              <div class="dorf-card" onclick="navigate('album')">
+                <div class="dorf-card-art" style="background-image:url('images/album-punisher.png')"></div>
+                <div class="dorf-card-body">
+                  <div class="dorf-card-title">Punisher</div>
+                  <div class="dorf-card-meta">4.7 ★ · 89k logged</div>
+                </div>
+              </div>
+              <div class="dorf-card" onclick="navigate('album')">
+                <div class="dorf-card-art" style="background-image:url('images/album-crystalcastles1.png')"></div>
+                <div class="dorf-card-body">
+                  <div class="dorf-card-title">Crystal Castles</div>
+                  <div class="dorf-card-meta">4.4 ★ · 19k logged</div>
+                </div>
+              </div>
+              <div class="dorf-card" onclick="navigate('album')">
+                <div class="dorf-card-art" style="background:linear-gradient(135deg,#042a10,#6aff3a 130%)"></div>
+                <div class="dorf-card-body">
+                  <div class="dorf-card-title">1000 gecs</div>
+                  <div class="dorf-card-meta">4.6 ★ · 50k logged</div>
+                </div>
+              </div>
+              <div class="dorf-card" onclick="navigate('album')">
+                <div class="dorf-card-art" style="background:linear-gradient(135deg,#2a0044,#ff1a6e 200%)"></div>
+                <div class="dorf-card-body">
+                  <div class="dorf-card-title">Leather Teeth</div>
+                  <div class="dorf-card-meta">4.5 ★ · 9.8k logged</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>`
+      }
+
+    ]
   },
 
   // ── 4. LIVE FEED (TikTok-style) ─────────────────────────────

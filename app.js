@@ -6,17 +6,81 @@ const SVG_SIGNAL = `<svg viewBox="0 0 17 12" width="17" height="12" fill="curren
 const SVG_WIFI   = `<svg viewBox="0 0 16 12" width="16" height="12" fill="none" stroke="currentColor" stroke-linecap="round"><circle cx="8" cy="11" r="1.2" fill="currentColor" stroke="none"/><path d="M5.2 8.2 Q8 6 10.8 8.2" stroke-width="1.4"/><path d="M2.5 5.5 Q8 1.5 13.5 5.5" stroke-width="1.4"/></svg>`;
 const SVG_BATTERY= `<svg viewBox="0 0 25 12" width="25" height="12" fill="currentColor"><rect x="0" y="1.5" width="21" height="9" rx="2.5" stroke="currentColor" stroke-width="1.5" fill="none"/><rect x="22" y="4" width="2.5" height="4" rx="1"/><rect x="2" y="3.5" width="15" height="5" rx="1.5"/></svg>`;
 
+// ── Looks ─────────────────────────────────────────────────────
+const LOOKS = [
+  {
+    id: 'charcoal', name: 'Charcoal', homeVariant: 0,
+    vars: {
+      '--font-head': "'DM Sans', system-ui, sans-serif",
+      '--font-sub':  "'DM Sans', system-ui, sans-serif",
+      '--font-main': "'DM Sans', system-ui, -apple-system, sans-serif",
+      '--font-mono': "'SUSE Mono', 'Courier New', monospace",
+      '--accent': '#d4a84b', '--accent2': '#a07828',
+      '--bg': '#0c0b0a', '--bg2': '#0f0e0d',
+      '--surface': '#161514', '--surface2': '#1e1c1b',
+      '--border': '#252320',
+      '--text': '#e8e4dc', '--text2': '#706860', '--text3': '#302e2c',
+      '--star': '#e8a83c', '--tab-bg': '#0a0908',
+    }
+  },
+  {
+    id: 'editorial', name: 'Editorial', homeVariant: 1,
+    vars: {
+      '--font-head': "'Playfair Display', Georgia, serif",
+      '--font-sub':  "'DM Sans', system-ui, sans-serif",
+      '--font-main': "'DM Sans', system-ui, -apple-system, sans-serif",
+      '--font-mono': "'SUSE Mono', 'Courier New', monospace",
+      '--accent': '#b8936a', '--accent2': '#8a6040',
+      '--bg': '#0d0910', '--bg2': '#110d14',
+      '--surface': '#18121f', '--surface2': '#211929',
+      '--border': '#2e2238',
+      '--text': '#f2ece0', '--text2': '#8a6a5a', '--text3': '#3c2448',
+      '--star': '#e8c06a', '--tab-bg': '#0a0710',
+    }
+  },
+  {
+    id: 'dorfic', name: 'Dorfic', homeVariant: 2,
+    vars: {
+      '--font-head': "'Space Mono', monospace",
+      '--font-sub':  "'Space Mono', monospace",
+      '--font-main': "'DM Sans', system-ui, -apple-system, sans-serif",
+      '--font-mono': "'Space Mono', monospace",
+      '--accent': '#ff8a30', '--accent2': '#e05a00',
+      '--bg': '#120900', '--bg2': '#180c00',
+      '--surface': '#1e1000', '--surface2': '#2a1800',
+      '--border': '#3a2200',
+      '--text': '#ffe8c8', '--text2': '#a06030', '--text3': '#4a2800',
+      '--star': '#ff8a30', '--tab-bg': '#0e0700',
+    }
+  }
+];
+
 // ── State ─────────────────────────────────────────────────────
 let currentIdx   = 0;
 let viewMode     = 'single';
 let isMobile     = false;
 let navHistory   = [];
 let variantState = {};   // { screenId: variantIndex }
+let currentLook  = 0;
+let compareMode  = false;
 
 // ── Helpers ───────────────────────────────────────────────────
 function currentScreen()  { return SCREENS[currentIdx]; }
 function getVariantIdx(s) { return variantState[s.id] || 0; }
 function getVariant(s)    { const i = getVariantIdx(s); return s.variants[Math.min(i, s.variants.length-1)]; }
+
+function applyLook(idx) {
+  currentLook = idx;
+  const look = LOOKS[idx];
+  const root = document.documentElement;
+  Object.entries(look.vars).forEach(([k, v]) => root.style.setProperty(k, v));
+  if (look.homeVariant !== undefined) variantState['home'] = look.homeVariant;
+  document.querySelectorAll('.lseg').forEach((b, i) => b.classList.toggle('active', i === idx));
+}
+
+function lookInlineStyle(look) {
+  return Object.entries(look.vars).map(([k, v]) => `${k}:${v}`).join(';');
+}
 
 // ── Init ─────────────────────────────────────────────────────
 function init() {
@@ -39,7 +103,10 @@ function initViewer() {
     if (e.key === 'ArrowLeft')  navigatePrev();
     if (e.key === 'ArrowRight') navigateNext();
   });
-  window.addEventListener('resize', debounce(setPhoneScale, 100));
+  window.addEventListener('resize', debounce(() => {
+    if (compareMode && viewMode === 'single') renderSingle();
+    else setPhoneScale();
+  }, 100));
 }
 
 function renderViewer() {
@@ -51,9 +118,30 @@ function renderViewer() {
 
 function renderSingle() {
   const c = document.getElementById('phone-container');
-  c.className = '';
-  c.innerHTML = `<div class="phone-wrap">${buildPhoneHTML(currentScreen())}</div>`;
-  setPhoneScale();
+
+  if (compareMode) {
+    c.className = 'compare';
+    const stage  = document.getElementById('stage');
+    const scaleH = (stage.clientHeight - 80) / 852;
+    const scaleW = (stage.clientWidth / 3 - 32) / 393;
+    const scale  = Math.min(scaleH, scaleW, 0.56);
+    const dead   = 852 * (scale - 1);
+
+    c.innerHTML = LOOKS.map((look, i) => `
+      <div class="look-phone-col">
+        <div class="phone-wrap${i === currentLook ? ' look-active' : ''}"
+             style="transform:scale(${scale});margin-top:${dead/2}px;margin-bottom:${dead/2}px;cursor:pointer"
+             onclick="setLook(${i})">
+          ${buildPhoneHTML(currentScreen(), lookInlineStyle(look))}
+        </div>
+        <div class="look-phone-label${i === currentLook ? ' active' : ''}">${look.name}</div>
+      </div>
+    `).join('');
+  } else {
+    c.className = '';
+    c.innerHTML = `<div class="phone-wrap">${buildPhoneHTML(currentScreen())}</div>`;
+    setPhoneScale();
+  }
 }
 
 function renderMulti() {
@@ -77,7 +165,7 @@ function renderMulti() {
   `).join('');
 }
 
-function buildPhoneHTML(screen) {
+function buildPhoneHTML(screen, lookVars) {
   const v = getVariant(screen);
   return `
   <div class="phone-frame">
@@ -85,7 +173,7 @@ function buildPhoneHTML(screen) {
     <div class="side-btn vol-up"></div>
     <div class="side-btn vol-dn"></div>
     <div class="side-btn power"></div>
-    <div class="phone-screen">
+    <div class="phone-screen"${lookVars ? ` style="${lookVars}"` : ''}>
       <div class="status-bar ${screen.statusTheme === 'dark' ? 'dark-icons' : ''}">
         <div class="sb-time">9:41</div>
         <div class="dynamic-island"></div>
@@ -98,7 +186,7 @@ function buildPhoneHTML(screen) {
 }
 
 function setPhoneScale() {
-  if (viewMode !== 'single') return;
+  if (viewMode !== 'single' || compareMode) return;
   const stage = document.getElementById('stage');
   const wrap  = document.querySelector('.phone-wrap');
   if (!wrap) return;
@@ -182,11 +270,40 @@ function bindViewerEvents() {
     document.querySelectorAll('.seg').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     viewMode = btn.dataset.view;
+    if (viewMode !== 'single') compareMode = false;
+    document.getElementById('btn-compare').classList.toggle('active', compareMode);
+    renderViewer();
+  });
+
+  document.getElementById('look-seg').addEventListener('click', e => {
+    const btn = e.target.closest('.lseg');
+    if (!btn) return;
+    applyLook(parseInt(btn.dataset.look));
+    renderViewer();
+  });
+
+  document.getElementById('btn-compare').addEventListener('click', () => {
+    compareMode = !compareMode;
+    const compBtn = document.getElementById('btn-compare');
+    const expBtn  = document.getElementById('btn-export');
+    compBtn.classList.toggle('active', compareMode);
+    expBtn.disabled = compareMode;
+    expBtn.style.opacity = compareMode ? '0.35' : '';
+    if (compareMode && viewMode !== 'single') {
+      viewMode = 'single';
+      document.querySelectorAll('.seg').forEach(b => b.classList.remove('active'));
+      document.querySelector('.seg[data-view="single"]').classList.add('active');
+    }
     renderViewer();
   });
 
   document.getElementById('btn-export').addEventListener('click', exportPNG);
 }
+
+window.setLook = function(idx) {
+  applyLook(idx);
+  renderSingle();
+};
 
 // ── PNG Export ───────────────────────────────────────────────
 async function exportPNG() {
