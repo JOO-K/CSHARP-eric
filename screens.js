@@ -269,10 +269,9 @@ const SCREENS = [
       // ── 3c. Dorfic / Frutiger Aero Orange (Dorfic look) ────
       {
         label: 'Dorfic',
-        thumb: ['accent','w70','w80','accent','w60'],
+        thumb: ['accent','accent','w70','accent','w60'],
         html: `
         <div class="app-screen s-home-dorf">
-          ${topNav('home')}
 
           <div class="dorf-topbar">
             <div class="dorf-wordmark">CHARP</div>
@@ -288,96 +287,85 @@ const SCREENS = [
 
           <div class="dorf-scroll">
 
-            <!-- Hero: Rec of the day -->
-            <div class="dorf-hero" onclick="navigate('album')">
-              <div class="dorf-hero-inner">
-                <div class="dorf-hero-glow"></div>
-                <div class="dorf-hero-art" style="background-image:url('images/album-punisher.png')"></div>
-                <div class="dorf-hero-text">
-                  <div class="dorf-hero-label">REC. OF THE DAY</div>
-                  <div class="dorf-hero-title">Punisher</div>
-                  <div class="dorf-hero-artist">Phoebe Bridgers · 2020</div>
-                  <div style="margin-bottom:8px">${halfStars(4.5, 12)}</div>
-                  <button class="dorf-hero-btn" onclick="event.stopPropagation();navigate('review')">Log It</button>
-                </div>
+            <!-- BIG GLOWING PLAYER HERO -->
+            <div class="dorf-player" onclick="navigate('album')">
+              <div class="dorf-player-aura"></div>
+              <div class="dorf-player-art" style="background-image:url('images/album-punisher.png')"></div>
+              <div class="dorf-player-label">Rec. of the Day</div>
+              <div class="dorf-player-title">Punisher</div>
+              <div class="dorf-player-artist">PHOEBE BRIDGERS · 2020</div>
+              <div class="dorf-player-stars">${halfStars(4.5, 14)}</div>
+              <button class="dorf-player-btn" onclick="event.stopPropagation();navigate('review')">Log It</button>
+            </div>
+
+            <!-- PILL TABS -->
+            <div class="dorf-tabs">
+              <button class="dorf-tab active">For You</button>
+              <button class="dorf-tab">Friends</button>
+              <button class="dorf-tab">New Releases</button>
+            </div>
+
+            <!-- HORIZONTAL BUBBLE CAROUSEL -->
+            <div class="dorf-carousel-row">
+              <div class="dorf-bubble" onclick="navigate('album')">
+                <div class="dorf-bubble-art" style="background-image:url('images/album-crystalcastles1.png')"></div>
+                <div class="dorf-bubble-body"><div class="dorf-bubble-title">CC I</div><div class="dorf-bubble-meta">★ 4.4 · 19k</div></div>
+              </div>
+              <div class="dorf-bubble" onclick="navigate('album')">
+                <div class="dorf-bubble-art" style="background:linear-gradient(135deg,#042a10,#6aff3a 130%)"></div>
+                <div class="dorf-bubble-body"><div class="dorf-bubble-title">1000 gecs</div><div class="dorf-bubble-meta">★ 4.6 · 50k</div></div>
+              </div>
+              <div class="dorf-bubble" onclick="navigate('album')">
+                <div class="dorf-bubble-art" style="background:linear-gradient(135deg,#2a0044,#ff1a6e 200%)"></div>
+                <div class="dorf-bubble-body"><div class="dorf-bubble-title">Leather Teeth</div><div class="dorf-bubble-meta">★ 4.5 · 9.8k</div></div>
+              </div>
+              <div class="dorf-bubble" onclick="navigate('album')">
+                <div class="dorf-bubble-art" style="background:linear-gradient(135deg,#1a1a3e,#4c1d95)"></div>
+                <div class="dorf-bubble-body"><div class="dorf-bubble-title">Untrue</div><div class="dorf-bubble-meta">★ 4.8 · 32k</div></div>
+              </div>
+              <div class="dorf-bubble" onclick="navigate('album')">
+                <div class="dorf-bubble-art" style="background:linear-gradient(135deg,#3a0000,#cc0000)"></div>
+                <div class="dorf-bubble-body"><div class="dorf-bubble-title">Merriweather</div><div class="dorf-bubble-meta">★ 4.7 · 41k</div></div>
               </div>
             </div>
 
-            <!-- Friends lately -->
-            <div class="dorf-section-hd">
-              <span class="dorf-section-label">FRIENDS LATELY</span>
+            <!-- FRIEND ACTIVITY — notification pills -->
+            <div class="dorf-act-hd">
+              <span class="dorf-act-label">Friend Activity</span>
+              <button class="dorf-act-seeall" onclick="navigate('feed')">See all ›</button>
             </div>
-            <div class="dorf-friend-row">
-              <div class="dorf-friend" onclick="navigate('album')">
-                <div class="dorf-friend-art" style="background-image:url('images/album-crystalcastles1.png')">
-                  <div class="dorf-friend-av" style="background:linear-gradient(135deg,#1c1c3e,#3b1fa8)">E</div>
+            <div class="dorf-act-list">
+              <div class="dorf-act-pill" onclick="navigate('album')">
+                <div class="dorf-act-av" style="background:linear-gradient(135deg,#1c1c3e,#3b1fa8)">E</div>
+                <div class="dorf-act-text">
+                  <div class="dorf-act-who">echoplex</div>
+                  <span class="dorf-act-album">Crystal Castles</span>
                 </div>
-                <div class="dorf-friend-album">CC I</div>
-                <div style="display:flex;justify-content:center">${halfStars(4.5, 9)}</div>
+                <div class="dorf-act-rating">★★★★½</div>
               </div>
-              <div class="dorf-friend" onclick="navigate('album')">
-                <div class="dorf-friend-art" style="background-image:url('images/album-punisher.png')">
-                  <div class="dorf-friend-av" style="background:linear-gradient(135deg,#164e63,#0284c7)">SF</div>
+              <div class="dorf-act-pill" onclick="navigate('album')">
+                <div class="dorf-act-av" style="background:linear-gradient(135deg,#164e63,#0284c7)">SF</div>
+                <div class="dorf-act-text">
+                  <div class="dorf-act-who">staticfog</div>
+                  <span class="dorf-act-album">1000 gecs</span>
                 </div>
-                <div class="dorf-friend-album">Punisher</div>
-                <div style="display:flex;justify-content:center">${halfStars(5, 9)}</div>
+                <div class="dorf-act-rating">★★★★★</div>
               </div>
-              <div class="dorf-friend" onclick="navigate('album')">
-                <div class="dorf-friend-art" style="background:linear-gradient(135deg,#042a10,#6aff3a 130%)">
-                  <div class="dorf-friend-av" style="background:linear-gradient(135deg,#3b0764,#9333ea)">KM</div>
+              <div class="dorf-act-pill" onclick="navigate('album')">
+                <div class="dorf-act-av" style="background:linear-gradient(135deg,#3b0764,#9333ea)">KM</div>
+                <div class="dorf-act-text">
+                  <div class="dorf-act-who">kira_m</div>
+                  <span class="dorf-act-album">Leather Teeth</span>
                 </div>
-                <div class="dorf-friend-album">1000 gecs</div>
-                <div style="display:flex;justify-content:center">${halfStars(5, 9)}</div>
+                <div class="dorf-act-rating">★★★★</div>
               </div>
-              <div class="dorf-friend" onclick="navigate('album')">
-                <div class="dorf-friend-art" style="background:linear-gradient(135deg,#2a0044,#ff1a6e 200%)">
-                  <div class="dorf-friend-av" style="background:linear-gradient(135deg,#450a0a,#dc2626)">VB</div>
+              <div class="dorf-act-pill" onclick="navigate('album')">
+                <div class="dorf-act-av" style="background:linear-gradient(135deg,#0c4a1e,#16a34a)">JK</div>
+                <div class="dorf-act-text">
+                  <div class="dorf-act-who">josekm</div>
+                  <span class="dorf-act-album">Punisher</span>
                 </div>
-                <div class="dorf-friend-album">Leather Teeth</div>
-                <div style="display:flex;justify-content:center">${halfStars(4, 9)}</div>
-              </div>
-              <div class="dorf-friend" onclick="navigate('album')">
-                <div class="dorf-friend-art" style="background:linear-gradient(135deg,#1a1a3e,#4c1d95)">
-                  <div class="dorf-friend-av" style="background:linear-gradient(135deg,#0c4a1e,#16a34a)">JK</div>
-                </div>
-                <div class="dorf-friend-album">Untrue</div>
-                <div style="display:flex;justify-content:center">${halfStars(5, 9)}</div>
-              </div>
-            </div>
-
-            <!-- Trending albums grid -->
-            <div class="dorf-section-hd">
-              <span class="dorf-section-label">TRENDING</span>
-              <button class="dorf-see-all" onclick="navigate('wall')">See all ›</button>
-            </div>
-            <div class="dorf-grid">
-              <div class="dorf-card" onclick="navigate('album')">
-                <div class="dorf-card-art" style="background-image:url('images/album-punisher.png')"></div>
-                <div class="dorf-card-body">
-                  <div class="dorf-card-title">Punisher</div>
-                  <div class="dorf-card-meta">4.7 ★ · 89k logged</div>
-                </div>
-              </div>
-              <div class="dorf-card" onclick="navigate('album')">
-                <div class="dorf-card-art" style="background-image:url('images/album-crystalcastles1.png')"></div>
-                <div class="dorf-card-body">
-                  <div class="dorf-card-title">Crystal Castles</div>
-                  <div class="dorf-card-meta">4.4 ★ · 19k logged</div>
-                </div>
-              </div>
-              <div class="dorf-card" onclick="navigate('album')">
-                <div class="dorf-card-art" style="background:linear-gradient(135deg,#042a10,#6aff3a 130%)"></div>
-                <div class="dorf-card-body">
-                  <div class="dorf-card-title">1000 gecs</div>
-                  <div class="dorf-card-meta">4.6 ★ · 50k logged</div>
-                </div>
-              </div>
-              <div class="dorf-card" onclick="navigate('album')">
-                <div class="dorf-card-art" style="background:linear-gradient(135deg,#2a0044,#ff1a6e 200%)"></div>
-                <div class="dorf-card-body">
-                  <div class="dorf-card-title">Leather Teeth</div>
-                  <div class="dorf-card-meta">4.5 ★ · 9.8k logged</div>
-                </div>
+                <div class="dorf-act-rating">★★★★½</div>
               </div>
             </div>
 
