@@ -132,7 +132,7 @@ function renderSingle() {
         <div class="phone-wrap${i === currentLook ? ' look-active' : ''}"
              style="transform:scale(${scale});margin-top:${dead/2}px;margin-bottom:${dead/2}px;cursor:pointer"
              onclick="setLook(${i})">
-          ${buildPhoneHTML(currentScreen(), lookInlineStyle(look))}
+          ${buildPhoneHTML(currentScreen(), lookInlineStyle(look), look.homeVariant !== undefined && currentScreen().id === 'home' ? look.homeVariant : undefined)}
         </div>
         <div class="look-phone-label${i === currentLook ? ' active' : ''}">${look.name}</div>
       </div>
@@ -165,8 +165,10 @@ function renderMulti() {
   `).join('');
 }
 
-function buildPhoneHTML(screen, lookVars) {
-  const v = getVariant(screen);
+function buildPhoneHTML(screen, lookVars, variantIdx) {
+  const v = variantIdx !== undefined
+    ? screen.variants[Math.min(variantIdx, screen.variants.length - 1)]
+    : getVariant(screen);
   return `
   <div class="phone-frame">
     <div class="side-btn action"></div>
