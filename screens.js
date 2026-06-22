@@ -569,6 +569,10 @@ const SCREENS = [
           <!-- TOP NAV -->
           <nav class="v3-nav">
             <div class="v3-nav-left">
+              <button class="v3-tab v3-tab-home" onclick="navigate('home')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z"/><polyline points="9 21 9 12 15 12 15 21"/></svg>
+                Home
+              </button>
               <button class="v3-tab active">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                 Reviews
@@ -672,6 +676,10 @@ const SCREENS = [
           <!-- TOP NAV -->
           <nav class="v3-nav">
             <div class="v3-nav-left">
+              <button class="v3-tab v3-tab-home" onclick="navigate('home')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z"/><polyline points="9 21 9 12 15 12 15 21"/></svg>
+                Home
+              </button>
               <button class="v3-tab active">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                 Reviews
