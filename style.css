@@ -23,7 +23,8 @@
 
   /* Layout heights */
   --toolbar-h: 50px;
-  --tray-h:    108px;
+  --tray-h:    42px;
+  --nav-w:     148px;
 }
 
 html, body { height: 100%; }
@@ -185,16 +186,59 @@ body {
   flex: 1;
   overflow: hidden;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: row;
+  align-items: stretch;
 }
 
+/* ── Left page nav ── */
+#page-nav {
+  flex-shrink: 0;
+  width: var(--nav-w);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 10px 8px;
+  background: var(--vsurface);
+  border-right: 1px solid var(--vborder);
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--vborder) transparent;
+}
+
+.pnav-btn {
+  flex-shrink: 0;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: 5px;
+  color: var(--vdim);
+  font-size: 11px;
+  padding: 6px 9px;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color .12s, background .12s;
+}
+.pnav-btn:hover:not(.active) { color: #aaa; background: rgba(255,255,255,0.04); }
+.pnav-btn.active { color: var(--vtext); background: rgba(255,255,255,0.08); }
+
+.pnav-divider { height: 1px; background: var(--vborder); margin: 6px 2px; flex-shrink: 0; }
+
+.pnav-multi { display: flex; align-items: center; gap: 5px; }
+.pnav-multi.multi-active { color: var(--vaccent); }
+
+/* ── Phone area ── */
 #phone-container {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 32px;
-  height: 100%;
+  overflow: hidden;
 }
 
 /* ============================================================
@@ -319,110 +363,31 @@ body {
 }
 
 /* ============================================================
-   THUMBNAIL TRAY
+   BOTTOM TRAY — variants only
    ============================================================ */
 #thumb-tray {
   flex-shrink: 0;
   height: var(--tray-h);
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 0 16px;
+  gap: 5px;
+  padding: 0 14px;
   background: var(--vsurface);
   border-top: 1px solid var(--vborder);
   overflow-x: auto;
   overflow-y: hidden;
-  scrollbar-width: thin;
-  scrollbar-color: var(--vborder) transparent;
+  scrollbar-width: none;
 }
+#thumb-tray::-webkit-scrollbar { display: none; }
 
-.thumb {
-  flex-shrink: 0;
-  width: 52px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-  cursor: pointer;
-  opacity: 0.45;
-  transition: opacity 0.15s;
-}
-.thumb:hover  { opacity: 0.75; }
-.thumb.active { opacity: 1; }
-
-.thumb-phone {
-  width: 40px;
-  height: 72px;
-  border-radius: 8px;
-  border: 1.5px solid #383838;
-  background: #111;
-  overflow: hidden;
-  position: relative;
-  transition: border-color 0.15s;
-}
-.thumb.active .thumb-phone { border-color: var(--vaccent); }
-
-/* mini dynamic island on thumb */
-.thumb-phone::before {
-  content: '';
-  position: absolute;
-  top: 5px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 16px;
-  height: 5px;
-  background: #000;
-  border-radius: 3px;
-  z-index: 2;
-}
-
-.thumb-preview {
-  width: 100%;
-  height: 100%;
-  padding: 14px 4px 4px;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.tp-line {
-  height: 4px;
-  border-radius: 2px;
-  background: rgba(255,255,255,0.15);
-}
-.tp-line.accent { background: var(--vaccent); opacity: 0.6; }
-.tp-line.w40 { width: 40%; }
-.tp-line.w50 { width: 50%; }
-.tp-line.w60 { width: 60%; }
-.tp-line.w70 { width: 70%; }
-.tp-line.w80 { width: 80%; }
-
-.thumb-label {
-  font-size: 9px;
-  color: var(--vdim);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 52px;
-  text-align: center;
-}
-.thumb.active .thumb-label { color: var(--vaccent); }
-
-/* ── Variant bar ── */
-.variant-bar {
-  align-items: center;
-  gap: 3px;
-  padding-left: 10px;
-  border-left: 1px solid var(--vborder);
-  margin-left: 4px;
-}
 .vpill {
+  flex-shrink: 0;
   background: none;
   border: 1px solid var(--vborder);
   color: var(--vdim);
-  font-size: 10px;
-  padding: 2px 8px;
-  border-radius: 4px;
+  font-size: 11px;
+  padding: 4px 11px;
+  border-radius: 5px;
   cursor: pointer;
   font-family: inherit;
   transition: background .12s, color .12s, border-color .12s;
@@ -430,6 +395,58 @@ body {
 }
 .vpill.active { background: rgba(255,255,255,0.08); color: var(--vtext); border-color: #555; }
 .vpill:hover:not(.active) { border-color: #444; color: #aaa; }
+
+/* ============================================================
+   VARIANT COLUMNS — version label above each phone
+   ============================================================ */
+.var-col {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.var-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  color: var(--vdim);
+  font-family: 'SUSE Mono', monospace;
+  transition: color 0.15s;
+  user-select: none;
+}
+
+.var-sublabel {
+  font-size: 10px;
+  color: var(--vdim);
+  opacity: 0.5;
+  user-select: none;
+}
+
+.var-col.var-active .var-label { color: var(--vaccent); }
+
+.var-col.var-active .phone-frame {
+  box-shadow:
+    0 0 0 1px #3d3d3d,
+    0 0 0 2.5px var(--vaccent),
+    0 45px 120px rgba(0,0,0,0.8),
+    inset 0 1px 0 rgba(255,255,255,0.09),
+    inset 0 -1px 0 rgba(0,0,0,0.5);
+}
+
+/* Multi-variant container (all variants of one page side by side) */
+#phone-container.multi-variant {
+  align-items: flex-end;
+  gap: 20px;
+  padding: 16px 20px 24px;
+  overflow-x: auto;
+  justify-content: flex-start;
+  cursor: grab;
+}
+#phone-container.multi-variant.is-grabbing { cursor: grabbing; }
+#phone-container.multi-variant::-webkit-scrollbar { display: none; }
 
 /* ============================================================
    MULTI-VIEW MODE

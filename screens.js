@@ -79,7 +79,7 @@ const SCREENS = [
 
       // ── 3a. Bento (Charcoal look) ───────────────────────────
       {
-        label: 'Bento',
+        label: 'Bento', version: 'v1.0',
         thumb: ['w70','accent','w80','accent','w80'],
         html: `
         <div class="app-screen s-home-bento">
@@ -174,7 +174,7 @@ const SCREENS = [
 
       // ── 3b. TikTok Swipe (Editorial look) ──────────────────
       {
-        label: 'TikTok',
+        label: 'TikTok', version: 'v1.1',
         thumb: ['accent','w80','accent','w60','w80'],
         html: `
         <div class="app-screen s-home-tiktok">
@@ -268,7 +268,7 @@ const SCREENS = [
 
       // ── 3c. Dorfic / Frutiger Aero Orange (Dorfic look) ────
       {
-        label: 'Dorfic',
+        label: 'Dorfic', version: 'v1.2',
         thumb: ['accent','accent','w70','accent','w60'],
         html: `
         <div class="app-screen s-home-dorf">
@@ -371,6 +371,389 @@ const SCREENS = [
 
           </div>
         </div>`
+      },
+
+      // ── 3d. Float·Light (version2 light theme) ─────────────
+      {
+        label: 'Float·Light', version: 'v2.0',
+        thumb: ['w80','w80','w80','w80','w80'],
+        html: `
+        <div class="app-screen s-home-v2 s-home-v2--light">
+
+          <div class="v2-topbar">
+            <div class="v2-wordmark">CHARP</div>
+            <div class="v2-icons">
+              <button class="v2-icon-btn" onclick="navigate('search')">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+              </button>
+              <button class="v2-icon-btn" onclick="navigate('profile')">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="v2-scroll">
+            <div class="v2-grid">
+
+              <div class="v2-card v2-hero" onclick="navigate('album')">
+                <div class="v2-hero-art" style="background-image:url('images/album-crystalcastles1.png')"></div>
+                <div class="v2-hero-body">
+                  <div class="v2-who">
+                    <div class="v2-av">E</div>
+                    <span>echoplex</span>
+                    <span style="opacity:.6">reviewed</span>
+                  </div>
+                  <div class="v2-hero-album">Crystal Castles</div>
+                  <div style="margin-bottom:3px">${halfStars(4, 11)}</div>
+                  <div class="v2-hero-quote">"chaotic and beautiful. alice's vocals hit like static shock"</div>
+                </div>
+              </div>
+
+              <div class="v2-card v2-mini" onclick="navigate('album')">
+                <div class="v2-mini-art" style="background-image:url('images/album-punisher.png')"></div>
+                <div class="v2-mini-body">
+                  <div class="v2-mini-user">staticfog</div>
+                  <div class="v2-mini-title">Punisher</div>
+                  <div style="margin-top:3px">${halfStars(5, 10)}</div>
+                </div>
+              </div>
+
+              <div class="v2-card v2-stat">
+                <div class="v2-stat-num">3</div>
+                <div class="v2-stat-label">friends reviewed</div>
+                <div class="v2-stat-sub">this week</div>
+              </div>
+
+              <div class="v2-card v2-pymk v2-span2">
+                <div class="v2-pymk-hd">
+                  <span class="v2-pymk-title">People You May Know</span>
+                  <span class="v2-pymk-sub">from contacts</span>
+                </div>
+                <div class="v2-pymk-row">
+                  <div class="v2-person"><div class="v2-person-av" style="background:linear-gradient(135deg,#0c4a1e,#16a34a)">JK</div><div class="v2-person-name">josekm</div><div class="v2-person-count">24 rev.</div></div>
+                  <div class="v2-person"><div class="v2-person-av" style="background:linear-gradient(135deg,#164e63,#0284c7)">SF</div><div class="v2-person-name">staticfog</div><div class="v2-person-count">89 rev.</div></div>
+                  <div class="v2-person"><div class="v2-person-av" style="background:linear-gradient(135deg,#450a0a,#dc2626)">VB</div><div class="v2-person-name">velvetblast</div><div class="v2-person-count">212 rev.</div></div>
+                  <div class="v2-person"><div class="v2-person-av" style="background:linear-gradient(135deg,#3b0764,#9333ea)">KM</div><div class="v2-person-name">kira_m</div><div class="v2-person-count">41 rev.</div></div>
+                </div>
+              </div>
+
+              <div class="v2-card v2-trend v2-span2" onclick="navigate('album')">
+                <div class="v2-trend-ghost"></div>
+                <div class="v2-trend-label">Trending Review</div>
+                <div class="v2-trend-quote">"this album rewired my brain. nothing before or after sounds like it"</div>
+                <div class="v2-trend-by">
+                  <span>staticfog on <strong>1000 gecs</strong></span>
+                  <span>${halfStars(5, 11)}</span>
+                </div>
+              </div>
+
+              <div class="v2-card v2-disc v2-span2" onclick="navigate('wall')">
+                <div class="v2-disc-thumbs">
+                  <div class="v2-disc-thumb" style="background-image:url('images/album-punisher.png')"></div>
+                  <div class="v2-disc-thumb" style="background-image:url('images/album-crystalcastles1.png')"></div>
+                  <div class="v2-disc-thumb" style="background:linear-gradient(135deg,#052e16,#86efac)"></div>
+                  <div class="v2-disc-thumb" style="background:linear-gradient(135deg,#1a0533,#7e22ce)"></div>
+                </div>
+                <div class="v2-disc-text">
+                  <div class="v2-disc-label">Popular Albums</div>
+                  <div class="v2-disc-sub">89k logged this month</div>
+                </div>
+                <div class="v2-disc-arr">›</div>
+              </div>
+
+            </div>
+          </div>
+        </div>`
+      },
+
+      // ── 3e. Float·Dark (version2 dark theme) ───────────────
+      {
+        label: 'Float·Dark', version: 'v2.1',
+        thumb: ['w50','w50','w60','w50','w50'],
+        html: `
+        <div class="app-screen s-home-v2 s-home-v2--dark">
+
+          <div class="v2-topbar">
+            <div class="v2-wordmark">CHARP</div>
+            <div class="v2-icons">
+              <button class="v2-icon-btn" onclick="navigate('search')">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+              </button>
+              <button class="v2-icon-btn" onclick="navigate('profile')">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="v2-scroll">
+            <div class="v2-grid">
+
+              <div class="v2-card v2-hero" onclick="navigate('album')">
+                <div class="v2-hero-art" style="background-image:url('images/album-crystalcastles1.png')"></div>
+                <div class="v2-hero-body">
+                  <div class="v2-who">
+                    <div class="v2-av">E</div>
+                    <span>echoplex</span>
+                    <span style="opacity:.5">reviewed</span>
+                  </div>
+                  <div class="v2-hero-album">Crystal Castles</div>
+                  <div style="margin-bottom:3px">${halfStars(4, 11)}</div>
+                  <div class="v2-hero-quote">"chaotic and beautiful. alice's vocals hit like static shock"</div>
+                </div>
+              </div>
+
+              <div class="v2-card v2-mini" onclick="navigate('album')">
+                <div class="v2-mini-art" style="background-image:url('images/album-punisher.png')"></div>
+                <div class="v2-mini-body">
+                  <div class="v2-mini-user">staticfog</div>
+                  <div class="v2-mini-title">Punisher</div>
+                  <div style="margin-top:3px">${halfStars(5, 10)}</div>
+                </div>
+              </div>
+
+              <div class="v2-card v2-stat">
+                <div class="v2-stat-num">3</div>
+                <div class="v2-stat-label">friends reviewed</div>
+                <div class="v2-stat-sub">this week</div>
+              </div>
+
+              <div class="v2-card v2-pymk v2-span2">
+                <div class="v2-pymk-hd">
+                  <span class="v2-pymk-title">People You May Know</span>
+                  <span class="v2-pymk-sub">from contacts</span>
+                </div>
+                <div class="v2-pymk-row">
+                  <div class="v2-person"><div class="v2-person-av" style="background:linear-gradient(135deg,#0c4a1e,#16a34a)">JK</div><div class="v2-person-name">josekm</div><div class="v2-person-count">24 rev.</div></div>
+                  <div class="v2-person"><div class="v2-person-av" style="background:linear-gradient(135deg,#164e63,#0284c7)">SF</div><div class="v2-person-name">staticfog</div><div class="v2-person-count">89 rev.</div></div>
+                  <div class="v2-person"><div class="v2-person-av" style="background:linear-gradient(135deg,#450a0a,#dc2626)">VB</div><div class="v2-person-name">velvetblast</div><div class="v2-person-count">212 rev.</div></div>
+                  <div class="v2-person"><div class="v2-person-av" style="background:linear-gradient(135deg,#3b0764,#9333ea)">KM</div><div class="v2-person-name">kira_m</div><div class="v2-person-count">41 rev.</div></div>
+                </div>
+              </div>
+
+              <div class="v2-card v2-trend v2-span2" onclick="navigate('album')">
+                <div class="v2-trend-ghost"></div>
+                <div class="v2-trend-label">Trending Review</div>
+                <div class="v2-trend-quote">"this album rewired my brain. nothing before or after sounds like it"</div>
+                <div class="v2-trend-by">
+                  <span>staticfog on <strong>1000 gecs</strong></span>
+                  <span>${halfStars(5, 11)}</span>
+                </div>
+              </div>
+
+              <div class="v2-card v2-disc v2-span2" onclick="navigate('wall')">
+                <div class="v2-disc-thumbs">
+                  <div class="v2-disc-thumb" style="background-image:url('images/album-punisher.png')"></div>
+                  <div class="v2-disc-thumb" style="background-image:url('images/album-crystalcastles1.png')"></div>
+                  <div class="v2-disc-thumb" style="background:linear-gradient(135deg,#052e16,#86efac)"></div>
+                  <div class="v2-disc-thumb" style="background:linear-gradient(135deg,#1a0533,#7e22ce)"></div>
+                </div>
+                <div class="v2-disc-text">
+                  <div class="v2-disc-label">Popular Albums</div>
+                  <div class="v2-disc-sub">89k logged this month</div>
+                </div>
+                <div class="v2-disc-arr">›</div>
+              </div>
+
+            </div>
+          </div>
+        </div>`
+      },
+
+      // ── 3f. Bento Hero v3.0 ─────────────────────────────────
+      {
+        label: 'Bento Hero', version: 'v3.0',
+        thumb: ['accent','w60','w80','w60','w80'],
+        html: `
+        <div class="app-screen s-home-v3">
+
+          <!-- TOP NAV -->
+          <nav class="v3-nav">
+            <div class="v3-nav-left">
+              <button class="v3-tab active">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                Reviews
+              </button>
+              <button class="v3-tab" onclick="navigate('playlists')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+                Playlists
+              </button>
+              <button class="v3-tab" onclick="navigate('wall')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                Popular
+              </button>
+            </div>
+            <div class="v3-nav-right">
+              <button class="v3-icon-btn" onclick="navigate('search')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              </button>
+              <button class="v3-icon-btn" onclick="navigate('profile')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </button>
+            </div>
+          </nav>
+
+          <!-- BENTO GRID: no gaps, three boxes + corner -->
+          <div class="v3-bento">
+
+            <!-- Album Art: top-left, square -->
+            <div class="v3-album" onclick="navigate('album')"
+                 style="background-image:url('images/album-crystalcastles1.png')">
+            </div>
+
+            <!-- Red: Trending for You, top-right, same height as album -->
+            <div class="v3-red">
+              <div class="v3-red-title">Trending</div>
+              <div class="v3-stripe-wrap">
+                <div class="v3-stripe-item" onclick="navigate('album')" style="background-image:url('images/album-crystalcastles1.png')"></div>
+                <div class="v3-stripe-item" onclick="navigate('album')" style="background-image:url('images/album-punisher.png')"></div>
+                <div class="v3-stripe-item" onclick="navigate('album')" style="background:linear-gradient(155deg,#0a1a30,#1a4a8a)"></div>
+                <div class="v3-stripe-item" onclick="navigate('album')" style="background:linear-gradient(155deg,#1a0a28,#4a1878)"></div>
+                <div class="v3-stripe-item" onclick="navigate('album')" style="background:linear-gradient(155deg,#281408,#7a3a10)"></div>
+              </div>
+              <button class="v3-more-btn">More options ›</button>
+            </div>
+
+            <!-- Blue: Reviews, bottom-left, same width as album -->
+            <div class="v3-blue" onclick="navigate('album')">
+              <div class="v3-blue-stars-row">
+                <span class="v3-blue-score">4.4</span>
+                ${halfStars(4.4, 18)}
+                <span class="v3-blue-count">19,284 reviews</span>
+              </div>
+            </div>
+
+            <!-- Corner gap: spinning CD (no background box) -->
+            <div class="v3-corner">
+              <div class="v3-cd"
+                   style="background-image:url('images/album-crystalcastles1.png')"
+                   onclick="this.closest('.app-screen').querySelector('.v3-stream-overlay').style.display='flex'">
+                <div class="v3-cd-hole"></div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Streaming service action sheet -->
+          <div class="v3-stream-overlay"
+               style="display:none"
+               onclick="this.style.display='none'">
+            <div class="v3-stream-sheet" onclick="event.stopPropagation()">
+              <div class="v3-stream-handle"></div>
+              <div class="v3-stream-label">Listen on</div>
+              <button class="v3-stream-app">
+                <div class="v3-stream-icon" style="background:#1DB954">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.52 17.34c-.24.36-.66.48-1.02.24-2.82-1.74-6.36-2.1-10.56-1.14-.42.12-.78-.18-.9-.54-.12-.42.18-.78.54-.9 4.56-1.02 8.52-.6 11.64 1.32.42.18.48.66.3 1.02zm1.44-3.3c-.3.42-.84.6-1.26.3-3.24-1.98-8.16-2.58-11.94-1.38-.48.12-1.02-.12-1.14-.6-.12-.48.12-1.02.6-1.14 4.38-1.32 9.78-.72 13.5 1.56.36.24.54.84.24 1.26zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.3c-.6.18-1.2-.18-1.38-.72-.18-.6.18-1.2.72-1.38 4.26-1.26 11.28-1.02 15.72 1.62.54.3.72 1.02.42 1.56-.3.42-1.02.6-1.56.3z"/></svg>
+                </div>
+                Spotify
+              </button>
+              <button class="v3-stream-app">
+                <div class="v3-stream-icon" style="background:linear-gradient(135deg,#fc3c44,#fc6f32)">
+                  <svg width="13" height="16" viewBox="0 0 13 16" fill="white"><path d="M6.5 0L8 3.5 13 4.3l-3.5 3.4.8 4.8L6.5 10.5 2.2 12.5l.8-4.8L0 4.3l5-.8z"/></svg>
+                </div>
+                Apple Music
+              </button>
+              <button class="v3-stream-cancel"
+                      onclick="this.closest('.v3-stream-overlay').style.display='none'">
+                Cancel
+              </button>
+            </div>
+          </div>
+
+        </div>`,
+      },
+
+      // ── 3g. Bento Hero v3.1 (light) ─────────────────────────
+      {
+        label: 'Float·Light', version: 'v3.1',
+        thumb: ['accent','w60','w80','w60','w80'],
+        html: `
+        <div class="app-screen s-home-v3 s-home-v3--light">
+
+          <!-- TOP NAV -->
+          <nav class="v3-nav">
+            <div class="v3-nav-left">
+              <button class="v3-tab active">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                Reviews
+              </button>
+              <button class="v3-tab" onclick="navigate('playlists')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+                Playlists
+              </button>
+              <button class="v3-tab" onclick="navigate('wall')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                Popular
+              </button>
+            </div>
+            <div class="v3-nav-right">
+              <button class="v3-icon-btn" onclick="navigate('search')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              </button>
+              <button class="v3-icon-btn" onclick="navigate('profile')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </button>
+            </div>
+          </nav>
+
+          <!-- BENTO GRID -->
+          <div class="v3-bento">
+
+            <div class="v3-album" onclick="navigate('album')"
+                 style="background-image:url('images/album-crystalcastles1.png')">
+            </div>
+
+            <div class="v3-red">
+              <div class="v3-red-title">Trending</div>
+              <div class="v3-stripe-wrap">
+                <div class="v3-stripe-item" onclick="navigate('album')" style="background-image:url('images/album-crystalcastles1.png')"></div>
+                <div class="v3-stripe-item" onclick="navigate('album')" style="background-image:url('images/album-punisher.png')"></div>
+                <div class="v3-stripe-item" onclick="navigate('album')" style="background:linear-gradient(155deg,#0a1a30,#1a4a8a)"></div>
+                <div class="v3-stripe-item" onclick="navigate('album')" style="background:linear-gradient(155deg,#1a0a28,#4a1878)"></div>
+                <div class="v3-stripe-item" onclick="navigate('album')" style="background:linear-gradient(155deg,#281408,#7a3a10)"></div>
+              </div>
+              <button class="v3-more-btn">More options ›</button>
+            </div>
+
+            <div class="v3-blue" onclick="navigate('album')">
+              <div class="v3-blue-stars-row">
+                <span class="v3-blue-score">4.4</span>
+                ${halfStars(4.4, 18)}
+                <span class="v3-blue-count">19,284 reviews</span>
+              </div>
+            </div>
+
+            <div class="v3-corner">
+              <div class="v3-cd"
+                   style="background-image:url('images/album-crystalcastles1.png')"
+                   onclick="this.closest('.app-screen').querySelector('.v3-stream-overlay').style.display='flex'">
+                <div class="v3-cd-hole"></div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Streaming sheet -->
+          <div class="v3-stream-overlay" style="display:none" onclick="this.style.display='none'">
+            <div class="v3-stream-sheet" onclick="event.stopPropagation()">
+              <div class="v3-stream-handle"></div>
+              <div class="v3-stream-label">Listen on</div>
+              <button class="v3-stream-app">
+                <div class="v3-stream-icon" style="background:#1DB954">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.52 17.34c-.24.36-.66.48-1.02.24-2.82-1.74-6.36-2.1-10.56-1.14-.42.12-.78-.18-.9-.54-.12-.42.18-.78.54-.9 4.56-1.02 8.52-.6 11.64 1.32.42.18.48.66.3 1.02zm1.44-3.3c-.3.42-.84.6-1.26.3-3.24-1.98-8.16-2.58-11.94-1.38-.48.12-1.02-.12-1.14-.6-.12-.48.12-1.02.6-1.14 4.38-1.32 9.78-.72 13.5 1.56.36.24.54.84.24 1.26zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.3c-.6.18-1.2-.18-1.38-.72-.18-.6.18-1.2.72-1.38 4.26-1.26 11.28-1.02 15.72 1.62.54.3.72 1.02.42 1.56-.3.42-1.02.6-1.56.3z"/></svg>
+                </div>
+                Spotify
+              </button>
+              <button class="v3-stream-app">
+                <div class="v3-stream-icon" style="background:linear-gradient(135deg,#fc3c44,#fc6f32)">
+                  <svg width="13" height="16" viewBox="0 0 13 16" fill="white"><path d="M6.5 0L8 3.5 13 4.3l-3.5 3.4.8 4.8L6.5 10.5 2.2 12.5l.8-4.8L0 4.3l5-.8z"/></svg>
+                </div>
+                Apple Music
+              </button>
+              <button class="v3-stream-cancel" onclick="this.closest('.v3-stream-overlay').style.display='none'">Cancel</button>
+            </div>
+          </div>
+
+        </div>`
       }
 
     ]
@@ -381,7 +764,7 @@ const SCREENS = [
     id: 'feed', name: 'Live Feed', statusTheme: 'light',
     variants: [
       {
-        label: 'Albums',
+        label: 'Albums', version: 'v1.0',
         thumb: ['accent','w80','accent','w60','w80'],
         html: `
         <div class="app-screen s-livefeed">
@@ -484,7 +867,7 @@ const SCREENS = [
         </div>`
       },
       {
-        label: 'Songs',
+        label: 'Songs', version: 'v1.1',
         thumb: ['w80','accent','w60','accent','w70'],
         html: `
         <div class="app-screen s-livefeed">
@@ -954,7 +1337,7 @@ const SCREENS = [
     id: 'playlists', name: 'Playlists', statusTheme: 'light',
     variants: [
       {
-        label: 'My Lists',
+        label: 'My Lists', version: 'v1.0',
         thumb: ['w80','accent','w60','w80','w70'],
         html: `
         <div class="app-screen s-playlists">
@@ -1009,7 +1392,7 @@ const SCREENS = [
         </div>`
       },
       {
-        label: 'Artists',
+        label: 'Artists', version: 'v1.1',
         thumb: ['accent','w70','w80','w60','w80'],
         html: `
         <div class="app-screen s-playlists">
@@ -1069,7 +1452,7 @@ const SCREENS = [
         </div>`
       },
       {
-        label: 'Albums',
+        label: 'Albums', version: 'v1.2',
         thumb: ['w70','accent','w80','accent','w60'],
         html: `
         <div class="app-screen s-playlists">
@@ -1121,7 +1504,7 @@ const SCREENS = [
         </div>`
       },
       {
-        label: 'Songs',
+        label: 'Songs', version: 'v1.3',
         thumb: ['w60','w80','accent','w70','w80'],
         html: `
         <div class="app-screen s-playlists">
@@ -1183,7 +1566,7 @@ const SCREENS = [
         </div>`
       },
       {
-        label: 'Genres',
+        label: 'Genres', version: 'v1.4',
         thumb: ['w80','w60','w80','accent','w70'],
         html: `
         <div class="app-screen s-playlists">

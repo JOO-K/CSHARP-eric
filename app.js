@@ -6,84 +6,29 @@ const SVG_SIGNAL = `<svg viewBox="0 0 17 12" width="17" height="12" fill="curren
 const SVG_WIFI   = `<svg viewBox="0 0 16 12" width="16" height="12" fill="none" stroke="currentColor" stroke-linecap="round"><circle cx="8" cy="11" r="1.2" fill="currentColor" stroke="none"/><path d="M5.2 8.2 Q8 6 10.8 8.2" stroke-width="1.4"/><path d="M2.5 5.5 Q8 1.5 13.5 5.5" stroke-width="1.4"/></svg>`;
 const SVG_BATTERY= `<svg viewBox="0 0 25 12" width="25" height="12" fill="currentColor"><rect x="0" y="1.5" width="21" height="9" rx="2.5" stroke="currentColor" stroke-width="1.5" fill="none"/><rect x="22" y="4" width="2.5" height="4" rx="1"/><rect x="2" y="3.5" width="15" height="5" rx="1.5"/></svg>`;
 
-// ── Looks ─────────────────────────────────────────────────────
-const LOOKS = [
-  {
-    id: 'charcoal', name: 'Charcoal', homeVariant: 0,
-    vars: {
-      '--font-head': "'DM Sans', system-ui, sans-serif",
-      '--font-sub':  "'DM Sans', system-ui, sans-serif",
-      '--font-main': "'DM Sans', system-ui, -apple-system, sans-serif",
-      '--font-mono': "'SUSE Mono', 'Courier New', monospace",
-      '--accent': '#d4a84b', '--accent2': '#a07828',
-      '--bg': '#0c0b0a', '--bg2': '#0f0e0d',
-      '--surface': '#161514', '--surface2': '#1e1c1b',
-      '--border': '#252320',
-      '--text': '#e8e4dc', '--text2': '#706860', '--text3': '#302e2c',
-      '--star': '#e8a83c', '--tab-bg': '#0a0908',
-    }
-  },
-  {
-    id: 'editorial', name: 'Editorial', homeVariant: 1,
-    vars: {
-      '--font-head': "'Playfair Display', Georgia, serif",
-      '--font-sub':  "'DM Sans', system-ui, sans-serif",
-      '--font-main': "'DM Sans', system-ui, -apple-system, sans-serif",
-      '--font-mono': "'SUSE Mono', 'Courier New', monospace",
-      '--accent': '#b8936a', '--accent2': '#8a6040',
-      '--bg': '#0d0910', '--bg2': '#110d14',
-      '--surface': '#18121f', '--surface2': '#211929',
-      '--border': '#2e2238',
-      '--text': '#f2ece0', '--text2': '#8a6a5a', '--text3': '#3c2448',
-      '--star': '#e8c06a', '--tab-bg': '#0a0710',
-    }
-  },
-  {
-    id: 'dorfic', name: 'Dorfic', homeVariant: 2,
-    vars: {
-      '--font-head': "'Space Mono', monospace",
-      '--font-sub':  "'Space Mono', monospace",
-      '--font-main': "'DM Sans', system-ui, -apple-system, sans-serif",
-      '--font-mono': "'Space Mono', monospace",
-      '--accent': '#ff8a30', '--accent2': '#e05a00',
-      '--bg': '#120900', '--bg2': '#180c00',
-      '--surface': '#1e1000', '--surface2': '#2a1800',
-      '--border': '#3a2200',
-      '--text': '#ffe8c8', '--text2': '#a06030', '--text3': '#4a2800',
-      '--star': '#ff8a30', '--tab-bg': '#0e0700',
-    }
-  }
-];
-
 // ── State ─────────────────────────────────────────────────────
-let currentIdx   = 0;
+let currentIdx   = 2;
 let viewMode     = 'single';
 let isMobile     = false;
 let navHistory   = [];
-let variantState = {};   // { screenId: variantIndex }
-let currentLook  = 0;
-let compareMode  = false;
+let variantState = { home: 0 };      // v3.0 dark, index 0 after filter
+let _dragActive  = false;
 
 // ── Helpers ───────────────────────────────────────────────────
 function currentScreen()  { return SCREENS[currentIdx]; }
 function getVariantIdx(s) { return variantState[s.id] || 0; }
 function getVariant(s)    { const i = getVariantIdx(s); return s.variants[Math.min(i, s.variants.length-1)]; }
 
-function applyLook(idx) {
-  currentLook = idx;
-  const look = LOOKS[idx];
-  const root = document.documentElement;
-  Object.entries(look.vars).forEach(([k, v]) => root.style.setProperty(k, v));
-  if (look.homeVariant !== undefined) variantState['home'] = look.homeVariant;
-  document.querySelectorAll('.lseg').forEach((b, i) => b.classList.toggle('active', i === idx));
-}
-
-function lookInlineStyle(look) {
-  return Object.entries(look.vars).map(([k, v]) => `${k}:${v}`).join(';');
-}
-
 // ── Init ─────────────────────────────────────────────────────
 function init() {
+  // Show only v3.x home variants (v1/v2 retired)
+  const homeScreen = SCREENS.find(s => s.id === 'home');
+  if (homeScreen) {
+    homeScreen.variants = homeScreen.variants.filter(
+      v => v.version && v.version >= 'v3.0'
+    );
+  }
+
   isMobile = window.matchMedia('(max-width: 767px)').matches;
 
   const params = new URLSearchParams(window.location.search);
@@ -104,8 +49,7 @@ function initViewer() {
     if (e.key === 'ArrowRight') navigateNext();
   });
   window.addEventListener('resize', debounce(() => {
-    if (compareMode && viewMode === 'single') renderSingle();
-    else setPhoneScale();
+    if (viewMode === 'single') renderSingle();
   }, 100));
 }
 
@@ -114,43 +58,145 @@ function renderViewer() {
   else                        renderMulti();
   renderThumbs();
   updateToolbar();
+  requestAnimationFrame(() => {
+    document.querySelectorAll('.s-home-v3').forEach(applyAlbumColors);
+  });
+}
+
+// ── Album color extraction ────────────────────────────────────
+function applyAlbumColors(screenEl) {
+  const albumEl = screenEl.querySelector('.v3-album');
+  if (!albumEl) return;
+  const bg = getComputedStyle(albumEl).backgroundImage;
+  const m  = bg.match(/url\(['"]?([^'"]+?)['"]?\)/);
+  if (!m) return;
+
+  const img = new Image();
+  img.onload = () => {
+    try {
+      const sz = 48;
+      const cv = document.createElement('canvas');
+      cv.width = cv.height = sz;
+      const ctx = cv.getContext('2d');
+      ctx.drawImage(img, 0, 0, sz, sz);
+      const d = ctx.getImageData(0, 0, sz, sz).data;
+
+      let maxSat = 0, ar = 200, ag = 120, ab = 60;
+      let tR = 0, tG = 0, tB = 0, n = 0;
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i+3] < 120) continue;
+        const r = d[i], g = d[i+1], b = d[i+2];
+        tR += r; tG += g; tB += b; n++;
+        const mx = Math.max(r,g,b), mn = Math.min(r,g,b);
+        const sat = mx ? (mx-mn)/mx : 0;
+        const lum = (mx+mn)/510;
+        if (sat > maxSat && lum > 0.15 && lum < 0.88) {
+          maxSat = sat; ar = r; ag = g; ab = b;
+        }
+      }
+      if (!n) return;
+
+      const hex = v => v.toString(16).padStart(2,'0');
+      const accent = `#${hex(ar)}${hex(ag)}${hex(ab)}`;
+
+      // Box 1 bg: very dark tint towards accent hue
+      const b1r = Math.min(55, Math.round(ar*0.18+8));
+      const b1g = Math.min(40, Math.round(ag*0.12+4));
+      const b1b = Math.min(40, Math.round(ab*0.12+4));
+      // Box 2 bg: very dark complementary
+      const b2r = Math.min(35, Math.round((255-ar)*0.10+4));
+      const b2g = Math.min(35, Math.round((255-ag)*0.10+4));
+      const b2b = Math.min(55, Math.round((255-ab)*0.15+8));
+
+      const box1 = `linear-gradient(155deg,rgb(${b1r},${b1g},${b1b}),rgb(${Math.min(b1r+12,65)},${Math.min(b1g+8,45)},${Math.min(b1b+8,45)}))`;
+      const box2 = `linear-gradient(155deg,rgb(${b2r},${b2g},${b2b}),rgb(${Math.min(b2r+6,40)},${Math.min(b2g+6,40)},${Math.min(b2b+14,65)}))`;
+
+      screenEl.style.setProperty('--v3-accent', accent);
+      screenEl.style.setProperty('--v3-box1-bg', box1);
+      screenEl.style.setProperty('--v3-box2-bg', box2);
+    } catch(e) { /* CORS / tainted canvas — keep CSS defaults */ }
+  };
+  img.src = m[1];
 }
 
 function renderSingle() {
   const c = document.getElementById('phone-container');
+  const s = currentScreen();
 
-  if (compareMode) {
-    c.className = 'compare';
-    const stage  = document.getElementById('stage');
-    const scaleH = (stage.clientHeight - 80) / 852;
-    const scaleW = (stage.clientWidth / 3 - 32) / 393;
-    const scale  = Math.min(scaleH, scaleW, 0.56);
-    const dead   = 852 * (scale - 1);
-
-    c.innerHTML = LOOKS.map((look, i) => `
-      <div class="look-phone-col">
-        <div class="phone-wrap${i === currentLook ? ' look-active' : ''}"
-             style="transform:scale(${scale});margin-top:${dead/2}px;margin-bottom:${dead/2}px;cursor:pointer"
-             onclick="setLook(${i})">
-          ${buildPhoneHTML(currentScreen(), lookInlineStyle(look), look.homeVariant !== undefined && currentScreen().id === 'home' ? look.homeVariant : undefined)}
-        </div>
-        <div class="look-phone-label${i === currentLook ? ' active' : ''}">${look.name}</div>
-      </div>
-    `).join('');
-  } else {
+  if (s.variants.length <= 1) {
     c.className = '';
-    c.innerHTML = `<div class="phone-wrap">${buildPhoneHTML(currentScreen())}</div>`;
+    c.innerHTML = `
+      <div class="var-col">
+        ${s.variants[0].version ? `<div class="var-label">${s.variants[0].version}</div>` : ''}
+        <div class="phone-wrap">${buildPhoneHTML(s)}</div>
+      </div>`;
     setPhoneScale();
+    return;
   }
+
+  c.className = 'multi-variant';
+  const n      = s.variants.length;
+  const scaleH = (c.clientHeight - 70) / 852;
+  const scaleW = (c.clientWidth  / n - 20) / 393;
+  const scale  = Math.min(scaleH, scaleW, 0.88);
+  const dead   = 852 * (scale - 1);
+  const curr   = getVariantIdx(s);
+
+  c.innerHTML = s.variants.map((v, i) => `
+    <div class="var-col ${i === curr ? 'var-active' : ''}" onclick="pickVariant('${s.id}',${i})">
+      <div class="var-label">${v.version || v.label}</div>
+      <div class="phone-wrap" style="transform:scale(${scale});margin-top:${dead/2}px;margin-bottom:${dead/2}px">
+        ${buildPhoneHTML(s, v)}
+      </div>
+      <div class="var-sublabel">${v.label}</div>
+    </div>`
+  ).join('');
+  initDragScroll(c);
 }
+
+// ── Drag-to-scroll for multi-variant view ────────────────────
+function initDragScroll(el) {
+  if (el._dragInit) return;
+  el._dragInit = true;
+
+  el.addEventListener('mousedown', e => {
+    const startX     = e.clientX;
+    const scrollLeft = el.scrollLeft;
+    _dragActive = false;
+
+    const move = e2 => {
+      const dx = e2.clientX - startX;
+      if (Math.abs(dx) > 4) _dragActive = true;
+      if (_dragActive) el.scrollLeft = scrollLeft - dx;
+    };
+    const up = () => {
+      window.removeEventListener('mousemove', move);
+      window.removeEventListener('mouseup', up);
+      el.style.userSelect = '';
+      el.classList.remove('is-grabbing');
+    };
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', up);
+    el.style.userSelect = 'none';
+    el.classList.add('is-grabbing');
+  });
+
+  el.addEventListener('click', e => {
+    if (_dragActive) { e.stopPropagation(); _dragActive = false; }
+  }, true);
+}
+
+window.pickVariant = function(screenId, idx) {
+  if (_dragActive) return;
+  setVariant(screenId, idx);
+};
 
 function renderMulti() {
   const container = document.getElementById('phone-container');
   container.className = 'multi';
-  const stage  = document.getElementById('stage');
-  const cols   = Math.min(SCREENS.length, Math.floor(stage.clientWidth / 220));
-  const scaleH = (stage.clientHeight - 80) / 852;
-  const scaleW = (stage.clientWidth / cols - 32) / 393;
+  const cols   = Math.min(SCREENS.length, Math.floor(container.clientWidth / 220));
+  const scaleH = (container.clientHeight - 80) / 852;
+  const scaleW = (container.clientWidth / cols - 32) / 393;
   const scale  = Math.min(scaleH, scaleW, 0.55);
   const dead   = 852 * (scale - 1);
 
@@ -165,17 +211,15 @@ function renderMulti() {
   `).join('');
 }
 
-function buildPhoneHTML(screen, lookVars, variantIdx) {
-  const v = variantIdx !== undefined
-    ? screen.variants[Math.min(variantIdx, screen.variants.length - 1)]
-    : getVariant(screen);
+function buildPhoneHTML(screen, variant) {
+  const v = variant || getVariant(screen);
   return `
   <div class="phone-frame">
     <div class="side-btn action"></div>
     <div class="side-btn vol-up"></div>
     <div class="side-btn vol-dn"></div>
     <div class="side-btn power"></div>
-    <div class="phone-screen"${lookVars ? ` style="${lookVars}"` : ''}>
+    <div class="phone-screen">
       <div class="status-bar ${screen.statusTheme === 'dark' ? 'dark-icons' : ''}">
         <div class="sb-time">9:41</div>
         <div class="dynamic-island"></div>
@@ -188,11 +232,11 @@ function buildPhoneHTML(screen, lookVars, variantIdx) {
 }
 
 function setPhoneScale() {
-  if (viewMode !== 'single' || compareMode) return;
-  const stage = document.getElementById('stage');
-  const wrap  = document.querySelector('.phone-wrap');
-  if (!wrap) return;
-  const scale = Math.min((stage.clientHeight - 32) / 852, (stage.clientWidth - 80) / 393, 1.0);
+  if (viewMode !== 'single') return;
+  const container = document.getElementById('phone-container');
+  const wrap = document.querySelector('.phone-wrap');
+  if (!wrap || !container) return;
+  const scale = Math.min((container.clientHeight - 32) / 852, (container.clientWidth - 40) / 393, 1.0);
   const dead  = 852 * (scale - 1);
   wrap.style.transform    = `scale(${scale})`;
   wrap.style.marginTop    = dead / 2 + 'px';
@@ -200,21 +244,19 @@ function setPhoneScale() {
 }
 
 function renderThumbs() {
-  const tray = document.getElementById('thumb-tray');
-  tray.innerHTML = SCREENS.map((s, i) => {
-    const v = getVariant(s);
-    return `
-    <div class="thumb ${i === currentIdx ? 'active' : ''}" onclick="goToScreen(${i})">
-      <div class="thumb-phone">
-        <div class="thumb-preview">
-          ${(v.thumb || ['w70','w50','w80','w40']).map((t,j) =>
-            `<div class="tp-line ${t}" style="margin-top:${j===0?'4px':'0'}"></div>`
-          ).join('')}
-        </div>
-      </div>
-      <div class="thumb-label">${s.name}</div>
-    </div>`;
-  }).join('');
+  renderPageNav();
+  renderVariantBar();
+}
+
+function renderPageNav() {
+  const nav = document.getElementById('page-nav');
+  if (!nav) return;
+  nav.innerHTML = SCREENS.map((s, i) =>
+    `<button class="pnav-btn ${i === currentIdx ? 'active' : ''}" onclick="goToScreen(${i})">${s.name}</button>`
+  ).join('') + `
+    <div class="pnav-divider"></div>
+    <button class="pnav-btn pnav-multi ${viewMode === 'multi' ? 'multi-active' : ''}" onclick="toggleMulti()">⊞ Multi</button>
+  `;
 }
 
 function updateToolbar() {
@@ -223,19 +265,15 @@ function updateToolbar() {
   document.getElementById('lbl-idx').textContent  = `${currentIdx + 1} / ${SCREENS.length}`;
   document.getElementById('btn-prev').disabled = currentIdx === 0;
   document.getElementById('btn-next').disabled = currentIdx === SCREENS.length - 1;
-  renderVariantBar();
 }
 
-// ── Variant switcher ─────────────────────────────────────────
+// ── Variant switcher (bottom tray) ───────────────────────────
 function renderVariantBar() {
-  const bar  = document.getElementById('variant-bar');
+  const bar = document.getElementById('thumb-tray');
   if (!bar) return;
-  const s    = currentScreen();
+  const s   = currentScreen();
   const curr = getVariantIdx(s);
-
-  if (s.variants.length <= 1) { bar.innerHTML = ''; bar.style.display = 'none'; return; }
-
-  bar.style.display = 'flex';
+  if (s.variants.length <= 1) { bar.innerHTML = ''; return; }
   bar.innerHTML = s.variants.map((v, i) =>
     `<button class="vpill ${i === curr ? 'active' : ''}" onclick="setVariant('${s.id}',${i})">${v.label}</button>`
   ).join('');
@@ -251,61 +289,21 @@ function navigatePrev() { if (currentIdx > 0) { currentIdx--; renderViewer(); } 
 function navigateNext() { if (currentIdx < SCREENS.length - 1) { currentIdx++; renderViewer(); } }
 
 function goToScreen(idx) {
-  if (viewMode === 'multi') {
-    currentIdx = idx;
-    viewMode = 'single';
-    document.querySelectorAll('.seg').forEach(b => b.classList.remove('active'));
-    document.querySelector('.seg[data-view="single"]').classList.add('active');
-  } else {
-    currentIdx = idx;
-  }
+  if (viewMode === 'multi') viewMode = 'single';
+  currentIdx = idx;
   renderViewer();
 }
+
+window.toggleMulti = function() {
+  viewMode = viewMode === 'multi' ? 'single' : 'multi';
+  renderViewer();
+};
 
 function bindViewerEvents() {
   document.getElementById('btn-prev').addEventListener('click', navigatePrev);
   document.getElementById('btn-next').addEventListener('click', navigateNext);
-
-  document.getElementById('view-seg').addEventListener('click', e => {
-    const btn = e.target.closest('.seg');
-    if (!btn) return;
-    document.querySelectorAll('.seg').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    viewMode = btn.dataset.view;
-    if (viewMode !== 'single') compareMode = false;
-    document.getElementById('btn-compare').classList.toggle('active', compareMode);
-    renderViewer();
-  });
-
-  document.getElementById('look-seg').addEventListener('click', e => {
-    const btn = e.target.closest('.lseg');
-    if (!btn) return;
-    applyLook(parseInt(btn.dataset.look));
-    renderViewer();
-  });
-
-  document.getElementById('btn-compare').addEventListener('click', () => {
-    compareMode = !compareMode;
-    const compBtn = document.getElementById('btn-compare');
-    const expBtn  = document.getElementById('btn-export');
-    compBtn.classList.toggle('active', compareMode);
-    expBtn.disabled = compareMode;
-    expBtn.style.opacity = compareMode ? '0.35' : '';
-    if (compareMode && viewMode !== 'single') {
-      viewMode = 'single';
-      document.querySelectorAll('.seg').forEach(b => b.classList.remove('active'));
-      document.querySelector('.seg[data-view="single"]').classList.add('active');
-    }
-    renderViewer();
-  });
-
   document.getElementById('btn-export').addEventListener('click', exportPNG);
 }
-
-window.setLook = function(idx) {
-  applyLook(idx);
-  renderSingle();
-};
 
 // ── PNG Export ───────────────────────────────────────────────
 async function exportPNG() {
