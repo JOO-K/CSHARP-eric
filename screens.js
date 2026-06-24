@@ -19,7 +19,7 @@ const SCREENS = [
               <circle cx="24" cy="24" r="3" fill="white" stroke="none"/>
             </svg>
           </div>
-          <div class="auth-appname">CHARP</div>
+          <div class="auth-appname">Spindeck</div>
         </div>
         <div class="auth-body">
           <div class="field-group">
@@ -86,7 +86,7 @@ const SCREENS = [
           ${topNav('home')}
 
           <div class="home-bento-bar">
-            <div class="hbb-logo">CHARP</div>
+            <div class="hbb-logo">Spindeck</div>
             <div class="hbb-icons">
               <button class="icon-btn" onclick="navigate('search')">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
@@ -274,7 +274,7 @@ const SCREENS = [
         <div class="app-screen s-home-dorf">
 
           <div class="dorf-topbar">
-            <div class="dorf-wordmark">CHARP</div>
+            <div class="dorf-wordmark">Spindeck</div>
             <div style="display:flex;gap:6px">
               <button class="icon-btn" onclick="navigate('search')" style="background:var(--surface);border:1px solid var(--border)">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
@@ -381,7 +381,7 @@ const SCREENS = [
         <div class="app-screen s-home-v2 s-home-v2--light">
 
           <div class="v2-topbar">
-            <div class="v2-wordmark">CHARP</div>
+            <div class="v2-wordmark">Spindeck</div>
             <div class="v2-icons">
               <button class="v2-icon-btn" onclick="navigate('search')">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
@@ -474,7 +474,7 @@ const SCREENS = [
         <div class="app-screen s-home-v2 s-home-v2--dark">
 
           <div class="v2-topbar">
-            <div class="v2-wordmark">CHARP</div>
+            <div class="v2-wordmark">Spindeck</div>
             <div class="v2-icons">
               <button class="v2-icon-btn" onclick="navigate('search')">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
@@ -566,76 +566,146 @@ const SCREENS = [
         html: `
         <div class="app-screen s-home-v3">
 
-          <!-- TOP NAV -->
-          <nav class="v3-nav">
-            <div class="v3-nav-left">
-              <button class="v3-tab v3-tab-home" onclick="navigate('home')">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z"/><polyline points="9 21 9 12 15 12 15 21"/></svg>
-                Home
-              </button>
-              <button class="v3-tab active">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                Reviews
-              </button>
-              <button class="v3-tab" onclick="navigate('playlists')">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
-                Playlists
-              </button>
-              <button class="v3-tab" onclick="navigate('wall')">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-                Popular
-              </button>
-            </div>
-            <div class="v3-nav-right">
-              <button class="v3-icon-btn" onclick="navigate('search')">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-              </button>
-              <button class="v3-icon-btn" onclick="navigate('profile')">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              </button>
-            </div>
-          </nav>
-
-          <!-- BENTO GRID: no gaps, three boxes + corner -->
+          <!-- BENTO: all children absolutely positioned in 690×670 SVG coordinate space -->
           <div class="v3-bento">
 
-            <!-- Album Art: top-left, square -->
+            <!-- Background fill: paints album color only inside the bento frame shape -->
+            <svg class="v3-bg-fill" viewBox="0 0 689 638" xmlns="http://www.w3.org/2000/svg">
+              <path fill="currentColor" d="M518.5 0.5H20.5C9.4543 0.5 0.5 9.4543 0.5 20.5V617.5C0.5 628.546 9.4543 637.5 20.5 637.5H518.5C529.546 637.5 538.5 628.546 538.5 617.5V609C538.5 570.34 569.84 539 608.5 539H668.5C679.546 539 688.5 530.046 688.5 519V107.5C688.5 96.4543 679.546 87.5 668.5 87.5H558.5C547.454 87.5 538.5 78.5457 538.5 67.5V20.5C538.5 9.45431 529.546 0.5 518.5 0.5Z"/>
+            </svg>
+
+            <!-- Master SVG frame — viewBox matches bento aspect-ratio exactly -->
+            <svg class="v3-master-frame" viewBox="0 0 689 638" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M518 0.5H21C9.9543 0.5 1 9.4543 1 20.5V534.5H518C529.046 534.5 538 525.546 538 514.5V451.927V73.4325V20.5C538 9.45431 529.046 0.5 518 0.5Z" stroke="currentColor" vector-effect="non-scaling-stroke"/>
+              <path d="M518.5 0.5H20.5C9.4543 0.5 0.5 9.4543 0.5 20.5V617.5C0.5 628.546 9.4543 637.5 20.5 637.5H518.5C529.546 637.5 538.5 628.546 538.5 617.5V609C538.5 570.34 569.84 539 608.5 539H668.5C679.546 539 688.5 530.046 688.5 519V107.5C688.5 96.4543 679.546 87.5 668.5 87.5H558.5C547.454 87.5 538.5 78.5457 538.5 67.5V20.5C538.5 9.45431 529.546 0.5 518.5 0.5Z" stroke="currentColor" vector-effect="non-scaling-stroke"/>
+              <path d="M654.409 517H571.806C563.403 517 556.64 510.098 556.81 501.697L558.617 412.351C558.703 408.077 560.609 404.044 563.855 401.263L654.756 323.394C661.282 317.804 671.354 322.504 671.261 331.097L669.408 502.162C669.319 510.383 662.63 517 654.409 517Z" stroke="currentColor" vector-effect="non-scaling-stroke"/>
+              <path d="M664.035 291.857L569.72 373.062C564.534 377.527 556.5 373.843 556.5 367V123C556.5 114.716 563.216 108 571.5 108H654.247C662.532 108 669.247 114.716 669.247 123V280.49C669.247 284.857 667.344 289.007 664.035 291.857Z" stroke="currentColor" vector-effect="non-scaling-stroke"/>
+              <circle cx="615.5" cy="614" r="55" stroke="currentColor" vector-effect="non-scaling-stroke"/>
+              <path d="M557 35.5V30.5C557 13.9315 570.431 0.5 587 0.5H659C675.569 0.5 689 13.9315 689 30.5V35.5C689 52.0685 675.569 65.5 659 65.5H587C570.431 65.5 557 52.0685 557 35.5Z" stroke="currentColor" vector-effect="non-scaling-stroke"/>
+            </svg>
+
+            <!-- Album art: SVG x=1–538, y=0.5–534.5 → left 0.14% top 0.07% w 77.83% h 79.70% -->
             <div class="v3-album" onclick="navigate('album')"
-                 style="background-image:url('images/album-crystalcastles1.png')">
-            </div>
+                 style="background-image:url('images/album-crystalcastles1.png')"></div>
 
-            <!-- Red: Trending for You, top-right, same height as album -->
-            <div class="v3-red">
-              <div class="v3-red-title">Trending</div>
-              <div class="v3-stripe-wrap">
-                <div class="v3-stripe-item" onclick="navigate('album')" style="background-image:url('images/album-crystalcastles1.png')"></div>
-                <div class="v3-stripe-item" onclick="navigate('album')" style="background-image:url('images/album-punisher.png')"></div>
-                <div class="v3-stripe-item" onclick="navigate('album')" style="background:linear-gradient(155deg,#0a1a30,#1a4a8a)"></div>
-                <div class="v3-stripe-item" onclick="navigate('album')" style="background:linear-gradient(155deg,#1a0a28,#4a1878)"></div>
-                <div class="v3-stripe-item" onclick="navigate('album')" style="background:linear-gradient(155deg,#281408,#7a3a10)"></div>
-              </div>
-              <button class="v3-more-btn">More options ›</button>
-            </div>
-
-            <!-- Blue: Reviews, bottom-left, same width as album -->
+            <!-- Stats strip: SVG x=0.5–538.5, y=534.5–637.5 → left 0.07% top 79.78% w 77.97% h 15.37% -->
             <div class="v3-blue" onclick="navigate('album')">
               <div class="v3-blue-stars-row">
                 <span class="v3-blue-score">4.4</span>
-                ${halfStars(4.4, 18)}
+                ${halfStars(4.4, 16)}
                 <span class="v3-blue-count">19,284 reviews</span>
+              </div>
+              <div class="v3-blue-quote"><span class="v3-blue-quote-text"></span></div>
+            </div>
+
+            <!-- Search pill: SVG x=557–689, y=0.5–65.5 → left 80.72% top 0.07% w 19.13% h 9.70% -->
+            <button class="v3-search-pill" onclick="navigate('search')">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            </button>
+
+            <!-- ForYou top: SVG bbox x=556.5–669.2, y=108–373 → left 80.65% top 16.12% w 16.34% h 39.56% -->
+            <div class="v3-for-top" onclick="navigate('album')"
+                 style="background-image:url('images/album-crystalcastles1.png')"></div>
+
+            <!-- ForYou bottom: SVG bbox x=556.6–671.4, y=323–517 → left 80.67% top 48.21% w 16.63% h 28.96% -->
+            <div class="v3-for-bottom" onclick="navigate('album')"
+                 style="background-image:url('images/album-punisher.png')"></div>
+
+            <!-- CD: SVG cx=615.5 cy=614 r=55 → left 81.23% top 83.43% w 15.94% h 16.42% -->
+            <div class="v3-cd"
+                 style="background-image:url('images/album-crystalcastles1.png')"
+                 onclick="this.closest('.app-screen').querySelector('.v3-stream-overlay').style.display='flex'">
+              <div class="v3-cd-hole"></div>
+            </div>
+
+          </div>
+
+          <!-- SCROLL: app name + friends feed -->
+          <div class="v3-scroll-area">
+
+            <div class="v3-brand-row">
+              <span class="v3-brand-name">Spindeck</span>
+              <span class="v3-brand-sub">music, reviewed.</span>
+            </div>
+
+            <div class="v3-feed-hd">
+              <span class="v3-feed-title">Friend Activity</span>
+              <button class="v3-feed-seeall" onclick="navigate('feed')">See all ›</button>
+            </div>
+
+            <div class="v3-friend-card" onclick="navigate('album')">
+              <div class="v3-friend-art" style="background-image:url('images/album-crystalcastles1.png')"></div>
+              <div class="v3-friend-body">
+                <div class="v3-friend-who">
+                  <div class="v3-friend-av" style="background:linear-gradient(135deg,#1c1c3e,#3b1fa8)">E</div>
+                  <span class="v3-friend-name">echoplex</span>
+                  <span class="v3-friend-time">2h</span>
+                </div>
+                <div class="v3-friend-album">Crystal Castles</div>
+                <div class="v3-friend-artist">Crystal Castles · 2008</div>
+                <div style="margin-bottom:3px">${halfStars(4.5, 10)}</div>
+                <div class="v3-friend-quote">"chaotic and beautiful. alice's vocals hit like static shock every single time"</div>
+                <div class="v3-friend-meta"><span class="v3-friend-likes">♥ 14</span><span class="v3-friend-likes">💬 3</span></div>
               </div>
             </div>
 
-            <!-- Corner gap: spinning CD (no background box) -->
-            <div class="v3-corner">
-              <div class="v3-cd"
-                   style="background-image:url('images/album-crystalcastles1.png')"
-                   onclick="this.closest('.app-screen').querySelector('.v3-stream-overlay').style.display='flex'">
-                <div class="v3-cd-hole"></div>
+            <div class="v3-friend-card" onclick="navigate('album')">
+              <div class="v3-friend-art" style="background-image:url('images/album-punisher.png')"></div>
+              <div class="v3-friend-body">
+                <div class="v3-friend-who">
+                  <div class="v3-friend-av" style="background:linear-gradient(135deg,#164e63,#0284c7)">SF</div>
+                  <span class="v3-friend-name">staticfog</span>
+                  <span class="v3-friend-time">5h</span>
+                </div>
+                <div class="v3-friend-album">Punisher</div>
+                <div class="v3-friend-artist">Phoebe Bridgers · 2020</div>
+                <div style="margin-bottom:3px">${halfStars(5, 10)}</div>
+                <div class="v3-friend-quote">"funeral is the most heartbreaking song i've heard in years. she ruins you gently"</div>
+                <div class="v3-friend-meta"><span class="v3-friend-likes">♥ 31</span><span class="v3-friend-likes">💬 7</span></div>
+              </div>
+            </div>
+
+            <div class="v3-friend-card" onclick="navigate('album')">
+              <div class="v3-friend-art" style="background:linear-gradient(135deg,#042a10,#6aff3a 130%)"></div>
+              <div class="v3-friend-body">
+                <div class="v3-friend-who">
+                  <div class="v3-friend-av" style="background:linear-gradient(135deg,#3b0764,#9333ea)">KM</div>
+                  <span class="v3-friend-name">kira_m</span>
+                  <span class="v3-friend-time">9h</span>
+                </div>
+                <div class="v3-friend-album">1000 gecs</div>
+                <div class="v3-friend-artist">100 gecs · 2019</div>
+                <div style="margin-bottom:3px">${halfStars(5, 10)}</div>
+                <div class="v3-friend-quote">"this album rewired my brain. nothing before or after sounds like it"</div>
+                <div class="v3-friend-meta"><span class="v3-friend-likes">♥ 22</span><span class="v3-friend-likes">💬 5</span></div>
               </div>
             </div>
 
           </div>
+
+          <!-- BOTTOM NAV -->
+          <nav class="v3-bottom-nav">
+            <button class="v3-tab" onclick="navigate('home')">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z"/><polyline points="9 21 9 12 15 12 15 21"/></svg>
+              Home
+            </button>
+            <button class="v3-tab active">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              Reviews
+            </button>
+            <button class="v3-tab" onclick="navigate('playlists')">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+              Playlists
+            </button>
+            <button class="v3-tab" onclick="navigate('wall')">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+              Popular
+            </button>
+            <button class="v3-tab" onclick="navigate('profile')">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              Profile
+            </button>
+          </nav>
 
           <!-- Streaming service action sheet -->
           <div class="v3-stream-overlay"
@@ -673,72 +743,146 @@ const SCREENS = [
         html: `
         <div class="app-screen s-home-v3 s-home-v3--light">
 
-          <!-- TOP NAV -->
-          <nav class="v3-nav">
-            <div class="v3-nav-left">
-              <button class="v3-tab v3-tab-home" onclick="navigate('home')">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z"/><polyline points="9 21 9 12 15 12 15 21"/></svg>
-                Home
-              </button>
-              <button class="v3-tab active">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                Reviews
-              </button>
-              <button class="v3-tab" onclick="navigate('playlists')">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
-                Playlists
-              </button>
-              <button class="v3-tab" onclick="navigate('wall')">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-                Popular
-              </button>
-            </div>
-            <div class="v3-nav-right">
-              <button class="v3-icon-btn" onclick="navigate('search')">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-              </button>
-              <button class="v3-icon-btn" onclick="navigate('profile')">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              </button>
-            </div>
-          </nav>
-
-          <!-- BENTO GRID -->
+          <!-- BENTO: all children absolutely positioned in 690×670 SVG coordinate space -->
           <div class="v3-bento">
 
+            <!-- Background fill: paints album color only inside the bento frame shape -->
+            <svg class="v3-bg-fill" viewBox="0 0 689 638" xmlns="http://www.w3.org/2000/svg">
+              <path fill="currentColor" d="M518.5 0.5H20.5C9.4543 0.5 0.5 9.4543 0.5 20.5V617.5C0.5 628.546 9.4543 637.5 20.5 637.5H518.5C529.546 637.5 538.5 628.546 538.5 617.5V609C538.5 570.34 569.84 539 608.5 539H668.5C679.546 539 688.5 530.046 688.5 519V107.5C688.5 96.4543 679.546 87.5 668.5 87.5H558.5C547.454 87.5 538.5 78.5457 538.5 67.5V20.5C538.5 9.45431 529.546 0.5 518.5 0.5Z"/>
+            </svg>
+
+            <!-- Master SVG frame — viewBox matches bento aspect-ratio exactly -->
+            <svg class="v3-master-frame" viewBox="0 0 689 638" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M518 0.5H21C9.9543 0.5 1 9.4543 1 20.5V534.5H518C529.046 534.5 538 525.546 538 514.5V451.927V73.4325V20.5C538 9.45431 529.046 0.5 518 0.5Z" stroke="currentColor" vector-effect="non-scaling-stroke"/>
+              <path d="M518.5 0.5H20.5C9.4543 0.5 0.5 9.4543 0.5 20.5V617.5C0.5 628.546 9.4543 637.5 20.5 637.5H518.5C529.546 637.5 538.5 628.546 538.5 617.5V609C538.5 570.34 569.84 539 608.5 539H668.5C679.546 539 688.5 530.046 688.5 519V107.5C688.5 96.4543 679.546 87.5 668.5 87.5H558.5C547.454 87.5 538.5 78.5457 538.5 67.5V20.5C538.5 9.45431 529.546 0.5 518.5 0.5Z" stroke="currentColor" vector-effect="non-scaling-stroke"/>
+              <path d="M654.409 517H571.806C563.403 517 556.64 510.098 556.81 501.697L558.617 412.351C558.703 408.077 560.609 404.044 563.855 401.263L654.756 323.394C661.282 317.804 671.354 322.504 671.261 331.097L669.408 502.162C669.319 510.383 662.63 517 654.409 517Z" stroke="currentColor" vector-effect="non-scaling-stroke"/>
+              <path d="M664.035 291.857L569.72 373.062C564.534 377.527 556.5 373.843 556.5 367V123C556.5 114.716 563.216 108 571.5 108H654.247C662.532 108 669.247 114.716 669.247 123V280.49C669.247 284.857 667.344 289.007 664.035 291.857Z" stroke="currentColor" vector-effect="non-scaling-stroke"/>
+              <circle cx="615.5" cy="614" r="55" stroke="currentColor" vector-effect="non-scaling-stroke"/>
+              <path d="M557 35.5V30.5C557 13.9315 570.431 0.5 587 0.5H659C675.569 0.5 689 13.9315 689 30.5V35.5C689 52.0685 675.569 65.5 659 65.5H587C570.431 65.5 557 52.0685 557 35.5Z" stroke="currentColor" vector-effect="non-scaling-stroke"/>
+            </svg>
+
+            <!-- Album art -->
             <div class="v3-album" onclick="navigate('album')"
-                 style="background-image:url('images/album-crystalcastles1.png')">
-            </div>
+                 style="background-image:url('images/album-crystalcastles1.png')"></div>
 
-            <div class="v3-red">
-              <div class="v3-red-title">Trending</div>
-              <div class="v3-stripe-wrap">
-                <div class="v3-stripe-item" onclick="navigate('album')" style="background-image:url('images/album-crystalcastles1.png')"></div>
-                <div class="v3-stripe-item" onclick="navigate('album')" style="background-image:url('images/album-punisher.png')"></div>
-                <div class="v3-stripe-item" onclick="navigate('album')" style="background:linear-gradient(155deg,#0a1a30,#1a4a8a)"></div>
-                <div class="v3-stripe-item" onclick="navigate('album')" style="background:linear-gradient(155deg,#1a0a28,#4a1878)"></div>
-                <div class="v3-stripe-item" onclick="navigate('album')" style="background:linear-gradient(155deg,#281408,#7a3a10)"></div>
-              </div>
-              <button class="v3-more-btn">More options ›</button>
-            </div>
-
+            <!-- Stats strip -->
             <div class="v3-blue" onclick="navigate('album')">
               <div class="v3-blue-stars-row">
                 <span class="v3-blue-score">4.4</span>
-                ${halfStars(4.4, 18)}
+                ${halfStars(4.4, 16)}
                 <span class="v3-blue-count">19,284 reviews</span>
+              </div>
+              <div class="v3-blue-quote"><span class="v3-blue-quote-text"></span></div>
+            </div>
+
+            <!-- Search pill -->
+            <button class="v3-search-pill" onclick="navigate('search')">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            </button>
+
+            <!-- ForYou top -->
+            <div class="v3-for-top" onclick="navigate('album')"
+                 style="background-image:url('images/album-crystalcastles1.png')"></div>
+
+            <!-- ForYou bottom -->
+            <div class="v3-for-bottom" onclick="navigate('album')"
+                 style="background-image:url('images/album-punisher.png')"></div>
+
+            <!-- CD -->
+            <div class="v3-cd"
+                 style="background-image:url('images/album-crystalcastles1.png')"
+                 onclick="this.closest('.app-screen').querySelector('.v3-stream-overlay').style.display='flex'">
+              <div class="v3-cd-hole"></div>
+            </div>
+
+          </div>
+
+          <!-- SCROLL: app name + friends feed -->
+          <div class="v3-scroll-area">
+
+            <div class="v3-brand-row">
+              <span class="v3-brand-name">Spindeck</span>
+              <span class="v3-brand-sub">music, reviewed.</span>
+            </div>
+
+            <div class="v3-feed-hd">
+              <span class="v3-feed-title">Friend Activity</span>
+              <button class="v3-feed-seeall" onclick="navigate('feed')">See all ›</button>
+            </div>
+
+            <div class="v3-friend-card" onclick="navigate('album')">
+              <div class="v3-friend-art" style="background-image:url('images/album-crystalcastles1.png')"></div>
+              <div class="v3-friend-body">
+                <div class="v3-friend-who">
+                  <div class="v3-friend-av" style="background:linear-gradient(135deg,#1c1c3e,#3b1fa8)">E</div>
+                  <span class="v3-friend-name">echoplex</span>
+                  <span class="v3-friend-time">2h</span>
+                </div>
+                <div class="v3-friend-album">Crystal Castles</div>
+                <div class="v3-friend-artist">Crystal Castles · 2008</div>
+                <div style="margin-bottom:3px">${halfStars(4.5, 10)}</div>
+                <div class="v3-friend-quote">"chaotic and beautiful. alice's vocals hit like static shock every single time"</div>
+                <div class="v3-friend-meta"><span class="v3-friend-likes">♥ 14</span><span class="v3-friend-likes">💬 3</span></div>
               </div>
             </div>
 
-            <div class="v3-corner">
-              <div class="v3-cd"
-                   style="background-image:url('images/album-crystalcastles1.png')"
-                   onclick="this.closest('.app-screen').querySelector('.v3-stream-overlay').style.display='flex'">
-                <div class="v3-cd-hole"></div>
+            <div class="v3-friend-card" onclick="navigate('album')">
+              <div class="v3-friend-art" style="background-image:url('images/album-punisher.png')"></div>
+              <div class="v3-friend-body">
+                <div class="v3-friend-who">
+                  <div class="v3-friend-av" style="background:linear-gradient(135deg,#164e63,#0284c7)">SF</div>
+                  <span class="v3-friend-name">staticfog</span>
+                  <span class="v3-friend-time">5h</span>
+                </div>
+                <div class="v3-friend-album">Punisher</div>
+                <div class="v3-friend-artist">Phoebe Bridgers · 2020</div>
+                <div style="margin-bottom:3px">${halfStars(5, 10)}</div>
+                <div class="v3-friend-quote">"funeral is the most heartbreaking song i've heard in years. she ruins you gently"</div>
+                <div class="v3-friend-meta"><span class="v3-friend-likes">♥ 31</span><span class="v3-friend-likes">💬 7</span></div>
+              </div>
+            </div>
+
+            <div class="v3-friend-card" onclick="navigate('album')">
+              <div class="v3-friend-art" style="background:linear-gradient(135deg,#042a10,#6aff3a 130%)"></div>
+              <div class="v3-friend-body">
+                <div class="v3-friend-who">
+                  <div class="v3-friend-av" style="background:linear-gradient(135deg,#3b0764,#9333ea)">KM</div>
+                  <span class="v3-friend-name">kira_m</span>
+                  <span class="v3-friend-time">9h</span>
+                </div>
+                <div class="v3-friend-album">1000 gecs</div>
+                <div class="v3-friend-artist">100 gecs · 2019</div>
+                <div style="margin-bottom:3px">${halfStars(5, 10)}</div>
+                <div class="v3-friend-quote">"this album rewired my brain. nothing before or after sounds like it"</div>
+                <div class="v3-friend-meta"><span class="v3-friend-likes">♥ 22</span><span class="v3-friend-likes">💬 5</span></div>
               </div>
             </div>
 
           </div>
+
+          <!-- BOTTOM NAV -->
+          <nav class="v3-bottom-nav">
+            <button class="v3-tab" onclick="navigate('home')">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z"/><polyline points="9 21 9 12 15 12 15 21"/></svg>
+              Home
+            </button>
+            <button class="v3-tab active">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              Reviews
+            </button>
+            <button class="v3-tab" onclick="navigate('playlists')">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+              Playlists
+            </button>
+            <button class="v3-tab" onclick="navigate('wall')">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+              Popular
+            </button>
+            <button class="v3-tab" onclick="navigate('profile')">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              Profile
+            </button>
+          </nav>
 
           <!-- Streaming sheet -->
           <div class="v3-stream-overlay" style="display:none" onclick="this.style.display='none'">
@@ -774,105 +918,46 @@ const SCREENS = [
       {
         label: 'Albums', version: 'v1.0',
         thumb: ['accent','w80','accent','w60','w80'],
-        html: `
+        get html() {
+          const items = (window.ARCHIVE || []).slice(0, 8);
+          return `
         <div class="app-screen s-livefeed">
           ${topNav('feed')}
-
           <div class="lfeed-toggle">
             <button class="lft-btn active">Albums</button>
             <button class="lft-btn">Songs</button>
           </div>
-
           <div class="lfeed-scroll">
-
-            <!-- Card 1: Punisher -->
+            ${items.map((a, i) => `
             <div class="lfeed-card">
-              <div class="lfeed-bg" style="background-image:url('images/album-punisher.png')"></div>
+              <div class="lfeed-bg" style="background-image:url('${a.image}')"></div>
               <div class="lfeed-overlay"></div>
               <div class="lfeed-content">
                 <div class="lfeed-art-wrap">
-                  <div class="lfeed-art" style="background-image:url('images/album-punisher.png')"></div>
+                  <div class="lfeed-art" style="background-image:url('${a.image}')"></div>
                 </div>
                 <div class="lfeed-meta">
-                  <div class="lfeed-artist">PHOEBE BRIDGERS</div>
-                  <div class="lfeed-title">Punisher</div>
-                  <div class="lfeed-genre">2020 · Indie Folk · Dead Oceans</div>
+                  <div class="lfeed-artist">${a.artist.toUpperCase()}</div>
+                  <div class="lfeed-title">${a.album}</div>
+                  <div class="lfeed-genre">${a.year} · ${a.genre}</div>
                 </div>
                 <div class="lfeed-rating">
-                  <span class="lfeed-score">4.7</span>
+                  <span class="lfeed-score">${a.rating.toFixed(1)}</span>
                   <span class="lfeed-score-sub">/ 5</span>
-                  ${halfStars(4.5, 13)}
+                  ${halfStars(a.rating, 13)}
                 </div>
-                <div class="lfeed-rc"><strong>3,241</strong> reviews</div>
-                <div class="lfeed-today">↑ 147 reviewed today</div>
+                <div class="lfeed-rc"><strong>${window.fmtRc ? window.fmtRc(a.reviewCount) : a.reviewCount}</strong> reviews</div>
+                <div class="lfeed-today">↑ ${Math.max(18, Math.round(a.reviewCount * 0.003))} reviewed today</div>
                 <div class="lfeed-actions">
                   <button class="lfeed-skip" onclick="navigate('home')">Skip</button>
-                  <button class="lfeed-log" onclick="navigate('review')">Log Album ↗</button>
+                  <button class="lfeed-log" onclick="openAlbum(ARCHIVE.find(x=>x.album==='${a.album.replace(/'/g,"\\'")}')||ARCHIVE[0]);navigate('review')">Log Album ↗</button>
                 </div>
-                <div class="lfeed-hint">↑ &nbsp; scroll for next</div>
+                <div class="lfeed-hint">${i < items.length - 1 ? '↑ &nbsp; scroll for next' : '&nbsp;'}</div>
               </div>
-            </div>
-
-            <!-- Card 2: Crystal Castles -->
-            <div class="lfeed-card">
-              <div class="lfeed-bg" style="background-image:url('images/album-crystalcastles1.png')"></div>
-              <div class="lfeed-overlay"></div>
-              <div class="lfeed-content">
-                <div class="lfeed-art-wrap">
-                  <div class="lfeed-art" style="background-image:url('images/album-crystalcastles1.png')"></div>
-                </div>
-                <div class="lfeed-meta">
-                  <div class="lfeed-artist">CRYSTAL CASTLES</div>
-                  <div class="lfeed-title">Crystal Castles</div>
-                  <div class="lfeed-genre">2008 · Electronic / Lo-Fi · Last Gang</div>
-                </div>
-                <div class="lfeed-rating">
-                  <span class="lfeed-score">4.4</span>
-                  <span class="lfeed-score-sub">/ 5</span>
-                  ${halfStars(4.5, 13)}
-                </div>
-                <div class="lfeed-rc"><strong>1,892</strong> reviews</div>
-                <div class="lfeed-today">↑ 63 reviewed today</div>
-                <div class="lfeed-actions">
-                  <button class="lfeed-skip" onclick="navigate('home')">Skip</button>
-                  <button class="lfeed-log" onclick="navigate('review')">Log Album ↗</button>
-                </div>
-                <div class="lfeed-hint">↑ &nbsp; scroll for next</div>
-              </div>
-            </div>
-
-            <!-- Card 3: 1000 gecs -->
-            <div class="lfeed-card">
-              <div class="lfeed-bg" style="background:linear-gradient(135deg,#021a0b,#0f4a1a)"></div>
-              <div class="lfeed-overlay"></div>
-              <div class="lfeed-content">
-                <div class="lfeed-art-wrap">
-                  <div class="lfeed-art" style="background:linear-gradient(135deg,#042a10,#6aff3a 130%);display:flex;align-items:center;justify-content:center">
-                    <span style="font-size:44px;font-weight:800;color:#000;letter-spacing:-3px;opacity:0.8;font-family:var(--font-main)">gecs</span>
-                  </div>
-                </div>
-                <div class="lfeed-meta">
-                  <div class="lfeed-artist">100 GECS</div>
-                  <div class="lfeed-title">1000 gecs</div>
-                  <div class="lfeed-genre">2019 · Hyperpop · Dog Show Records</div>
-                </div>
-                <div class="lfeed-rating">
-                  <span class="lfeed-score">4.6</span>
-                  <span class="lfeed-score-sub">/ 5</span>
-                  ${halfStars(4.5, 13)}
-                </div>
-                <div class="lfeed-rc"><strong>5,014</strong> reviews</div>
-                <div class="lfeed-today">↑ 218 reviewed today</div>
-                <div class="lfeed-actions">
-                  <button class="lfeed-skip" onclick="navigate('home')">Skip</button>
-                  <button class="lfeed-log" style="background:#5adf1a;color:#000" onclick="navigate('review')">Log Album ↗</button>
-                </div>
-                <div class="lfeed-hint">&nbsp;</div>
-              </div>
-            </div>
-
+            </div>`).join('')}
           </div>
-        </div>`
+        </div>`;
+        }
       },
       {
         label: 'Songs', version: 'v1.1',
@@ -956,13 +1041,14 @@ const SCREENS = [
     variants: [{
       label: 'v1',
       thumb: ['w80','w80','w80','w80','w80'],
-      html: `
+      get html() {
+        const items = (window.ARCHIVE || []).slice().sort((a,b) => b.rating - a.rating);
+        return `
       <div class="app-screen s-wall">
         <div class="wall-header">
           <button class="app-nav-btn" onclick="navigate('home')" style="margin-right:8px"><span class="app-nav-back">‹</span></button>
           <div class="wall-title">Albums</div>
         </div>
-
         <div class="wall-cats-wrap">
           <button class="wall-cat active">Popular</button>
           <button class="wall-cat">New Releases</button>
@@ -971,33 +1057,20 @@ const SCREENS = [
           <button class="wall-cat">Electronic</button>
           <button class="wall-cat">Indie</button>
           <button class="wall-cat">Hip-Hop</button>
-          <button class="wall-cat">Jazz</button>
-          <button class="wall-cat">R&amp;B</button>
+          <button class="wall-cat">J / K</button>
         </div>
-
         <div class="wall-grid">
-          <div class="wall-cell" onclick="navigate('album')"><div class="wall-cell-art" style="background-image:url('images/album-punisher.png')"></div><div class="wall-cell-info"><div class="wall-cell-rating">★4.7</div><div class="wall-cell-name">Punisher</div></div></div>
-          <div class="wall-cell" onclick="navigate('album')"><div class="wall-cell-art" style="background-image:url('images/album-crystalcastles1.png')"></div><div class="wall-cell-info"><div class="wall-cell-rating">★4.4</div><div class="wall-cell-name">CC I</div></div></div>
-          <div class="wall-cell" onclick="navigate('album')"><div class="wall-cell-art" style="background:linear-gradient(135deg,#042a10,#6aff3a 130%)"></div><div class="wall-cell-info"><div class="wall-cell-rating">★4.6</div><div class="wall-cell-name">1000 gecs</div></div></div>
-          <div class="wall-cell" onclick="navigate('album')"><div class="wall-cell-art" style="background:linear-gradient(135deg,#2a0044,#ff1a6e 200%)"></div><div class="wall-cell-info"><div class="wall-cell-rating">★4.5</div><div class="wall-cell-name">Leather Teeth</div></div></div>
-          <div class="wall-cell" onclick="navigate('album')"><div class="wall-cell-art" style="background:linear-gradient(135deg,#1e3a5f,#374151)"></div><div class="wall-cell-info"><div class="wall-cell-rating">★4.5</div><div class="wall-cell-name">Str. Alps</div></div></div>
-          <div class="wall-cell" onclick="navigate('album')"><div class="wall-cell-art" style="background:linear-gradient(135deg,#1c1917,#44403c)"></div><div class="wall-cell-info"><div class="wall-cell-rating">★4.6</div><div class="wall-cell-name">boygenius</div></div></div>
-          <div class="wall-cell" onclick="navigate('album')"><div class="wall-cell-art" style="background:linear-gradient(135deg,#0f172a,#7c3aed)"></div><div class="wall-cell-info"><div class="wall-cell-rating">★4.3</div><div class="wall-cell-name">BRAT</div></div></div>
-          <div class="wall-cell" onclick="navigate('album')"><div class="wall-cell-art" style="background:linear-gradient(135deg,#450a0a,#991b1b)"></div><div class="wall-cell-info"><div class="wall-cell-rating">★4.4</div><div class="wall-cell-name">When...</div></div></div>
-          <div class="wall-cell" onclick="navigate('album')"><div class="wall-cell-art" style="background:linear-gradient(135deg,#052e16,#15803d)"></div><div class="wall-cell-info"><div class="wall-cell-rating">★4.7</div><div class="wall-cell-name">Javelin</div></div></div>
-          <div class="wall-cell" onclick="navigate('album')"><div class="wall-cell-art" style="background:linear-gradient(135deg,#1a1a4e,#6d28d9)"></div><div class="wall-cell-info"><div class="wall-cell-rating">★4.2</div><div class="wall-cell-name">Bright Crypt</div></div></div>
-          <div class="wall-cell" onclick="navigate('album')"><div class="wall-cell-art" style="background:linear-gradient(135deg,#1e3a5f,#0ea5e9)"></div><div class="wall-cell-info"><div class="wall-cell-rating">★4.8</div><div class="wall-cell-name">Kind of Blue</div></div></div>
-          <div class="wall-cell" onclick="navigate('album')"><div class="wall-cell-art" style="background:linear-gradient(135deg,#1c1c1c,#404040)"></div><div class="wall-cell-info"><div class="wall-cell-rating">★4.9</div><div class="wall-cell-name">OK Computer</div></div></div>
-          <div class="wall-cell" onclick="navigate('album')"><div class="wall-cell-art" style="background:linear-gradient(135deg,#3b0764,#9333ea)"></div><div class="wall-cell-info"><div class="wall-cell-rating">★4.5</div><div class="wall-cell-name">Ultraviolence</div></div></div>
-          <div class="wall-cell" onclick="navigate('album')"><div class="wall-cell-art" style="background:linear-gradient(135deg,#164e63,#06b6d4)"></div><div class="wall-cell-info"><div class="wall-cell-rating">★4.3</div><div class="wall-cell-name">Immunity</div></div></div>
-          <div class="wall-cell" onclick="navigate('album')"><div class="wall-cell-art" style="background:linear-gradient(135deg,#431407,#c2410c)"></div><div class="wall-cell-info"><div class="wall-cell-rating">★4.6</div><div class="wall-cell-name">IGOR</div></div></div>
-          <div class="wall-cell" onclick="navigate('album')"><div class="wall-cell-art" style="background:linear-gradient(135deg,#1a2e05,#65a30d)"></div><div class="wall-cell-info"><div class="wall-cell-rating">★4.4</div><div class="wall-cell-name">Sour</div></div></div>
-          <div class="wall-cell" onclick="navigate('album')"><div class="wall-cell-art" style="background:linear-gradient(135deg,#0c0a09,#57534e)"></div><div class="wall-cell-info"><div class="wall-cell-rating">★4.7</div><div class="wall-cell-name">Folklore</div></div></div>
-          <div class="wall-cell" onclick="navigate('album')"><div class="wall-cell-art" style="background:linear-gradient(135deg,#1a1a3e,#2563eb)"></div><div class="wall-cell-info"><div class="wall-cell-rating">★4.5</div><div class="wall-cell-name">Norman F.</div></div></div>
-          <div class="wall-cell" onclick="navigate('album')"><div class="wall-cell-art" style="background:linear-gradient(135deg,#450a0a,#7f1d1d)"></div><div class="wall-cell-info"><div class="wall-cell-rating">★4.3</div><div class="wall-cell-name">SZNZ</div></div></div>
-          <div class="wall-cell" onclick="navigate('album')"><div class="wall-cell-art" style="background:linear-gradient(135deg,#022c22,#064e3b)"></div><div class="wall-cell-info"><div class="wall-cell-rating">★4.8</div><div class="wall-cell-name">Coloring Book</div></div></div>
+          ${items.slice(0,20).map((a,i) => `
+          <div class="wall-cell" onclick="openAlbum(ARCHIVE.find(x=>x.album==='${a.album.replace(/'/g,'\\\'')}')||ARCHIVE[0])">
+            <div class="wall-cell-art" style="background-image:url('${a.image}')"></div>
+            <div class="wall-cell-info">
+              <div class="wall-cell-rating">★${a.rating.toFixed(1)}</div>
+              <div class="wall-cell-name">${a.album.length > 13 ? a.album.slice(0,12)+'…' : a.album}</div>
+            </div>
+          </div>`).join('')}
         </div>
-      </div>`
+      </div>`;
+      }
     }]
   },
 
@@ -1057,60 +1130,60 @@ const SCREENS = [
     variants: [{
       label: 'v1',
       thumb: ['accent','w80','w60','w80','w80'],
-      html: `
+      get html() {
+        const a = window.activeAlbum || (window.ARCHIVE && window.ARCHIVE[0]) || {
+          artist:'Phoebe Bridgers', album:'Punisher', year:2020, genre:'Indie Folk', tracks:10,
+          image:'images/album-phoebebridgers-punisher.png', rating:4.7, reviewCount:31000,
+          artistBio:'Phoebe Bridgers is an American singer-songwriter from Los Angeles.',
+          reviews:[
+            {init:'EP',grad:'linear-gradient(135deg,#1c1c3e,#3b1fa8)',name:'echoplex',rating:5,text:'funeral is the most heartbreaking song i\'ve heard in years.'},
+            {init:'SF',grad:'linear-gradient(135deg,#164e63,#0284c7)',name:'staticfog',rating:5,text:'garden song alone deserves a 5/5. the whole album feels like a lucid dream'},
+            {init:'VB',grad:'linear-gradient(135deg,#450a0a,#dc2626)',name:'velvetblast',rating:4,text:'savior complex on repeat for an hour. not sorry about it'},
+          ]
+        };
+        const logged = window.fmtRc ? window.fmtRc(Math.round(a.reviewCount * 2.8)) : '—';
+        const rc     = window.fmtRc ? window.fmtRc(a.reviewCount) : a.reviewCount;
+        return `
       <div class="app-screen s-album">
         <div class="album-hero">
-          <div class="album-art album-cover-full" style="height:220px;border-radius:0;background-image:url('images/album-punisher.png');background-size:cover;background-position:center"></div>
+          <div class="album-art album-cover-full" style="height:220px;border-radius:0;background-image:url('${a.image}');background-size:cover;background-position:center"></div>
           <div class="album-hero-overlay"></div>
-          <button class="album-back-btn" onclick="navigate('search')">‹</button>
+          <button class="album-back-btn" onclick="navigate('home')">‹</button>
         </div>
         <div class="album-info">
-          <div class="album-title">Punisher</div>
-          <div class="album-artist" style="color:var(--accent)" onclick="navigate('artist')">Phoebe Bridgers</div>
-          <div class="album-meta">2020 · Indie Folk · 10 tracks</div>
+          <div class="album-title">${a.album}</div>
+          <div class="album-artist" style="color:var(--accent)" onclick="navigate('artist')">${a.artist}</div>
+          <div class="album-meta">${a.year} · ${a.genre}${a.tracks ? ' · ' + a.tracks + ' tracks' : ''}</div>
         </div>
         <div class="album-stats">
           <div class="album-stat">
-            <div class="album-stat-val">${halfStars(4.5, 13)}</div>
-            <div class="album-stat-lbl">avg 4.7</div>
+            <div class="album-stat-val">${halfStars(a.rating, 13)}</div>
+            <div class="album-stat-lbl">avg ${a.rating.toFixed(1)}</div>
           </div>
           <div class="album-stat"><div class="album-stat-val">—</div><div class="album-stat-lbl">your rating</div></div>
-          <div class="album-stat"><div class="album-stat-val">89k</div><div class="album-stat-lbl">logged</div></div>
-          <div class="album-stat"><div class="album-stat-val">3.2k</div><div class="album-stat-lbl">reviews</div></div>
+          <div class="album-stat"><div class="album-stat-val">${logged}</div><div class="album-stat-lbl">logged</div></div>
+          <div class="album-stat"><div class="album-stat-val">${rc}</div><div class="album-stat-lbl">reviews</div></div>
         </div>
         <div class="album-actions">
           <button class="btn-primary" onclick="navigate('review')">Log / Review</button>
           <button class="btn-small">+ List</button>
           <button class="btn-small">♥</button>
         </div>
+        ${a.artistBio ? `<div style="padding:4px 20px 0;font-size:11px;color:var(--text2);line-height:1.5">${a.artistBio}</div>` : ''}
         <div class="reviews-section">
           <div class="reviews-title">Popular Reviews</div>
+          ${(a.reviews || []).map(rv => `
           <div class="mini-review">
             <div class="mr-header">
-              <div class="avatar mr-avatar"><div class="avatar-placeholder" style="font-size:10px">EP</div></div>
-              <div class="mr-username">echoplex</div>
-              <div>${halfStars(5, 11)}</div>
+              <div class="avatar mr-avatar"><div class="avatar-placeholder" style="font-size:10px;background:${rv.grad}">${rv.init}</div></div>
+              <div class="mr-username">${rv.name}</div>
+              <div>${halfStars(rv.rating, 11)}</div>
             </div>
-            <div class="mr-text">"funeral is the most heartbreaking song ive heard in years. she ruins you gently"</div>
-          </div>
-          <div class="mini-review">
-            <div class="mr-header">
-              <div class="avatar mr-avatar"><div class="avatar-placeholder" style="font-size:10px;background:linear-gradient(135deg,#164e63,#0284c7)">SF</div></div>
-              <div class="mr-username">staticfog</div>
-              <div>${halfStars(5, 11)}</div>
-            </div>
-            <div class="mr-text">"garden song alone deserves a 5/5. the whole album feels like a lucid dream"</div>
-          </div>
-          <div class="mini-review">
-            <div class="mr-header">
-              <div class="avatar mr-avatar"><div class="avatar-placeholder" style="font-size:10px;background:linear-gradient(135deg,#450a0a,#dc2626)">VB</div></div>
-              <div class="mr-username">velvetblast</div>
-              <div>${halfStars(4, 11)}</div>
-            </div>
-            <div class="mr-text">"savior complex on repeat for an hour. not sorry about it"</div>
-          </div>
+            <div class="mr-text">"${rv.text}"</div>
+          </div>`).join('')}
         </div>
-      </div>`
+      </div>`;
+      }
     }]
   },
 

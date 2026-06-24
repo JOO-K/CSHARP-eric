@@ -20,6 +20,59 @@ function getVariantIdx(s) { return variantState[s.id] || 0; }
 function getVariant(s)    { const i = getVariantIdx(s); return s.variants[Math.min(i, s.variants.length-1)]; }
 
 // ── Init ─────────────────────────────────────────────────────
+// ── Fillet PNG masks ──────────────────────────────────────────
+let filletBLUrl = null, filletTLUrl = null;
+
+function stripWhite(src) {
+  return new Promise(res => {
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement('canvas');
+      c.width = img.naturalWidth; c.height = img.naturalHeight;
+      const ctx = c.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      const d = ctx.getImageData(0, 0, c.width, c.height);
+      for (let i = 0; i < d.data.length; i += 4) {
+        if (d.data[i] > 200 && d.data[i+1] > 200 && d.data[i+2] > 200) d.data[i+3] = 0;
+      }
+      ctx.putImageData(d, 0, 0);
+      res(c.toDataURL());
+    };
+    img.onerror = () => res(null);
+    img.src = src;
+  });
+}
+
+async function initFillets() {
+  try {
+    [filletBLUrl, filletTLUrl] = await Promise.all([
+      stripWhite('images/topbox.png'),
+      stripWhite('images/bottombox.png'),
+    ]);
+    applyFilletMasks();
+  } catch(e) {}
+}
+
+function applyFilletMasks() {
+  if (!filletBLUrl || !filletTLUrl) return;
+  let styleEl = document.getElementById('v3-fillet-mask-style');
+  if (!styleEl) {
+    styleEl = document.createElement('style');
+    styleEl.id = 'v3-fillet-mask-style';
+    document.head.appendChild(styleEl);
+  }
+  styleEl.textContent = `
+    .v3-fillet-bl::after {
+      -webkit-mask-image: url(${filletBLUrl});
+      mask-image: url(${filletBLUrl});
+    }
+    .v3-fillet-tl::after {
+      -webkit-mask-image: url(${filletTLUrl});
+      mask-image: url(${filletTLUrl});
+    }
+  `;
+}
+
 function init() {
   // Show only v3.x home variants (v1/v2 retired)
   const homeScreen = SCREENS.find(s => s.id === 'home');
@@ -36,6 +89,7 @@ function init() {
   if (p) { const i = SCREENS.findIndex(s => s.id === p); if (i !== -1) currentIdx = i; }
 
   if (isMobile) { initMobile(); } else { initViewer(); }
+  initFillets();
 }
 
 // ============================================================
@@ -59,8 +113,58 @@ function renderViewer() {
   renderThumbs();
   updateToolbar();
   requestAnimationFrame(() => {
-    document.querySelectorAll('.s-home-v3').forEach(applyAlbumColors);
+    document.querySelectorAll('.s-home-v3').forEach(el => {
+      populateHomeData(el);
+      applyAlbumColors(el);
+    });
+    applyFilletMasks();
   });
+}
+
+// ── Home screen data population ───────────────────────────────
+function populateHomeData(screenEl) {
+  const a = window.featuredAlbum || (window.ARCHIVE && window.ARCHIVE[0]);
+  if (!a) return;
+
+  const albumEl = screenEl.querySelector('.v3-album');
+  if (albumEl) {
+    albumEl.style.backgroundImage = `url('${a.image}')`;
+    albumEl.onclick = () => window.openAlbum(a);
+  }
+
+  const cdEl = screenEl.querySelector('.v3-cd');
+  if (cdEl) cdEl.style.backgroundImage = `url('${a.image}')`;
+
+  const trending = window.trendingAlbums || (window.ARCHIVE || []).slice(0, 5);
+  screenEl.querySelectorAll('.v3-stripe-item').forEach((el, i) => {
+    if (trending[i]) {
+      el.style.backgroundImage = `url('${trending[i].image}')`;
+      el.onclick = () => window.openAlbum(trending[i]);
+    }
+  });
+
+  const starsRow = screenEl.querySelector('.v3-blue-stars-row');
+  if (starsRow) {
+    starsRow.innerHTML = `
+      <span class="v3-blue-score">${a.rating.toFixed(1)}</span>
+      ${halfStars(a.rating, 18)}
+      <span class="v3-blue-count">${window.fmtRc(a.reviewCount)} reviews</span>`;
+    starsRow.parentElement.onclick = () => window.openAlbum(a);
+  }
+
+  const quoteTextEl = screenEl.querySelector('.v3-blue-quote-text');
+  if (quoteTextEl && a.reviews && a.reviews.length) {
+    const rev = a.reviews[0];
+    quoteTextEl.textContent = `"${rev.text}"`;
+    const quoteContainer = quoteTextEl.parentElement;
+    requestAnimationFrame(() => {
+      if (quoteTextEl.scrollWidth > quoteContainer.offsetWidth) {
+        const overflow = quoteTextEl.scrollWidth - quoteContainer.offsetWidth;
+        quoteTextEl.style.setProperty('--quote-scroll', `-${overflow}px`);
+        quoteContainer.classList.add('v3-blue-quote--scroll');
+      }
+    });
+  }
 }
 
 // ── Album color extraction ────────────────────────────────────
@@ -97,12 +201,21 @@ function applyAlbumColors(screenEl) {
       if (!n) return;
 
       const hex = v => v.toString(16).padStart(2,'0');
-      const accent = `#${hex(ar)}${hex(ag)}${hex(ab)}`;
+      // Boost accent luminance so score is readable on the dark bento surface
+      let bAR = ar, bAG = ag, bAB = ab;
+      const aLum = (Math.max(bAR,bAG,bAB) + Math.min(bAR,bAG,bAB)) / 510;
+      if (aLum < 0.55) {
+        const scale = 0.65 / Math.max(aLum, 0.05);
+        bAR = Math.min(255, Math.round(bAR * scale));
+        bAG = Math.min(255, Math.round(bAG * scale));
+        bAB = Math.min(255, Math.round(bAB * scale));
+      }
+      const accent = `#${hex(bAR)}${hex(bAG)}${hex(bAB)}`;
 
-      // Box 1 bg: very dark tint towards accent hue
-      const b1r = Math.min(55, Math.round(ar*0.18+8));
-      const b1g = Math.min(40, Math.round(ag*0.12+4));
-      const b1b = Math.min(40, Math.round(ab*0.12+4));
+      // Box 1 bg: dark tint towards accent hue — bright enough to read against #111116 bg
+      const b1r = Math.min(90, Math.round(ar*0.30+22));
+      const b1g = Math.min(72, Math.round(ag*0.22+14));
+      const b1b = Math.min(80, Math.round(ab*0.28+16));
       // Box 2 bg: very dark complementary
       const b2r = Math.min(35, Math.round((255-ar)*0.10+4));
       const b2g = Math.min(35, Math.round((255-ag)*0.10+4));
@@ -114,6 +227,7 @@ function applyAlbumColors(screenEl) {
       screenEl.style.setProperty('--v3-accent', accent);
       screenEl.style.setProperty('--v3-box1-bg', box1);
       screenEl.style.setProperty('--v3-box2-bg', box2);
+      screenEl.style.setProperty('--v3-box1-color', `rgb(${b1r},${b1g},${b1b})`);
     } catch(e) { /* CORS / tainted canvas — keep CSS defaults */ }
   };
   img.src = m[1];
@@ -299,10 +413,45 @@ window.toggleMulti = function() {
   renderViewer();
 };
 
+// ── Zoom ─────────────────────────────────────────────────────
+let zoomLevel = 1;
+const ZOOM_STEP = 0.25;
+const ZOOM_MIN  = 0.25;
+const ZOOM_MAX  = 4;
+
+function setZoom(level) {
+  zoomLevel = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, level));
+  document.getElementById('phone-container').style.zoom = zoomLevel;
+  document.getElementById('lbl-zoom').textContent = Math.round(zoomLevel * 100) + '%';
+}
+
+function shuffleAlbums() {
+  const arc = window.ARCHIVE;
+  if (!arc || arc.length < 6) return;
+  const idx = Math.floor(Math.random() * arc.length);
+  window.featuredAlbum = arc[idx];
+  const others = arc.filter((_, i) => i !== idx);
+  for (let i = others.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [others[i], others[j]] = [others[j], others[i]];
+  }
+  window.trendingAlbums = others.slice(0, 5);
+  renderViewer();
+}
+
 function bindViewerEvents() {
   document.getElementById('btn-prev').addEventListener('click', navigatePrev);
   document.getElementById('btn-next').addEventListener('click', navigateNext);
   document.getElementById('btn-export').addEventListener('click', exportPNG);
+  document.getElementById('btn-shuffle').addEventListener('click', shuffleAlbums);
+  document.getElementById('btn-zoom-in').addEventListener('click', () => setZoom(zoomLevel + ZOOM_STEP));
+  document.getElementById('btn-zoom-out').addEventListener('click', () => setZoom(zoomLevel - ZOOM_STEP));
+
+  document.getElementById('stage').addEventListener('wheel', (e) => {
+    if (!e.ctrlKey && !e.metaKey) return;
+    e.preventDefault();
+    setZoom(zoomLevel + (e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP));
+  }, { passive: false });
 }
 
 // ── PNG Export ───────────────────────────────────────────────
