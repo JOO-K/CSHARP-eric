@@ -2613,12 +2613,21 @@
   overflow: hidden;
   cursor: pointer;
   z-index: 2;
-  box-shadow: inset 3px 3px 7px rgba(0,0,0,0.5), inset -3px -3px 6px rgba(255,255,255,0.07);
   transition: filter 0.2s;
+}
+.v3-for-single::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 3px 3px 7px rgba(0,0,0,0.5), inset -3px -3px 6px rgba(255,255,255,0.07);
+  pointer-events: none;
+  z-index: 3;
 }
 .v3-for-single:active { filter: brightness(1.15); }
 .s-home-v3--light .v3-for-single {
   background-color: #c4bbb0;
+}
+.s-home-v3--light .v3-for-single::after {
   box-shadow: inset 3px 3px 7px rgba(116,150,179,0.32), inset -4px -4px 6px #d8d2c8;
 }
 .v3-search-pill {

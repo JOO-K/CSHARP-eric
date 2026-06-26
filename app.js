@@ -278,6 +278,7 @@ function populateHomeData(screenEl) {
     if (!forSingle.dataset.forIdx) forSingle.dataset.forIdx = '0';
     const idx = parseInt(forSingle.dataset.forIdx);
     forSingle.style.backgroundImage = `url('${trending[idx].image}')`;
+    preloadForYou(trending, idx);
     forSingle.onclick = (e) => {
       e.stopPropagation();
       const cur = trending[parseInt(forSingle.dataset.forIdx)];
@@ -285,7 +286,15 @@ function populateHomeData(screenEl) {
       forSingle.dataset.forIdx = String(nextIdx);
       slideIn(forSingle, trending[nextIdx].image);
       setMainAlbum(screenEl, cur, true);
+      preloadForYou(trending, nextIdx);
     };
+  }
+}
+
+function preloadForYou(trending, fromIdx, count = 3) {
+  for (let i = 1; i <= count; i++) {
+    const img = new Image();
+    img.src = trending[(fromIdx + i) % trending.length].image;
   }
 }
 
