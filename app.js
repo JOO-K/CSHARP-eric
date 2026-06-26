@@ -671,7 +671,11 @@ function renderMobileSingle() {
   document.getElementById('mb-screen-name').textContent = currentScreen().name;
   document.getElementById('mb-prev').disabled = currentIdx === 0;
   document.getElementById('mb-next').disabled = currentIdx === SCREENS.length - 1;
-  requestAnimationFrame(scaleMobilePhone);
+  requestAnimationFrame(() => {
+    scaleMobilePhone();
+    center.querySelectorAll('.s-home-v3').forEach(el => populateHomeData(el));
+    applyFilletMasks();
+  });
 }
 
 function scaleMobilePhone() {
@@ -704,8 +708,13 @@ function renderMobileMultiGrid() {
 }
 
 function renderMobileLive(idx) {
-  document.getElementById('mobile-content').innerHTML = getVariant(SCREENS[idx]).html;
+  const content = document.getElementById('mobile-content');
+  content.innerHTML = getVariant(SCREENS[idx]).html;
   currentIdx = idx;
+  requestAnimationFrame(() => {
+    content.querySelectorAll('.s-home-v3').forEach(el => populateHomeData(el));
+    applyFilletMasks();
+  });
 }
 
 window.goToMobileScreen = function(idx) {
@@ -734,6 +743,10 @@ window.navigate = function(targetId, direction) {
     temp.innerHTML = getVariant(SCREENS[idx]).html;
     const newEl = temp.firstElementChild;
     content.appendChild(newEl);
+    requestAnimationFrame(() => {
+      if (newEl.classList.contains('s-home-v3')) populateHomeData(newEl);
+      applyFilletMasks();
+    });
 
     if (oldEl) {
       const fwd = !isBack;
