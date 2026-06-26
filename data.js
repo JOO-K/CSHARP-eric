@@ -666,12 +666,10 @@
   // Set initial active album and featured albums for home screen
   window.activeAlbum = window.ARCHIVE[0];
 
-  // Pick today's featured album (rotates daily)
-  const dayOff = Math.floor(Date.now() / 86400000) % window.ARCHIVE.length;
-  window.featuredAlbum = window.ARCHIVE[dayOff];
-  window.trendingAlbums = window.ARCHIVE
-    .filter((_, i) => i !== dayOff)
-    .slice(0, 5);
+  // Shuffle archive fresh on every load
+  const shuffled = [...window.ARCHIVE].sort(() => Math.random() - 0.5);
+  window.featuredAlbum = shuffled[0];
+  window.trendingAlbums = shuffled.slice(1);
 
   window.openAlbum = function (album) {
     window.activeAlbum = album;
@@ -681,4 +679,23 @@
   window.fmtRc = function (n) {
     return n >= 1000 ? (n / 1000).toFixed(1).replace('.0', '') + 'k' : String(n);
   };
+
+  window.FRIEND_ACTIVITY = [
+    { user:'echoplex',   init:'E',  grad:'linear-gradient(135deg,#1c1c3e,#3b1fa8)', album:'Crystal Castles',       artist:'Crystal Castles',  year:2010, image:'images/album-crystalcastles1.png',         rating:4.5, quote:'"chaotic and beautiful. alice\'s vocals hit like static shock every time"', likes:14, comments:3, ago:'2h' },
+    { user:'staticfog',  init:'SF', grad:'linear-gradient(135deg,#164e63,#0284c7)', album:'Punisher',              artist:'Phoebe Bridgers',   year:2020, image:'images/album-phoebebridgers-punisher.png', rating:5,   quote:'"funeral is the most heartbreaking song i\'ve heard in years"',           likes:31, comments:7, ago:'5h' },
+    { user:'kira_m',     init:'KM', grad:'linear-gradient(135deg,#3b0764,#9333ea)', album:'1000 gecs',             artist:'100 gecs',          year:2019, image:'images/album-100gecs-1000gecs.jpg',         rating:5,   quote:'"this album rewired my brain. nothing before or after sounds like it"',  likes:22, comments:5, ago:'9h' },
+    { user:'nova_wr',    init:'NW', grad:'linear-gradient(135deg,#064e3b,#059669)', album:'Loveless',              artist:'My Bloody Valentine',year:1991, image:'images/album-mbv-loveless.png',             rating:5,   quote:'"sounds like falling through clouds. never gets old"',                  likes:19, comments:4, ago:'11h'},
+    { user:'drumkid',    init:'DK', grad:'linear-gradient(135deg,#7c2d12,#ea580c)', album:'To Pimp a Butterfly',   artist:'Kendrick Lamar',    year:2015, image:'images/album-kendrick-tpab.png',            rating:5,   quote:'"an everest of an album. every listen finds something new"',            likes:44, comments:11,ago:'1h' },
+    { user:'helio',      init:'H',  grad:'linear-gradient(135deg,#134e4a,#0d9488)', album:'Currents',              artist:'Tame Impala',        year:2015, image:'images/album-tameimpala-currents.png',      rating:4.5, quote:'"let it happen alone is worth 5 stars. everything else is a bonus"',    likes:26, comments:6, ago:'3h' },
+    { user:'vxblank',    init:'VB', grad:'linear-gradient(135deg,#4c0519,#be123c)', album:'Blonde',                artist:'Frank Ocean',        year:2016, image:'images/album-frankocean-blonde.jpeg',       rating:5,   quote:'"white ferrari still makes me feel like i\'m floating outside myself"', likes:51, comments:13,ago:'6h' },
+    { user:'marshmist',  init:'MM', grad:'linear-gradient(135deg,#500724,#db2777)', album:'Puberty 2',             artist:'Mitski',             year:2016, image:'images/album-mitski-puberty2.jpg',          rating:5,   quote:'"your best american girl destroyed me. again."',                        likes:33, comments:8, ago:'13h'},
+    { user:'echoplex',   init:'E',  grad:'linear-gradient(135deg,#1c1c3e,#3b1fa8)', album:'Untrue',                artist:'Burial',             year:2007, image:'images/album-burial-untrue.jpg',            rating:5,   quote:'"what 3am in a city actually sounds like. pure ache and texture"',      likes:17, comments:2, ago:'14h'},
+    { user:'staticfog',  init:'SF', grad:'linear-gradient(135deg,#164e63,#0284c7)', album:'Good Kid, M.A.A.D City',artist:'Kendrick Lamar',    year:2012, image:'images/album-kendrick-gkmc.jpg',            rating:4.5, quote:'"cinematic and relentless. backseat freestyle is pure serotonin"',      likes:28, comments:9, ago:'16h'},
+    { user:'nova_wr',    init:'NW', grad:'linear-gradient(135deg,#064e3b,#059669)', album:'IGOR',                  artist:'Tyler, the Creator', year:2019, image:'images/album-tyler-igor.jpg',               rating:4.5, quote:'"a heartbreak concept album nobody asked for but everyone needed"',      likes:23, comments:6, ago:'18h'},
+    { user:'drumkid',    init:'DK', grad:'linear-gradient(135deg,#7c2d12,#ea580c)', album:'Mezzanine',             artist:'Massive Attack',     year:1998, image:'images/album-massiveattack-mezzanine.png',  rating:4.5, quote:'"angel is one of the best songs ever made. period."',                   likes:20, comments:3, ago:'20h'},
+    { user:'helio',      init:'H',  grad:'linear-gradient(135deg,#134e4a,#0d9488)', album:'Ctrl',                  artist:'SZA',                year:2017, image:'images/album-sza-ctrl.png',                 rating:4.5, quote:'"drew barrymore and the weekend are songs about real feelings"',        likes:38, comments:10,ago:'22h'},
+    { user:'vxblank',    init:'VB', grad:'linear-gradient(135deg,#4c0519,#be123c)', album:'Veteran',               artist:'JPEGMAFIA',          year:2018, image:'images/album-jpegmafia-veteran.jpg',        rating:5,   quote:'"noise and rap somehow perfectly fused. completely one of a kind"',     likes:12, comments:4, ago:'1d' },
+    { user:'marshmist',  init:'MM', grad:'linear-gradient(135deg,#500724,#db2777)', album:'Be the Cowboy',         artist:'Mitski',             year:2018, image:'images/album-mitski-bethecowboy.jpg',       rating:4.5, quote:'"nobody is the kind of bop that also makes you cry in the car"',       likes:29, comments:7, ago:'1d' },
+    { user:'kira_m',     init:'KM', grad:'linear-gradient(135deg,#3b0764,#9333ea)', album:'Dummy',                 artist:'Portishead',         year:1994, image:'images/album-portishead-dummy.png',         rating:5,   quote:'"glory box is the most haunting thing ever recorded by anyone"',        likes:24, comments:5, ago:'1d' },
+  ];
 })();

@@ -566,6 +566,14 @@ const SCREENS = [
         html: `
         <div class="app-screen s-home-v3">
 
+          <!-- Search: fixed overlay, stays put while body scrolls -->
+          <button class="v3-search-pill" onclick="navigate('search')">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          </button>
+
+          <!-- Scrollable body: bento + feed scroll together -->
+          <div class="v3-body">
+
           <!-- BENTO: all children absolutely positioned in 690×670 SVG coordinate space -->
           <div class="v3-bento">
 
@@ -588,8 +596,13 @@ const SCREENS = [
             <div class="v3-album" onclick="navigate('album')"
                  style="background-image:url('images/album-crystalcastles1.png')"></div>
 
-            <!-- Stats strip: SVG x=0.5–538.5, y=534.5–637.5 → left 0.07% top 79.78% w 77.97% h 15.37% -->
-            <div class="v3-blue" onclick="navigate('album')">
+            <!-- Stats strip: expanded to top 77% h 22.92% to fit album/artist name -->
+            <div class="v3-blue" onclick="event.stopPropagation(); window.activeAlbum = window.activeAlbum || window.featuredAlbum; navigate('review')">
+              <div class="v3-blue-info-row">
+                <span class="v3-blue-artist"></span>
+                <span class="v3-blue-sep">·</span>
+                <span class="v3-blue-album"></span>
+              </div>
               <div class="v3-blue-stars-row">
                 <span class="v3-blue-score">4.4</span>
                 ${halfStars(4.4, 16)}
@@ -598,18 +611,8 @@ const SCREENS = [
               <div class="v3-blue-quote"><span class="v3-blue-quote-text"></span></div>
             </div>
 
-            <!-- Search pill: SVG x=557–689, y=0.5–65.5 → left 80.72% top 0.07% w 19.13% h 9.70% -->
-            <button class="v3-search-pill" onclick="navigate('search')">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-            </button>
-
-            <!-- ForYou top: SVG bbox x=556.5–669.2, y=108–373 → left 80.65% top 16.12% w 16.34% h 39.56% -->
-            <div class="v3-for-top" onclick="navigate('album')"
-                 style="background-image:url('images/album-crystalcastles1.png')"></div>
-
-            <!-- ForYou bottom: SVG bbox x=556.6–671.4, y=323–517 → left 80.67% top 48.21% w 16.63% h 28.96% -->
-            <div class="v3-for-bottom" onclick="navigate('album')"
-                 style="background-image:url('images/album-punisher.png')"></div>
+            <!-- ForYou: single panel, cycles through trending albums on click -->
+            <div class="v3-for-single"></div>
 
             <!-- CD: SVG cx=615.5 cy=614 r=55 → left 81.23% top 83.43% w 15.94% h 16.42% -->
             <div class="v3-cd"
@@ -623,73 +626,23 @@ const SCREENS = [
           <!-- SCROLL: app name + friends feed -->
           <div class="v3-scroll-area">
 
-            <div class="v3-brand-row">
-              <span class="v3-brand-name">Spindeck</span>
-              <span class="v3-brand-sub">music, reviewed.</span>
-            </div>
-
             <div class="v3-feed-hd">
               <span class="v3-feed-title">Friend Activity</span>
               <button class="v3-feed-seeall" onclick="navigate('feed')">See all ›</button>
             </div>
 
-            <div class="v3-friend-card" onclick="navigate('album')">
-              <div class="v3-friend-art" style="background-image:url('images/album-crystalcastles1.png')"></div>
-              <div class="v3-friend-body">
-                <div class="v3-friend-who">
-                  <div class="v3-friend-av" style="background:linear-gradient(135deg,#1c1c3e,#3b1fa8)">E</div>
-                  <span class="v3-friend-name">echoplex</span>
-                  <span class="v3-friend-time">2h</span>
-                </div>
-                <div class="v3-friend-album">Crystal Castles</div>
-                <div class="v3-friend-artist">Crystal Castles · 2008</div>
-                <div style="margin-bottom:3px">${halfStars(4.5, 10)}</div>
-                <div class="v3-friend-quote">"chaotic and beautiful. alice's vocals hit like static shock every single time"</div>
-                <div class="v3-friend-meta"><span class="v3-friend-likes">♥ 14</span><span class="v3-friend-likes">💬 3</span></div>
-              </div>
-            </div>
+            <div class="v3-feed-items"></div>
 
-            <div class="v3-friend-card" onclick="navigate('album')">
-              <div class="v3-friend-art" style="background-image:url('images/album-punisher.png')"></div>
-              <div class="v3-friend-body">
-                <div class="v3-friend-who">
-                  <div class="v3-friend-av" style="background:linear-gradient(135deg,#164e63,#0284c7)">SF</div>
-                  <span class="v3-friend-name">staticfog</span>
-                  <span class="v3-friend-time">5h</span>
-                </div>
-                <div class="v3-friend-album">Punisher</div>
-                <div class="v3-friend-artist">Phoebe Bridgers · 2020</div>
-                <div style="margin-bottom:3px">${halfStars(5, 10)}</div>
-                <div class="v3-friend-quote">"funeral is the most heartbreaking song i've heard in years. she ruins you gently"</div>
-                <div class="v3-friend-meta"><span class="v3-friend-likes">♥ 31</span><span class="v3-friend-likes">💬 7</span></div>
-              </div>
-            </div>
-
-            <div class="v3-friend-card" onclick="navigate('album')">
-              <div class="v3-friend-art" style="background:linear-gradient(135deg,#042a10,#6aff3a 130%)"></div>
-              <div class="v3-friend-body">
-                <div class="v3-friend-who">
-                  <div class="v3-friend-av" style="background:linear-gradient(135deg,#3b0764,#9333ea)">KM</div>
-                  <span class="v3-friend-name">kira_m</span>
-                  <span class="v3-friend-time">9h</span>
-                </div>
-                <div class="v3-friend-album">1000 gecs</div>
-                <div class="v3-friend-artist">100 gecs · 2019</div>
-                <div style="margin-bottom:3px">${halfStars(5, 10)}</div>
-                <div class="v3-friend-quote">"this album rewired my brain. nothing before or after sounds like it"</div>
-                <div class="v3-friend-meta"><span class="v3-friend-likes">♥ 22</span><span class="v3-friend-likes">💬 5</span></div>
-              </div>
-            </div>
-
-          </div>
+          </div><!-- /v3-scroll-area -->
+          </div><!-- /v3-body -->
 
           <!-- BOTTOM NAV -->
           <nav class="v3-bottom-nav">
-            <button class="v3-tab" onclick="navigate('home')">
+            <button class="v3-tab active">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z"/><polyline points="9 21 9 12 15 12 15 21"/></svg>
               Home
             </button>
-            <button class="v3-tab active">
+            <button class="v3-tab" onclick="navigate('reviews')">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
               Reviews
             </button>
@@ -743,6 +696,14 @@ const SCREENS = [
         html: `
         <div class="app-screen s-home-v3 s-home-v3--light">
 
+          <!-- Search: fixed overlay, stays put while body scrolls -->
+          <button class="v3-search-pill" onclick="navigate('search')">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          </button>
+
+          <!-- Scrollable body: bento + feed scroll together -->
+          <div class="v3-body">
+
           <!-- BENTO: all children absolutely positioned in 690×670 SVG coordinate space -->
           <div class="v3-bento">
 
@@ -766,7 +727,12 @@ const SCREENS = [
                  style="background-image:url('images/album-crystalcastles1.png')"></div>
 
             <!-- Stats strip -->
-            <div class="v3-blue" onclick="navigate('album')">
+            <div class="v3-blue" onclick="event.stopPropagation(); window.activeAlbum = window.activeAlbum || window.featuredAlbum; navigate('review')">
+              <div class="v3-blue-info-row">
+                <span class="v3-blue-artist"></span>
+                <span class="v3-blue-sep">·</span>
+                <span class="v3-blue-album"></span>
+              </div>
               <div class="v3-blue-stars-row">
                 <span class="v3-blue-score">4.4</span>
                 ${halfStars(4.4, 16)}
@@ -775,18 +741,8 @@ const SCREENS = [
               <div class="v3-blue-quote"><span class="v3-blue-quote-text"></span></div>
             </div>
 
-            <!-- Search pill -->
-            <button class="v3-search-pill" onclick="navigate('search')">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-            </button>
-
-            <!-- ForYou top -->
-            <div class="v3-for-top" onclick="navigate('album')"
-                 style="background-image:url('images/album-crystalcastles1.png')"></div>
-
-            <!-- ForYou bottom -->
-            <div class="v3-for-bottom" onclick="navigate('album')"
-                 style="background-image:url('images/album-punisher.png')"></div>
+            <!-- ForYou: single panel, cycles through trending albums on click -->
+            <div class="v3-for-single"></div>
 
             <!-- CD -->
             <div class="v3-cd"
@@ -800,73 +756,23 @@ const SCREENS = [
           <!-- SCROLL: app name + friends feed -->
           <div class="v3-scroll-area">
 
-            <div class="v3-brand-row">
-              <span class="v3-brand-name">Spindeck</span>
-              <span class="v3-brand-sub">music, reviewed.</span>
-            </div>
-
             <div class="v3-feed-hd">
               <span class="v3-feed-title">Friend Activity</span>
               <button class="v3-feed-seeall" onclick="navigate('feed')">See all ›</button>
             </div>
 
-            <div class="v3-friend-card" onclick="navigate('album')">
-              <div class="v3-friend-art" style="background-image:url('images/album-crystalcastles1.png')"></div>
-              <div class="v3-friend-body">
-                <div class="v3-friend-who">
-                  <div class="v3-friend-av" style="background:linear-gradient(135deg,#1c1c3e,#3b1fa8)">E</div>
-                  <span class="v3-friend-name">echoplex</span>
-                  <span class="v3-friend-time">2h</span>
-                </div>
-                <div class="v3-friend-album">Crystal Castles</div>
-                <div class="v3-friend-artist">Crystal Castles · 2008</div>
-                <div style="margin-bottom:3px">${halfStars(4.5, 10)}</div>
-                <div class="v3-friend-quote">"chaotic and beautiful. alice's vocals hit like static shock every single time"</div>
-                <div class="v3-friend-meta"><span class="v3-friend-likes">♥ 14</span><span class="v3-friend-likes">💬 3</span></div>
-              </div>
-            </div>
+            <div class="v3-feed-items"></div>
 
-            <div class="v3-friend-card" onclick="navigate('album')">
-              <div class="v3-friend-art" style="background-image:url('images/album-punisher.png')"></div>
-              <div class="v3-friend-body">
-                <div class="v3-friend-who">
-                  <div class="v3-friend-av" style="background:linear-gradient(135deg,#164e63,#0284c7)">SF</div>
-                  <span class="v3-friend-name">staticfog</span>
-                  <span class="v3-friend-time">5h</span>
-                </div>
-                <div class="v3-friend-album">Punisher</div>
-                <div class="v3-friend-artist">Phoebe Bridgers · 2020</div>
-                <div style="margin-bottom:3px">${halfStars(5, 10)}</div>
-                <div class="v3-friend-quote">"funeral is the most heartbreaking song i've heard in years. she ruins you gently"</div>
-                <div class="v3-friend-meta"><span class="v3-friend-likes">♥ 31</span><span class="v3-friend-likes">💬 7</span></div>
-              </div>
-            </div>
-
-            <div class="v3-friend-card" onclick="navigate('album')">
-              <div class="v3-friend-art" style="background:linear-gradient(135deg,#042a10,#6aff3a 130%)"></div>
-              <div class="v3-friend-body">
-                <div class="v3-friend-who">
-                  <div class="v3-friend-av" style="background:linear-gradient(135deg,#3b0764,#9333ea)">KM</div>
-                  <span class="v3-friend-name">kira_m</span>
-                  <span class="v3-friend-time">9h</span>
-                </div>
-                <div class="v3-friend-album">1000 gecs</div>
-                <div class="v3-friend-artist">100 gecs · 2019</div>
-                <div style="margin-bottom:3px">${halfStars(5, 10)}</div>
-                <div class="v3-friend-quote">"this album rewired my brain. nothing before or after sounds like it"</div>
-                <div class="v3-friend-meta"><span class="v3-friend-likes">♥ 22</span><span class="v3-friend-likes">💬 5</span></div>
-              </div>
-            </div>
-
-          </div>
+          </div><!-- /v3-scroll-area -->
+          </div><!-- /v3-body -->
 
           <!-- BOTTOM NAV -->
           <nav class="v3-bottom-nav">
-            <button class="v3-tab" onclick="navigate('home')">
+            <button class="v3-tab active">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z"/><polyline points="9 21 9 12 15 12 15 21"/></svg>
               Home
             </button>
-            <button class="v3-tab active">
+            <button class="v3-tab" onclick="navigate('reviews')">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
               Reviews
             </button>

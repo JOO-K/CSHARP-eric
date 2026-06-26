@@ -115,55 +115,177 @@ function renderViewer() {
   requestAnimationFrame(() => {
     document.querySelectorAll('.s-home-v3').forEach(el => {
       populateHomeData(el);
-      applyAlbumColors(el);
     });
     applyFilletMasks();
   });
 }
 
 // ── Home screen data population ───────────────────────────────
+function reloadCD(cdEl, newUrl) {
+  cdEl.style.transition = 'top 0.14s ease-in';
+  cdEl.style.top = '62%';
+  setTimeout(() => {
+    cdEl.style.backgroundImage = `url('${newUrl}')`;
+    cdEl.style.transition = 'top 0.22s cubic-bezier(0.34,1.28,0.64,1)';
+    cdEl.style.top = '87.62%';
+    setTimeout(() => { cdEl.style.top = ''; cdEl.style.transition = ''; }, 230);
+  }, 150);
+}
+
+function slideIn(el, newUrl) {
+  const old = document.createElement('div');
+  old.style.cssText = `position:absolute;inset:0;background:${el.style.backgroundImage} center/cover no-repeat;z-index:1;transform:translateX(0);will-change:transform;transition:transform 0.42s cubic-bezier(0.4,0,0.2,1)`;
+  const next = document.createElement('div');
+  next.style.cssText = `position:absolute;inset:0;background:url('${newUrl}') center/cover no-repeat;z-index:2;transform:translateX(100%);will-change:transform;transition:transform 0.42s cubic-bezier(0.4,0,0.2,1)`;
+  el.appendChild(old);
+  el.appendChild(next);
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    old.style.transform = 'translateX(-28%)';
+    next.style.transform = 'translateX(0)';
+    next.addEventListener('transitionend', () => {
+      el.style.backgroundImage = `url('${newUrl}')`;
+      old.remove();
+      next.remove();
+    }, { once: true });
+  }));
+}
+
+function typewrite(el, text, speed = 16) {
+  el.textContent = '';
+  if (!text) return;
+  let i = 0;
+  const tick = () => {
+    el.textContent = text.slice(0, ++i);
+    if (i < text.length) setTimeout(tick, speed);
+  };
+  setTimeout(tick, speed);
+}
+
+function setMainAlbum(screenEl, album, animate = false) {
+  const albumEl = screenEl.querySelector('.v3-album');
+  if (albumEl) {
+    if (animate) slideIn(albumEl, album.image);
+    else albumEl.style.backgroundImage = `url('${album.image}')`;
+    albumEl.onclick = () => window.openAlbum(album);
+  }
+  const cdEl = screenEl.querySelector('.v3-cd');
+  if (cdEl) {
+    if (animate) reloadCD(cdEl, album.image);
+    else cdEl.style.backgroundImage = `url('${album.image}')`;
+  }
+
+  const infoRow = screenEl.querySelector('.v3-blue-info-row');
+  if (infoRow && album.artist && album.album) {
+    const combined = album.artist.length + album.album.length;
+    const wdth = combined <= 22 ? 100 : combined <= 30 ? 88 : combined <= 38 ? 76 : combined <= 46 ? 64 : 52;
+    infoRow.style.fontVariationSettings = `'wdth' ${wdth}`;
+  }
+  const artistEl = screenEl.querySelector('.v3-blue-artist');
+  const albumNameEl = screenEl.querySelector('.v3-blue-album');
+  if (animate) {
+    if (artistEl) typewrite(artistEl, album.artist, 16);
+    if (albumNameEl) typewrite(albumNameEl, album.album, 14);
+  } else {
+    if (artistEl) artistEl.textContent = album.artist;
+    if (albumNameEl) albumNameEl.textContent = album.album;
+  }
+
+  const starsRow = screenEl.querySelector('.v3-blue-stars-row');
+  if (starsRow) {
+    const html = `<span class="v3-blue-score">${album.rating.toFixed(1)}</span>${halfStars(album.rating, 14)}<span class="v3-blue-count">${window.fmtRc(album.reviewCount)} reviews</span>`;
+    if (animate) {
+      starsRow.style.cssText += ';transition:opacity 0.18s;opacity:0';
+      setTimeout(() => { starsRow.innerHTML = html; starsRow.style.opacity = '1'; }, 200);
+    } else {
+      starsRow.innerHTML = html;
+    }
+    starsRow.parentElement.onclick = (e) => {
+      e.stopPropagation();
+      window.activeAlbum = album;
+      navigate('review');
+    };
+  }
+
+  const quoteTextEl = screenEl.querySelector('.v3-blue-quote-text');
+  if (quoteTextEl) {
+    const quoteContainer = quoteTextEl.parentElement;
+    quoteContainer.classList.remove('v3-blue-quote--scroll');
+    quoteTextEl.style.removeProperty('--quote-scroll');
+    if (album.reviews && album.reviews.length) {
+      const text = `"${album.reviews[0].text}"`;
+      if (animate) {
+        typewrite(quoteTextEl, text, 11);
+        setTimeout(() => {
+          if (quoteTextEl.scrollWidth > quoteContainer.offsetWidth) {
+            const overflow = quoteTextEl.scrollWidth - quoteContainer.offsetWidth;
+            quoteTextEl.style.setProperty('--quote-scroll', `-${overflow}px`);
+            quoteContainer.classList.add('v3-blue-quote--scroll');
+          }
+        }, text.length * 11 + 80);
+      } else {
+        quoteTextEl.textContent = text;
+        requestAnimationFrame(() => {
+          if (quoteTextEl.scrollWidth > quoteContainer.offsetWidth) {
+            const overflow = quoteTextEl.scrollWidth - quoteContainer.offsetWidth;
+            quoteTextEl.style.setProperty('--quote-scroll', `-${overflow}px`);
+            quoteContainer.classList.add('v3-blue-quote--scroll');
+          }
+        });
+      }
+    }
+  }
+
+  applyAlbumColors(screenEl);
+}
+
+function renderFriendFeed(screenEl) {
+  const container = screenEl.querySelector('.v3-feed-items');
+  if (!container || !window.FRIEND_ACTIVITY) return;
+  const picked = [...window.FRIEND_ACTIVITY].sort(() => Math.random() - 0.5).slice(0, 6);
+  container.innerHTML = picked.map(f => {
+    const artStyle = f.image ? `background-image:url('${f.image}')` : `background:#444`;
+    return `<div class="v3-friend-card" onclick="navigate('album')">
+      <div class="v3-friend-art" style="${artStyle}"></div>
+      <div class="v3-friend-body">
+        <div class="v3-friend-who">
+          <div class="v3-friend-av" style="background:${f.grad}">${f.init}</div>
+          <span class="v3-friend-name">${f.user}</span>
+          <span class="v3-friend-time">${f.ago}</span>
+        </div>
+        <div class="v3-friend-album">${f.album}</div>
+        <div class="v3-friend-artist">${f.artist} · ${f.year}</div>
+        <div class="v3-friend-row">
+          ${halfStars(f.rating, 10)}
+          <span class="v3-friend-likes">♥ ${f.likes}</span>
+          <span class="v3-friend-likes">💬 ${f.comments}</span>
+        </div>
+        <div class="v3-friend-quote">${f.quote}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 function populateHomeData(screenEl) {
   const a = window.featuredAlbum || (window.ARCHIVE && window.ARCHIVE[0]);
   if (!a) return;
 
-  const albumEl = screenEl.querySelector('.v3-album');
-  if (albumEl) {
-    albumEl.style.backgroundImage = `url('${a.image}')`;
-    albumEl.onclick = () => window.openAlbum(a);
-  }
+  setMainAlbum(screenEl, a, false);
+  renderFriendFeed(screenEl);
 
-  const cdEl = screenEl.querySelector('.v3-cd');
-  if (cdEl) cdEl.style.backgroundImage = `url('${a.image}')`;
-
-  const trending = window.trendingAlbums || (window.ARCHIVE || []).slice(0, 5);
-  screenEl.querySelectorAll('.v3-stripe-item').forEach((el, i) => {
-    if (trending[i]) {
-      el.style.backgroundImage = `url('${trending[i].image}')`;
-      el.onclick = () => window.openAlbum(trending[i]);
-    }
-  });
-
-  const starsRow = screenEl.querySelector('.v3-blue-stars-row');
-  if (starsRow) {
-    starsRow.innerHTML = `
-      <span class="v3-blue-score">${a.rating.toFixed(1)}</span>
-      ${halfStars(a.rating, 18)}
-      <span class="v3-blue-count">${window.fmtRc(a.reviewCount)} reviews</span>`;
-    starsRow.parentElement.onclick = () => window.openAlbum(a);
-  }
-
-  const quoteTextEl = screenEl.querySelector('.v3-blue-quote-text');
-  if (quoteTextEl && a.reviews && a.reviews.length) {
-    const rev = a.reviews[0];
-    quoteTextEl.textContent = `"${rev.text}"`;
-    const quoteContainer = quoteTextEl.parentElement;
-    requestAnimationFrame(() => {
-      if (quoteTextEl.scrollWidth > quoteContainer.offsetWidth) {
-        const overflow = quoteTextEl.scrollWidth - quoteContainer.offsetWidth;
-        quoteTextEl.style.setProperty('--quote-scroll', `-${overflow}px`);
-        quoteContainer.classList.add('v3-blue-quote--scroll');
-      }
-    });
+  const trending = window.trendingAlbums || (window.ARCHIVE || []).slice(1, 6);
+  const forSingle = screenEl.querySelector('.v3-for-single');
+  if (forSingle && trending.length) {
+    if (!forSingle.dataset.forIdx) forSingle.dataset.forIdx = '0';
+    const idx = parseInt(forSingle.dataset.forIdx);
+    forSingle.style.backgroundImage = `url('${trending[idx].image}')`;
+    forSingle.onclick = (e) => {
+      e.stopPropagation();
+      const cur = trending[parseInt(forSingle.dataset.forIdx)];
+      const nextIdx = (parseInt(forSingle.dataset.forIdx) + 1) % trending.length;
+      forSingle.dataset.forIdx = String(nextIdx);
+      slideIn(forSingle, trending[nextIdx].image);
+      setMainAlbum(screenEl, cur, true);
+    };
   }
 }
 
