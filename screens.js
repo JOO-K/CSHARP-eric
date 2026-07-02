@@ -566,20 +566,17 @@ const SCREENS = [
         html: `
         <div class="app-screen s-home-v3">
 
-          <!-- Search: fixed overlay, stays put while body scrolls -->
-          <button class="v3-search-pill" onclick="navigate('search')">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-          </button>
-
           <!-- Scrollable body: bento + feed scroll together -->
           <div class="v3-body">
 
           <!-- BENTO: all children absolutely positioned in 690×670 SVG coordinate space -->
           <div class="v3-bento">
 
-            <!-- Background fill: paints album color only inside the bento frame shape -->
+            <!-- Background fill: paints album color inside the bento frame shape.
+                 Two silhouettes (right/left hand) — CSS shows one via .s-home-v3--left -->
             <svg class="v3-bg-fill" viewBox="0 0 689 638" xmlns="http://www.w3.org/2000/svg">
-              <path fill="currentColor" d="M518.5 0.5H20.5C9.4543 0.5 0.5 9.4543 0.5 20.5V617.5C0.5 628.546 9.4543 637.5 20.5 637.5H518.5C529.546 637.5 538.5 628.546 538.5 617.5V609C538.5 570.34 569.84 539 608.5 539H668.5C679.546 539 688.5 530.046 688.5 519V107.5C688.5 96.4543 679.546 87.5 668.5 87.5H558.5C547.454 87.5 538.5 78.5457 538.5 67.5V20.5C538.5 9.45431 529.546 0.5 518.5 0.5Z"/>
+              <path class="bg-right" fill="currentColor" d="M518.5 0.5H20.5C9.4543 0.5 0.5 9.4543 0.5 20.5V617.5C0.5 628.546 9.4543 637.5 20.5 637.5H518.5C529.546 637.5 538.5 628.546 538.5 617.5V609C538.5 570.34 569.84 539 608.5 539H668.5C679.546 539 688.5 530.046 688.5 519V107.5C688.5 96.4543 679.546 87.5 668.5 87.5H558.5C547.454 87.5 538.5 78.5457 538.5 67.5V20.5C538.5 9.45431 529.546 0.5 518.5 0.5Z"/>
+              <path class="bg-left" fill="currentColor" d="M170.5 0.5H668.5C679.546 0.5 688.5 9.4543 688.5 20.5V617.5C688.5 628.546 679.546 637.5 668.5 637.5H170.5C159.454 637.5 150.5 628.546 150.5 617.5V609C150.5 570.34 119.16 539 80.5 539H20.5C9.45428 539 0.5 530.046 0.5 519V107.5C0.5 96.4543 9.45428 87.5 20.5 87.5H130.5C141.546 87.5 150.5 78.5457 150.5 67.5V20.5C150.5 9.45431 159.454 0.5 170.5 0.5Z"/>
             </svg>
 
             <!-- Master SVG frame — viewBox matches bento aspect-ratio exactly -->
@@ -597,7 +594,7 @@ const SCREENS = [
                  style="background-image:url('images/album-crystalcastles1.png')"></div>
 
             <!-- Stats strip: expanded to top 77% h 22.92% to fit album/artist name -->
-            <div class="v3-blue" onclick="event.stopPropagation(); window.activeAlbum = window.activeAlbum || window.featuredAlbum; navigate('review')">
+            <div class="v3-blue" onclick="event.stopPropagation(); enterReview(this.closest('.s-home-v3'))">
               <div class="v3-blue-info-row">
                 <span class="v3-blue-artist"></span>
                 <span class="v3-blue-sep">·</span>
@@ -621,6 +618,12 @@ const SCREENS = [
               <div class="v3-cd-hole"></div>
             </div>
 
+            <!-- Live corner button — sits in the bento's top corner notch; becomes Back in review mode -->
+            <button class="v3-search-pill v3-live-pill" onclick="event.stopPropagation(); onLivePill(this)">
+              <span class="v3-live-content"><span class="v3-live-dot"></span><span class="v3-live-label">Live</span></span>
+              <span class="v3-back-content"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Back</span>
+            </button>
+
           </div>
 
           <!-- SCROLL: app name + friends feed -->
@@ -634,7 +637,64 @@ const SCREENS = [
             <div class="v3-feed-items"></div>
 
           </div><!-- /v3-scroll-area -->
+
+          <!-- REVIEW PANEL: replaces the feed when the stats box is tapped.
+               stopPropagation keeps clicks from bubbling to the viewer's variant-switch wrapper -->
+          <div class="v3-review-panel" onclick="event.stopPropagation()" onmousedown="event.stopPropagation()">
+
+            <!-- Top row: streaming links (centered under CD) + your review (aligned to stats text).
+                 Uses the bento's 78/22 split so it mirrors with the hand layout. -->
+            <div class="v3-rev-top">
+
+              <!-- Streaming / external links — column centered under the CD (placeholders) -->
+              <div class="v3-rev-rail">
+                <a class="v3-rev-link v3-rev-link--spotify" title="Spotify" onclick="event.stopPropagation()">
+                  <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.52 17.34c-.24.36-.66.48-1.02.24-2.82-1.74-6.36-2.1-10.56-1.14-.42.12-.78-.18-.9-.54-.12-.42.18-.78.54-.9 4.56-1.02 8.52-.6 11.64 1.32.42.18.48.66.3 1.02zm1.44-3.3c-.3.42-.84.6-1.26.3-3.24-1.98-8.16-2.58-11.94-1.38-.48.12-1.02-.12-1.14-.6-.12-.48.12-1.02.6-1.14 4.38-1.32 9.78-.72 13.5 1.56.36.24.54.84.24 1.26zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.3c-.6.18-1.2-.18-1.38-.72-.18-.6.18-1.2.72-1.38 4.26-1.26 11.28-1.02 15.72 1.62.54.3.72 1.02.42 1.56-.3.42-1.02.6-1.56.3z"/></svg>
+                </a>
+                <a class="v3-rev-link v3-rev-link--apple" title="Apple Music" onclick="event.stopPropagation()">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V6l10-2v12"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg>
+                </a>
+                <a class="v3-rev-link v3-rev-link--yt" title="YouTube Music" onclick="event.stopPropagation()">
+                  <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm-2 14V8l6 4-6 4z"/></svg>
+                </a>
+              </div>
+
+              <!-- Your rating + written review + submit — aligned to the stats text -->
+              <div class="v3-rev-mine">
+                <div class="v3-rev-mine-hd">Your review<span class="v3-rev-album-name"></span></div>
+                <div class="v3-rev-stars" data-rating="0">
+                  <span class="v3-rev-star" data-v="1" onclick="setMyRating(this, event)">★</span>
+                  <span class="v3-rev-star" data-v="2" onclick="setMyRating(this, event)">★</span>
+                  <span class="v3-rev-star" data-v="3" onclick="setMyRating(this, event)">★</span>
+                  <span class="v3-rev-star" data-v="4" onclick="setMyRating(this, event)">★</span>
+                  <span class="v3-rev-star" data-v="5" onclick="setMyRating(this, event)">★</span>
+                </div>
+                <div class="v3-rev-write-wrap">
+                  <textarea class="v3-rev-write" rows="1" placeholder="Write a review…" oninput="autoGrowReview(this)"></textarea>
+                  <span class="v3-rev-ph">Write a review…<i class="v3-rev-caret"></i></span>
+                </div>
+                <button class="v3-rev-submit" onclick="submitReview(this)">Post review</button>
+              </div>
+
+            </div><!-- /v3-rev-top -->
+
+            <!-- Other users' reviews — full width -->
+            <div class="v3-rev-filters">
+              <button class="v3-rev-filter active" data-f="friends" onclick="setReviewFilter(this)">Friends</button>
+              <button class="v3-rev-filter" data-f="popular" onclick="setReviewFilter(this)">Popular</button>
+              <button class="v3-rev-filter" data-f="new" onclick="setReviewFilter(this)">New</button>
+              <span class="v3-rev-count"></span>
+            </div>
+
+            <div class="v3-rev-list"></div>
+
+          </div><!-- /v3-review-panel -->
           </div><!-- /v3-body -->
+
+          <!-- DEV: hand-layout toggle (left/right) — temporary, for one-hand testing -->
+          <button class="v3-hand-toggle" onclick="toggleHand()" title="Toggle left/right hand layout">
+            <span class="v3-hand-ico">✋</span><span class="v3-hand-label">Left</span>
+          </button>
 
           <!-- BOTTOM NAV -->
           <nav class="v3-bottom-nav">
@@ -696,20 +756,17 @@ const SCREENS = [
         html: `
         <div class="app-screen s-home-v3 s-home-v3--light">
 
-          <!-- Search: fixed overlay, stays put while body scrolls -->
-          <button class="v3-search-pill" onclick="navigate('search')">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-          </button>
-
           <!-- Scrollable body: bento + feed scroll together -->
           <div class="v3-body">
 
           <!-- BENTO: all children absolutely positioned in 690×670 SVG coordinate space -->
           <div class="v3-bento">
 
-            <!-- Background fill: paints album color only inside the bento frame shape -->
+            <!-- Background fill: paints album color inside the bento frame shape.
+                 Two silhouettes (right/left hand) — CSS shows one via .s-home-v3--left -->
             <svg class="v3-bg-fill" viewBox="0 0 689 638" xmlns="http://www.w3.org/2000/svg">
-              <path fill="currentColor" d="M518.5 0.5H20.5C9.4543 0.5 0.5 9.4543 0.5 20.5V617.5C0.5 628.546 9.4543 637.5 20.5 637.5H518.5C529.546 637.5 538.5 628.546 538.5 617.5V609C538.5 570.34 569.84 539 608.5 539H668.5C679.546 539 688.5 530.046 688.5 519V107.5C688.5 96.4543 679.546 87.5 668.5 87.5H558.5C547.454 87.5 538.5 78.5457 538.5 67.5V20.5C538.5 9.45431 529.546 0.5 518.5 0.5Z"/>
+              <path class="bg-right" fill="currentColor" d="M518.5 0.5H20.5C9.4543 0.5 0.5 9.4543 0.5 20.5V617.5C0.5 628.546 9.4543 637.5 20.5 637.5H518.5C529.546 637.5 538.5 628.546 538.5 617.5V609C538.5 570.34 569.84 539 608.5 539H668.5C679.546 539 688.5 530.046 688.5 519V107.5C688.5 96.4543 679.546 87.5 668.5 87.5H558.5C547.454 87.5 538.5 78.5457 538.5 67.5V20.5C538.5 9.45431 529.546 0.5 518.5 0.5Z"/>
+              <path class="bg-left" fill="currentColor" d="M170.5 0.5H668.5C679.546 0.5 688.5 9.4543 688.5 20.5V617.5C688.5 628.546 679.546 637.5 668.5 637.5H170.5C159.454 637.5 150.5 628.546 150.5 617.5V609C150.5 570.34 119.16 539 80.5 539H20.5C9.45428 539 0.5 530.046 0.5 519V107.5C0.5 96.4543 9.45428 87.5 20.5 87.5H130.5C141.546 87.5 150.5 78.5457 150.5 67.5V20.5C150.5 9.45431 159.454 0.5 170.5 0.5Z"/>
             </svg>
 
             <!-- Master SVG frame — viewBox matches bento aspect-ratio exactly -->
@@ -727,7 +784,7 @@ const SCREENS = [
                  style="background-image:url('images/album-crystalcastles1.png')"></div>
 
             <!-- Stats strip -->
-            <div class="v3-blue" onclick="event.stopPropagation(); window.activeAlbum = window.activeAlbum || window.featuredAlbum; navigate('review')">
+            <div class="v3-blue" onclick="event.stopPropagation(); enterReview(this.closest('.s-home-v3'))">
               <div class="v3-blue-info-row">
                 <span class="v3-blue-artist"></span>
                 <span class="v3-blue-sep">·</span>
@@ -751,6 +808,12 @@ const SCREENS = [
               <div class="v3-cd-hole"></div>
             </div>
 
+            <!-- Live corner button — sits in the bento's top corner notch; becomes Back in review mode -->
+            <button class="v3-search-pill v3-live-pill" onclick="event.stopPropagation(); onLivePill(this)">
+              <span class="v3-live-content"><span class="v3-live-dot"></span><span class="v3-live-label">Live</span></span>
+              <span class="v3-back-content"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Back</span>
+            </button>
+
           </div>
 
           <!-- SCROLL: app name + friends feed -->
@@ -764,7 +827,64 @@ const SCREENS = [
             <div class="v3-feed-items"></div>
 
           </div><!-- /v3-scroll-area -->
+
+          <!-- REVIEW PANEL: replaces the feed when the stats box is tapped.
+               stopPropagation keeps clicks from bubbling to the viewer's variant-switch wrapper -->
+          <div class="v3-review-panel" onclick="event.stopPropagation()" onmousedown="event.stopPropagation()">
+
+            <!-- Top row: streaming links (centered under CD) + your review (aligned to stats text).
+                 Uses the bento's 78/22 split so it mirrors with the hand layout. -->
+            <div class="v3-rev-top">
+
+              <!-- Streaming / external links — column centered under the CD (placeholders) -->
+              <div class="v3-rev-rail">
+                <a class="v3-rev-link v3-rev-link--spotify" title="Spotify" onclick="event.stopPropagation()">
+                  <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.52 17.34c-.24.36-.66.48-1.02.24-2.82-1.74-6.36-2.1-10.56-1.14-.42.12-.78-.18-.9-.54-.12-.42.18-.78.54-.9 4.56-1.02 8.52-.6 11.64 1.32.42.18.48.66.3 1.02zm1.44-3.3c-.3.42-.84.6-1.26.3-3.24-1.98-8.16-2.58-11.94-1.38-.48.12-1.02-.12-1.14-.6-.12-.48.12-1.02.6-1.14 4.38-1.32 9.78-.72 13.5 1.56.36.24.54.84.24 1.26zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.3c-.6.18-1.2-.18-1.38-.72-.18-.6.18-1.2.72-1.38 4.26-1.26 11.28-1.02 15.72 1.62.54.3.72 1.02.42 1.56-.3.42-1.02.6-1.56.3z"/></svg>
+                </a>
+                <a class="v3-rev-link v3-rev-link--apple" title="Apple Music" onclick="event.stopPropagation()">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V6l10-2v12"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg>
+                </a>
+                <a class="v3-rev-link v3-rev-link--yt" title="YouTube Music" onclick="event.stopPropagation()">
+                  <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm-2 14V8l6 4-6 4z"/></svg>
+                </a>
+              </div>
+
+              <!-- Your rating + written review + submit — aligned to the stats text -->
+              <div class="v3-rev-mine">
+                <div class="v3-rev-mine-hd">Your review<span class="v3-rev-album-name"></span></div>
+                <div class="v3-rev-stars" data-rating="0">
+                  <span class="v3-rev-star" data-v="1" onclick="setMyRating(this, event)">★</span>
+                  <span class="v3-rev-star" data-v="2" onclick="setMyRating(this, event)">★</span>
+                  <span class="v3-rev-star" data-v="3" onclick="setMyRating(this, event)">★</span>
+                  <span class="v3-rev-star" data-v="4" onclick="setMyRating(this, event)">★</span>
+                  <span class="v3-rev-star" data-v="5" onclick="setMyRating(this, event)">★</span>
+                </div>
+                <div class="v3-rev-write-wrap">
+                  <textarea class="v3-rev-write" rows="1" placeholder="Write a review…" oninput="autoGrowReview(this)"></textarea>
+                  <span class="v3-rev-ph">Write a review…<i class="v3-rev-caret"></i></span>
+                </div>
+                <button class="v3-rev-submit" onclick="submitReview(this)">Post review</button>
+              </div>
+
+            </div><!-- /v3-rev-top -->
+
+            <!-- Other users' reviews — full width -->
+            <div class="v3-rev-filters">
+              <button class="v3-rev-filter active" data-f="friends" onclick="setReviewFilter(this)">Friends</button>
+              <button class="v3-rev-filter" data-f="popular" onclick="setReviewFilter(this)">Popular</button>
+              <button class="v3-rev-filter" data-f="new" onclick="setReviewFilter(this)">New</button>
+              <span class="v3-rev-count"></span>
+            </div>
+
+            <div class="v3-rev-list"></div>
+
+          </div><!-- /v3-review-panel -->
           </div><!-- /v3-body -->
+
+          <!-- DEV: hand-layout toggle (left/right) — temporary, for one-hand testing -->
+          <button class="v3-hand-toggle" onclick="toggleHand()" title="Toggle left/right hand layout">
+            <span class="v3-hand-ico">✋</span><span class="v3-hand-label">Left</span>
+          </button>
 
           <!-- BOTTOM NAV -->
           <nav class="v3-bottom-nav">

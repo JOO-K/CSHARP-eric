@@ -2456,7 +2456,7 @@
   inherits: true;
   initial-value: #c8a060;
 }
-.s-home-v3 { transition: --v3-accent 0.55s ease; }
+.s-home-v3 { transition: --v3-accent 0.55s ease, background-color 0.4s ease; }
 
 /* Master SVG frame overlay — no strokes, purely structural */
 .v3-master-frame {
@@ -2606,14 +2606,15 @@
 /* ForYou single panel */
 .v3-for-single {
   position: absolute;
-  left: 80.77%; top: 16.93%; width: 16.66%; height: 64.11%;
+  /* Exact sizing from NewBentoSvgs For You box: x557–670, y105–520 in 689×638 space */
+  left: 80.84%; top: 16.46%; width: 16.40%; height: 65.05%;
   background-size: cover; background-position: center;
   background-color: #2a2520;
-  border-radius: 10px;
+  border-radius: 11px;
   overflow: hidden;
   cursor: pointer;
   z-index: 2;
-  transition: filter 0.2s;
+  transition: filter 0.2s, width 0.4s ease, height 0.4s ease, left 0.4s ease, top 0.4s ease;
 }
 .v3-for-single::after {
   content: '';
@@ -2794,6 +2795,273 @@
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   LEFT / RIGHT HAND LAYOUT  (one-hand reachability)
+   Right hand = default (matches original bento).
+   .s-home-v3--left mirrors every cell + swaps the bg silhouette.
+   ════════════════════════════════════════════════════════════ */
+
+/* Background silhouette: show right by default, left when mirrored */
+.v3-bg-fill .bg-left { display: none; }
+.s-home-v3--left .v3-bg-fill .bg-right { display: none; }
+.s-home-v3--left .v3-bg-fill .bg-left  { display: block; }
+
+/* Album art — mirror to the right side; notch corner flips to bottom-right */
+.s-home-v3--left .v3-album {
+  left: 21.92%;
+  border-radius: 10px 10px 0 10px;
+}
+/* Stats strip — mirror under the album; text stays LEFT-aligned (like album title) */
+.s-home-v3--left .v3-blue { left: 21.85%; }
+/* For You box — mirror to the left column */
+.s-home-v3--left .v3-for-single { left: 2.76%; }
+/* Spinning CD — mirror to bottom-left */
+.s-home-v3--left .v3-cd { left: 2.68%; }
+
+/* ── "Live" corner pill (was search) ─────────────────────────── */
+/* Positioned inside the bento to match the SVG corner pill exactly:
+   x556.5–688.5, y0.5–65.5 in the 689×638 coordinate space */
+.v3-live-pill {
+  position: absolute;
+  left: 80.77%; top: 0.5%; right: auto;
+  width: 19.16%; height: 10.19%;
+  min-width: 0;
+  gap: 6px; padding: 0;
+  border-radius: 999px;
+  font-family: var(--font-main);
+  font-size: 12.5px; font-weight: 700; letter-spacing: 0.2px;
+  z-index: 6;
+}
+.s-home-v3--left .v3-live-pill { left: 0.07%; right: auto; }
+.v3-live-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #e6484d; flex-shrink: 0;
+  box-shadow: 0 0 6px rgba(230,72,77,0.85);
+  animation: v3livepulse 1.8s ease-in-out infinite;
+}
+.v3-live-label { color: rgba(232,226,214,0.9); }
+.s-home-v3--light .v3-live-label { color: rgba(26,18,8,0.85); }
+@keyframes v3livepulse {
+  0%,100% { opacity: 1; }
+  50%     { opacity: 0.45; }
+}
+
+/* ── DEV hand-toggle button (temporary) ──────────────────────── */
+.v3-hand-toggle {
+  position: absolute;
+  left: 50%; transform: translateX(-50%);
+  bottom: 64px; z-index: 60;
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 12px;
+  border: none; border-radius: 999px;
+  background: rgba(18,18,24,0.82);
+  -webkit-backdrop-filter: blur(7px); backdrop-filter: blur(7px);
+  box-shadow: 0 3px 12px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(255,255,255,0.09);
+  color: rgba(232,226,214,0.85);
+  font-family: var(--font-mono, monospace);
+  font-size: 10.5px; font-weight: 600; letter-spacing: 0.4px;
+  cursor: pointer;
+}
+.v3-hand-toggle:active { filter: brightness(1.2); }
+.v3-hand-ico { font-size: 12px; line-height: 1; }
+.s-home-v3--left .v3-hand-ico { transform: scaleX(-1); }
+.s-home-v3--light .v3-hand-toggle {
+  background: rgba(248,244,238,0.85);
+  color: rgba(26,18,8,0.75);
+  box-shadow: 0 3px 12px rgba(116,150,179,0.25), inset 0 0 0 1px rgba(26,18,8,0.1);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   FULLSCREEN REVIEW MODE  (tap the stats box to open)
+   The bento color floods the whole screen (seamless takeover),
+   then the content fades in. Minimal, typographic — no grey boxes.
+   ════════════════════════════════════════════════════════════ */
+/* Panel padding matches the bento's 10px margin so % columns align exactly */
+.v3-review-panel { display: none; padding: 4px 10px 18px; }
+.s-home-v3--review .v3-scroll-area { display: none; }
+.s-home-v3--review .v3-review-panel { display: block; animation: v3revin 0.5s ease 0.2s both; }
+
+/* Top row: links (thumb/CD side) + your review (album/stats side).
+   Uses the bento's 78/22 split; flips to row-reverse in right-hand mode. */
+.v3-rev-top { display: flex; align-items: flex-start; gap: 0; margin-top: -20px; margin-bottom: 2px; }
+.s-home-v3:not(.s-home-v3--left) .v3-rev-top { flex-direction: row-reverse; }
+
+/* Streaming links — 22% column (the CD column); icons centered under the CD.
+   padding-top offsets the -20px row pull so the links stay clear of the CD above. */
+.v3-rev-rail {
+  flex-shrink: 0; width: 22%;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding-top: 31px;   /* first icon sits ~22px below the CD */
+  pointer-events: none;   /* empty column doesn't block the CD overlapping above */
+}
+.v3-rev-link { pointer-events: auto; }
+.v3-rev-link {
+  width: 32px; height: 24px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(232,226,214,0.42); cursor: pointer;
+  transition: color 0.15s, transform 0.12s;
+}
+/* Normalize icon glyph size so the box hugs them and the visual gap ≈ the 3px set */
+.v3-rev-link svg { width: 22px; height: 22px; }
+.v3-rev-link:hover { transform: translateY(-1px); }
+.v3-rev-link--spotify:hover { color: #1DB954; }
+.v3-rev-link--apple:hover   { color: #fa5a78; }
+.v3-rev-link--yt:hover      { color: #ff2d2d; }
+.s-home-v3--light .v3-rev-link { color: rgba(26,18,8,0.4); }
+.s-home-v3--review .v3-hand-toggle { display: none; }   /* dev button out of the way */
+@keyframes v3revin {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Flood: screen bg becomes the bento color; the bento melts into it */
+.s-home-v3--review { background: var(--v3-box1-color, #241820); }
+.s-home-v3--light.s-home-v3--review { background: #f0ece3; }
+.v3-bg-fill { transition: filter 0.35s ease; }
+.s-home-v3--review .v3-bg-fill { filter: none; }
+
+/* In review mode the reviews live below, so drop the sample quote in the stats box
+   and keep the remaining stats pinned to the top (frees the space beneath) */
+.s-home-v3--review .v3-blue-quote { display: none; }
+.s-home-v3--review .v3-blue { justify-content: flex-start; }
+
+/* Flood removes the bento margin visually, leaving dead space between the For You
+   box and the screen edge. Grow it outward so its edge inset matches the back button. */
+.s-home-v3--review .v3-for-single { width: 19.1%; top: 12.96%; height: 68.55%; }                      /* right-hand: extend right edge + 3.5% taller upward (bottom fixed) */
+.s-home-v3--left.s-home-v3--review .v3-for-single { left: 0.07%; width: 19.1%; top: 12.96%; height: 68.55%; }  /* left-hand: extend left edge + 3.5% taller upward */
+
+/* Live pill ⇄ Back arrow */
+.v3-back-content { display: none; align-items: center; gap: 3px; }
+.s-home-v3--review .v3-live-content { display: none; }
+.s-home-v3--review .v3-back-content { display: inline-flex; }
+
+/* Your review — album/stats-side column; 12px left pad aligns with stats text.
+   flex column so the header/stars/textarea stack tight and Post can go lower-right. */
+.v3-rev-mine {
+  flex: 1; min-width: 0;
+  margin-top: -5px;
+  padding: 0 0 6px 12px;
+  display: flex; flex-direction: column;
+}
+.v3-rev-mine-hd {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.8px;
+  text-transform: uppercase; color: rgba(232,226,214,0.42);
+  margin-bottom: 2px; display: flex; gap: 7px; align-items: baseline;
+  font-family: var(--font-main);
+}
+.v3-rev-album-name {
+  color: rgba(232,226,214,0.7); text-transform: none;
+  letter-spacing: 0; font-weight: 600; font-size: 11px;
+}
+.v3-rev-stars { display: flex; gap: 3px; margin-bottom: 4px; }
+.v3-rev-star {
+  font-size: 30px; line-height: 1; cursor: pointer;
+  color: rgba(232,226,214,0.18); border-radius: 5px;
+  transition: color 0.12s, transform 0.12s;
+}
+.v3-rev-star:hover { transform: scale(1.14); }
+.v3-rev-star.on { color: var(--star, #e8a83c); }
+.v3-rev-star.half {
+  background: linear-gradient(90deg, var(--star, #e8a83c) 50%, rgba(232,226,214,0.18) 50%);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+}
+.v3-rev-write {
+  display: block; width: 100%; box-sizing: border-box; resize: none;
+  overflow: hidden; min-height: 22px;
+  background: transparent; border: none; padding: 0;
+  color: #e8e2d6; font-family: 'Crimson Text', Georgia, serif; font-size: 15px; line-height: 1.5;
+}
+.v3-rev-write::placeholder { color: transparent; }   /* custom hint overlay used instead */
+.v3-rev-write:focus { outline: none; }
+
+/* Custom "Write a review…" hint with a blinking caret (shown only when empty & unfocused) */
+.v3-rev-write-wrap { position: relative; }
+.v3-rev-ph {
+  display: none;
+  position: absolute; top: 0; left: 0;
+  font-family: 'Crimson Text', Georgia, serif; font-size: 15px; line-height: 1.5;
+  color: rgba(232,226,214,0.3);
+  pointer-events: none; white-space: nowrap;
+}
+.v3-rev-write:placeholder-shown + .v3-rev-ph { display: block; }
+.v3-rev-write:focus + .v3-rev-ph { display: none; }
+.v3-rev-caret {
+  display: inline-block; width: 1px; height: 0.95em; margin-left: 2px;
+  vertical-align: -0.12em; background: rgba(232,226,214,0.4);
+  animation: v3caret 2.8s ease-in-out infinite;
+}
+@keyframes v3caret { 0%, 100% { opacity: 1; } 50% { opacity: 0.12; } }
+.s-home-v3--light .v3-rev-ph { color: rgba(26,18,8,0.3); }
+.s-home-v3--light .v3-rev-caret { background: rgba(26,18,8,0.4); }
+.v3-rev-submit {
+  margin-top: 11px; align-self: flex-end; display: none;   /* shown by JS only once there's text */
+  padding: 4px 12px; border-radius: 999px;
+  border: 1px solid var(--v3-accent, #e8a83c);
+  background: transparent; color: var(--v3-accent, #e8a83c);
+  font-family: var(--font-main); font-size: 10.5px; font-weight: 700; letter-spacing: 0.2px;
+  cursor: pointer; transition: background 0.15s, color 0.15s, opacity 0.15s;
+}
+.v3-rev-submit:hover { background: var(--v3-accent, #e8a83c); color: #16130d; }
+.v3-rev-submit:disabled { opacity: 0.55; cursor: default; background: transparent; }
+
+/* Filters — text tabs, not pills; full-width with a divider above */
+.v3-rev-filters {
+  display: flex; align-items: baseline; gap: 16px;
+  padding: 15px 0 5px; margin-top: 8px;
+  border-top: 1px solid rgba(232,226,214,0.1);
+}
+.s-home-v3--light .v3-rev-filters { border-top-color: rgba(26,18,8,0.1); }
+.v3-rev-filter {
+  padding: 0; border: none; background: none;
+  color: rgba(232,226,214,0.4);
+  font-family: var(--font-main); font-size: 12px; font-weight: 700; letter-spacing: 0.2px;
+  cursor: pointer; transition: color 0.15s;
+}
+.v3-rev-filter.active { color: var(--v3-accent, #e8a83c); }
+.v3-rev-count {
+  margin-left: auto; font-size: 9.5px; font-family: var(--font-mono);
+  color: rgba(232,226,214,0.32);
+}
+
+/* Review cards — hairline dividers, no boxes */
+.v3-rev-list { display: flex; flex-direction: column; }
+.v3-rev-card { padding: 18px 0; border-bottom: 1px solid rgba(232,226,214,0.08); }
+.v3-rev-card-top { display: flex; align-items: center; gap: 9px; margin-bottom: 7px; }
+.v3-rev-av {
+  width: 25px; height: 25px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; color: #fff;
+}
+.v3-rev-name {
+  font-size: 12.5px; font-weight: 700;
+  color: rgba(232,226,214,0.88); margin-right: auto;
+}
+.v3-rev-text { font-family: 'Crimson Text', Georgia, serif; font-size: 14.5px; line-height: 1.5; color: rgba(232,226,214,0.66); }
+.v3-rev-empty {
+  padding: 34px 0; text-align: center;
+  font-size: 12px; color: rgba(232,226,214,0.35);
+}
+
+/* Light theme */
+.s-home-v3--light .v3-rev-mine-hd { color: rgba(26,18,8,0.42); }
+.s-home-v3--light .v3-rev-album-name { color: rgba(26,18,8,0.7); }
+.s-home-v3--light .v3-rev-star { color: rgba(26,18,8,0.16); }
+.s-home-v3--light .v3-rev-star.half {
+  background: linear-gradient(90deg, var(--star, #e8a83c) 50%, rgba(26,18,8,0.16) 50%);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.s-home-v3--light .v3-rev-write { color: #1a1208; }
+.s-home-v3--light .v3-rev-write::placeholder { color: transparent; }
+.s-home-v3--light .v3-rev-filter { color: rgba(26,18,8,0.4); }
+.s-home-v3--light .v3-rev-filter.active { color: var(--v3-accent, #b06a2a); }
+.s-home-v3--light .v3-rev-count { color: rgba(26,18,8,0.35); }
+.s-home-v3--light .v3-rev-card { border-bottom-color: rgba(26,18,8,0.09); }
+.s-home-v3--light .v3-rev-name { color: rgba(26,18,8,0.85); }
+.s-home-v3--light .v3-rev-text { color: rgba(26,18,8,0.6); }
+.s-home-v3--light .v3-rev-empty { color: rgba(26,18,8,0.4); }
 
 /* Streaming service sheet */
 .v3-stream-overlay {

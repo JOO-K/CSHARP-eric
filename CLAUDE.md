@@ -12,12 +12,18 @@
 | File | Role |
 |------|------|
 | `index.html` | Shell: desktop viewer + mobile prototype wrapper |
+| `data.js` | Album archive, global state, `openAlbum()` helper |
 | `screens.js` | All screen HTML (the `SCREENS` array) + helpers |
-| `app.js` | Viewer logic, navigation, color extraction, mobile engine |
+| `app.js` | Viewer logic, navigation, color extraction, fillet processing, mobile engine |
 | `app.css` | App UI styles (screens, components, palette) |
 | `style.css` | Desktop viewer chrome (toolbar, phone frame, variant tray) |
 | `flowchart.html` | Page map / user flow diagram |
-| `images/` | Album art + artist photos (JPG/PNG) |
+| `archive.csv` | Source of truth for artist/album metadata |
+| `images/` | Album art — ~54 images, naming: `album-artistslug-albumslug.ext` |
+| `images/topbox.png` | Fillet PNG — black arc at bottom-left, white bg. Used for `v3-fillet-bl` |
+| `images/bottombox.png` | Fillet PNG — black arc at top-left, white bg. Used for `v3-fillet-tl` |
+
+**Script load order (important):** `data.js` → `screens.js` → `app.js`
 
 ---
 
@@ -43,69 +49,105 @@ Navigate between screens with `navigate('screen-id')` — called from `onclick` 
 
 ---
 
+## Data Layer (`data.js`)
+
+`data.js` runs first and sets up the global data layer:
+
+```js
+window.ARCHIVE        // Array of 54 album objects
+window.activeAlbum    // Currently viewed album (set by openAlbum)
+window.featuredAlbum  // Today's featured album (daily rotation)
+window.trendingAlbums // Array of 5 trending albums (excludes featured)
+window.fmtRc(n)       // Formats review counts: 31000 → "31k"
+window.openAlbum(a)   // Sets activeAlbum + navigates to 'album' screen
+```
+
+Each album object:
+```js
+{
+  artist, album, year, genre, tracks,
+  image,           // 'images/album-slug.ext'
+  artistDesc, artistBio,
+  rating,          // 3.8–4.9 (fictional)
+  reviewCount,     // 6000–156000 (fictional)
+  reviews: [{ name, init, grad, rating, text }]
+}
+```
+
+**`featuredAlbum` / `trendingAlbums`** rotate daily (`Math.floor(Date.now() / 86400000) % ARCHIVE.length`).
+
+### Dynamic screens (getter pattern)
+Wall, Feed (Albums), and Album Page use `get html()` so content is evaluated fresh each render.
+
+Home screen data is injected post-render by `populateHomeData(el)` in `app.js` (called inside `requestAnimationFrame` after every `renderViewer()`).
+
+---
+
 ## Design Language & Aesthetics
 
 ### Philosophy
-The aesthetic is **editorial-dark meets floating bento** — think a music zine digitized. Not a streaming app, not social media. Somewhere between Letterboxd, a vinyl record store, and a Tumblr that cares about typography.
+**Editorial-dark meets floating bento** — a music zine digitized. Between Letterboxd, a vinyl record store, and a Tumblr that cares about typography.
 
 Key principles:
-- **Floating cards with drop shadow** — cards lift off the background. Dark theme uses deep shadows + a 1px inset top-edge highlight (`inset 0 1px 0 rgba(255,255,255,0.07)`). Light theme uses warm drop shadows.
-- **Album art is the hero** — everything orbits the album cover. It's large, square, unclipped.
-- **No generic gradients** — colors should feel extracted from content, not templated.
-- **Compact, dense information** — no wasted vertical space. Text is small but readable. Stars + rating + count in one line.
-- **Procedural color** — the home screen extracts a vibrant accent color from the album art via canvas and applies it to stars, box tints, and button colors.
+- **Floating cards with drop shadow** — cards lift off the background
+- **Album art is the hero** — everything orbits the cover
+- **Compact, dense information** — stars + rating + count in one row
+- **Procedural color** — accent color extracted from album art via canvas
 
 ### Dark Theme (Float·Dark / v3.0)
-- Screen bg: `#111116` (near-black with 2% blue tint)
-- Surface (cards): built per-component, no global surface color in v3
+- Screen bg: `#111116`
 - Text primary: `#e8e2d6` (warm off-white)
-- Text muted: `rgba(232,226,214,0.3–0.5)`
-- Empty stars: `rgba(232,226,214,0.14)` (grey, NOT black)
-- Box shadows: `0 6px 28px rgba(0,0,0,0.45–0.65)` + inset top highlight
-- Accent: procedurally extracted from album art via `applyAlbumColors()`
+- Empty stars: `rgba(232,226,214,0.14)` — grey, NOT black
+- Shadows: dark-on-dark — barely visible; rely on inset top-edge highlight `inset 0 1px 0 rgba(255,255,255,0.06)` for separation
+- Accent: procedurally extracted via `applyAlbumColors()`
 
 ### Light Theme (Float·Light / v3.1)
 - Screen bg: `#f0ece3` (warm cream)
 - Text primary: `#1a1208`
-- Text muted: `rgba(26,18,8,0.3–0.5)`
 - Empty stars: `rgba(26,18,8,0.15)`
-- Box shadows: warm-tinted (e.g. `0 4px 18px rgba(160,40,40,0.12)`)
-- Accent: procedurally extracted (same algorithm, different defaults)
+- Box backgrounds: currently `#999` placeholder — to be refined
+- Shadows: warm-tinted dark shadows, visible on cream bg
+- Album shadow: `0 8px 16px rgba(30,20,10,0.18), 0 20px 48px rgba(30,20,10,0.28)`
 
 ### Global CSS Variables (defined in `:root`)
 ```css
---accent:    #c8c2b8   /* warm grey */
---bg:        #0c0b0a   /* near-black */
---surface:   #161514
---surface2:  #1e1c1b
---border:    #252320
---text:      #e8e4dc
---text2:     #706860
---text3:     #302e2c   /* overridden per-theme in v3 screens */
---star:      #e8a83c   /* gold star rating */
+--star:      #e8a83c
 --font-main: 'DM Sans'
 --font-mono: 'SUSE Mono'
 ```
 
-**Important:** `.s-home-v3` overrides `--text3` to `rgba(232,226,214,0.14)` for grey empty stars. `.s-home-v3--light` overrides it to `rgba(26,18,8,0.15)`.
+`.s-home-v3` overrides `--text3` to `rgba(232,226,214,0.14)`. `.s-home-v3--light` overrides it to `rgba(26,18,8,0.15)`.
 
 ---
 
 ## Home Screen v3 — Bento Hero Layout
 
-The home screen (id: `home`) uses a **2×2 bento grid** with no gaps between cells:
-
 ```
 ┌──────────────────────────┬──────────┐
-│                          │ TRENDING │  ← candy-stripe album covers
-│      ALBUM ART           │ (red box)│    diagonal strips, 5 albums
-│      (square, 78% wide)  │          │    top+bottom slightly larger
-│                          │          │
-├──────────────────────────┤          │
-│ BLUE BOX                 │  ● CD    │  ← spinning CD, click = stream
-│ 4.4 ★★★★½  19,284 reviews│  (corner)│    modal (Spotify / Apple)
+│                          │ [🔍] [👤]│  ← search corner (46px tall)
+│      ALBUM ART           ├──────────┤
+│      (square, 78% wide)  │  [□] [□] │  ← 2 small album thumbs
+│                          │ ┌──────┐ │
+│                          │ │      │ │  ← main featured album image
+├──────────────────────────┤ └──────┘ │
+│ 4.4 ★★★★½  19,284 reviews│    ●CD   │  ← spinning CD (absolute)
 └──────────────────────────┴──────────┘
+         ▼ scroll area (friend feed)
+         ▼ bottom nav (Home · Reviews · Playlists · Popular · Profile)
 ```
+
+### Height constraint — critical
+`.screen-content` (the phone frame's content wrapper) is **not a flex container** — it's a block with `overflow-y: auto`. This means `flex: 1` on `.s-home-v3` has no effect. To pin the bottom nav:
+
+```css
+.s-home-v3 {
+  height: 100%;    /* fills screen-content exactly */
+  min-height: 0;   /* overrides .app-screen's min-height: 100% */
+  overflow: hidden;
+}
+```
+
+Without `height: 100%`, the entire screen scrolls inside `screen-content` and the bottom nav floats off the bottom.
 
 ### Grid structure
 ```css
@@ -113,154 +155,137 @@ The home screen (id: `home`) uses a **2×2 bento grid** with no gaps between cel
   display: grid;
   grid-template-columns: 78% 22%;
   grid-template-rows: auto auto;
-  margin: 0 10px;   /* breathing room from phone edges */
+  gap: 0;
+  margin: 10px 10px 0;
 }
 ```
 
+Grid children (in order): `.v3-album`, `.v3-right-col` (spans row 1 only), `.v3-blue`, `.v3-corner`.
+
 ### Cell: Album Art (top-left)
 - `aspect-ratio: 1` — always square
-- `border-radius: 15px 0 0 0` — only top-left corner rounded
-- Background image = album art, `background-size: cover`
-- `box-shadow: 0 6px 28px rgba(0,0,0,0.65)`
+- `border-radius: 15px 15px 15px 0` — bottom-right corner is 0 (step junction)
+- `position: relative; z-index: 1`
+- Light theme: `box-shadow: 0 8px 16px rgba(30,20,10,0.18), 0 20px 48px rgba(30,20,10,0.28)`
 
-### Cell: Red Box / Trending (top-right)
-- Same height as album (shares grid row 1)
-- `border-radius: 0 15px 15px 0` — top-right and bottom-right rounded
-- Background: CSS var `--v3-box1-bg` (procedural dark tint of album accent)
-- Contains: "TRENDING" label (top), candy-stripe album stack (middle), "More options ›" (bottom)
-- **Candy stripe:** 5 `div.v3-stripe-item` with `clip-path: polygon(...)` creating diagonal parallelogram bands. Uses `margin-top: -8px` + descending z-index so each strip peeks below the previous diagonal cut. First and last strips have `flex: 1.35` (slightly taller).
+### Cell: Right Column (top-right)
+`.v3-right-col` is a flex column containing:
+
+**Search corner** (`.v3-search-corner`, 46px tall):
+- Two icon buttons: search (→ `navigate('search')`) and profile (→ `navigate('profile')`)
+- Background matches screen bg (`#111116` dark / `#f0ece3` light)
+- Has `v3-fillet-bl` (arc fillet) at bottom-left
+
+**Red box / Trending** (`.v3-red`, `flex: 1`):
+- `border-radius: 0 15px 15px 0`
+- Contains: 2 small square album thumbnails (`.v3-red-thumbs` / `.v3-red-thumb`) at top with 9px margin + 5px gap, then one full-width featured album image (`.v3-red-next-img`) filling the rest with 9px margin and 11px border-radius
 
 ### Cell: Blue Box / Reviews (bottom-left)
-- Same width as album (shares grid column 1)
-- `border-radius: 0 0 15px 15px` — both bottom corners rounded
-- Background: CSS var `--v3-box2-bg` (procedural dark complementary tint)
-- Contains: large score number + halfStars + review count all in one row
-- Score uses `--v3-accent` color (from album extraction)
+- `padding: 17px 12px`
+- `border-radius: 0 0 15px 15px`
+- Background: `--v3-box2-bg`
+- Contains: `.v3-blue-stars-row` with `align-items: baseline` — score number (16px, 800 weight) + `halfStars(rating, 16)` + review count (9.5px mono)
+- `::before` pseudo-element fills the negative space behind the album's bottom-right rounded corner — extends `top: -17px; height: 17px; right: -2px` to close sub-pixel gaps
 
 ### Cell: Corner Gap (bottom-right)
-- No box, no border — background matches screen (`#111116`)
-- Contains: spinning CD (58px circle, album art as bg, `animation: v3spin 12s linear infinite`)
-- CD click → streaming service action sheet (Spotify / Apple Music)
-- CD hole: 13px centered circle
+- Background matches screen bg
+- Contains `v3-fillet-tl` (arc fillet) at top-left
+- Contains spinning CD (`.v3-cd`) — **absolutely positioned**, does not affect row height:
+  ```css
+  .v3-cd {
+    position: absolute;
+    top: 6px; right: 15px;
+    width: 54px; height: 54px;
+  }
+  ```
+- CD click → streaming service action sheet (`.v3-stream-overlay`)
+- Scroll area gets `padding-top: 30px` to give clearance for the CD which overflows below the bento
+
+### Fillet System
+Fillets fill the negative space at the two "step" junctions in the bento.
+
+**Dark theme** — PNG mask approach:
+- PNG images have a black arc on white background
+- `app.js → initFillets()` uses canvas to strip white pixels → transparent alpha
+- Result applied as `mask-image` on `::after` via JS-injected `<style id="v3-fillet-mask-style">`
+- The `::after` `background` uses the adjacent box's CSS color var
+- **Never put `filter: drop-shadow` on fillet elements** — even with mask on `::after`, the browser composites shadows on the full rect before masking, causing GPU black-line artifacts on scroll
+
+**Light theme** — CSS radial-gradient (no PNG mask):
+```css
+.s-home-v3--light .v3-fillet-bl::after {
+  -webkit-mask-image: none; mask-image: none;
+  background: radial-gradient(circle at top right, transparent 19px, #999 20px);
+}
+.s-home-v3--light .v3-fillet-tl::after {
+  -webkit-mask-image: none; mask-image: none;
+  background: radial-gradient(circle at bottom right, transparent 19px, #999 20px);
+}
+```
+Because there's no mask-image conflict in the light theme, `filter: drop-shadow` CAN be applied to the outer fillet div here.
+
+Fillet positions:
+- `.v3-fillet-bl` — `bottom: -1px; left: -0.5px` of `.v3-search-corner` (top junction)
+- `.v3-fillet-tl` — `top: -1px; left: -1px` of `.v3-corner` (bottom junction)
+
+### Scroll Area
+`.v3-scroll-area` — `flex: 1; overflow-y: auto; padding: 30px 12px 8px`
+
+Contains brand row ("CHARP / music, reviewed."), friend activity feed header, and `.v3-friend-card` items.
+
+### Bottom Nav
+`.v3-bottom-nav` — `flex-shrink: 0`, 5 tabs: Home · Reviews · Playlists · Popular · Profile
+
+Stays pinned to the bottom because `.s-home-v3` has `height: 100%; overflow: hidden` which constrains the flex column — without this it would scroll off-screen.
 
 ### Procedural Color System
-`applyAlbumColors(screenEl)` runs after every render:
-1. Reads the album art URL from `.v3-album`'s computed `background-image`
-2. Draws it to a 48×48 canvas, samples all pixels
-3. Finds the most **vibrant** pixel (highest saturation, mid-range luminance)
-4. Derives:
-   - `--v3-accent`: the vibrant color hex (used for stars, "More options" text, active dots)
-   - `--v3-box1-bg`: very dark gradient tinted towards accent hue (red box bg)
-   - `--v3-box2-bg`: very dark gradient tinted complementary (blue box bg)
-5. Sets all three as inline CSS custom properties on `.s-home-v3`
+`applyAlbumColors(screenEl)` in `app.js` runs after every render:
+1. Reads album art URL from `.v3-album`'s `background-image`
+2. Draws to 48×48 canvas, finds most vibrant pixel
+3. Sets on `.s-home-v3`: `--v3-accent`, `--v3-box1-bg`, `--v3-box2-bg`
 
-If canvas extraction fails (CORS / tainted), CSS fallbacks kick in automatically.
+Light theme overrides these with hardcoded values (`background: #999`) — still WIP.
 
 ---
 
 ## How Screens Work
 
-`screens.js` exports a `SCREENS` array. Each entry:
-
-```js
-{
-  id: 'home',
-  name: 'Home',
-  statusTheme: 'dark',
-  variants: [{
-    label: 'Float·Dark',
-    version: 'v3.0',
-    thumb: ['accent','w60','w80','w60','w80'],
-    html: `<div class="app-screen s-home-v3">...</div>`
-  }]
-}
-```
-
-Two helper functions in `screens.js` (safe to call inside the array):
+`screens.js` exports a `SCREENS` array. Two helper functions:
 ```js
 topNav(active)           // 'playlists' | 'feed' | 'home'
-halfStars(rating, size)  // e.g. halfStars(4.4, 18) → star span HTML
+halfStars(rating, size)  // halfStars(4.4, 16) → star span HTML
 ```
 
-### halfStars() — how it works
-Uses a gradient-clip trick for partial stars:
-```css
-background: linear-gradient(90deg, var(--star) 50%, var(--text3) 50%);
--webkit-background-clip: text;
--webkit-text-fill-color: transparent;
-```
-`--text3` controls empty star color — override it per-theme for grey vs dark empty stars.
-
----
-
-## Top Nav (v3 screens)
-
-Left side — three vertical tabs (icon above, small label below):
-- ★ **Reviews** — active on home
-- ☰ **Playlists** — navigates to `playlists`
-- ⊞ **Popular** — navigates to `wall`
-
-Right side — icon-only circle buttons:
-- 🔍 Search → `navigate('search')`
-- 👤 Profile → `navigate('profile')`
-
-CSS: `.v3-tab` uses `flex-direction: column`, 20×20 SVG icons, 9px label text.
+`halfStars` uses gradient-clip for partial stars. `--text3` controls empty star color.
 
 ---
 
 ## Variant System
 
-The desktop viewer shows all variants of the current screen side by side with:
-- Version label above each phone (e.g. `v3.0`, `v3.1`)
-- Screen name below
-- Click to set as active variant
-- Drag to scroll horizontally if variants overflow
-
-`variantState` object tracks the active variant per screen ID. Home defaults to `{ home: 0 }` (Float·Dark).
-
-**Home screen filter:** Only `v3.x` variants are shown (v1 and v2 variants exist in `screens.js` but are filtered out at runtime in `app.js → init()`).
-
----
-
-## Key Design Decisions
-
-- **No bottom tab bar** — top nav with icon+label columns (not rows) for the 3 main sections
-- **Live Feed** is TikTok-style: `scroll-snap-type: y mandatory`, one full-height card per scroll
-- **Album Wall** is a 4-column grid with a swipeable category chip strip at top
-- **Stars are never plain black when empty** — use `rgba` grey matching the theme
-- **Album art drives color** — don't hardcode accent colors on the home screen; let the extraction run
-- **Floating cards, not flat** — every major content block has a drop shadow
-- `btn-primary` is inverted: white bg + dark text (editorial feel)
+Desktop viewer shows all variants side by side. Only `v3.x` variants are shown for the home screen (v1/v2 filtered in `app.js → init()`). `variantState` defaults to `{ home: 0 }` (Float·Dark).
 
 ---
 
 ## Mobile Prototype Modes
 
-On mobile (`≤767px`), the viewer becomes a live prototype with 4 modes:
-- **Single** — one phone frame, prev/next nav
-- **Multi** — all screens in a 2-col grid
-- **Flow** — embeds `flowchart.html` in an iframe
-- **Live** — raw screen HTML rendered directly (interactive with transitions)
+On mobile (`≤767px`): Single / Multi / Flow / Live modes via header segmented control.
 
 ---
 
-## Adding a New Screen
+## Key Design Decisions
 
-1. Add entry to `SCREENS` array in `screens.js`
-2. Add CSS classes to `app.css`
-3. Use `onclick="navigate('screen-id')"` for links
-4. Use `${topNav('active-id')}` and `${halfStars(rating, size)}` helpers
-
-For a new home variant:
-- Give it `version: 'v3.x'` so the runtime filter includes it
-- Add `s-home-v3` class for color extraction to auto-run
-- Add `s-home-v3--light` modifier for light theme
+- **No top nav bar on home** — search and profile icons live in the 46px search corner of the bento
+- **Bottom nav is pinned** — requires `height: 100%` on `.s-home-v3`, not just `flex: 1`
+- **CD is absolutely positioned** — decoupled from row height so it can be any size without pushing the blue box taller
+- **Stars are never plain black when empty** — always `rgba` grey
+- **Album art drives color** — don't hardcode accent on home screen
+- **Fillet shadows**: dark theme cannot use `filter: drop-shadow` on fillets (GPU artifact); light theme CAN since it uses CSS gradient, not mask-image
 
 ---
 
 ## Deployment
 
-GitHub Pages from `main` branch root. Push to deploy:
+GitHub Pages from `main` branch root:
 ```
 git add app.css app.js screens.js style.css index.html
 git commit -m "description"

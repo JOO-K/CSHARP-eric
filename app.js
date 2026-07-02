@@ -133,14 +133,18 @@ function reloadCD(cdEl, newUrl) {
 }
 
 function slideIn(el, newUrl) {
+  // Left-hand layout is mirrored, so images travel left→right instead of right→left
+  const flip = !!el.closest('.s-home-v3--left');
+  const enterFrom = flip ? '-100%' : '100%';
+  const oldExit   = flip ? '28%'   : '-28%';
   const old = document.createElement('div');
   old.style.cssText = `position:absolute;inset:0;background:${el.style.backgroundImage} center/cover no-repeat;z-index:1;transform:translateX(0);will-change:transform;transition:transform 0.42s cubic-bezier(0.4,0,0.2,1)`;
   const next = document.createElement('div');
-  next.style.cssText = `position:absolute;inset:0;background:url('${newUrl}') center/cover no-repeat;z-index:2;transform:translateX(100%);will-change:transform;transition:transform 0.42s cubic-bezier(0.4,0,0.2,1)`;
+  next.style.cssText = `position:absolute;inset:0;background:url('${newUrl}') center/cover no-repeat;z-index:2;transform:translateX(${enterFrom});will-change:transform;transition:transform 0.42s cubic-bezier(0.4,0,0.2,1)`;
   el.appendChild(old);
   el.appendChild(next);
   requestAnimationFrame(() => requestAnimationFrame(() => {
-    old.style.transform = 'translateX(-28%)';
+    old.style.transform = `translateX(${oldExit})`;
     next.style.transform = 'translateX(0)';
     next.addEventListener('transitionend', () => {
       el.style.backgroundImage = `url('${newUrl}')`;
@@ -162,11 +166,15 @@ function typewrite(el, text, speed = 16) {
 }
 
 function setMainAlbum(screenEl, album, animate = false) {
+  screenEl._album = album;   // track the album currently shown in the bento
   const albumEl = screenEl.querySelector('.v3-album');
   if (albumEl) {
     if (animate) slideIn(albumEl, album.image);
     else albumEl.style.backgroundImage = `url('${album.image}')`;
-    albumEl.onclick = () => window.openAlbum(album);
+    albumEl.onclick = (e) => {
+      if (albumEl._swiped) { if (e) e.stopPropagation(); return; }  // a swipe, not a tap
+      window.openAlbum(album);
+    };
   }
   const cdEl = screenEl.querySelector('.v3-cd');
   if (cdEl) {
@@ -202,7 +210,7 @@ function setMainAlbum(screenEl, album, animate = false) {
     starsRow.parentElement.onclick = (e) => {
       e.stopPropagation();
       window.activeAlbum = album;
-      navigate('review');
+      enterReview(screenEl);
     };
   }
 
@@ -236,6 +244,131 @@ function setMainAlbum(screenEl, album, animate = false) {
   }
 
   applyAlbumColors(screenEl);
+
+  // If we're in fullscreen review mode, refresh reviews for the new album
+  if (screenEl.classList.contains('s-home-v3--review')) populateReviewPanel(screenEl);
+}
+
+// ── Fullscreen review mode ────────────────────────────────────
+window.enterReview = function (scr) {
+  if (!scr) return;
+  scr.classList.add('s-home-v3--review');
+  populateReviewPanel(scr);
+  const body = scr.querySelector('.v3-body');
+  if (body) body.scrollTop = 0;
+};
+window.exitReview = function (scr) {
+  if (!scr) return;
+  scr.classList.remove('s-home-v3--review');
+  const body = scr.querySelector('.v3-body');
+  if (body) body.scrollTop = 0;
+};
+// Live pill doubles as the back button when review mode is open
+window.onLivePill = function (btn) {
+  const scr = btn.closest('.s-home-v3');
+  if (scr && scr.classList.contains('s-home-v3--review')) exitReview(scr);
+  else navigate('feed');
+};
+// Tap a star to set your own rating — left half = .5, right half = whole
+window.setMyRating = function (starEl, e) {
+  const wrap = starEl.parentElement;
+  const base = parseInt(starEl.dataset.v);
+  const rect = starEl.getBoundingClientRect();
+  const isHalf = e && (e.clientX - rect.left) < rect.width / 2;
+  const val = isHalf ? base - 0.5 : base;
+  wrap.dataset.rating = String(val);
+  paintMyStars(wrap, val);
+};
+function paintMyStars(wrap, val) {
+  if (!wrap) return;
+  wrap.querySelectorAll('.v3-rev-star').forEach(s => {
+    const i = parseInt(s.dataset.v);
+    s.classList.remove('on', 'half');
+    if (val >= i)            s.classList.add('on');
+    else if (val >= i - 0.5) s.classList.add('half');
+  });
+}
+// Grow the review box to fit its content; reveal Post only once there's text
+window.autoGrowReview = function (ta) {
+  ta.style.height = 'auto';
+  ta.style.height = ta.scrollHeight + 'px';
+  const mine = ta.closest('.v3-rev-mine');
+  const btn = mine && mine.querySelector('.v3-rev-submit');
+  if (btn && !btn.disabled) btn.style.display = ta.value.trim() ? 'inline-block' : 'none';
+};
+// Post the review — prepends it as a "You" card, then resets the form
+window.submitReview = function (btn) {
+  const scr = btn.closest('.s-home-v3');
+  if (!scr) return;
+  const ta = scr.querySelector('.v3-rev-write');
+  const wrap = scr.querySelector('.v3-rev-stars');
+  const rating = parseFloat(wrap && wrap.dataset.rating) || 0;
+  const text = (ta && ta.value.trim()) || '';
+  if (!rating && !text) return;
+  const list = scr.querySelector('.v3-rev-list');
+  if (list) {
+    const card = document.createElement('div');
+    card.className = 'v3-rev-card v3-rev-card--mine';
+    card.innerHTML = `
+      <div class="v3-rev-card-top">
+        <div class="v3-rev-av" style="background:linear-gradient(135deg,var(--v3-accent,#e8a83c),#c76b2a)">Y</div>
+        <span class="v3-rev-name">You</span>
+        ${halfStars(rating, 11)}
+      </div>
+      <div class="v3-rev-text">${text}</div>`;
+    list.insertBefore(card, list.firstChild);
+  }
+  btn.textContent = 'Posted ✓';
+  btn.disabled = true;
+  btn.style.display = 'inline-block';
+  if (ta) { ta.value = ''; ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; }
+  if (wrap) { wrap.dataset.rating = '0'; paintMyStars(wrap, 0); }
+  setTimeout(() => {
+    btn.textContent = 'Post review';
+    btn.disabled = false;
+    btn.style.display = 'none';
+  }, 1500);
+};
+// Friends / Popular / New filter tabs
+window.setReviewFilter = function (btn) {
+  const bar = btn.parentElement;
+  bar.querySelectorAll('.v3-rev-filter').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  populateReviewList(btn.closest('.s-home-v3'), btn.dataset.f);
+};
+
+function populateReviewPanel(scr) {
+  const a = scr._album || window.featuredAlbum;
+  if (!a) return;
+  const nameEl = scr.querySelector('.v3-rev-album-name');
+  if (nameEl) nameEl.textContent = a.album;
+  // reset your draft (rating + text) when the album changes
+  const stars = scr.querySelector('.v3-rev-stars');
+  if (stars) { stars.dataset.rating = '0'; paintMyStars(stars, 0); }
+  const ta = scr.querySelector('.v3-rev-write');
+  if (ta) { ta.value = ''; autoGrowReview(ta); }
+  const active = scr.querySelector('.v3-rev-filter.active');
+  populateReviewList(scr, active ? active.dataset.f : 'friends');
+}
+
+function populateReviewList(scr, filter) {
+  const a = scr._album || window.featuredAlbum;
+  const list = scr && scr.querySelector('.v3-rev-list');
+  if (!a || !list) return;
+  let revs = (a.reviews || []).slice();
+  if (filter === 'popular') revs.sort((x, y) => (y.rating || 0) - (x.rating || 0));
+  else if (filter === 'new') revs.reverse();
+  const countEl = scr.querySelector('.v3-rev-count');
+  if (countEl) countEl.textContent = `${window.fmtRc(a.reviewCount || revs.length)} reviews`;
+  list.innerHTML = revs.map(r => `
+    <div class="v3-rev-card">
+      <div class="v3-rev-card-top">
+        <div class="v3-rev-av" style="background:${r.grad || '#555'}">${r.init || '?'}</div>
+        <span class="v3-rev-name">${r.name || 'Listener'}</span>
+        ${halfStars(r.rating || 4, 11)}
+      </div>
+      <div class="v3-rev-text">${r.text || ''}</div>
+    </div>`).join('') || `<div class="v3-rev-empty">No reviews yet — be the first.</div>`;
 }
 
 function renderFriendFeed(screenEl) {
@@ -265,30 +398,165 @@ function renderFriendFeed(screenEl) {
   }).join('');
 }
 
-function populateHomeData(screenEl) {
-  const a = window.featuredAlbum || (window.ARCHIVE && window.ARCHIVE[0]);
-  if (!a) return;
+// ── Hand layout (left/right) ──────────────────────────────────
+function getHand() { return localStorage.getItem('spindeck-hand') || 'left'; }
+function applyHand(screenEl) {
+  const left = getHand() === 'left';
+  screenEl.classList.toggle('s-home-v3--left', left);
+  const lbl = screenEl.querySelector('.v3-hand-label');
+  if (lbl) lbl.textContent = left ? 'Left' : 'Right';
+}
+window.toggleHand = function () {
+  localStorage.setItem('spindeck-hand', getHand() === 'left' ? 'right' : 'left');
+  document.querySelectorAll('.s-home-v3').forEach(applyHand);
+};
 
-  setMainAlbum(screenEl, a, false);
+// The album carousel: featured first, then trending. Main + For You are one apart.
+function albumSeq() {
+  const t = window.trendingAlbums || (window.ARCHIVE || []).slice(1, 6);
+  const f = window.featuredAlbum || (window.ARCHIVE || [])[0];
+  return f ? [f, ...t.filter(x => x !== f)] : t.slice();
+}
+
+// Move the main album to a sequence index; For You always shows the next one up.
+function applyAlbumIndex(screenEl, idx, animateMain, animateForYou) {
+  const seq = albumSeq();
+  if (!seq.length) return;
+  idx = ((idx % seq.length) + seq.length) % seq.length;
+  screenEl._albumIdx = idx;
+  setMainAlbum(screenEl, seq[idx], animateMain);
+  const forSingle = screenEl.querySelector('.v3-for-single');
+  if (forSingle) {
+    const nextIdx = (idx + 1) % seq.length;
+    if (animateForYou) slideIn(forSingle, seq[nextIdx].image);
+    else forSingle.style.backgroundImage = `url('${seq[nextIdx].image}')`;
+    preloadForYou(seq, nextIdx);
+  }
+}
+
+function populateHomeData(screenEl) {
+  const seq = albumSeq();
+  if (!seq.length) return;
+  applyHand(screenEl);
+
+  if (screenEl._albumIdx == null) screenEl._albumIdx = 0;
+  const idx = ((screenEl._albumIdx % seq.length) + seq.length) % seq.length;
+  screenEl._albumIdx = idx;
+
+  setMainAlbum(screenEl, seq[idx], false);
   renderFriendFeed(screenEl);
 
-  const trending = window.trendingAlbums || (window.ARCHIVE || []).slice(1, 6);
   const forSingle = screenEl.querySelector('.v3-for-single');
-  if (forSingle && trending.length) {
-    if (!forSingle.dataset.forIdx) forSingle.dataset.forIdx = '0';
-    const idx = parseInt(forSingle.dataset.forIdx);
-    forSingle.style.backgroundImage = `url('${trending[idx].image}')`;
-    preloadForYou(trending, idx);
-    forSingle.onclick = (e) => {
-      e.stopPropagation();
-      const cur = trending[parseInt(forSingle.dataset.forIdx)];
-      const nextIdx = (parseInt(forSingle.dataset.forIdx) + 1) % trending.length;
-      forSingle.dataset.forIdx = String(nextIdx);
-      slideIn(forSingle, trending[nextIdx].image);
-      setMainAlbum(screenEl, cur, true);
-      preloadForYou(trending, nextIdx);
-    };
+  if (forSingle) {
+    const nextIdx = (idx + 1) % seq.length;
+    forSingle.style.backgroundImage = `url('${seq[nextIdx].image}')`;
+    preloadForYou(seq, nextIdx);
+    // Tapping For You promotes the queued album — same as swiping forward
+    forSingle.onclick = (e) => { e.stopPropagation(); applyAlbumIndex(screenEl, (screenEl._albumIdx || 0) + 1, true, true); };
   }
+
+  setupAlbumSwipe(screenEl);
+}
+
+// Swipe the album art to move through albums: drag-left = next, drag-right = previous.
+// The image follows the finger; past 45% of the album width it commits, else snaps back.
+function setupAlbumSwipe(screenEl) {
+  const album = screenEl.querySelector('.v3-album');
+  if (!album || album._swipeInit) return;
+  album._swipeInit = true;
+  album.style.touchAction = 'pan-y';   // let vertical scroll pass, we handle horizontal
+
+  let startX = 0, startY = 0, progress = 0, width = 1;
+  let active = false, decided = false, horizontal = false, dir = 0, targetIdx = 0;
+  let cur = null, peek = null;
+
+  function buildLayers() {
+    const seq = albumSeq();
+    const idx = screenEl._albumIdx || 0;
+    dir = progress < 0 ? -1 : 1;   // drag-left(<0)=next, drag-right(>0)=previous
+    targetIdx = (((idx + (dir < 0 ? 1 : -1)) % seq.length) + seq.length) % seq.length;
+    cur = document.createElement('div');
+    cur.style.cssText = `position:absolute;inset:0;background:${album.style.backgroundImage} center/cover no-repeat;z-index:2;will-change:transform`;
+    peek = document.createElement('div');
+    const basePct = dir < 0 ? 100 : -100;
+    peek.style.cssText = `position:absolute;inset:0;background:url('${seq[targetIdx].image}') center/cover no-repeat;z-index:3;will-change:transform;transform:translateX(${basePct}%)`;
+    album.appendChild(cur);
+    album.appendChild(peek);
+  }
+
+  function render() {
+    if (!cur) return;
+    const basePct = dir < 0 ? 100 : -100;
+    cur.style.transform  = `translateX(${progress * 100}%)`;
+    peek.style.transform = `translateX(${basePct + progress * 100}%)`;
+  }
+
+  function finish(committed) {
+    if (!cur) { cleanup(); return; }
+    const t = 'transform 0.28s cubic-bezier(0.4,0,0.2,1)';
+    cur.style.transition = t; peek.style.transition = t;
+    const basePct = dir < 0 ? 100 : -100;
+    if (committed) {
+      cur.style.transform  = `translateX(${dir < 0 ? -100 : 100}%)`;
+      peek.style.transform = 'translateX(0%)';
+    } else {
+      cur.style.transform  = 'translateX(0%)';
+      peek.style.transform = `translateX(${basePct}%)`;
+    }
+    let done = false;
+    const end = () => {
+      if (done) return; done = true;
+      const c = cur, p = peek; cur = peek = null;
+      if (committed) applyAlbumIndex(screenEl, targetIdx, false, true);
+      if (c) c.remove(); if (p) p.remove();
+    };
+    peek.addEventListener('transitionend', end, { once: true });
+    setTimeout(end, 380);
+  }
+
+  function cleanup() {
+    active = decided = horizontal = false;
+    document.removeEventListener('pointermove', onMove);
+    document.removeEventListener('pointerup', onUp);
+    document.removeEventListener('pointercancel', onUp);
+  }
+
+  function onDown(e) {
+    if (e.button != null && e.button > 0) return;
+    if (cur) return;   // a previous swipe is still animating
+    active = true; decided = false; horizontal = false; progress = 0;
+    startX = e.clientX; startY = e.clientY;
+    width = album.getBoundingClientRect().width || 1;   // rendered width (scale-safe)
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+    document.addEventListener('pointercancel', onUp);
+  }
+
+  function onMove(e) {
+    if (!active) return;
+    const mx = e.clientX - startX, my = e.clientY - startY;
+    if (!decided) {
+      if (Math.abs(mx) < 6 && Math.abs(my) < 6) return;
+      decided = true;
+      horizontal = Math.abs(mx) > Math.abs(my) * 1.2;
+      if (!horizontal) { cleanup(); return; }   // vertical → let it scroll
+      progress = mx / width;
+      buildLayers();
+      album._swiped = true;
+    }
+    if (e.cancelable) e.preventDefault();
+    progress = Math.max(-1, Math.min(1, mx / width));
+    render();
+  }
+
+  function onUp() {
+    if (horizontal && cur) finish(Math.abs(progress) >= 0.45);
+    setTimeout(() => { album._swiped = false; }, 60);   // let a real tap through afterwards
+    cleanup();
+  }
+
+  album.addEventListener('pointerdown', onDown);
+  album.addEventListener('mousedown', (e) => e.stopPropagation());  // don't start the viewer's drag-scroll
 }
 
 function preloadForYou(trending, fromIdx, count = 3) {
