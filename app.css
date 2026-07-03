@@ -2707,6 +2707,8 @@
   color: rgba(232,226,214,0.88);
   white-space: nowrap;
   flex-shrink: 0;
+  font-size: 10.5px;
+  transition: font-size 0.4s cubic-bezier(0.4,0,0.2,1);
 }
 .v3-blue-sep {
   font-size: 8px;
@@ -2721,6 +2723,8 @@
   text-overflow: ellipsis;
   flex: 1;
   min-width: 0;
+  font-size: 10.5px;
+  transition: font-size 0.4s cubic-bezier(0.4,0,0.2,1), opacity 0.18s ease;
 }
 .v3-blue-stars-row {
   display: flex; align-items: baseline; gap: 7px;
@@ -2924,7 +2928,31 @@
 /* In review mode the reviews live below, so drop the sample quote in the stats box
    and keep the remaining stats pinned to the top (frees the space beneath) */
 .s-home-v3--review .v3-blue-quote { display: none; }
-.s-home-v3--review .v3-blue { justify-content: flex-start; }
+.s-home-v3--review .v3-blue {
+  justify-content: flex-start;
+  height: auto;          /* grow to fit the taller 2-line title */
+  overflow: visible;
+}
+/* Title stacks: artist (14px) on top, album (18px) below; separator drops out */
+.s-home-v3--review .v3-blue-info-row {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  overflow: visible;
+}
+.s-home-v3--review .v3-blue-sep { display: none; }
+.s-home-v3--review .v3-blue-artist { font-size: 14px; }
+.s-home-v3--review .v3-blue-album {
+  font-size: 18px;
+  flex: none;
+  overflow: visible;
+  text-overflow: clip;
+  color: rgba(232,226,214,0.92);
+  line-height: 1.1;
+}
+.s-home-v3--light.s-home-v3--review .v3-blue-album { color: rgba(26,18,8,0.9); }
+/* Push the rest of the stats down ~1 line to make room */
+.s-home-v3--review .v3-blue-stars-row { margin-top: 7px; }
 
 /* Flood removes the bento margin visually, leaving dead space between the For You
    box and the screen edge. Grow it outward so its edge inset matches the back button. */
@@ -2940,7 +2968,7 @@
    flex column so the header/stars/textarea stack tight and Post can go lower-right. */
 .v3-rev-mine {
   flex: 1; min-width: 0;
-  margin-top: -5px;
+  margin-top: 26px;   /* clears the taller stacked title above (was -5px) */
   padding: 0 0 6px 12px;
   display: flex; flex-direction: column;
 }

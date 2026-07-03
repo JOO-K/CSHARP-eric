@@ -252,14 +252,34 @@ function setMainAlbum(screenEl, album, animate = false) {
 // ── Fullscreen review mode ────────────────────────────────────
 window.enterReview = function (scr) {
   if (!scr) return;
-  scr.classList.add('s-home-v3--review');
-  populateReviewPanel(scr);
-  const body = scr.querySelector('.v3-body');
-  if (body) body.scrollTop = 0;
+  const album = scr.querySelector('.v3-blue-album');
+  const albumText = album ? album.textContent : '';
+
+  // 1. Album fades out of the (small, inline) line it currently shares with the artist
+  if (album) album.style.opacity = '0';
+
+  // 2. After the fade, expand fullscreen: flood + artist grows + title stacks (CSS)
+  setTimeout(() => {
+    scr.classList.add('s-home-v3--review');
+    populateReviewPanel(scr);
+    const body = scr.querySelector('.v3-body');
+    if (body) body.scrollTop = 0;
+    // 3. Album typewrites back in below the artist, at the larger 18px size
+    if (album) {
+      album.style.opacity = '1';
+      typewrite(album, albumText, 24);
+    }
+  }, 170);
 };
 window.exitReview = function (scr) {
   if (!scr) return;
   scr.classList.remove('s-home-v3--review');
+  // Restore the album name in full (in case Back was hit mid-typewriter) + reset fade
+  const album = scr.querySelector('.v3-blue-album');
+  if (album) {
+    album.style.opacity = '1';
+    if (scr._album) album.textContent = scr._album.album;
+  }
   const body = scr.querySelector('.v3-body');
   if (body) body.scrollTop = 0;
 };
@@ -584,49 +604,64 @@ function applyAlbumColors(screenEl) {
       ctx.drawImage(img, 0, 0, sz, sz);
       const d = ctx.getImageData(0, 0, sz, sz).data;
 
-      let maxSat = 0, ar = 200, ag = 120, ab = 60;
-      let tR = 0, tG = 0, tB = 0, n = 0;
+      // Pass 1: overall average, saturation-weighted vibrant colour, and mean saturation.
+      let tR = 0, tG = 0, tB = 0, n = 0;   // overall average
+      let wR = 0, wG = 0, wB = 0, wSum = 0; // saturation-weighted vibrant colour
+      let satSum = 0;                        // colourfulness of the whole cover
       for (let i = 0; i < d.length; i += 4) {
         if (d[i+3] < 120) continue;
         const r = d[i], g = d[i+1], b = d[i+2];
-        tR += r; tG += g; tB += b; n++;
         const mx = Math.max(r,g,b), mn = Math.min(r,g,b);
         const sat = mx ? (mx-mn)/mx : 0;
         const lum = (mx+mn)/510;
-        if (sat > maxSat && lum > 0.15 && lum < 0.88) {
-          maxSat = sat; ar = r; ag = g; ab = b;
+        tR += r; tG += g; tB += b; n++;
+        satSum += sat;
+        if (lum > 0.12 && lum < 0.92) {
+          const w = sat * sat;   // emphasise the genuinely vivid pixels
+          wR += r*w; wG += g*w; wB += b*w; wSum += w;
         }
       }
       if (!n) return;
 
-      const hex = v => v.toString(16).padStart(2,'0');
-      // Boost accent luminance so score is readable on the dark bento surface
-      let bAR = ar, bAG = ag, bAB = ab;
-      const aLum = (Math.max(bAR,bAG,bAB) + Math.min(bAR,bAG,bAB)) / 510;
-      if (aLum < 0.55) {
-        const scale = 0.65 / Math.max(aLum, 0.05);
-        bAR = Math.min(255, Math.round(bAR * scale));
-        bAG = Math.min(255, Math.round(bAG * scale));
-        bAB = Math.min(255, Math.round(bAB * scale));
+      const meanSat = satSum / n;                  // ~0 greyscale · ~0.3+ colourful
+      const avgLum  = (tR + tG + tB) / (n * 3) / 255;
+      const cl  = v => Math.max(0, Math.min(255, Math.round(v)));
+      const hex = v => cl(v).toString(16).padStart(2,'0');
+
+      let accent, b1r, b1g, b1b, box1, box2;
+
+      if (meanSat < 0.10 || wSum === 0) {
+        // ── Greyscale cover → neutral charcoal, no invented hue ──────────
+        const base = 30 + avgLum * 26;             // darker covers → darker box
+        b1r = base; b1g = base + 1; b1b = base + 4; // a whisper cool, never warm
+        box1 = `linear-gradient(155deg,rgb(${cl(base)},${cl(base+1)},${cl(base+4)}),rgb(${cl(base+7)},${cl(base+8)},${cl(base+12)}))`;
+        box2 = `linear-gradient(155deg,rgb(18,18,22),rgb(24,24,30))`;
+        const k = 152 + avgLum * 46;               // readable neutral accent
+        accent = `#${hex(k)}${hex(k)}${hex(k+3)}`;
+      } else {
+        // ── Colourful cover → vibrant accent from the weighted average ───
+        const ar = wR/wSum, ag = wG/wSum, ab = wB/wSum;
+        let bAR = ar, bAG = ag, bAB = ab;
+        const aLum = (Math.max(bAR,bAG,bAB) + Math.min(bAR,bAG,bAB)) / 510;
+        if (aLum < 0.55) {                          // boost so the score reads on dark
+          const scale = 0.65 / Math.max(aLum, 0.05);
+          bAR = Math.min(255, bAR*scale); bAG = Math.min(255, bAG*scale); bAB = Math.min(255, bAB*scale);
+        }
+        accent = `#${hex(bAR)}${hex(bAG)}${hex(bAB)}`;
+        b1r = Math.min(90, ar*0.30+22);
+        b1g = Math.min(72, ag*0.22+14);
+        b1b = Math.min(80, ab*0.28+16);
+        const b2r = Math.min(35, (255-ar)*0.10+4);
+        const b2g = Math.min(35, (255-ag)*0.10+4);
+        const b2b = Math.min(55, (255-ab)*0.15+8);
+        box1 = `linear-gradient(155deg,rgb(${cl(b1r)},${cl(b1g)},${cl(b1b)}),rgb(${cl(Math.min(b1r+12,65))},${cl(Math.min(b1g+8,45))},${cl(Math.min(b1b+8,45))}))`;
+        box2 = `linear-gradient(155deg,rgb(${cl(b2r)},${cl(b2g)},${cl(b2b)}),rgb(${cl(Math.min(b2r+6,40))},${cl(Math.min(b2g+6,40))},${cl(Math.min(b2b+14,65))}))`;
       }
-      const accent = `#${hex(bAR)}${hex(bAG)}${hex(bAB)}`;
-
-      // Box 1 bg: dark tint towards accent hue — bright enough to read against #111116 bg
-      const b1r = Math.min(90, Math.round(ar*0.30+22));
-      const b1g = Math.min(72, Math.round(ag*0.22+14));
-      const b1b = Math.min(80, Math.round(ab*0.28+16));
-      // Box 2 bg: very dark complementary
-      const b2r = Math.min(35, Math.round((255-ar)*0.10+4));
-      const b2g = Math.min(35, Math.round((255-ag)*0.10+4));
-      const b2b = Math.min(55, Math.round((255-ab)*0.15+8));
-
-      const box1 = `linear-gradient(155deg,rgb(${b1r},${b1g},${b1b}),rgb(${Math.min(b1r+12,65)},${Math.min(b1g+8,45)},${Math.min(b1b+8,45)}))`;
-      const box2 = `linear-gradient(155deg,rgb(${b2r},${b2g},${b2b}),rgb(${Math.min(b2r+6,40)},${Math.min(b2g+6,40)},${Math.min(b2b+14,65)}))`;
 
       screenEl.style.setProperty('--v3-accent', accent);
       screenEl.style.setProperty('--v3-box1-bg', box1);
       screenEl.style.setProperty('--v3-box2-bg', box2);
-      screenEl.style.setProperty('--v3-box1-color', `rgb(${b1r},${b1g},${b1b})`);
+      screenEl.style.setProperty('--v3-box1-color', `rgb(${cl(b1r)},${cl(b1g)},${cl(b1b)})`);
     } catch(e) { /* CORS / tainted canvas — keep CSS defaults */ }
   };
   img.src = m[1];
