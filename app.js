@@ -736,7 +736,9 @@ async function fetchPreviewUrl(album) {
   return url;
 }
 
-const PREVIEW = { audio: null, unlocked: false, paused: false, key: null };
+// Previews are OFF by default (no auto-loading). The speaker button turns on
+// "autoplay preview mode": the current album plays and every album previews as you swipe.
+const PREVIEW = { audio: null, enabled: false, paused: false, key: null };
 function previewAudioEl() {
   if (!PREVIEW.audio) {
     const a = new Audio();
@@ -746,43 +748,51 @@ function previewAudioEl() {
   return PREVIEW.audio;
 }
 function setPreviewUI() {
-  const playing = PREVIEW.audio && !PREVIEW.audio.paused;
+  const playing = PREVIEW.enabled && PREVIEW.audio && !PREVIEW.audio.paused;
   document.querySelectorAll('.s-home-v3').forEach(s => {
-    s.classList.toggle('v3-cd-paused', !playing);            // pause the CD spin when not playing
-    const has = !!(PREVIEW.audio && PREVIEW.audio.getAttribute('src'));
-    s.classList.toggle('v3-has-preview', has);
+    s.classList.toggle('v3-preview-on', PREVIEW.enabled);          // speaker icon state
+    s.classList.toggle('v3-cd-paused', PREVIEW.enabled && !playing); // freeze CD only when on & not playing
   });
 }
-function tryPlayPreview() {
-  const a = PREVIEW.audio;
-  if (!a || !a.getAttribute('src') || PREVIEW.paused || !PREVIEW.unlocked) { setPreviewUI(); return; }
-  a.play().then(setPreviewUI).catch(setPreviewUI);
+function currentBentoAlbum() {
+  const s = document.querySelector('.s-home-v3');
+  return s && s._album;
 }
+// Warm the preview cache for the whole album window (mirrors preloadColors / preloadForYou)
+function preloadPreviews(seq) {
+  if (!PREVIEW.enabled) return;
+  (seq || []).forEach(a => { if (a) fetchPreviewUrl(a); });
+}
+// Called on every album change; only does anything while preview mode is on
 async function loadPreview(album) {
-  if (!album) return;
+  if (!album || !PREVIEW.enabled) return;
   const key = album.artist + ' – ' + album.album;
   PREVIEW.key = key;
   const a = previewAudioEl();
   const url = await fetchPreviewUrl(album);
-  if (PREVIEW.key !== key) return;   // album changed while the request was in flight
+  if (PREVIEW.key !== key || !PREVIEW.enabled) return;   // moved on / turned off mid-request
   if (!url) { a.pause(); a.removeAttribute('src'); setPreviewUI(); return; }
   if (a.src !== url) a.src = url;
-  tryPlayPreview();
+  if (!PREVIEW.paused) a.play().then(setPreviewUI).catch(setPreviewUI); else setPreviewUI();
+  preloadPreviews(albumSeq());
 }
-// Tap the CD to play/pause the preview (record-player metaphor)
+// Speaker button → master toggle for autoplay preview mode
+window.togglePreviewMode = function (e) {
+  if (e) e.stopPropagation();
+  PREVIEW.enabled = !PREVIEW.enabled;
+  PREVIEW.paused = false;
+  if (PREVIEW.enabled) loadPreview(currentBentoAlbum());
+  else if (PREVIEW.audio) PREVIEW.audio.pause();
+  setPreviewUI();
+};
+// CD → play/pause within preview mode (turns the mode on if it's off)
 window.togglePreview = function (e) {
   if (e) e.stopPropagation();
-  PREVIEW.unlocked = true;
+  if (!PREVIEW.enabled) { window.togglePreviewMode(); return; }
   const a = PREVIEW.audio;
   if (a && !a.paused) { a.pause(); PREVIEW.paused = true; setPreviewUI(); }
-  else { PREVIEW.paused = false; tryPlayPreview(); }
+  else { PREVIEW.paused = false; loadPreview(currentBentoAlbum()); }
 };
-// First user gesture anywhere unlocks audio, then the loaded preview starts
-document.addEventListener('pointerdown', function unlockPreview() {
-  if (PREVIEW.unlocked) return;
-  PREVIEW.unlocked = true;
-  tryPlayPreview();
-}, { once: true });
 
 // ── Album colour extraction + cache ───────────────────────────
 // Palettes are cached by image URL and precomputed for the whole album window

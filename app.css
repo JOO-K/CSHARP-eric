@@ -2822,6 +2822,34 @@
 /* CD is the preview play/pause control: spins while a preview plays, freezes + dims when paused */
 .v3-cd-paused .v3-cd { animation-play-state: paused; filter: brightness(0.68) saturate(0.85); }
 
+/* Preview autoplay toggle (speaker). Positioned in the bento's coordinate space. */
+.v3-preview-btn {
+  position: absolute;
+  width: 29px; height: 29px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(232,226,214,0.06);
+  border: 1px solid rgba(232,226,214,0.16);
+  color: rgba(232,226,214,0.5);
+  cursor: pointer; z-index: 6; padding: 0;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.v3-preview-btn svg { width: 16px; height: 16px; }
+.v3-preview-btn:hover { color: rgba(232,226,214,0.85); border-color: rgba(232,226,214,0.3); }
+.v3-spk-wave { display: none; }                 /* off (muted) shows the X */
+.v3-preview-on .v3-preview-btn {
+  color: var(--v3-accent, #e8a83c);
+  border-color: var(--v3-accent, #e8a83c);
+  background: rgba(232,168,60,0.16);
+}
+.v3-preview-on .v3-preview-btn .v3-spk-x { display: none; }
+.v3-preview-on .v3-preview-btn .v3-spk-wave { display: inline; }
+.s-home-v3--light .v3-preview-btn { background: rgba(26,18,8,0.05); border-color: rgba(26,18,8,0.16); color: rgba(26,18,8,0.5); }
+/* Left-hand: album is on the right — align the speaker's right edge with the album's (same inset from the wall) */
+.s-home-v3--left .v3-preview-btn { right: 0.07%; left: auto; top: 102%; }
+/* Right-hand: album is on the left — align the speaker's right edge with the album's right side */
+.s-home-v3:not(.s-home-v3--left) .v3-preview-btn { right: 21.92%; left: auto; top: 102%; }
+
 /* ══════════════════════════════════════════════════════════════
    LEFT / RIGHT HAND LAYOUT  (one-hand reachability)
    Right hand = default (matches original bento).

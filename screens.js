@@ -620,6 +620,15 @@ const SCREENS = [
               <div class="v3-cd-hole"></div>
             </div>
 
+            <!-- Preview autoplay toggle — muted by default; tap to enable autoplay previews -->
+            <button class="v3-preview-btn" title="Autoplay music previews" onclick="togglePreviewMode(event)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M11 5 6 9H2v6h4l5 4z"/>
+                <g class="v3-spk-x"><path d="M22 9l-5 6M17 9l5 6"/></g>
+                <g class="v3-spk-wave"><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></g>
+              </svg>
+            </button>
+
             <!-- Live corner button — sits in the bento's top corner notch; becomes Back in review mode -->
             <button class="v3-search-pill v3-live-pill" onclick="event.stopPropagation(); onLivePill(this)">
               <span class="v3-live-content"><span class="v3-live-dot"></span><span class="v3-live-label">Live</span></span>
@@ -823,6 +832,15 @@ const SCREENS = [
                  onclick="togglePreview(event)">
               <div class="v3-cd-hole"></div>
             </div>
+
+            <!-- Preview autoplay toggle — muted by default; tap to enable autoplay previews -->
+            <button class="v3-preview-btn" title="Autoplay music previews" onclick="togglePreviewMode(event)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M11 5 6 9H2v6h4l5 4z"/>
+                <g class="v3-spk-x"><path d="M22 9l-5 6M17 9l5 6"/></g>
+                <g class="v3-spk-wave"><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></g>
+              </svg>
+            </button>
 
             <!-- Live corner button — sits in the bento's top corner notch; becomes Back in review mode -->
             <button class="v3-search-pill v3-live-pill" onclick="event.stopPropagation(); onLivePill(this)">
