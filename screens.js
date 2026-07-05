@@ -596,9 +596,10 @@ const SCREENS = [
             <!-- Stats strip: expanded to top 77% h 22.92% to fit album/artist name -->
             <div class="v3-blue" onclick="event.stopPropagation(); enterReview(this.closest('.s-home-v3'))">
               <div class="v3-blue-info-row">
-                <span class="v3-blue-artist"></span>
+                <span class="v3-blue-title"><span class="v3-blue-album"></span><span class="v3-blue-date v3-blue-date--fs"></span></span>
                 <span class="v3-blue-sep">·</span>
-                <span class="v3-blue-album"></span>
+                <span class="v3-blue-artist"></span>
+                <span class="v3-blue-date v3-blue-date--inline"></span>
               </div>
               <div class="v3-blue-stars-row">
                 <span class="v3-blue-score">4.4</span>
@@ -646,16 +647,25 @@ const SCREENS = [
                  Uses the bento's 78/22 split so it mirrors with the hand layout. -->
             <div class="v3-rev-top">
 
-              <!-- Streaming / external links — column centered under the CD (placeholders) -->
-              <div class="v3-rev-rail">
-                <a class="v3-rev-link v3-rev-link--spotify" title="Spotify" onclick="event.stopPropagation()">
-                  <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.52 17.34c-.24.36-.66.48-1.02.24-2.82-1.74-6.36-2.1-10.56-1.14-.42.12-.78-.18-.9-.54-.12-.42.18-.78.54-.9 4.56-1.02 8.52-.6 11.64 1.32.42.18.48.66.3 1.02zm1.44-3.3c-.3.42-.84.6-1.26.3-3.24-1.98-8.16-2.58-11.94-1.38-.48.12-1.02-.12-1.14-.6-.12-.48.12-1.02.6-1.14 4.38-1.32 9.78-.72 13.5 1.56.36.24.54.84.24 1.26zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.3c-.6.18-1.2-.18-1.38-.72-.18-.6.18-1.2.72-1.38 4.26-1.26 11.28-1.02 15.72 1.62.54.3.72 1.02.42 1.56-.3.42-1.02.6-1.56.3z"/></svg>
+              <!-- Action grid — 2×3: streaming (left col) · save/fav/shop (right col) -->
+              <div class="v3-rev-actions">
+                <a class="v3-rev-btn v3-rev-btn--spotify" title="Spotify" onclick="event.stopPropagation()">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.52 17.34c-.24.36-.66.48-1.02.24-2.82-1.74-6.36-2.1-10.56-1.14-.42.12-.78-.18-.9-.54-.12-.42.18-.78.54-.9 4.56-1.02 8.52-.6 11.64 1.32.42.18.48.66.3 1.02zm1.44-3.3c-.3.42-.84.6-1.26.3-3.24-1.98-8.16-2.58-11.94-1.38-.48.12-1.02-.12-1.14-.6-.12-.48.12-1.02.6-1.14 4.38-1.32 9.78-.72 13.5 1.56.36.24.54.84.24 1.26zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.3c-.6.18-1.2-.18-1.38-.72-.18-.6.18-1.2.72-1.38 4.26-1.26 11.28-1.02 15.72 1.62.54.3.72 1.02.42 1.56-.3.42-1.02.6-1.56.3z"/></svg>
                 </a>
-                <a class="v3-rev-link v3-rev-link--apple" title="Apple Music" onclick="event.stopPropagation()">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V6l10-2v12"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg>
+                <a class="v3-rev-btn v3-rev-btn--apple" title="Apple Music" onclick="event.stopPropagation()">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.05 12.04c-.03-2.7 2.2-4 2.3-4.06-1.25-1.83-3.2-2.08-3.9-2.11-1.66-.17-3.24.97-4.08.97-.84 0-2.14-.95-3.52-.92-1.81.03-3.48 1.05-4.41 2.67-1.88 3.27-.48 8.1 1.35 10.76.9 1.3 1.97 2.76 3.38 2.71 1.36-.05 1.87-.88 3.51-.88 1.64 0 2.1.88 3.53.85 1.46-.03 2.38-1.33 3.27-2.63 1.03-1.51 1.46-2.97 1.48-3.05-.03-.01-2.84-1.09-2.87-4.32zM14.53 4.37c.74-.9 1.24-2.15 1.1-3.4-1.07.04-2.36.71-3.13 1.61-.69.8-1.29 2.07-1.13 3.29 1.19.09 2.42-.6 3.16-1.5z"/></svg>
                 </a>
-                <a class="v3-rev-link v3-rev-link--yt" title="YouTube Music" onclick="event.stopPropagation()">
-                  <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm-2 14V8l6 4-6 4z"/></svg>
+                <a class="v3-rev-btn v3-rev-btn--yt" title="YouTube Music" onclick="event.stopPropagation()">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm-2 14V8l6 4-6 4z"/></svg>
+                </a>
+                <button class="v3-rev-btn v3-rev-btn--later" title="Listen later" onclick="toggleRevAction(this, event)">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 1.8"/></svg>
+                </button>
+                <button class="v3-rev-btn v3-rev-btn--fav" title="Favorite" onclick="toggleRevAction(this, event)">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7.5-4.9-9.5-9C1 8.5 3 5 6.5 5 9 5 12 8 12 8s3-3 5.5-3C21 5 23 8.5 21.5 12c-2 4.1-9.5 9-9.5 9z"/></svg>
+                </button>
+                <a class="v3-rev-btn v3-rev-btn--shop" title="Store / Merch" onclick="event.stopPropagation()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l1 12H5L6 8z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg>
                 </a>
               </div>
 
@@ -677,6 +687,9 @@ const SCREENS = [
               </div>
 
             </div><!-- /v3-rev-top -->
+
+            <!-- Photos / media — small horizontal strip; right edge fades to hint you can swipe -->
+            <div class="v3-rev-media"></div>
 
             <!-- Other users' reviews — full width -->
             <div class="v3-rev-filters">
@@ -786,9 +799,10 @@ const SCREENS = [
             <!-- Stats strip -->
             <div class="v3-blue" onclick="event.stopPropagation(); enterReview(this.closest('.s-home-v3'))">
               <div class="v3-blue-info-row">
-                <span class="v3-blue-artist"></span>
+                <span class="v3-blue-title"><span class="v3-blue-album"></span><span class="v3-blue-date v3-blue-date--fs"></span></span>
                 <span class="v3-blue-sep">·</span>
-                <span class="v3-blue-album"></span>
+                <span class="v3-blue-artist"></span>
+                <span class="v3-blue-date v3-blue-date--inline"></span>
               </div>
               <div class="v3-blue-stars-row">
                 <span class="v3-blue-score">4.4</span>
@@ -836,16 +850,25 @@ const SCREENS = [
                  Uses the bento's 78/22 split so it mirrors with the hand layout. -->
             <div class="v3-rev-top">
 
-              <!-- Streaming / external links — column centered under the CD (placeholders) -->
-              <div class="v3-rev-rail">
-                <a class="v3-rev-link v3-rev-link--spotify" title="Spotify" onclick="event.stopPropagation()">
-                  <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.52 17.34c-.24.36-.66.48-1.02.24-2.82-1.74-6.36-2.1-10.56-1.14-.42.12-.78-.18-.9-.54-.12-.42.18-.78.54-.9 4.56-1.02 8.52-.6 11.64 1.32.42.18.48.66.3 1.02zm1.44-3.3c-.3.42-.84.6-1.26.3-3.24-1.98-8.16-2.58-11.94-1.38-.48.12-1.02-.12-1.14-.6-.12-.48.12-1.02.6-1.14 4.38-1.32 9.78-.72 13.5 1.56.36.24.54.84.24 1.26zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.3c-.6.18-1.2-.18-1.38-.72-.18-.6.18-1.2.72-1.38 4.26-1.26 11.28-1.02 15.72 1.62.54.3.72 1.02.42 1.56-.3.42-1.02.6-1.56.3z"/></svg>
+              <!-- Action grid — 2×3: streaming (left col) · save/fav/shop (right col) -->
+              <div class="v3-rev-actions">
+                <a class="v3-rev-btn v3-rev-btn--spotify" title="Spotify" onclick="event.stopPropagation()">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.52 17.34c-.24.36-.66.48-1.02.24-2.82-1.74-6.36-2.1-10.56-1.14-.42.12-.78-.18-.9-.54-.12-.42.18-.78.54-.9 4.56-1.02 8.52-.6 11.64 1.32.42.18.48.66.3 1.02zm1.44-3.3c-.3.42-.84.6-1.26.3-3.24-1.98-8.16-2.58-11.94-1.38-.48.12-1.02-.12-1.14-.6-.12-.48.12-1.02.6-1.14 4.38-1.32 9.78-.72 13.5 1.56.36.24.54.84.24 1.26zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.3c-.6.18-1.2-.18-1.38-.72-.18-.6.18-1.2.72-1.38 4.26-1.26 11.28-1.02 15.72 1.62.54.3.72 1.02.42 1.56-.3.42-1.02.6-1.56.3z"/></svg>
                 </a>
-                <a class="v3-rev-link v3-rev-link--apple" title="Apple Music" onclick="event.stopPropagation()">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V6l10-2v12"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg>
+                <a class="v3-rev-btn v3-rev-btn--apple" title="Apple Music" onclick="event.stopPropagation()">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.05 12.04c-.03-2.7 2.2-4 2.3-4.06-1.25-1.83-3.2-2.08-3.9-2.11-1.66-.17-3.24.97-4.08.97-.84 0-2.14-.95-3.52-.92-1.81.03-3.48 1.05-4.41 2.67-1.88 3.27-.48 8.1 1.35 10.76.9 1.3 1.97 2.76 3.38 2.71 1.36-.05 1.87-.88 3.51-.88 1.64 0 2.1.88 3.53.85 1.46-.03 2.38-1.33 3.27-2.63 1.03-1.51 1.46-2.97 1.48-3.05-.03-.01-2.84-1.09-2.87-4.32zM14.53 4.37c.74-.9 1.24-2.15 1.1-3.4-1.07.04-2.36.71-3.13 1.61-.69.8-1.29 2.07-1.13 3.29 1.19.09 2.42-.6 3.16-1.5z"/></svg>
                 </a>
-                <a class="v3-rev-link v3-rev-link--yt" title="YouTube Music" onclick="event.stopPropagation()">
-                  <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm-2 14V8l6 4-6 4z"/></svg>
+                <a class="v3-rev-btn v3-rev-btn--yt" title="YouTube Music" onclick="event.stopPropagation()">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm-2 14V8l6 4-6 4z"/></svg>
+                </a>
+                <button class="v3-rev-btn v3-rev-btn--later" title="Listen later" onclick="toggleRevAction(this, event)">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 1.8"/></svg>
+                </button>
+                <button class="v3-rev-btn v3-rev-btn--fav" title="Favorite" onclick="toggleRevAction(this, event)">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7.5-4.9-9.5-9C1 8.5 3 5 6.5 5 9 5 12 8 12 8s3-3 5.5-3C21 5 23 8.5 21.5 12c-2 4.1-9.5 9-9.5 9z"/></svg>
+                </button>
+                <a class="v3-rev-btn v3-rev-btn--shop" title="Store / Merch" onclick="event.stopPropagation()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l1 12H5L6 8z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg>
                 </a>
               </div>
 
@@ -867,6 +890,9 @@ const SCREENS = [
               </div>
 
             </div><!-- /v3-rev-top -->
+
+            <!-- Photos / media — small horizontal strip; right edge fades to hint you can swipe -->
+            <div class="v3-rev-media"></div>
 
             <!-- Other users' reviews — full width -->
             <div class="v3-rev-filters">
@@ -1296,8 +1322,8 @@ const SCREENS = [
           <div class="song-art" style="background-image:url('images/album-punisher.png');background-size:cover;background-position:center"></div>
           <div class="song-info">
             <div class="song-title">Garden Song</div>
-            <div class="song-artist" onclick="navigate('artist')">Phoebe Bridgers</div>
             <div class="song-album" onclick="navigate('album')">Punisher · 2020</div>
+            <div class="song-artist" onclick="navigate('artist')">Phoebe Bridgers</div>
           </div>
         </div>
         <div class="song-stats">

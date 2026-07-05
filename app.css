@@ -680,8 +680,8 @@
 }
 .trending-art { width: 46px; height: 46px; flex-shrink: 0; border-radius: 6px; }
 .trending-info { flex: 1; min-width: 0; }
-.trending-album  { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.trending-artist { font-size: 12px; color: var(--text2); }
+.trending-album  { font-size: 14px; font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.trending-artist { font-size: 12px; font-weight: 700; color: var(--text2); }
 
 /* ============================================================
    ALBUM DETAIL SCREEN
@@ -735,8 +735,8 @@
   padding: 0 20px 16px;
 }
 
-.album-title  { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; line-height: 1.1; font-family: var(--font-head); }
-.album-artist { font-size: 16px; color: var(--accent); font-weight: 600; margin: 3px 0 6px; }
+.album-title  { font-size: 22px; font-weight: 400; letter-spacing: -0.5px; line-height: 1.1; font-family: var(--font-head); }
+.album-artist { font-size: 16px; color: var(--accent); font-weight: 700; margin: 3px 0 6px; }
 .album-meta   { font-size: 13px; color: var(--text2); }
 
 .album-stats {
@@ -930,8 +930,8 @@
   background: linear-gradient(135deg, #0f172a, #4338ca);
 }
 .song-title  { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; font-family: var(--font-sub); }
-.song-artist { font-size: 13px; color: var(--accent); margin: 3px 0; cursor: pointer; }
-.song-album  { font-size: 12px; color: var(--text2); cursor: pointer; }
+.song-album  { font-size: 13px; font-weight: 400; color: var(--text2); margin: 3px 0 0; cursor: pointer; }
+.song-artist { font-size: 12px; font-weight: 700; color: var(--accent); margin: 2px 0 0; cursor: pointer; }
 .song-stats  {
   display: flex;
   padding: 12px 20px;
@@ -2396,12 +2396,12 @@
   margin-left: auto;
 }
 .v3-friend-album {
-  font-size: 12px; font-weight: 700;
+  font-size: 12px; font-weight: 400;
   color: #e8e2d6;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .v3-friend-artist {
-  font-size: 10px;
+  font-size: 10px; font-weight: 700;
   color: rgba(232,226,214,0.35);
   margin-bottom: 1px;
 }
@@ -2683,9 +2683,9 @@
 /* Blue box: Reviews strip */
 .v3-blue {
   position: absolute;
-  left: 0.07%; top: 83.78%; width: 78.08%; height: 16.14%;
+  left: 0.07%; top: 83.78%; width: 78.08%; height: 17.5%;   /* was 16.14% — dips into the CD-gap below */
   background: transparent;
-  padding: 9px 12px 4px;
+  padding: 9px 12px 8px;   /* bottom was 4px — extra clip room so the quote's descenders show */
   display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between;
   gap: 0;
   cursor: pointer;
@@ -2697,7 +2697,8 @@
   align-items: baseline;
   gap: 4px;
   width: 100%;
-  overflow: hidden;
+  position: relative; top: -2.5px;   /* nudge the album/artist/date line up */
+  overflow: visible;   /* was hidden — clipped artist descenders (g/y/p). .v3-blue still clips. */
   line-height: 1.05;
   font-family: 'Roboto Flex', var(--font-main);
   font-size: 10.5px;
@@ -2721,14 +2722,31 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  flex: 1;
+  flex: 0 1 auto;
   min-width: 0;
   font-size: 10.5px;
+  /* Extend the ellipsis clip box downward so descenders (g/y/p) aren't shaved,
+     then pull it back out of layout so the row height is unchanged (quote stays put). */
+  padding-bottom: 3px;
+  margin-bottom: -3px;
   transition: font-size 0.4s cubic-bezier(0.4,0,0.2,1), opacity 0.18s ease;
+}
+/* Album title + (fullscreen) release-year wrapper.
+   NOTE: no overflow:hidden here — on an inline-flex it moves the baseline to the box's
+   bottom edge, which clips the album's descenders. The album ellipsizes itself. */
+.v3-blue-title {
+  display: inline-flex; align-items: baseline; gap: 6px;
+  min-width: 0; flex: 0 1 auto;
+}
+.v3-blue-date { font-weight: 400; color: rgba(232,226,214,0.42); flex-shrink: 0; }
+.v3-blue-date--fs { display: none; }   /* fullscreen-only; hidden in the bento */
+.v3-blue-date--inline::before {
+  content: '·'; margin-right: 4px;
+  font-size: 8px; color: rgba(232,226,214,0.22);
 }
 .v3-blue-stars-row {
   display: flex; align-items: baseline; gap: 7px;
-  position: relative; top: 2.5px;
+  position: relative; top: -0.5px;   /* was 2.5px — nudged the rating row up 3px */
 }
 .v3-blue-score {
   font-size: 13px; font-weight: 800;
@@ -2745,7 +2763,8 @@
   white-space: nowrap;
   width: 100%;
   position: relative;
-  bottom: 3px;
+  bottom: 6px;   /* nudged the sample review up */
+  padding-bottom: 3px;   /* extend the clip box so the quote's own descenders aren't cut */
   -webkit-mask-image: linear-gradient(to right, black 72%, transparent 100%);
   mask-image: linear-gradient(to right, black 72%, transparent 100%);
 }
@@ -2891,28 +2910,60 @@
 .v3-rev-top { display: flex; align-items: flex-start; gap: 0; margin-top: -20px; margin-bottom: 2px; }
 .s-home-v3:not(.s-home-v3--left) .v3-rev-top { flex-direction: row-reverse; }
 
-/* Streaming links — 22% column (the CD column); icons centered under the CD.
-   padding-top offsets the -20px row pull so the links stay clear of the CD above. */
-.v3-rev-rail {
-  flex-shrink: 0; width: 22%;
-  display: flex; flex-direction: column; align-items: center; gap: 10px;
-  padding-top: 31px;   /* first icon sits ~22px below the CD */
-  pointer-events: none;   /* empty column doesn't block the CD overlapping above */
+/* Action grid — 2 cols × 3 rows in the CD column.
+   Col 1 (top→bottom): Spotify · Apple · YouTube.  Col 2: Listen later · Favorite · Shop.
+   padding-top clears the CD spinning above this column. */
+.v3-rev-actions {
+  flex-shrink: 0;
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-columns: repeat(2, 27px);   /* 27 + 27 + 4 = 58px ≈ CD width (15.97% of bento) */
+  grid-template-rows: repeat(3, 27px);
+  gap: 4px;
+  padding-top: 30px;
+  pointer-events: none;   /* empty top area doesn't block the CD overlapping above */
 }
-.v3-rev-link { pointer-events: auto; }
-.v3-rev-link {
-  width: 32px; height: 24px; border-radius: 8px;
+/* Align the grid's outer edge with the CD's inset from the screen edge.
+   The bento (and CD) are inset 10px, and the CD sits ~10px further in;
+   the panel already gives 10px, so add ~10px more on the edge side.
+   The CD mirrors sides with hand mode, so match it. */
+.s-home-v3--left .v3-rev-actions { margin-left: 10px; }
+.s-home-v3:not(.s-home-v3--left) .v3-rev-actions { margin-right: 10px; }
+.v3-rev-btn {
+  pointer-events: auto;
+  width: 100%; height: 100%;
   display: flex; align-items: center; justify-content: center;
-  color: rgba(232,226,214,0.42); cursor: pointer;
-  transition: color 0.15s, transform 0.12s;
+  border: 1px solid rgba(232,226,214,0.12);
+  border-radius: 6px;
+  background: rgba(232,226,214,0.04);
+  color: rgba(232,226,214,0.38); cursor: pointer;
+  transition: color 0.15s, background 0.15s, border-color 0.15s, transform 0.1s;
+  -webkit-tap-highlight-color: transparent;
 }
-/* Normalize icon glyph size so the box hugs them and the visual gap ≈ the 3px set */
-.v3-rev-link svg { width: 22px; height: 22px; }
-.v3-rev-link:hover { transform: translateY(-1px); }
-.v3-rev-link--spotify:hover { color: #1DB954; }
-.v3-rev-link--apple:hover   { color: #fa5a78; }
-.v3-rev-link--yt:hover      { color: #ff2d2d; }
-.s-home-v3--light .v3-rev-link { color: rgba(26,18,8,0.4); }
+.v3-rev-btn svg { width: 16px; height: 16px; }
+.v3-rev-btn:hover { transform: translateY(-1px); border-color: rgba(232,226,214,0.28); background: rgba(232,226,214,0.08); }
+.v3-rev-btn:active { transform: scale(0.94); }
+/* Streaming — brand-color hovers */
+.v3-rev-btn--spotify:hover { color: #1DB954; border-color: rgba(29,185,84,0.5); }
+.v3-rev-btn--apple:hover   { color: #fa5a78; border-color: rgba(250,90,120,0.5); }
+.v3-rev-btn--yt:hover      { color: #ff2d2d; border-color: rgba(255,45,45,0.5); }
+/* Actions — hover + toggled-on states */
+.v3-rev-btn--later:hover { color: var(--v3-accent, #e8a83c); }
+.v3-rev-btn--fav:hover   { color: #ff5a6e; }
+.v3-rev-btn--shop:hover  { color: var(--v3-accent, #e8a83c); }
+.v3-rev-btn--later.on {
+  color: var(--v3-accent, #e8a83c); border-color: var(--v3-accent, #e8a83c);
+  background: rgba(232,168,60,0.14);
+}
+.v3-rev-btn--fav.on {
+  color: #ff5a6e; border-color: #ff5a6e; background: rgba(255,90,110,0.14);
+}
+.v3-rev-btn--fav.on svg { fill: #ff5a6e; }
+/* Light theme */
+.s-home-v3--light .v3-rev-btn {
+  color: rgba(26,18,8,0.38); border-color: rgba(26,18,8,0.12); background: rgba(26,18,8,0.03);
+}
+.s-home-v3--light .v3-rev-btn:hover { border-color: rgba(26,18,8,0.26); background: rgba(26,18,8,0.06); }
 .s-home-v3--review .v3-hand-toggle { display: none; }   /* dev button out of the way */
 @keyframes v3revin {
   from { opacity: 0; transform: translateY(10px); }
@@ -2941,23 +2992,41 @@
   overflow: visible;
 }
 .s-home-v3--review .v3-blue-sep { display: none; }
-.s-home-v3--review .v3-blue-artist { font-size: 14px; }
+.s-home-v3--review .v3-blue-artist { font-size: 12px; position: relative; top: 3.5px; }
 .s-home-v3--review .v3-blue-album {
   font-size: 18px;
-  flex: none;
+  display: inline;              /* flow inline with the date + allow wrapping */
+  white-space: normal;
   overflow: visible;
-  text-overflow: clip;
   color: rgba(232,226,214,0.92);
-  line-height: 1.1;
+  line-height: 1.12;
+  font-variation-settings: 'wdth' 85;   /* condense the variable font so long titles fit */
 }
 .s-home-v3--light.s-home-v3--review .v3-blue-album { color: rgba(26,18,8,0.9); }
+/* Release year beside the album title — smaller + lighter than the album name */
+.s-home-v3--review .v3-blue-title {
+  position: relative; top: 2px;
+  max-width: 100%;
+  display: -webkit-box;                 /* clamp long titles to 2 lines */
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  line-height: 1.12;
+}
+.s-home-v3--review .v3-blue-date--inline { display: none; }
+.s-home-v3--review .v3-blue-date--fs {
+  display: inline; margin-left: 6px;    /* was a flex gap; title is no longer flex */
+  font-size: 12px; font-weight: 300;
+  color: rgba(232,226,214,0.5);
+}
+.s-home-v3--light.s-home-v3--review .v3-blue-date--fs { color: rgba(26,18,8,0.5); }
 /* Push the rest of the stats down ~1 line to make room */
 .s-home-v3--review .v3-blue-stars-row { margin-top: 7px; }
 
 /* Flood removes the bento margin visually, leaving dead space between the For You
    box and the screen edge. Grow it outward so its edge inset matches the back button. */
-.s-home-v3--review .v3-for-single { width: 19.1%; top: 12.96%; height: 68.55%; }                      /* right-hand: extend right edge + 3.5% taller upward (bottom fixed) */
-.s-home-v3--left.s-home-v3--review .v3-for-single { left: 0.07%; width: 19.1%; top: 12.96%; height: 68.55%; }  /* left-hand: extend left edge + 3.5% taller upward */
+.s-home-v3--review .v3-for-single { width: 19.1%; top: 15.23%; height: 68.55%; }                      /* right-hand: lowered so its bottom (83.78%) aligns with the album cover bottom */
+.s-home-v3--left.s-home-v3--review .v3-for-single { left: 0.07%; width: 19.1%; top: 15.23%; height: 68.55%; }  /* left-hand: lowered so its bottom aligns with the album cover bottom */
 
 /* Live pill ⇄ Back arrow */
 .v3-back-content { display: none; align-items: center; gap: 3px; }
@@ -2972,19 +3041,23 @@
   padding: 0 0 6px 12px;
   display: flex; flex-direction: column;
 }
+/* Left-hand: the action grid sits to mine's left, so add back the width lost when
+   the grid shrank (from the 22% column to a CD-width 58px) to re-align 'your review'
+   with the album stats text above it. Right-hand mode sits at the panel edge already. */
+.s-home-v3--left .v3-rev-mine { margin-left: 12px; }
 .v3-rev-mine-hd {
-  font-size: 10px; font-weight: 700; letter-spacing: 0.8px;
+  font-size: 8px; font-weight: 700; letter-spacing: 0.8px;
   text-transform: uppercase; color: rgba(232,226,214,0.42);
   margin-bottom: 2px; display: flex; gap: 7px; align-items: baseline;
   font-family: var(--font-main);
 }
 .v3-rev-album-name {
   color: rgba(232,226,214,0.7); text-transform: none;
-  letter-spacing: 0; font-weight: 600; font-size: 11px;
+  letter-spacing: 0; font-weight: 600; font-size: 9px;
 }
 .v3-rev-stars { display: flex; gap: 3px; margin-bottom: 4px; }
 .v3-rev-star {
-  font-size: 30px; line-height: 1; cursor: pointer;
+  font-size: 33px; line-height: 1; cursor: pointer;
   color: rgba(232,226,214,0.18); border-radius: 5px;
   transition: color 0.12s, transform 0.12s;
 }
@@ -2999,7 +3072,7 @@
   display: block; width: 100%; box-sizing: border-box; resize: none;
   overflow: hidden; min-height: 22px;
   background: transparent; border: none; padding: 0;
-  color: #e8e2d6; font-family: 'Crimson Text', Georgia, serif; font-size: 15px; line-height: 1.5;
+  color: #e8e2d6; font-family: 'Crimson Text', Georgia, serif; font-size: 13px; line-height: 1.5;
 }
 .v3-rev-write::placeholder { color: transparent; }   /* custom hint overlay used instead */
 .v3-rev-write:focus { outline: none; }
@@ -3009,7 +3082,7 @@
 .v3-rev-ph {
   display: none;
   position: absolute; top: 0; left: 0;
-  font-family: 'Crimson Text', Georgia, serif; font-size: 15px; line-height: 1.5;
+  font-family: 'Crimson Text', Georgia, serif; font-size: 13px; line-height: 1.5;
   color: rgba(232,226,214,0.3);
   pointer-events: none; white-space: nowrap;
 }
@@ -3034,10 +3107,30 @@
 .v3-rev-submit:hover { background: var(--v3-accent, #e8a83c); color: #16130d; }
 .v3-rev-submit:disabled { opacity: 0.55; cursor: default; background: transparent; }
 
+/* Photo / media strip — small, horizontally scrollable; right edge fades to hint swipe */
+.v3-rev-media {
+  display: flex; gap: 6px;
+  margin: 13px 12px 4px;
+  overflow-x: auto; overflow-y: hidden;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  -webkit-mask-image: linear-gradient(to right, #000 85%, transparent);
+          mask-image: linear-gradient(to right, #000 85%, transparent);
+}
+.v3-rev-media::-webkit-scrollbar { display: none; }
+.v3-rev-photo {
+  flex: 0 0 auto;
+  width: 84px; height: 62px;
+  border-radius: 7px;
+  background-size: cover; background-position: center;
+  background-color: rgba(232,226,214,0.06);
+}
+.s-home-v3--light .v3-rev-photo { background-color: rgba(26,18,8,0.06); }
+
 /* Filters — text tabs, not pills; full-width with a divider above */
 .v3-rev-filters {
   display: flex; align-items: baseline; gap: 16px;
-  padding: 15px 0 5px; margin-top: 8px;
+  padding: 15px 0 5px; margin: 16px 12px 0;
   border-top: 1px solid rgba(232,226,214,0.1);
 }
 .s-home-v3--light .v3-rev-filters { border-top-color: rgba(26,18,8,0.1); }
@@ -3053,20 +3146,29 @@
   color: rgba(232,226,214,0.32);
 }
 
-/* Review cards — hairline dividers, no boxes */
-.v3-rev-list { display: flex; flex-direction: column; }
-.v3-rev-card { padding: 18px 0; border-bottom: 1px solid rgba(232,226,214,0.08); }
-.v3-rev-card-top { display: flex; align-items: center; gap: 9px; margin-bottom: 7px; }
+/* Review cards — styled to match the homepage friend-feed cards (compact) */
+.v3-rev-list { display: flex; flex-direction: column; margin: 0 12px; }
+.v3-rev-card { padding: 9px 0; border-bottom: 1px solid rgba(232,226,214,0.08); }
+.v3-rev-card:last-child { border-bottom: none; }
+.v3-rev-card-top { display: flex; align-items: center; gap: 5px; margin-bottom: 3px; }
 .v3-rev-av {
-  width: 25px; height: 25px; border-radius: 50%; flex-shrink: 0;
+  width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
-  font-size: 10px; font-weight: 700; color: #fff;
+  font-size: 7px; font-weight: 700; color: #fff;
 }
 .v3-rev-name {
-  font-size: 12.5px; font-weight: 700;
-  color: rgba(232,226,214,0.88); margin-right: auto;
+  font-size: 11px; font-weight: 600;
+  color: rgba(232,226,214,0.8);
 }
-.v3-rev-text { font-family: 'Crimson Text', Georgia, serif; font-size: 14.5px; line-height: 1.5; color: rgba(232,226,214,0.66); }
+.v3-rev-time {
+  font-size: 10px; color: rgba(232,226,214,0.22); margin-left: auto;
+}
+.v3-rev-meta { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+.v3-rev-likes { font-size: 9.5px; color: rgba(232,226,214,0.25); }
+.v3-rev-text {
+  font-size: 10.5px; line-height: 1.3; color: rgba(232,226,214,0.45);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
 .v3-rev-empty {
   padding: 34px 0; text-align: center;
   font-size: 12px; color: rgba(232,226,214,0.35);
@@ -3087,8 +3189,10 @@
 .s-home-v3--light .v3-rev-filter.active { color: var(--v3-accent, #b06a2a); }
 .s-home-v3--light .v3-rev-count { color: rgba(26,18,8,0.35); }
 .s-home-v3--light .v3-rev-card { border-bottom-color: rgba(26,18,8,0.09); }
-.s-home-v3--light .v3-rev-name { color: rgba(26,18,8,0.85); }
-.s-home-v3--light .v3-rev-text { color: rgba(26,18,8,0.6); }
+.s-home-v3--light .v3-rev-name { color: rgba(26,18,8,0.8); }
+.s-home-v3--light .v3-rev-time { color: rgba(26,18,8,0.22); }
+.s-home-v3--light .v3-rev-likes { color: rgba(26,18,8,0.28); }
+.s-home-v3--light .v3-rev-text { color: rgba(26,18,8,0.5); }
 .s-home-v3--light .v3-rev-empty { color: rgba(26,18,8,0.4); }
 
 /* Streaming service sheet */
@@ -3177,6 +3281,8 @@
   background: transparent;
 }
 .s-home-v3--light .v3-blue-artist { color: rgba(26,18,8,0.82); }
+.s-home-v3--light .v3-blue-date { color: rgba(26,18,8,0.42); }
+.s-home-v3--light .v3-blue-date--inline::before { color: rgba(26,18,8,0.25); }
 .s-home-v3--light .v3-blue-sep { color: rgba(26,18,8,0.18); }
 .s-home-v3--light .v3-blue-album { color: rgba(26,18,8,0.45); }
 .s-home-v3--light .v3-blue-count { color: rgba(26,18,8,0.35); }

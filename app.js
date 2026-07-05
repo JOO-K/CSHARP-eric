@@ -132,9 +132,11 @@ function reloadCD(cdEl, newUrl) {
   }, 150);
 }
 
-function slideIn(el, newUrl) {
-  // Left-hand layout is mirrored, so images travel left→right instead of right→left
-  const flip = !!el.closest('.s-home-v3--left');
+function slideIn(el, newUrl, reverse) {
+  // Left-hand layout is mirrored, so images travel left→right instead of right→left.
+  // `reverse` flips it again for backward navigation (swiping to a previous album).
+  let flip = !!el.closest('.s-home-v3--left');
+  if (reverse) flip = !flip;
   const enterFrom = flip ? '-100%' : '100%';
   const oldExit   = flip ? '28%'   : '-28%';
   const old = document.createElement('div');
@@ -173,7 +175,9 @@ function setMainAlbum(screenEl, album, animate = false) {
     else albumEl.style.backgroundImage = `url('${album.image}')`;
     albumEl.onclick = (e) => {
       if (albumEl._swiped) { if (e) e.stopPropagation(); return; }  // a swipe, not a tap
-      window.openAlbum(album);
+      if (e) e.stopPropagation();   // don't let the tap bubble and undo the review state
+      window.activeAlbum = album;
+      enterReview(screenEl);   // tap the hero → fullscreen review (not the separate album page)
     };
   }
   const cdEl = screenEl.querySelector('.v3-cd');
@@ -197,6 +201,8 @@ function setMainAlbum(screenEl, album, animate = false) {
     if (artistEl) artistEl.textContent = album.artist;
     if (albumNameEl) albumNameEl.textContent = album.album;
   }
+  // Release year — inline after the artist (bento) / beside the album (fullscreen)
+  screenEl.querySelectorAll('.v3-blue-date').forEach(el => { el.textContent = album.year || ''; });
 
   const starsRow = screenEl.querySelector('.v3-blue-stars-row');
   if (starsRow) {
@@ -243,7 +249,7 @@ function setMainAlbum(screenEl, album, animate = false) {
     }
   }
 
-  applyAlbumColors(screenEl);
+  applyAlbumColorsUrl(screenEl, album.image);
 
   // If we're in fullscreen review mode, refresh reviews for the new album
   if (screenEl.classList.contains('s-home-v3--review')) populateReviewPanel(screenEl);
@@ -333,7 +339,12 @@ window.submitReview = function (btn) {
       <div class="v3-rev-card-top">
         <div class="v3-rev-av" style="background:linear-gradient(135deg,var(--v3-accent,#e8a83c),#c76b2a)">Y</div>
         <span class="v3-rev-name">You</span>
-        ${halfStars(rating, 11)}
+        <span class="v3-rev-time">just now</span>
+      </div>
+      <div class="v3-rev-meta">
+        ${halfStars(rating, 10)}
+        <span class="v3-rev-likes">♥ 0</span>
+        <span class="v3-rev-likes">💬 0</span>
       </div>
       <div class="v3-rev-text">${text}</div>`;
     list.insertBefore(card, list.firstChild);
@@ -348,6 +359,11 @@ window.submitReview = function (btn) {
     btn.disabled = false;
     btn.style.display = 'none';
   }, 1500);
+};
+// Listen-later / Favorite toggle buttons in the action grid
+window.toggleRevAction = function (btn, e) {
+  if (e) e.stopPropagation();
+  btn.classList.toggle('on');
 };
 // Friends / Popular / New filter tabs
 window.setReviewFilter = function (btn) {
@@ -367,8 +383,46 @@ function populateReviewPanel(scr) {
   if (stars) { stars.dataset.rating = '0'; paintMyStars(stars, 0); }
   const ta = scr.querySelector('.v3-rev-write');
   if (ta) { ta.value = ''; autoGrowReview(ta); }
+  // clear listen-later / favorite toggles when the album changes
+  scr.querySelectorAll('.v3-rev-btn.on').forEach(b => b.classList.remove('on'));
+  populateComposeMedia(scr);
   const active = scr.querySelector('.v3-rev-filter.active');
   populateReviewList(scr, active ? active.dataset.f : 'friends');
+}
+
+// Photo / media strip under the compose block. Placeholder for now: the album cover
+// plus a rotating handful of other covers standing in for photoshoot / press images.
+// Swap in a real `album.photos` array later to show genuine media.
+function populateComposeMedia(scr) {
+  const strip = scr && scr.querySelector('.v3-rev-media');
+  if (!strip) return;
+  const a = scr._album || window.featuredAlbum;
+  const arch = window.ARCHIVE || [];
+  let imgs;
+  if (a && Array.isArray(a.photos) && a.photos.length) {
+    imgs = a.photos;                                   // real media once it's wired up
+  } else {
+    const idx = arch.indexOf(a);
+    const others = [];
+    for (let i = 1; others.length < 8 && i < arch.length; i++) {
+      others.push(arch[(idx + i) % arch.length].image);
+    }
+    imgs = [a && a.image, ...others].filter(Boolean);
+  }
+  strip.innerHTML = imgs.map(src =>
+    `<div class="v3-rev-photo" style="background-image:url('${src}')"></div>`).join('');
+}
+
+// Deterministic engagement meta (time / likes / comments) for a review, so the
+// numbers stay put across filter re-renders instead of reshuffling.
+const REV_TIMES = ['just now', '2h', '5h', '9h', '1d', '2d', '4d', '1w', '2w', '3w'];
+function revMeta(r, i) {
+  const seed = (r.name || '').length * 3 + (r.text || '').length + i * 7;
+  return {
+    ago: REV_TIMES[seed % REV_TIMES.length],
+    likes: 3 + (seed * 13) % 140,
+    comments: (seed * 7) % 18,
+  };
 }
 
 function populateReviewList(scr, filter) {
@@ -380,15 +434,23 @@ function populateReviewList(scr, filter) {
   else if (filter === 'new') revs.reverse();
   const countEl = scr.querySelector('.v3-rev-count');
   if (countEl) countEl.textContent = `${window.fmtRc(a.reviewCount || revs.length)} reviews`;
-  list.innerHTML = revs.map(r => `
+  list.innerHTML = revs.map((r, i) => {
+    const m = revMeta(r, i);
+    return `
     <div class="v3-rev-card">
       <div class="v3-rev-card-top">
         <div class="v3-rev-av" style="background:${r.grad || '#555'}">${r.init || '?'}</div>
         <span class="v3-rev-name">${r.name || 'Listener'}</span>
-        ${halfStars(r.rating || 4, 11)}
+        <span class="v3-rev-time">${m.ago}</span>
+      </div>
+      <div class="v3-rev-meta">
+        ${halfStars(r.rating || 4, 10)}
+        <span class="v3-rev-likes">♥ ${m.likes}</span>
+        <span class="v3-rev-likes">💬 ${m.comments}</span>
       </div>
       <div class="v3-rev-text">${r.text || ''}</div>
-    </div>`).join('') || `<div class="v3-rev-empty">No reviews yet — be the first.</div>`;
+    </div>`;
+  }).join('') || `<div class="v3-rev-empty">No reviews yet — be the first.</div>`;
 }
 
 function renderFriendFeed(screenEl) {
@@ -439,16 +501,17 @@ function albumSeq() {
 }
 
 // Move the main album to a sequence index; For You always shows the next one up.
-function applyAlbumIndex(screenEl, idx, animateMain, animateForYou) {
+function applyAlbumIndex(screenEl, idx, animateMain, animateForYou, backward) {
   const seq = albumSeq();
   if (!seq.length) return;
+  preloadColors(seq);
   idx = ((idx % seq.length) + seq.length) % seq.length;
   screenEl._albumIdx = idx;
   setMainAlbum(screenEl, seq[idx], animateMain);
   const forSingle = screenEl.querySelector('.v3-for-single');
   if (forSingle) {
     const nextIdx = (idx + 1) % seq.length;
-    if (animateForYou) slideIn(forSingle, seq[nextIdx].image);
+    if (animateForYou) slideIn(forSingle, seq[nextIdx].image, backward);
     else forSingle.style.backgroundImage = `url('${seq[nextIdx].image}')`;
     preloadForYou(seq, nextIdx);
   }
@@ -457,6 +520,7 @@ function applyAlbumIndex(screenEl, idx, animateMain, animateForYou) {
 function populateHomeData(screenEl) {
   const seq = albumSeq();
   if (!seq.length) return;
+  preloadColors(seq);
   applyHand(screenEl);
 
   if (screenEl._albumIdx == null) screenEl._albumIdx = 0;
@@ -487,21 +551,40 @@ function setupAlbumSwipe(screenEl) {
   album.style.touchAction = 'pan-y';   // let vertical scroll pass, we handle horizontal
 
   let startX = 0, startY = 0, progress = 0, width = 1;
-  let active = false, decided = false, horizontal = false, dir = 0, targetIdx = 0;
-  let cur = null, peek = null;
+  let active = false, decided = false, horizontal = false, dir = 0, targetIdx = 0, stepDir = 1;
+  let cur = null, peek = null, fy = null, fyCur = null, fyPeek = null;
 
   function buildLayers() {
     const seq = albumSeq();
     const idx = screenEl._albumIdx || 0;
-    dir = progress < 0 ? -1 : 1;   // drag-left(<0)=next, drag-right(>0)=previous
-    targetIdx = (((idx + (dir < 0 ? 1 : -1)) % seq.length) + seq.length) % seq.length;
+    dir = progress < 0 ? -1 : 1;   // drag direction only (visual follows the finger): -1=left, +1=right
+    // Which album the drag lands on depends on hand mode, since For You sits on the CD side:
+    //   left-hand  (For You on the left):  drag-right → next, drag-left → previous
+    //   right-hand (For You on the right): drag-left → next, drag-right → previous
+    const leftHand = screenEl.classList.contains('s-home-v3--left');
+    const step = leftHand ? (dir < 0 ? -1 : 1) : (dir < 0 ? 1 : -1);
+    stepDir = step;   // +1 = forward/next, -1 = backward/previous (for the commit slide direction)
+    targetIdx = (((idx + step) % seq.length) + seq.length) % seq.length;
+    const basePct = dir < 0 ? 100 : -100;
     cur = document.createElement('div');
     cur.style.cssText = `position:absolute;inset:0;background:${album.style.backgroundImage} center/cover no-repeat;z-index:2;will-change:transform`;
     peek = document.createElement('div');
-    const basePct = dir < 0 ? 100 : -100;
     peek.style.cssText = `position:absolute;inset:0;background:url('${seq[targetIdx].image}') center/cover no-repeat;z-index:3;will-change:transform;transform:translateX(${basePct}%)`;
     album.appendChild(cur);
     album.appendChild(peek);
+
+    // For You box gets the same filmstrip: its own next-queued cover peeks in from the same
+    // side as the drag, so you see its edge slide in live instead of it swapping after release.
+    fy = screenEl.querySelector('.v3-for-single');
+    if (fy) {
+      const fyNextImg = seq[(targetIdx + 1) % seq.length].image;
+      fyCur = document.createElement('div');
+      fyCur.style.cssText = `position:absolute;inset:0;background:${fy.style.backgroundImage} center/cover no-repeat;z-index:2;will-change:transform`;
+      fyPeek = document.createElement('div');
+      fyPeek.style.cssText = `position:absolute;inset:0;background:url('${fyNextImg}') center/cover no-repeat;z-index:3;will-change:transform;transform:translateX(${basePct}%)`;
+      fy.appendChild(fyCur);
+      fy.appendChild(fyPeek);
+    }
   }
 
   function render() {
@@ -509,26 +592,40 @@ function setupAlbumSwipe(screenEl) {
     const basePct = dir < 0 ? 100 : -100;
     cur.style.transform  = `translateX(${progress * 100}%)`;
     peek.style.transform = `translateX(${basePct + progress * 100}%)`;
+    if (fyCur) {
+      fyCur.style.transform  = `translateX(${progress * 100}%)`;
+      fyPeek.style.transform = `translateX(${basePct + progress * 100}%)`;
+    }
   }
 
   function finish(committed) {
     if (!cur) { cleanup(); return; }
     const t = 'transform 0.28s cubic-bezier(0.4,0,0.2,1)';
     cur.style.transition = t; peek.style.transition = t;
+    if (fyCur) { fyCur.style.transition = t; fyPeek.style.transition = t; }
     const basePct = dir < 0 ? 100 : -100;
+    const offPct = dir < 0 ? -100 : 100;
     if (committed) {
-      cur.style.transform  = `translateX(${dir < 0 ? -100 : 100}%)`;
+      cur.style.transform  = `translateX(${offPct}%)`;
       peek.style.transform = 'translateX(0%)';
+      if (fyCur) { fyCur.style.transform = `translateX(${offPct}%)`; fyPeek.style.transform = 'translateX(0%)'; }
+      // recolour now (from cache), so the accent transitions in as the cover slides — no lag
+      const ta = albumSeq()[targetIdx];
+      if (ta) applyAlbumColorsUrl(screenEl, ta.image);
     } else {
       cur.style.transform  = 'translateX(0%)';
       peek.style.transform = `translateX(${basePct}%)`;
+      if (fyCur) { fyCur.style.transform = 'translateX(0%)'; fyPeek.style.transform = `translateX(${basePct}%)`; }
     }
     let done = false;
     const end = () => {
       if (done) return; done = true;
-      const c = cur, p = peek; cur = peek = null;
-      if (committed) applyAlbumIndex(screenEl, targetIdx, false, true);
+      const c = cur, p = peek, fc = fyCur, fp = fyPeek;
+      cur = peek = fyCur = fyPeek = null;
+      // animateForYou=false: we already filmstripped the For You box, so just set its final image
+      if (committed) applyAlbumIndex(screenEl, targetIdx, false, false, stepDir < 0);
       if (c) c.remove(); if (p) p.remove();
+      if (fc) fc.remove(); if (fp) fp.remove();
     };
     peek.addEventListener('transitionend', end, { once: true });
     setTimeout(end, 380);
@@ -586,58 +683,84 @@ function preloadForYou(trending, fromIdx, count = 3) {
   }
 }
 
-// ── Album color extraction ────────────────────────────────────
-function applyAlbumColors(screenEl) {
-  const albumEl = screenEl.querySelector('.v3-album');
-  if (!albumEl) return;
-  const bg = getComputedStyle(albumEl).backgroundImage;
-  const m  = bg.match(/url\(['"]?([^'"]+?)['"]?\)/);
-  if (!m) return;
+// ── Album colour extraction + cache ───────────────────────────
+// Palettes are cached by image URL and precomputed for the whole album window
+// (mirroring the image preload), so swiping applies a ready palette synchronously
+// instead of extracting on arrival — no fallback flash.
+const COLOR_CACHE   = new Map();   // image url → { accent, box1, box2, box1color }
+const COLOR_PENDING = new Map();   // image url → in-flight Promise (dedupe concurrent loads)
 
-  const img = new Image();
-  img.onload = () => {
-    try {
-      const sz = 48;
-      const cv = document.createElement('canvas');
-      cv.width = cv.height = sz;
-      const ctx = cv.getContext('2d');
-      ctx.drawImage(img, 0, 0, sz, sz);
-      const d = ctx.getImageData(0, 0, sz, sz).data;
+// Extract the palette for one image URL. Resolves from cache instantly if present,
+// dedupes concurrent extractions, and never rejects: on a tainted canvas (file://) or
+// load error it resolves null so callers keep the CSS defaults.
+function computeAlbumColors(url) {
+  if (!url) return Promise.resolve(null);
+  if (COLOR_CACHE.has(url))   return Promise.resolve(COLOR_CACHE.get(url));
+  if (COLOR_PENDING.has(url)) return COLOR_PENDING.get(url);
 
-      // Pass 1: overall average, saturation-weighted vibrant colour, and mean saturation.
-      let tR = 0, tG = 0, tB = 0, n = 0;   // overall average
-      let wR = 0, wG = 0, wB = 0, wSum = 0; // saturation-weighted vibrant colour
-      let satSum = 0;                        // colourfulness of the whole cover
-      for (let i = 0; i < d.length; i += 4) {
-        if (d[i+3] < 120) continue;
-        const r = d[i], g = d[i+1], b = d[i+2];
-        const mx = Math.max(r,g,b), mn = Math.min(r,g,b);
-        const sat = mx ? (mx-mn)/mx : 0;
-        const lum = (mx+mn)/510;
-        tR += r; tG += g; tB += b; n++;
-        satSum += sat;
-        if (lum > 0.12 && lum < 0.92) {
-          const w = sat * sat;   // emphasise the genuinely vivid pixels
-          wR += r*w; wG += g*w; wB += b*w; wSum += w;
+  const p = new Promise((resolve) => {
+    const img = new Image();
+    img.onerror = () => resolve(null);
+    img.onload = () => {
+      try {
+        const sz = 48;
+        const cv = document.createElement('canvas');
+        cv.width = cv.height = sz;
+        const ctx = cv.getContext('2d');
+        ctx.drawImage(img, 0, 0, sz, sz);
+        const d = ctx.getImageData(0, 0, sz, sz).data;
+
+        // Pass 1: overall average, saturation-weighted vibrant colour, and mean saturation.
+        let tR = 0, tG = 0, tB = 0, n = 0;   // overall average
+        let wR = 0, wG = 0, wB = 0, wSum = 0; // saturation-weighted vibrant colour
+        let satSum = 0;                        // colourfulness of the whole cover
+        for (let i = 0; i < d.length; i += 4) {
+          if (d[i+3] < 120) continue;
+          const r = d[i], g = d[i+1], b = d[i+2];
+          const mx = Math.max(r,g,b), mn = Math.min(r,g,b);
+          const sat = mx ? (mx-mn)/mx : 0;
+          const lum = (mx+mn)/510;
+          tR += r; tG += g; tB += b; n++;
+          satSum += sat;
+          // Weighted HUE vote. Normalise each pixel to full brightness (max channel → 255)
+          // before adding it in, so a DARK saturated navy counts as much as a BRIGHT warm
+          // pixel — otherwise raw-RGB averaging is biased toward bright pixels and a small
+          // warm highlight beats a large dark-blue field. Weight by area × vividness (sat²).
+          // Low floor keeps deep-but-saturated colours in the vote; only true black is cut.
+          if (lum > 0.05 && lum < 0.95) {
+            const norm = 255 / mx;
+            const w = sat * sat;
+            wR += r*norm*w; wG += g*norm*w; wB += b*norm*w; wSum += w;
+          }
         }
-      }
-      if (!n) return;
+        if (!n) { resolve(null); return; }
 
-      const meanSat = satSum / n;                  // ~0 greyscale · ~0.3+ colourful
-      const avgLum  = (tR + tG + tB) / (n * 3) / 255;
-      const cl  = v => Math.max(0, Math.min(255, Math.round(v)));
-      const hex = v => cl(v).toString(16).padStart(2,'0');
+        const meanSat = satSum / n;                  // ~0 greyscale · ~0.3+ colourful
+        const cl  = v => Math.max(0, Math.min(255, Math.round(v)));
+        const hex = v => cl(v).toString(16).padStart(2,'0');
 
-      let accent, b1r, b1g, b1b, box1, box2;
+        let accent, b1r, b1g, b1b, box1, box2;
 
-      if (meanSat < 0.10 || wSum === 0) {
-        // ── Greyscale cover → neutral charcoal, no invented hue ──────────
-        const base = 30 + avgLum * 26;             // darker covers → darker box
-        b1r = base; b1g = base + 1; b1b = base + 4; // a whisper cool, never warm
-        box1 = `linear-gradient(155deg,rgb(${cl(base)},${cl(base+1)},${cl(base+4)}),rgb(${cl(base+7)},${cl(base+8)},${cl(base+12)}))`;
-        box2 = `linear-gradient(155deg,rgb(18,18,22),rgb(24,24,30))`;
-        const k = 152 + avgLum * 46;               // readable neutral accent
-        accent = `#${hex(k)}${hex(k)}${hex(k+3)}`;
+        if (meanSat < 0.10 || wSum === 0) {
+        // ── Near-greyscale cover → stay dark, but carry the cover's subtle tint ──
+        // B&W covers still lean faintly warm (sepia/film) or cool (silver/cyanotype).
+        // Pull that cast out of the mean colour and amplify it onto a FIXED dark box,
+        // rather than tracking brightness — everything stays dark-themed, just tinted.
+        const aR = tR / n, aG = tG / n, aB = tB / n;      // mean colour (near-grey)
+        const grey = (aR + aG + aB) / 3;
+        const rawR = aR - grey, rawG = aG - grey, rawB = aB - grey;   // signed tint direction
+
+        const darkBase = 34;                       // constant dark box — no brightness tracking
+        const boxAmp = 3.4;                        // exaggerate the faint cast so it reads
+        b1r = darkBase + rawR * boxAmp;
+        b1g = darkBase + rawG * boxAmp;
+        b1b = darkBase + rawB * boxAmp;
+        box1 = `linear-gradient(155deg,rgb(${cl(b1r)},${cl(b1g)},${cl(b1b)}),rgb(${cl(b1r+8)},${cl(b1g+8)},${cl(b1b+8)}))`;
+        box2 = `linear-gradient(155deg,rgb(${cl(18+rawR*1.3)},${cl(18+rawG*1.3)},${cl(22+rawB*1.3)}),rgb(${cl(24+rawR*1.3)},${cl(24+rawG*1.3)},${cl(30+rawB*1.3)}))`;
+
+        const aBase = 172;                         // fixed readable lightness, tinted to match
+        const accAmp = 4.6;
+        accent = `#${hex(aBase + rawR * accAmp)}${hex(aBase + rawG * accAmp)}${hex(aBase + rawB * accAmp)}`;
       } else {
         // ── Colourful cover → vibrant accent from the weighted average ───
         const ar = wR/wSum, ag = wG/wSum, ab = wB/wSum;
@@ -658,13 +781,59 @@ function applyAlbumColors(screenEl) {
         box2 = `linear-gradient(155deg,rgb(${cl(b2r)},${cl(b2g)},${cl(b2b)}),rgb(${cl(Math.min(b2r+6,40))},${cl(Math.min(b2g+6,40))},${cl(Math.min(b2b+14,65))}))`;
       }
 
-      screenEl.style.setProperty('--v3-accent', accent);
-      screenEl.style.setProperty('--v3-box1-bg', box1);
-      screenEl.style.setProperty('--v3-box2-bg', box2);
-      screenEl.style.setProperty('--v3-box1-color', `rgb(${cl(b1r)},${cl(b1g)},${cl(b1b)})`);
-    } catch(e) { /* CORS / tainted canvas — keep CSS defaults */ }
-  };
-  img.src = m[1];
+        const colors = {
+          accent, box1, box2,
+          box1color: `rgb(${cl(b1r)},${cl(b1g)},${cl(b1b)})`,
+        };
+        COLOR_CACHE.set(url, colors);
+        resolve(colors);
+      } catch (e) { resolve(null); /* CORS / tainted canvas — keep CSS defaults */ }
+    };
+    img.src = url;
+  });
+  COLOR_PENDING.set(url, p);
+  p.then(() => COLOR_PENDING.delete(url));
+  return p;
+}
+
+function applyColorVars(screenEl, c) {
+  if (!screenEl || !c) return;
+  screenEl.style.setProperty('--v3-accent', c.accent);
+  screenEl.style.setProperty('--v3-box1-bg', c.box1);
+  screenEl.style.setProperty('--v3-box2-bg', c.box2);
+  screenEl.style.setProperty('--v3-box1-color', c.box1color);
+}
+
+// Apply the palette for a KNOWN image URL. Uses the album's own (relative) image, which
+// matches the preload cache key — so it lands synchronously instead of re-extracting under
+// the absolute URL getComputedStyle returns (that mismatch is what made colours lag a swipe).
+function applyAlbumColorsUrl(screenEl, url) {
+  if (!screenEl || !url) return;
+  if (COLOR_CACHE.has(url)) { applyColorVars(screenEl, COLOR_CACHE.get(url)); return; }
+  computeAlbumColors(url).then(c => { if (c) applyColorVars(screenEl, c); });
+}
+
+// Colour the bento from the cover on .v3-album. A cached palette applies synchronously
+// (the common case after preload — no flash); a cold cover extracts once, then applies,
+// guarding against the album changing mid-extract.
+function applyAlbumColors(screenEl) {
+  const albumEl = screenEl && screenEl.querySelector('.v3-album');
+  if (!albumEl) return;
+  const bg = getComputedStyle(albumEl).backgroundImage;
+  const m  = bg.match(/url\(['"]?([^'"]+?)['"]?\)/);
+  if (!m) return;
+  const url = m[1];
+  if (COLOR_CACHE.has(url)) { applyColorVars(screenEl, COLOR_CACHE.get(url)); return; }
+  computeAlbumColors(url).then(c => {
+    if (!c) return;
+    const now = getComputedStyle(albumEl).backgroundImage;   // still the same cover?
+    if (now.indexOf(url) !== -1) applyColorVars(screenEl, c);
+  });
+}
+
+// Warm the palette cache for every album in the window (mirrors preloadForYou).
+function preloadColors(seq) {
+  (seq || []).forEach(a => { if (a && a.image) computeAlbumColors(a.image); });
 }
 
 function renderSingle() {
