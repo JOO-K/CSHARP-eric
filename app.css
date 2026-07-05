@@ -2801,6 +2801,7 @@
   overflow: hidden;
   background-size: cover; background-position: center;
   animation: v3spin 12s linear infinite;
+  transition: filter 0.3s ease;
   cursor: pointer; z-index: 0;
   box-shadow:
     0 4px 12px rgba(0,0,0,0.3),
@@ -2818,6 +2819,8 @@
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
 }
+/* CD is the preview play/pause control: spins while a preview plays, freezes + dims when paused */
+.v3-cd-paused .v3-cd { animation-play-state: paused; filter: brightness(0.68) saturate(0.85); }
 
 /* ══════════════════════════════════════════════════════════════
    LEFT / RIGHT HAND LAYOUT  (one-hand reachability)

@@ -250,6 +250,7 @@ function setMainAlbum(screenEl, album, animate = false) {
   }
 
   applyAlbumColorsUrl(screenEl, album.image);
+  loadPreview(album);
 
   // If we're in fullscreen review mode, refresh reviews for the new album
   if (screenEl.classList.contains('s-home-v3--review')) populateReviewPanel(screenEl);
@@ -548,7 +549,7 @@ function setupAlbumSwipe(screenEl) {
   const album = screenEl.querySelector('.v3-album');
   if (!album || album._swipeInit) return;
   album._swipeInit = true;
-  album.style.touchAction = 'pan-y';   // let vertical scroll pass, we handle horizontal
+  album.style.touchAction = 'pan-y';   // vertical scroll works normally; horizontal is cancelled below
 
   let startX = 0, startY = 0, progress = 0, width = 1;
   let active = false, decided = false, horizontal = false, dir = 0, targetIdx = 0, stepDir = 1;
@@ -674,6 +675,16 @@ function setupAlbumSwipe(screenEl) {
 
   album.addEventListener('pointerdown', onDown);
   album.addEventListener('mousedown', (e) => e.stopPropagation());  // don't start the viewer's drag-scroll
+  // Cancel the browser's vertical scroll the moment a gesture is horizontal-dominant, so a
+  // diagonal swipe doesn't drift the page down (and doesn't fire pointercancel, killing the
+  // swipe). Vertical-dominant drags fall through and scroll natively.
+  album.addEventListener('touchmove', (e) => {
+    if (!active) return;
+    const tt = e.touches && e.touches[0];
+    if (!tt) return;
+    const mx = tt.clientX - startX, my = tt.clientY - startY;
+    if (Math.abs(mx) > 5 && Math.abs(mx) > Math.abs(my) * 1.2 && e.cancelable) e.preventDefault();
+  }, { passive: false });
 }
 
 function preloadForYou(trending, fromIdx, count = 3) {
@@ -682,6 +693,96 @@ function preloadForYou(trending, fromIdx, count = 3) {
     img.src = trending[(fromIdx + i) % trending.length].image;
   }
 }
+
+// ── Apple Music 30-second previews (iTunes Search API via JSONP) ──────
+// The iTunes Search API doesn't send CORS headers, so we use JSONP. Playing the
+// returned previewUrl in an <audio> element needs no CORS. Browsers block autoplay
+// with sound until a user gesture, so playback starts on the first tap.
+const PREVIEW_CACHE = new Map();   // "artist – album" (lowercased) → previewUrl | null (miss)
+let __jsonpSeq = 0;
+function jsonp(url, timeout = 6000) {
+  return new Promise((resolve) => {
+    const cb = '__itp' + (++__jsonpSeq);
+    const s = document.createElement('script');
+    let settled = false;
+    const done = (v) => { if (settled) return; settled = true; delete window[cb]; s.remove(); resolve(v); };
+    window[cb] = (data) => done(data);
+    s.onerror = () => done(null);
+    s.src = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'callback=' + cb;
+    document.head.appendChild(s);
+    setTimeout(() => done(null), timeout);
+  });
+}
+
+async function fetchPreviewUrl(album) {
+  const key = (album.artist + ' – ' + album.album).toLowerCase();
+  if (PREVIEW_CACHE.has(key)) return PREVIEW_CACHE.get(key);
+  let url = null;
+  try {
+    const term = encodeURIComponent(album.artist + ' ' + album.album);
+    const ad = await jsonp(`https://itunes.apple.com/search?term=${term}&entity=album&limit=6`);
+    const results = (ad && ad.results) || [];
+    const wantAlbum = album.album.toLowerCase(), wantArtist = album.artist.toLowerCase();
+    const pick = results.find(a => (a.collectionName || '').toLowerCase().includes(wantAlbum))
+              || results.find(a => (a.artistName || '').toLowerCase().includes(wantArtist))
+              || results[0];
+    if (pick && pick.collectionId) {
+      const sd = await jsonp(`https://itunes.apple.com/lookup?id=${pick.collectionId}&entity=song&limit=4`);
+      const track = ((sd && sd.results) || []).find(s => s.wrapperType === 'track' && s.previewUrl);
+      if (track) url = track.previewUrl;
+    }
+  } catch (e) { /* leave url null */ }
+  PREVIEW_CACHE.set(key, url);
+  return url;
+}
+
+const PREVIEW = { audio: null, unlocked: false, paused: false, key: null };
+function previewAudioEl() {
+  if (!PREVIEW.audio) {
+    const a = new Audio();
+    a.loop = true; a.volume = 0.5; a.preload = 'auto';
+    PREVIEW.audio = a;
+  }
+  return PREVIEW.audio;
+}
+function setPreviewUI() {
+  const playing = PREVIEW.audio && !PREVIEW.audio.paused;
+  document.querySelectorAll('.s-home-v3').forEach(s => {
+    s.classList.toggle('v3-cd-paused', !playing);            // pause the CD spin when not playing
+    const has = !!(PREVIEW.audio && PREVIEW.audio.getAttribute('src'));
+    s.classList.toggle('v3-has-preview', has);
+  });
+}
+function tryPlayPreview() {
+  const a = PREVIEW.audio;
+  if (!a || !a.getAttribute('src') || PREVIEW.paused || !PREVIEW.unlocked) { setPreviewUI(); return; }
+  a.play().then(setPreviewUI).catch(setPreviewUI);
+}
+async function loadPreview(album) {
+  if (!album) return;
+  const key = album.artist + ' – ' + album.album;
+  PREVIEW.key = key;
+  const a = previewAudioEl();
+  const url = await fetchPreviewUrl(album);
+  if (PREVIEW.key !== key) return;   // album changed while the request was in flight
+  if (!url) { a.pause(); a.removeAttribute('src'); setPreviewUI(); return; }
+  if (a.src !== url) a.src = url;
+  tryPlayPreview();
+}
+// Tap the CD to play/pause the preview (record-player metaphor)
+window.togglePreview = function (e) {
+  if (e) e.stopPropagation();
+  PREVIEW.unlocked = true;
+  const a = PREVIEW.audio;
+  if (a && !a.paused) { a.pause(); PREVIEW.paused = true; setPreviewUI(); }
+  else { PREVIEW.paused = false; tryPlayPreview(); }
+};
+// First user gesture anywhere unlocks audio, then the loaded preview starts
+document.addEventListener('pointerdown', function unlockPreview() {
+  if (PREVIEW.unlocked) return;
+  PREVIEW.unlocked = true;
+  tryPlayPreview();
+}, { once: true });
 
 // ── Album colour extraction + cache ───────────────────────────
 // Palettes are cached by image URL and precomputed for the whole album window

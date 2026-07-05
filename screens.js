@@ -615,7 +615,8 @@ const SCREENS = [
             <!-- CD: SVG cx=615.5 cy=614 r=55 → left 81.23% top 83.43% w 15.94% h 16.42% -->
             <div class="v3-cd"
                  style="background-image:url('images/album-crystalcastles1.png')"
-                 onclick="this.closest('.app-screen').querySelector('.v3-stream-overlay').style.display='flex'">
+                 title="Play / pause preview"
+                 onclick="togglePreview(event)">
               <div class="v3-cd-hole"></div>
             </div>
 
@@ -818,7 +819,8 @@ const SCREENS = [
             <!-- CD -->
             <div class="v3-cd"
                  style="background-image:url('images/album-crystalcastles1.png')"
-                 onclick="this.closest('.app-screen').querySelector('.v3-stream-overlay').style.display='flex'">
+                 title="Play / pause preview"
+                 onclick="togglePreview(event)">
               <div class="v3-cd-hole"></div>
             </div>
 
