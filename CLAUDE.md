@@ -201,7 +201,7 @@ Grid children (in order): `.v3-album`, `.v3-right-col` (spans row 1 only), `.v3-
     width: 54px; height: 54px;
   }
   ```
-- CD click → streaming service action sheet (`.v3-stream-overlay`)
+- CD click → `togglePreview()`: play/pause the 30s music preview (see **Music Preview System**). The speaker button (`.v3-preview-btn`) is the master arm/disarm.
 - Scroll area gets `padding-top: 30px` to give clearance for the CD which overflows below the bento
 
 ### Fillet System
@@ -249,6 +249,27 @@ Stays pinned to the bottom because `.s-home-v3` has `height: 100%; overflow: hid
 
 Light theme overrides these with hardcoded values (`background: #999`) — still WIP.
 
+### Music Preview System
+30-second Apple Music previews, played via a single reused `<audio>` element. All in `app.js`.
+
+**Fetching (`fetchPreviewUrl`)** — iTunes Search API over JSONP (no CORS). Two hops: album search → track lookup. Cached by `"artist – album"` (lowercased):
+- `PREVIEW_CACHE` — resolved results (a URL, or `null` for a known miss).
+- `PREVIEW_PENDING` — in-flight promises, so concurrent lookups for the same album share one request.
+
+**State (`PREVIEW`)** — intent is the single source of truth; the UI **never** reads `audio.paused` (it lags while buffering, which made the icon "invert" on 5G):
+- `on` — preview mode armed (speaker). `paused` — CD-paused within the mode. Playing ⟺ `on && !paused`.
+- `gen` — token bumped on every tap and every album change; a late fetch bails if `gen` (or the album `key`) changed while it was in flight, so a slow result can't hijack the audio.
+- `unlocked` — the element is unlocked once, synchronously, inside the first tap gesture (a runtime-built silent WAV). iOS only permits programmatic `play()` after that — this is why previews wouldn't start before.
+
+**Actuation (`playPreviewFor(album, gen)`)** — plays the preview for a **specific album passed in**, resolved through the cache. It must NOT re-query the DOM for "the current album": there are multiple `.s-home-v3` instances (variants + mobile clones) and `querySelector` returns the first, which often isn't the one you swiped — that was the "swipe plays the wrong/stale track" bug. `loadPreview(album)` (called from `setMainAlbum` on every album change) passes the swiped album straight through. Only the tap handlers use `currentBentoAlbum()`, which prefers a **visible** screen.
+
+### Album Swipe & Text Animation
+`setMainAlbum(screenEl, album, animate, animateText = animate)` splits two concerns:
+- `animate` → **art** motion (cover `slideIn`, CD reload).
+- `animateText` → **type** motion (artist/album typewriter, stars fade, quote typewriter).
+
+They're decoupled because a **swipe** already filmstrips the cover art itself, so it passes `animate:false, animateText:true` (via `applyAlbumIndex(..., animateText)`) — the art slides through the swipe layers while the title/quote still typewrite in. A **"For You" tap** passes both `true`.
+
 ---
 
 ## How Screens Work
@@ -283,6 +304,9 @@ On mobile (`≤767px`): Single / Multi / Flow / Live modes via header segmented 
 - **Stars are never plain black when empty** — always `rgba` grey
 - **Album art drives color** — don't hardcode accent on home screen
 - **Fillet shadows**: dark theme cannot use `filter: drop-shadow` on fillets (GPU artifact); light theme CAN since it uses CSS gradient, not mask-image
+- **Previews follow the album, not the DOM** — `playPreviewFor(album)` plays the album it's handed; never re-query `querySelector('.s-home-v3')` for "the current album" (multiple instances → wrong track). Intent (`PREVIEW.on/paused`) drives the UI, never `audio.paused`
+- **Art vs text animation are separate** — `setMainAlbum`'s `animate` (cover/CD) is independent of `animateText` (typewriter); swipes animate text only, since the filmstrip already moves the art
+- **Fullscreen review** — the `.v3-blue` stats block (album/date · artist · stars) is nudged down 3px via `transform`; in the compose block (`.v3-rev-mine`, a flex column) the star row sits **above** the "Your review" label
 
 ---
 
