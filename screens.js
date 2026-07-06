@@ -681,7 +681,6 @@ const SCREENS = [
 
               <!-- Your rating + written review + submit — aligned to the stats text -->
               <div class="v3-rev-mine">
-                <div class="v3-rev-mine-hd">Your review<span class="v3-rev-album-name"></span></div>
                 <div class="v3-rev-stars" data-rating="0">
                   <span class="v3-rev-star" data-v="1" onclick="setMyRating(this, event)">★</span>
                   <span class="v3-rev-star" data-v="2" onclick="setMyRating(this, event)">★</span>
@@ -689,6 +688,7 @@ const SCREENS = [
                   <span class="v3-rev-star" data-v="4" onclick="setMyRating(this, event)">★</span>
                   <span class="v3-rev-star" data-v="5" onclick="setMyRating(this, event)">★</span>
                 </div>
+                <div class="v3-rev-mine-hd">Your review<span class="v3-rev-album-name"></span></div>
                 <div class="v3-rev-write-wrap">
                   <textarea class="v3-rev-write" rows="1" placeholder="Write a review…" oninput="autoGrowReview(this)"></textarea>
                   <span class="v3-rev-ph">Write a review…<i class="v3-rev-caret"></i></span>
@@ -894,7 +894,6 @@ const SCREENS = [
 
               <!-- Your rating + written review + submit — aligned to the stats text -->
               <div class="v3-rev-mine">
-                <div class="v3-rev-mine-hd">Your review<span class="v3-rev-album-name"></span></div>
                 <div class="v3-rev-stars" data-rating="0">
                   <span class="v3-rev-star" data-v="1" onclick="setMyRating(this, event)">★</span>
                   <span class="v3-rev-star" data-v="2" onclick="setMyRating(this, event)">★</span>
@@ -902,6 +901,7 @@ const SCREENS = [
                   <span class="v3-rev-star" data-v="4" onclick="setMyRating(this, event)">★</span>
                   <span class="v3-rev-star" data-v="5" onclick="setMyRating(this, event)">★</span>
                 </div>
+                <div class="v3-rev-mine-hd">Your review<span class="v3-rev-album-name"></span></div>
                 <div class="v3-rev-write-wrap">
                   <textarea class="v3-rev-write" rows="1" placeholder="Write a review…" oninput="autoGrowReview(this)"></textarea>
                   <span class="v3-rev-ph">Write a review…<i class="v3-rev-caret"></i></span>

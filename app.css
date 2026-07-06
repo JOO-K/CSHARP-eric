@@ -3014,6 +3014,7 @@
   justify-content: flex-start;
   height: auto;          /* grow to fit the taller 2-line title */
   overflow: visible;
+  transform: translateY(3px);   /* nudge all 3 lines (album/date, artist, stars) down in fullscreen */
 }
 /* Title stacks: artist (14px) on top, album (18px) below; separator drops out */
 .s-home-v3--review .v3-blue-info-row {

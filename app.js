@@ -167,7 +167,7 @@ function typewrite(el, text, speed = 16) {
   setTimeout(tick, speed);
 }
 
-function setMainAlbum(screenEl, album, animate = false) {
+function setMainAlbum(screenEl, album, animate = false, animateText = animate) {
   screenEl._album = album;   // track the album currently shown in the bento
   const albumEl = screenEl.querySelector('.v3-album');
   if (albumEl) {
@@ -194,7 +194,7 @@ function setMainAlbum(screenEl, album, animate = false) {
   }
   const artistEl = screenEl.querySelector('.v3-blue-artist');
   const albumNameEl = screenEl.querySelector('.v3-blue-album');
-  if (animate) {
+  if (animateText) {
     if (artistEl) typewrite(artistEl, album.artist, 16);
     if (albumNameEl) typewrite(albumNameEl, album.album, 14);
   } else {
@@ -207,7 +207,7 @@ function setMainAlbum(screenEl, album, animate = false) {
   const starsRow = screenEl.querySelector('.v3-blue-stars-row');
   if (starsRow) {
     const html = `<span class="v3-blue-score">${album.rating.toFixed(1)}</span>${halfStars(album.rating, 14)}<span class="v3-blue-count">${window.fmtRc(album.reviewCount)} reviews</span>`;
-    if (animate) {
+    if (animateText) {
       starsRow.style.cssText += ';transition:opacity 0.18s;opacity:0';
       setTimeout(() => { starsRow.innerHTML = html; starsRow.style.opacity = '1'; }, 200);
     } else {
@@ -227,7 +227,7 @@ function setMainAlbum(screenEl, album, animate = false) {
     quoteTextEl.style.removeProperty('--quote-scroll');
     if (album.reviews && album.reviews.length) {
       const text = `"${album.reviews[0].text}"`;
-      if (animate) {
+      if (animateText) {
         typewrite(quoteTextEl, text, 11);
         setTimeout(() => {
           if (quoteTextEl.scrollWidth > quoteContainer.offsetWidth) {
@@ -502,13 +502,13 @@ function albumSeq() {
 }
 
 // Move the main album to a sequence index; For You always shows the next one up.
-function applyAlbumIndex(screenEl, idx, animateMain, animateForYou, backward) {
+function applyAlbumIndex(screenEl, idx, animateMain, animateForYou, backward, animateText = animateMain) {
   const seq = albumSeq();
   if (!seq.length) return;
   preloadColors(seq);
   idx = ((idx % seq.length) + seq.length) % seq.length;
   screenEl._albumIdx = idx;
-  setMainAlbum(screenEl, seq[idx], animateMain);
+  setMainAlbum(screenEl, seq[idx], animateMain, animateText);
   const forSingle = screenEl.querySelector('.v3-for-single');
   if (forSingle) {
     const nextIdx = (idx + 1) % seq.length;
@@ -623,8 +623,9 @@ function setupAlbumSwipe(screenEl) {
       if (done) return; done = true;
       const c = cur, p = peek, fc = fyCur, fp = fyPeek;
       cur = peek = fyCur = fyPeek = null;
-      // animateForYou=false: we already filmstripped the For You box, so just set its final image
-      if (committed) applyAlbumIndex(screenEl, targetIdx, false, false, stepDir < 0);
+      // animateForYou=false: we already filmstripped the For You box, so just set its final image.
+      // animateText=true: still typewrite the new title/quote — the art was filmstripped, not the text.
+      if (committed) applyAlbumIndex(screenEl, targetIdx, false, false, stepDir < 0, true);
       if (c) c.remove(); if (p) p.remove();
       if (fc) fc.remove(); if (fp) fp.remove();
     };
