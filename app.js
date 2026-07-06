@@ -736,62 +736,121 @@ async function fetchPreviewUrl(album) {
   return url;
 }
 
-// Previews are OFF by default (no auto-loading). The speaker button turns on
-// "autoplay preview mode": the current album plays and every album previews as you swipe.
-const PREVIEW = { audio: null, enabled: false, paused: false, key: null };
+// Previews are OFF by default. The speaker button arms "preview mode": the current album
+// plays and each album previews as you swipe. The CD button pauses/resumes within the mode.
+//
+// Robustness model (the old version desynced on slow networks):
+//   • PREVIEW.on / PREVIEW.paused are the ONLY source of truth for what the user wants.
+//     The UI reflects INTENT, never <audio>.paused — that flag lags while buffering, which
+//     is what made the speaker icon "invert" on 5G.
+//   • PREVIEW.gen is a token bumped on every tap and every album change. A slow preview-URL
+//     fetch captures the gen it started under and bails if the user has since tapped or
+//     swiped — so a late fetch can't "come back" and start audio you already muted.
+//   • The <audio> element is unlocked once, synchronously, inside the first tap gesture.
+//     iOS only permits programmatic play() after that, so a URL that arrives later can
+//     still start playing (this is why the first song refused to play before).
+const PREVIEW = { audio: null, on: false, paused: false, gen: 0, unlocked: false, key: null };
+
 function previewAudioEl() {
   if (!PREVIEW.audio) {
     const a = new Audio();
     a.loop = true; a.volume = 0.5; a.preload = 'auto';
+    a.setAttribute('playsinline', '');   // iOS: stay inline, never go fullscreen
     PREVIEW.audio = a;
   }
   return PREVIEW.audio;
 }
+
+// A tiny silent WAV built at runtime (no risk of a bad base64 literal). Playing it inside a
+// user gesture unlocks the element so later programmatic play() calls are allowed on iOS.
+let __silentUrl = null;
+function silentClipUrl() {
+  if (__silentUrl) return __silentUrl;
+  const sr = 8000, n = 400, buf = new ArrayBuffer(44 + n * 2), dv = new DataView(buf);
+  const wr = (o, s) => { for (let i = 0; i < s.length; i++) dv.setUint8(o + i, s.charCodeAt(i)); };
+  wr(0, 'RIFF'); dv.setUint32(4, 36 + n * 2, true); wr(8, 'WAVE');
+  wr(12, 'fmt '); dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 1, true);
+  dv.setUint32(24, sr, true); dv.setUint32(28, sr * 2, true); dv.setUint16(32, 2, true); dv.setUint16(34, 16, true);
+  wr(36, 'data'); dv.setUint32(40, n * 2, true);   // sample bytes stay zero → silence
+  return (__silentUrl = URL.createObjectURL(new Blob([buf], { type: 'audio/wav' })));
+}
+function unlockAudio(a) {
+  if (PREVIEW.unlocked) return;
+  try {
+    a.src = silentClipUrl();
+    const p = a.play();
+    if (p) p.then(() => { PREVIEW.unlocked = true; }).catch(() => {});
+    else PREVIEW.unlocked = true;
+  } catch (e) { /* ignore */ }
+}
+
 function setPreviewUI() {
-  const playing = PREVIEW.enabled && PREVIEW.audio && !PREVIEW.audio.paused;
+  const playing = PREVIEW.on && !PREVIEW.paused;   // intent, not audio.paused
   document.querySelectorAll('.s-home-v3').forEach(s => {
-    s.classList.toggle('v3-preview-on', PREVIEW.enabled);          // speaker icon state
-    s.classList.toggle('v3-cd-paused', PREVIEW.enabled && !playing); // freeze CD only when on & not playing
+    s.classList.toggle('v3-preview-on', PREVIEW.on);   // speaker lit while armed
+    s.classList.toggle('v3-cd-paused', !playing);      // CD frozen when off or paused
   });
 }
 function currentBentoAlbum() {
   const s = document.querySelector('.s-home-v3');
   return s && s._album;
 }
-// Warm the preview cache for the whole album window (mirrors preloadColors / preloadForYou)
-function preloadPreviews(seq) {
-  if (!PREVIEW.enabled) return;
-  (seq || []).forEach(a => { if (a) fetchPreviewUrl(a); });
-}
-// Called on every album change; only does anything while preview mode is on
-async function loadPreview(album) {
-  if (!album || !PREVIEW.enabled) return;
-  const key = album.artist + ' – ' + album.album;
-  PREVIEW.key = key;
+function albumKey(album) { return album ? album.artist + ' – ' + album.album : null; }
+
+// The single audio actuator. Everything that changes intent bumps gen and calls this; a
+// stale fetch bails on the gen check instead of fighting the current state.
+async function syncAudio(gen) {
   const a = previewAudioEl();
-  const url = await fetchPreviewUrl(album);
-  if (PREVIEW.key !== key || !PREVIEW.enabled) return;   // moved on / turned off mid-request
-  if (!url) { a.pause(); a.removeAttribute('src'); setPreviewUI(); return; }
-  if (a.src !== url) a.src = url;
-  if (!PREVIEW.paused) a.play().then(setPreviewUI).catch(setPreviewUI); else setPreviewUI();
+  if (!PREVIEW.on || PREVIEW.paused) { a.pause(); return; }
+  const album = currentBentoAlbum();
+  if (!album) { a.pause(); return; }
+  const key = albumKey(album);
+  PREVIEW.key = key;
+  // Prefer the cached URL synchronously (best case: plays inside the tap gesture). Only a
+  // genuine cache miss (undefined) hits the network; a known miss (null) skips straight to pause.
+  let url = PREVIEW_CACHE.get(key.toLowerCase());
+  if (url === undefined) url = await fetchPreviewUrl(album);
+  if (gen !== PREVIEW.gen || !PREVIEW.on || PREVIEW.paused) return;   // user moved on → bail
+  if (!url) { a.pause(); a.removeAttribute('src'); return; }
+  if (a.src !== url) { a.src = url; a.currentTime = 0; }
+  a.play().then(() => { PREVIEW.unlocked = true; }).catch(() => {});
   preloadPreviews(albumSeq());
 }
-// Speaker button → master toggle for autoplay preview mode
+
+// Warm the preview cache for the whole album window (mirrors preloadColors / preloadForYou)
+function preloadPreviews(seq) {
+  if (!PREVIEW.on) return;
+  (seq || []).forEach(a => { if (a) fetchPreviewUrl(a); });
+}
+// Called on every album change (swipe). Always warms the current URL so a later unmute is
+// instant; only actuates audio when preview mode is on.
+function loadPreview(album) {
+  if (album) fetchPreviewUrl(album);   // warm cache even while muted
+  if (!PREVIEW.on) return;
+  syncAudio(++PREVIEW.gen);
+}
+
+// Speaker → arm / disarm preview mode.
 window.togglePreviewMode = function (e) {
   if (e) e.stopPropagation();
-  PREVIEW.enabled = !PREVIEW.enabled;
-  PREVIEW.paused = false;
-  if (PREVIEW.enabled) loadPreview(currentBentoAlbum());
-  else if (PREVIEW.audio) PREVIEW.audio.pause();
+  const a = previewAudioEl();
+  if (PREVIEW.on) {                    // → OFF
+    PREVIEW.on = false; PREVIEW.paused = false; PREVIEW.gen++;
+    a.pause();
+  } else {                             // → ON
+    PREVIEW.on = true; PREVIEW.paused = false;
+    unlockAudio(a);                    // must run inside this gesture
+    syncAudio(++PREVIEW.gen);
+  }
   setPreviewUI();
 };
-// CD → play/pause within preview mode (turns the mode on if it's off)
+// CD → pause / resume within preview mode (arms the mode if it's off).
 window.togglePreview = function (e) {
   if (e) e.stopPropagation();
-  if (!PREVIEW.enabled) { window.togglePreviewMode(); return; }
-  const a = PREVIEW.audio;
-  if (a && !a.paused) { a.pause(); PREVIEW.paused = true; setPreviewUI(); }
-  else { PREVIEW.paused = false; loadPreview(currentBentoAlbum()); }
+  if (!PREVIEW.on) { window.togglePreviewMode(); return; }
+  PREVIEW.paused = !PREVIEW.paused;
+  syncAudio(++PREVIEW.gen);
+  setPreviewUI();
 };
 
 // ── Album colour extraction + cache ───────────────────────────
