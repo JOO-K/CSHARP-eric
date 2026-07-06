@@ -715,26 +715,35 @@ function jsonp(url, timeout = 6000) {
   });
 }
 
-async function fetchPreviewUrl(album) {
+// In-flight dedupe: concurrent lookups for the same album share one request instead of
+// firing parallel JSONP calls (mirrors COLOR_PENDING). Completed results land in PREVIEW_CACHE.
+const PREVIEW_PENDING = new Map();
+function fetchPreviewUrl(album) {
   const key = (album.artist + ' – ' + album.album).toLowerCase();
-  if (PREVIEW_CACHE.has(key)) return PREVIEW_CACHE.get(key);
-  let url = null;
-  try {
-    const term = encodeURIComponent(album.artist + ' ' + album.album);
-    const ad = await jsonp(`https://itunes.apple.com/search?term=${term}&entity=album&limit=6`);
-    const results = (ad && ad.results) || [];
-    const wantAlbum = album.album.toLowerCase(), wantArtist = album.artist.toLowerCase();
-    const pick = results.find(a => (a.collectionName || '').toLowerCase().includes(wantAlbum))
-              || results.find(a => (a.artistName || '').toLowerCase().includes(wantArtist))
-              || results[0];
-    if (pick && pick.collectionId) {
-      const sd = await jsonp(`https://itunes.apple.com/lookup?id=${pick.collectionId}&entity=song&limit=4`);
-      const track = ((sd && sd.results) || []).find(s => s.wrapperType === 'track' && s.previewUrl);
-      if (track) url = track.previewUrl;
-    }
-  } catch (e) { /* leave url null */ }
-  PREVIEW_CACHE.set(key, url);
-  return url;
+  if (PREVIEW_CACHE.has(key))   return Promise.resolve(PREVIEW_CACHE.get(key));
+  if (PREVIEW_PENDING.has(key)) return PREVIEW_PENDING.get(key);
+  const p = (async () => {
+    let url = null;
+    try {
+      const term = encodeURIComponent(album.artist + ' ' + album.album);
+      const ad = await jsonp(`https://itunes.apple.com/search?term=${term}&entity=album&limit=6`);
+      const results = (ad && ad.results) || [];
+      const wantAlbum = album.album.toLowerCase(), wantArtist = album.artist.toLowerCase();
+      const pick = results.find(a => (a.collectionName || '').toLowerCase().includes(wantAlbum))
+                || results.find(a => (a.artistName || '').toLowerCase().includes(wantArtist))
+                || results[0];
+      if (pick && pick.collectionId) {
+        const sd = await jsonp(`https://itunes.apple.com/lookup?id=${pick.collectionId}&entity=song&limit=4`);
+        const track = ((sd && sd.results) || []).find(s => s.wrapperType === 'track' && s.previewUrl);
+        if (track) url = track.previewUrl;
+      }
+    } catch (e) { /* leave url null */ }
+    PREVIEW_CACHE.set(key, url);
+    PREVIEW_PENDING.delete(key);
+    return url;
+  })();
+  PREVIEW_PENDING.set(key, p);
+  return p;
 }
 
 // Previews are OFF by default. The speaker button arms "preview mode": the current album
@@ -792,26 +801,32 @@ function setPreviewUI() {
     s.classList.toggle('v3-cd-paused', !playing);      // CD frozen when off or paused
   });
 }
+// Only the tap handlers use this (a swipe passes its album explicitly). Prefer a VISIBLE
+// home screen over whichever happens to be first in the DOM, so on mobile / multi-variant
+// layouts the tap acts on the album the user is actually looking at.
 function currentBentoAlbum() {
-  const s = document.querySelector('.s-home-v3');
-  return s && s._album;
+  const screens = document.querySelectorAll('.s-home-v3');
+  for (const s of screens) if (s._album && s.offsetParent !== null) return s._album;
+  return screens[0] && screens[0]._album;
 }
 function albumKey(album) { return album ? album.artist + ' – ' + album.album : null; }
 
-// The single audio actuator. Everything that changes intent bumps gen and calls this; a
-// stale fetch bails on the gen check instead of fighting the current state.
-async function syncAudio(gen) {
+// The single audio actuator. Plays the preview for a SPECIFIC album — a swipe passes the
+// album it landed on, a tap passes the visible album — so it never guesses via the DOM and
+// switching albums always loads the matching track. Everything that changes intent bumps gen
+// and calls this; a stale fetch bails on the gen/key check instead of fighting current state.
+async function playPreviewFor(album, gen) {
   const a = previewAudioEl();
-  if (!PREVIEW.on || PREVIEW.paused) { a.pause(); return; }
-  const album = currentBentoAlbum();
-  if (!album) { a.pause(); return; }
+  if (!PREVIEW.on || PREVIEW.paused || !album) { a.pause(); return; }
   const key = albumKey(album);
   PREVIEW.key = key;
-  // Prefer the cached URL synchronously (best case: plays inside the tap gesture). Only a
-  // genuine cache miss (undefined) hits the network; a known miss (null) skips straight to pause.
+  // Resolve through the cache: a hit plays synchronously (best case: inside the tap gesture);
+  // only a genuine miss (undefined) hits the network — a known miss (null) means no preview.
   let url = PREVIEW_CACHE.get(key.toLowerCase());
   if (url === undefined) url = await fetchPreviewUrl(album);
-  if (gen !== PREVIEW.gen || !PREVIEW.on || PREVIEW.paused) return;   // user moved on → bail
+  // Bail if the user swiped again / muted / paused while the fetch was in flight (gen changed),
+  // or a newer album change moved the target (key changed) — so a late result can't hijack audio.
+  if (gen !== PREVIEW.gen || PREVIEW.key !== key || !PREVIEW.on || PREVIEW.paused) return;
   if (!url) { a.pause(); a.removeAttribute('src'); return; }
   if (a.src !== url) { a.src = url; a.currentTime = 0; }
   a.play().then(() => { PREVIEW.unlocked = true; }).catch(() => {});
@@ -823,12 +838,13 @@ function preloadPreviews(seq) {
   if (!PREVIEW.on) return;
   (seq || []).forEach(a => { if (a) fetchPreviewUrl(a); });
 }
-// Called on every album change (swipe). Always warms the current URL so a later unmute is
-// instant; only actuates audio when preview mode is on.
+// Called on every album change (swipe). While muted it just warms the cache so a later
+// unmute is instant; while armed it plays THIS album's preview (tied to the album passed in,
+// not a DOM lookup — this is what makes swiping switch to the right track every time).
 function loadPreview(album) {
-  if (album) fetchPreviewUrl(album);   // warm cache even while muted
-  if (!PREVIEW.on) return;
-  syncAudio(++PREVIEW.gen);
+  if (!album) return;
+  if (!PREVIEW.on) { fetchPreviewUrl(album); return; }   // muted: warm the cache for later
+  playPreviewFor(album, ++PREVIEW.gen);
 }
 
 // Speaker → arm / disarm preview mode.
@@ -841,7 +857,7 @@ window.togglePreviewMode = function (e) {
   } else {                             // → ON
     PREVIEW.on = true; PREVIEW.paused = false;
     unlockAudio(a);                    // must run inside this gesture
-    syncAudio(++PREVIEW.gen);
+    playPreviewFor(currentBentoAlbum(), ++PREVIEW.gen);
   }
   setPreviewUI();
 };
@@ -850,7 +866,7 @@ window.togglePreview = function (e) {
   if (e) e.stopPropagation();
   if (!PREVIEW.on) { window.togglePreviewMode(); return; }
   PREVIEW.paused = !PREVIEW.paused;
-  syncAudio(++PREVIEW.gen);
+  playPreviewFor(currentBentoAlbum(), ++PREVIEW.gen);
   setPreviewUI();
 };
 
