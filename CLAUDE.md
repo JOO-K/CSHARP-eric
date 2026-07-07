@@ -1,6 +1,8 @@
-# CHARP — Music Review App Mockup
+# Spindeck — Music Review App Mockup
 
-**What it is:** A Letterboxd-for-music app. Plain HTML/CSS/JS — no build tools, no npm, no framework. Designed as a phone UI prototype viewed in a desktop viewer.
+**What it is:** A Letterboxd-for-music app (working name **Spindeck**; the repo/URL still say CSHARP). Plain HTML/CSS/JS — no build tools, no npm, no framework. Designed as a phone UI prototype viewed in a desktop viewer.
+
+**Cache-busting:** assets are loaded with `?v=N` in `index.html` — bump N on every CSS/JS/data change so the browser reloads.
 
 **Live URL:** https://joo-k.github.io/CSHARP-eric/
 **Repo:** https://github.com/JOO-K/CSHARP-eric.git
@@ -236,10 +238,14 @@ Fillet positions:
 
 Contains brand row ("CHARP / music, reviewed."), friend activity feed header, and `.v3-friend-card` items.
 
-### Bottom Nav
-`.v3-bottom-nav` — `flex-shrink: 0`, 5 tabs: Home · Reviews · Playlists · Popular · Profile
+### Bottom Nav — filleted shelf (Sony-VAIO / MP3 vibe)
+`.v3-bottom-nav` is a redesigned shelf, not a flat tab row. Structure:
+- **`.v3-nav-shape`** — an SVG silhouette (from `BOTTOM_NAV.svg`) that only spans the **left ~83%** (`.v3-nav-shelf`): a tall left logo column, a concave fillet swoop down to a shorter icon strip, and a rounded top-right. Filled with the screen bg + hairline stroke.
+- **`.v3-nav-hi`** — the "home is on" highlight: solid `--v3-box1-color` (the bento box color) across the logo cell, feathering ~5% into the next section. Masked to the shelf shape (data-URI mask) so it clips cleanly and uses live CSS vars.
+- **Cells:** logo (= Home, `navigate('home')`) · Trending (3×3 grid → `wall`) · Playlists (3 lines → `playlists`) · Profile. Divided by soft inset hairlines; each lights up on hover with an accent sheen.
+- **`.v3-nav-toggle`** — the hand-layout switch, floating in the empty ~17% to the right of the shelf. Fires the existing `toggleHand()` (localStorage `spindeck-hand`, toggles `.s-home-v3--left`); the knob/track react purely in CSS to that class.
 
-Stays pinned to the bottom because `.s-home-v3` has `height: 100%; overflow: hidden` which constrains the flex column — without this it would scroll off-screen.
+Pinned to the bottom because `.s-home-v3` is `height: 100%; overflow: hidden` (constrains the flex column).
 
 ### Procedural Color System
 `applyAlbumColors(screenEl)` in `app.js` runs after every render:
@@ -280,7 +286,24 @@ topNav(active)           // 'playlists' | 'feed' | 'home'
 halfStars(rating, size)  // halfStars(4.4, 16) → star span HTML
 ```
 
-`halfStars` uses gradient-clip for partial stars. `--text3` controls empty star color.
+`halfStars(rating, size)` now renders **vinyl records, not stars** — every rating across the app routes through it. Each unit is a `.hstar` span masked by `--vinyl-mask` (a disc-with-center-hole SVG); `full`/`empty`/`half` just set the background (half = a 50/50 `--star`/`--text3` gradient under the mask). Sizes are scaled ×0.72 so a vinyl matches the old ★ glyph's footprint (its top lines up with an adjacent number's cap height). `--text3` still controls the empty color per screen.
+
+> Note: ~38 inline plain `★` glyphs in text bits (e.g. "4.4 ★" labels, `.star-pick`, `.dorf-act-rating`) do **not** go through `halfStars` and are still literal stars.
+
+---
+
+## Log Sheet — Letterboxd-style logging (`app.js`)
+
+`openLogSheet(triggerEl, subject?)` builds a **singleton** bottom sheet (`#sd-log`) lazily and mounts it into the triggering `.app-screen` so it stays inside the phone frame. Reusable from anywhere.
+- **Subject:** defaults to the current bento album (`currentBentoAlbum()`); pass a `{ image, title, subtitle }` to log something else (a song does this via `openSongLog`).
+- **Contents:** cover + title/subtitle header · large centered **vinyl rate** control (drag/tap for half-record ratings, `setLogRating`) · one-line **Listened (ear) · Listen later · Favorite** toggles (`toggleLogOpt`) · a review textarea whose **Save** button only appears once there's text (`.has-text`) and floats bottom-right · the sheet floats with 10px margins (matches the bento).
+- The old inline compose block (`.v3-rev-mine` stars + textarea + Post) was replaced by a single `.v3-rev-cta` "Review, rate, log" button that opens this sheet.
+
+## Tracklist (`populateSongList` / `songsFor`)
+
+`.v3-rev-songs` sits below the CTA in review mode: a full-width table of **# · title · duration · rating (number + vinyls)**. Clicking a row → `openSongLog(this)` → the log sheet for that song. Song titles/durations/ratings are **deterministic placeholders** (`songsFor` seeds a PRNG from the album name; there's no real per-song data — `album.tracks` is only a count). Caps at ~8.5 rows (`.v3-rev-songs--scroll` → `max-height` + bottom mask fade) so the 9th peeks to signal scroll.
+
+**2-line title handling:** a long album name wraps to two lines in review mode; `enterReview`/`setMainAlbum` measure it synchronously (full text → `offsetHeight`) and toggle `.v3-rev-title-2line`, which drops the CTA down a line.
 
 ---
 
@@ -306,7 +329,8 @@ On mobile (`≤767px`): Single / Multi / Flow / Live modes via header segmented 
 - **Fillet shadows**: dark theme cannot use `filter: drop-shadow` on fillets (GPU artifact); light theme CAN since it uses CSS gradient, not mask-image
 - **Previews follow the album, not the DOM** — `playPreviewFor(album)` plays the album it's handed; never re-query `querySelector('.s-home-v3')` for "the current album" (multiple instances → wrong track). Intent (`PREVIEW.on/paused`) drives the UI, never `audio.paused`
 - **Art vs text animation are separate** — `setMainAlbum`'s `animate` (cover/CD) is independent of `animateText` (typewriter); swipes animate text only, since the filmstrip already moves the art
-- **Fullscreen review** — the `.v3-blue` stats block (album/date · artist · stars) is nudged down 3px via `transform`; in the compose block (`.v3-rev-mine`, a flex column) the star row sits **above** the "Your review" label
+- **Fullscreen review** — the `.v3-blue` stats block (album/date · artist · stars) is nudged down 3px via `transform`. The compose UI is now just a `.v3-rev-cta` button → **Log Sheet** (see above), followed by the **Tracklist**. The streaming action grid (`.v3-rev-actions`) reserves a fixed **58px** column so the review box never shifts as icons change; fav/later/shop moved into the log sheet, leaving Spotify/Apple/YouTube.
+- **Previews are currently OFF** — `PREVIEWS_ENABLED = false` in `app.js` no-ops `togglePreview`/`togglePreviewMode`/`loadPreview`/`playPreviewFor`, and `.v3-preview-btn` is hidden. Flip the flag to re-enable.
 
 ---
 

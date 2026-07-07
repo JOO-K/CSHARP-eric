@@ -668,35 +668,20 @@ const SCREENS = [
                 <a class="v3-rev-btn v3-rev-btn--yt" title="YouTube Music" onclick="event.stopPropagation()">
                   <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm-2 14V8l6 4-6 4z"/></svg>
                 </a>
-                <button class="v3-rev-btn v3-rev-btn--later" title="Listen later" onclick="toggleRevAction(this, event)">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 1.8"/></svg>
-                </button>
-                <button class="v3-rev-btn v3-rev-btn--fav" title="Favorite" onclick="toggleRevAction(this, event)">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7.5-4.9-9.5-9C1 8.5 3 5 6.5 5 9 5 12 8 12 8s3-3 5.5-3C21 5 23 8.5 21.5 12c-2 4.1-9.5 9-9.5 9z"/></svg>
-                </button>
-                <a class="v3-rev-btn v3-rev-btn--shop" title="Store / Merch" onclick="event.stopPropagation()">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l1 12H5L6 8z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg>
-                </a>
               </div>
 
               <!-- Your rating + written review + submit — aligned to the stats text -->
               <div class="v3-rev-mine">
-                <div class="v3-rev-stars" data-rating="0">
-                  <span class="v3-rev-star" data-v="1" onclick="setMyRating(this, event)">★</span>
-                  <span class="v3-rev-star" data-v="2" onclick="setMyRating(this, event)">★</span>
-                  <span class="v3-rev-star" data-v="3" onclick="setMyRating(this, event)">★</span>
-                  <span class="v3-rev-star" data-v="4" onclick="setMyRating(this, event)">★</span>
-                  <span class="v3-rev-star" data-v="5" onclick="setMyRating(this, event)">★</span>
-                </div>
-                <div class="v3-rev-mine-hd">Your review<span class="v3-rev-album-name"></span></div>
-                <div class="v3-rev-write-wrap">
-                  <textarea class="v3-rev-write" rows="1" placeholder="Write a review…" oninput="autoGrowReview(this)"></textarea>
-                  <span class="v3-rev-ph">Write a review…<i class="v3-rev-caret"></i></span>
-                </div>
-                <button class="v3-rev-submit" onclick="submitReview(this)">Post review</button>
+                <button class="v3-rev-cta" onclick="event.stopPropagation(); openLogSheet(this);">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+                  <span>Review, rate, log</span>
+                </button>
               </div>
 
             </div><!-- /v3-rev-top -->
+
+            <!-- Tracklist — rate individual songs; scrolls after ~8 rows, 9th fades to hint more -->
+            <div class="v3-rev-songs"></div>
 
             <!-- Photos / media — small horizontal strip; right edge fades to hint you can swipe -->
             <div class="v3-rev-media"></div>
@@ -714,32 +699,26 @@ const SCREENS = [
           </div><!-- /v3-review-panel -->
           </div><!-- /v3-body -->
 
-          <!-- DEV: hand-layout toggle (left/right) — temporary, for one-hand testing -->
-          <button class="v3-hand-toggle" onclick="toggleHand()" title="Toggle left/right hand layout">
-            <span class="v3-hand-ico">✋</span><span class="v3-hand-label">Left</span>
-          </button>
-
-          <!-- BOTTOM NAV -->
+          <!-- BOTTOM NAV — filleted shelf: logo · Home · Trending · Playlists · hand-toggle -->
           <nav class="v3-bottom-nav">
-            <button class="v3-tab active">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z"/><polyline points="9 21 9 12 15 12 15 21"/></svg>
-              Home
-            </button>
-            <button class="v3-tab" onclick="navigate('reviews')">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-              Reviews
-            </button>
-            <button class="v3-tab" onclick="navigate('playlists')">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
-              Playlists
-            </button>
-            <button class="v3-tab" onclick="navigate('wall')">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-              Popular
-            </button>
-            <button class="v3-tab" onclick="navigate('profile')">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              Profile
+            <div class="v3-nav-shelf">
+            <svg class="v3-nav-shape" viewBox="0 0 553 169" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><path d="M0.721208 168.043V0.0429077C-1.40921 24.7832 10.9472 74.2638 77.4163 74.2638C89.2853 74.2638 107.897 74.2638 131.21 74.2638C232.131 74.2638 421.145 74.2638 532.526 74.2638C543.572 74.2638 552.5 83.2181 552.5 94.2638V168.043H0.721208Z"/></svg>
+            <div class="v3-nav-hi" aria-hidden="true"></div>
+            <button class="v3-nav-logo" onclick="navigate('home')" title="Home"><img src="images/spindeck-logo.png" alt="Spindeck"/></button>
+            <div class="v3-nav-items">
+              <button class="v3-nav-item" onclick="navigate('wall')" title="Trending">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="2.5" y="2.5" width="5" height="5" rx="1.2"/><rect x="9.5" y="2.5" width="5" height="5" rx="1.2"/><rect x="16.5" y="2.5" width="5" height="5" rx="1.2"/><rect x="2.5" y="9.5" width="5" height="5" rx="1.2"/><rect x="9.5" y="9.5" width="5" height="5" rx="1.2"/><rect x="16.5" y="9.5" width="5" height="5" rx="1.2"/><rect x="2.5" y="16.5" width="5" height="5" rx="1.2"/><rect x="9.5" y="16.5" width="5" height="5" rx="1.2"/><rect x="16.5" y="16.5" width="5" height="5" rx="1.2"/></svg>
+              </button>
+              <button class="v3-nav-item" onclick="navigate('playlists')" title="Playlists">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+              </button>
+              <button class="v3-nav-item" onclick="navigate('profile')" title="Profile">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </button>
+            </div>
+            </div><!-- /v3-nav-shelf -->
+            <button class="v3-nav-toggle" onclick="toggleHand()" title="Flip left/right layout">
+              <span class="v3-nav-switch"><span class="v3-nav-knob"></span></span>
             </button>
           </nav>
 
@@ -881,35 +860,20 @@ const SCREENS = [
                 <a class="v3-rev-btn v3-rev-btn--yt" title="YouTube Music" onclick="event.stopPropagation()">
                   <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm-2 14V8l6 4-6 4z"/></svg>
                 </a>
-                <button class="v3-rev-btn v3-rev-btn--later" title="Listen later" onclick="toggleRevAction(this, event)">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 1.8"/></svg>
-                </button>
-                <button class="v3-rev-btn v3-rev-btn--fav" title="Favorite" onclick="toggleRevAction(this, event)">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7.5-4.9-9.5-9C1 8.5 3 5 6.5 5 9 5 12 8 12 8s3-3 5.5-3C21 5 23 8.5 21.5 12c-2 4.1-9.5 9-9.5 9z"/></svg>
-                </button>
-                <a class="v3-rev-btn v3-rev-btn--shop" title="Store / Merch" onclick="event.stopPropagation()">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l1 12H5L6 8z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg>
-                </a>
               </div>
 
               <!-- Your rating + written review + submit — aligned to the stats text -->
               <div class="v3-rev-mine">
-                <div class="v3-rev-stars" data-rating="0">
-                  <span class="v3-rev-star" data-v="1" onclick="setMyRating(this, event)">★</span>
-                  <span class="v3-rev-star" data-v="2" onclick="setMyRating(this, event)">★</span>
-                  <span class="v3-rev-star" data-v="3" onclick="setMyRating(this, event)">★</span>
-                  <span class="v3-rev-star" data-v="4" onclick="setMyRating(this, event)">★</span>
-                  <span class="v3-rev-star" data-v="5" onclick="setMyRating(this, event)">★</span>
-                </div>
-                <div class="v3-rev-mine-hd">Your review<span class="v3-rev-album-name"></span></div>
-                <div class="v3-rev-write-wrap">
-                  <textarea class="v3-rev-write" rows="1" placeholder="Write a review…" oninput="autoGrowReview(this)"></textarea>
-                  <span class="v3-rev-ph">Write a review…<i class="v3-rev-caret"></i></span>
-                </div>
-                <button class="v3-rev-submit" onclick="submitReview(this)">Post review</button>
+                <button class="v3-rev-cta" onclick="event.stopPropagation(); openLogSheet(this);">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+                  <span>Review, rate, log</span>
+                </button>
               </div>
 
             </div><!-- /v3-rev-top -->
+
+            <!-- Tracklist — rate individual songs; scrolls after ~8 rows, 9th fades to hint more -->
+            <div class="v3-rev-songs"></div>
 
             <!-- Photos / media — small horizontal strip; right edge fades to hint you can swipe -->
             <div class="v3-rev-media"></div>
@@ -927,32 +891,26 @@ const SCREENS = [
           </div><!-- /v3-review-panel -->
           </div><!-- /v3-body -->
 
-          <!-- DEV: hand-layout toggle (left/right) — temporary, for one-hand testing -->
-          <button class="v3-hand-toggle" onclick="toggleHand()" title="Toggle left/right hand layout">
-            <span class="v3-hand-ico">✋</span><span class="v3-hand-label">Left</span>
-          </button>
-
-          <!-- BOTTOM NAV -->
+          <!-- BOTTOM NAV — filleted shelf: logo · Home · Trending · Playlists · hand-toggle -->
           <nav class="v3-bottom-nav">
-            <button class="v3-tab active">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z"/><polyline points="9 21 9 12 15 12 15 21"/></svg>
-              Home
-            </button>
-            <button class="v3-tab" onclick="navigate('reviews')">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-              Reviews
-            </button>
-            <button class="v3-tab" onclick="navigate('playlists')">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
-              Playlists
-            </button>
-            <button class="v3-tab" onclick="navigate('wall')">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-              Popular
-            </button>
-            <button class="v3-tab" onclick="navigate('profile')">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              Profile
+            <div class="v3-nav-shelf">
+            <svg class="v3-nav-shape" viewBox="0 0 553 169" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><path d="M0.721208 168.043V0.0429077C-1.40921 24.7832 10.9472 74.2638 77.4163 74.2638C89.2853 74.2638 107.897 74.2638 131.21 74.2638C232.131 74.2638 421.145 74.2638 532.526 74.2638C543.572 74.2638 552.5 83.2181 552.5 94.2638V168.043H0.721208Z"/></svg>
+            <div class="v3-nav-hi" aria-hidden="true"></div>
+            <button class="v3-nav-logo" onclick="navigate('home')" title="Home"><img src="images/spindeck-logo.png" alt="Spindeck"/></button>
+            <div class="v3-nav-items">
+              <button class="v3-nav-item" onclick="navigate('wall')" title="Trending">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="2.5" y="2.5" width="5" height="5" rx="1.2"/><rect x="9.5" y="2.5" width="5" height="5" rx="1.2"/><rect x="16.5" y="2.5" width="5" height="5" rx="1.2"/><rect x="2.5" y="9.5" width="5" height="5" rx="1.2"/><rect x="9.5" y="9.5" width="5" height="5" rx="1.2"/><rect x="16.5" y="9.5" width="5" height="5" rx="1.2"/><rect x="2.5" y="16.5" width="5" height="5" rx="1.2"/><rect x="9.5" y="16.5" width="5" height="5" rx="1.2"/><rect x="16.5" y="16.5" width="5" height="5" rx="1.2"/></svg>
+              </button>
+              <button class="v3-nav-item" onclick="navigate('playlists')" title="Playlists">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+              </button>
+              <button class="v3-nav-item" onclick="navigate('profile')" title="Profile">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </button>
+            </div>
+            </div><!-- /v3-nav-shelf -->
+            <button class="v3-nav-toggle" onclick="toggleHand()" title="Flip left/right layout">
+              <span class="v3-nav-switch"><span class="v3-nav-knob"></span></span>
             </button>
           </nav>
 
@@ -1826,12 +1784,12 @@ function topNav(active) {
 }
 
 function halfStars(rating, size) {
-  const sz = size || 14;
+  const sz = (size || 14) * 0.72;   // match the old ★ glyph's visual footprint so the vinyl top lines up with the number's cap height
   let out = '';
   for (let i = 1; i <= 5; i++) {
-    if (rating >= i)            out += `<span class="hstar full"  style="font-size:${sz}px">★</span>`;
-    else if (rating >= i - 0.5) out += `<span class="hstar half"  style="font-size:${sz}px">★</span>`;
-    else                         out += `<span class="hstar empty" style="font-size:${sz}px">★</span>`;
+    if (rating >= i)            out += `<span class="hstar full"  style="width:${sz}px;height:${sz}px"></span>`;
+    else if (rating >= i - 0.5) out += `<span class="hstar half"  style="width:${sz}px;height:${sz}px"></span>`;
+    else                         out += `<span class="hstar empty" style="width:${sz}px;height:${sz}px"></span>`;
   }
   return `<span class="hstars">${out}</span>`;
 }

@@ -204,6 +204,14 @@ function setMainAlbum(screenEl, album, animate = false, animateText = animate) {
   // Release year — inline after the artist (bento) / beside the album (fullscreen)
   screenEl.querySelectorAll('.v3-blue-date').forEach(el => { el.textContent = album.year || ''; });
 
+  // In fullscreen review, a 2-line album title needs the CTA pushed down a line
+  if (albumNameEl && screenEl.classList.contains('s-home-v3--review')) {
+    albumNameEl.textContent = album.album;                 // full text for a sync measure
+    const lh = parseFloat(getComputedStyle(albumNameEl).lineHeight) || 28;
+    screenEl.classList.toggle('v3-rev-title-2line', albumNameEl.offsetHeight > lh * 1.5);
+    if (animateText) albumNameEl.textContent = '';         // let the typewrite refill from empty
+  }
+
   const starsRow = screenEl.querySelector('.v3-blue-stars-row');
   if (starsRow) {
     const html = `<span class="v3-blue-score">${album.rating.toFixed(1)}</span>${halfStars(album.rating, 14)}<span class="v3-blue-count">${window.fmtRc(album.reviewCount)} reviews</span>`;
@@ -274,6 +282,10 @@ window.enterReview = function (scr) {
     // 3. Album typewrites back in below the artist, at the larger 18px size
     if (album) {
       album.style.opacity = '1';
+      // Measure the full title first (sync reflow) so a 2-line album name pushes the CTA down a line
+      album.textContent = albumText;
+      const lh = parseFloat(getComputedStyle(album).lineHeight) || 28;
+      scr.classList.toggle('v3-rev-title-2line', album.offsetHeight > lh * 1.5);
       typewrite(album, albumText, 24);
     }
   }, 170);
@@ -281,6 +293,7 @@ window.enterReview = function (scr) {
 window.exitReview = function (scr) {
   if (!scr) return;
   scr.classList.remove('s-home-v3--review');
+  scr.classList.remove('v3-rev-title-2line');
   // Restore the album name in full (in case Back was hit mid-typewriter) + reset fade
   const album = scr.querySelector('.v3-blue-album');
   if (album) {
@@ -386,10 +399,61 @@ function populateReviewPanel(scr) {
   if (ta) { ta.value = ''; autoGrowReview(ta); }
   // clear listen-later / favorite toggles when the album changes
   scr.querySelectorAll('.v3-rev-btn.on').forEach(b => b.classList.remove('on'));
+  populateSongList(scr);
   populateComposeMedia(scr);
   const active = scr.querySelector('.v3-rev-filter.active');
   populateReviewList(scr, active ? active.dataset.f : 'friends');
 }
+
+// ── Tracklist under the review CTA ────────────────────────────
+// Titles/durations/ratings are deterministic placeholders (seeded per album)
+// until real per-song data exists. Each row opens the log sheet for that song.
+const SONG_WORDS = ['Ceremony','Glass','Velvet','Static','Halcyon','Ember','Marrow','Neon','Pale','Drift','Saints','Cinder','Vermilion','Lull','Fathom','Wax','Ghost','Iron','Petals','Sable','Hollow','Aurora','Mercury','Slow','Cobalt','Fever','Tundra','Opal','Riptide','Lantern','Cavern','Dial','Salt','Bloom','Anthem','Dusk','Vessel','Crown','Signal','Amber'];
+
+function seedRand(str) {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return () => {
+    h += 0x6D2B79F5; let t = h;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function songsFor(album) {
+  const n = Math.max(1, album.tracks || 10);
+  const rnd = seedRand(album.album || 'x');
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    const w1 = SONG_WORDS[Math.floor(rnd() * SONG_WORDS.length)];
+    const w2 = rnd() < 0.35 ? ' ' + SONG_WORDS[Math.floor(rnd() * SONG_WORDS.length)] : '';
+    const secs = 150 + Math.floor(rnd() * 210);                 // 2:30–6:00
+    const dur = Math.floor(secs / 60) + ':' + String(secs % 60).padStart(2, '0');
+    const rating = Math.round((3.5 + rnd() * 1.5) * 2) / 2;      // 3.5–5.0 in half steps
+    out.push({ n: i + 1, title: w1 + w2, dur, rating });
+  }
+  return out;
+}
+function populateSongList(scr) {
+  const wrap = scr && scr.querySelector('.v3-rev-songs');
+  if (!wrap) return;
+  const a = scr._album || window.featuredAlbum;
+  if (!a) { wrap.innerHTML = ''; return; }
+  const songs = songsFor(a);
+  wrap.classList.toggle('v3-rev-songs--scroll', songs.length > 8);
+  wrap.innerHTML = `<div class="v3-rev-songs-scroll">` + songs.map(s => `
+    <button class="v3-song-row" onclick="event.stopPropagation(); openSongLog(this)" data-title="${s.title}">
+      <span class="v3-song-num">${s.n}</span>
+      <span class="v3-song-title">${s.title}</span>
+      <span class="v3-song-dur">${s.dur}</span>
+      <span class="v3-song-rate">${s.rating.toFixed(1)}${halfStars(s.rating, 12)}</span>
+    </button>`).join('') + `</div>`;
+}
+window.openSongLog = function(el) {
+  const scr = el.closest('.app-screen');
+  const a = (scr && scr._album) || window.activeAlbum || window.featuredAlbum;
+  openLogSheet(el, { image: a ? a.image : '', title: el.dataset.title, subtitle: a ? a.album : '' });
+};
 
 // Photo / media strip under the compose block. Placeholder for now: the album cover
 // plus a rotating handful of other covers standing in for photoshoot / press images.
@@ -815,8 +879,11 @@ function albumKey(album) { return album ? album.artist + ' – ' + album.album :
 // album it landed on, a tap passes the visible album — so it never guesses via the DOM and
 // switching albums always loads the matching track. Everything that changes intent bumps gen
 // and calls this; a stale fetch bails on the gen/key check instead of fighting current state.
+const PREVIEWS_ENABLED = false;   // 30s previews disabled for now
+
 async function playPreviewFor(album, gen) {
   const a = previewAudioEl();
+  if (!PREVIEWS_ENABLED) { a.pause(); return; }
   if (!PREVIEW.on || PREVIEW.paused || !album) { a.pause(); return; }
   const key = albumKey(album);
   PREVIEW.key = key;
@@ -842,6 +909,7 @@ function preloadPreviews(seq) {
 // unmute is instant; while armed it plays THIS album's preview (tied to the album passed in,
 // not a DOM lookup — this is what makes swiping switch to the right track every time).
 function loadPreview(album) {
+  if (!PREVIEWS_ENABLED) return;
   if (!album) return;
   if (!PREVIEW.on) { fetchPreviewUrl(album); return; }   // muted: warm the cache for later
   playPreviewFor(album, ++PREVIEW.gen);
@@ -850,6 +918,7 @@ function loadPreview(album) {
 // Speaker → arm / disarm preview mode.
 window.togglePreviewMode = function (e) {
   if (e) e.stopPropagation();
+  if (!PREVIEWS_ENABLED) return;
   const a = previewAudioEl();
   if (PREVIEW.on) {                    // → OFF
     PREVIEW.on = false; PREVIEW.paused = false; PREVIEW.gen++;
@@ -864,6 +933,7 @@ window.togglePreviewMode = function (e) {
 // CD → pause / resume within preview mode (arms the mode if it's off).
 window.togglePreview = function (e) {
   if (e) e.stopPropagation();
+  if (!PREVIEWS_ENABLED) return;
   if (!PREVIEW.on) { window.togglePreviewMode(); return; }
   PREVIEW.paused = !PREVIEW.paused;
   playPreviewFor(currentBentoAlbum(), ++PREVIEW.gen);
@@ -1433,5 +1503,118 @@ window.navigate = function(targetId, direction) {
 };
 
 function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
+
+// ══════════════════════════════════════════════════════════════
+//  LOG SHEET — Letterboxd-style bottom sheet for rating & logging.
+//  Reusable from anywhere: openLogSheet(triggerEl) resolves the album
+//  from the bento context and mounts a singleton sheet inside the
+//  triggering phone screen (.app-screen) so it stays in the frame.
+// ══════════════════════════════════════════════════════════════
+const SDLOG_ICONS = {
+  ear:   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 8a5 5 0 0 1 10 0c0 3-2.2 4.1-3.4 5.3-.8.8-1.2 1.5-1.2 2.7A2.4 2.4 0 0 1 7.6 17"/><path d="M9.6 8.5a2.6 2.6 0 0 1 4.9-.6"/></svg>`,
+  clock: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 1.8"/></svg>`,
+  heart: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7.5-4.9-9.5-9C1 8.5 3 5 6.5 5 9 5 12 8 12 8s3-3 5.5-3C21 5 23 8.5 21.5 12c-2 4.1-9.5 9-9.5 9z"/></svg>`,
+};
+// A single vinyl record used as the rating unit (label punched in the sheet bg colour)
+const SDLOG_REC = `<svg class="sd-rec" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="currentColor"/><circle cx="12" cy="12" r="8" fill="none" stroke="rgba(0,0,0,0.28)" stroke-width="0.8"/><circle cx="12" cy="12" r="4.4" fill="#1c1c22"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/></svg>`;
+const SDLOG_RECS = SDLOG_REC.repeat(5);
+let SDLOG = null;   // { album, rating, listened, later, fav }
+
+function ensureLogSheet() {
+  let ov = document.getElementById('sd-log');
+  if (ov) return ov;
+  ov = document.createElement('div');
+  ov.id = 'sd-log';
+  ov.className = 'sd-log-overlay';
+  ov.innerHTML = `
+    <div class="sd-log-sheet" role="dialog" aria-modal="true">
+      <div class="sd-log-grab"></div>
+      <div class="sd-log-head">
+        <div class="sd-log-cover"></div>
+        <div class="sd-log-meta">
+          <div class="sd-log-album"></div>
+          <div class="sd-log-artist"></div>
+        </div>
+        <button class="sd-log-x" aria-label="Close">✕</button>
+      </div>
+      <div class="sd-log-rate">
+        <span class="sd-log-stars-track">
+          <span class="sd-log-stars-empty">${SDLOG_RECS}</span>
+          <span class="sd-log-stars-fill">${SDLOG_RECS}</span>
+        </span>
+        <span class="sd-log-rate-val"></span>
+      </div>
+      <div class="sd-log-opts">
+        <button class="sd-log-opt" data-k="listened"><span class="sd-log-opt-ico">${SDLOG_ICONS.ear}</span><span>Listened</span></button>
+        <button class="sd-log-opt" data-k="later"><span class="sd-log-opt-ico">${SDLOG_ICONS.clock}</span><span>Listen later</span></button>
+        <button class="sd-log-opt" data-k="fav"><span class="sd-log-opt-ico">${SDLOG_ICONS.heart}</span><span>Favorite</span></button>
+      </div>
+      <div class="sd-log-review">
+        <textarea class="sd-log-write" rows="3" placeholder="Write a review…"></textarea>
+        <button class="sd-log-save">Save</button>
+      </div>
+    </div>`;
+
+  ov.addEventListener('click', e => { e.stopPropagation(); if (e.target === ov) closeLogSheet(); });
+  ov.addEventListener('mousedown', e => e.stopPropagation());
+  ov.querySelector('.sd-log-sheet').addEventListener('click', e => e.stopPropagation());
+  ov.querySelector('.sd-log-x').addEventListener('click', closeLogSheet);
+  ov.querySelector('.sd-log-save').addEventListener('click', closeLogSheet);
+  ov.querySelectorAll('.sd-log-opt').forEach(b => b.addEventListener('click', () => toggleLogOpt(b.dataset.k, b)));
+
+  const write = ov.querySelector('.sd-log-write');
+  const review = ov.querySelector('.sd-log-review');
+  write.addEventListener('input', () => review.classList.toggle('has-text', write.value.trim().length > 0));
+
+  const track = ov.querySelector('.sd-log-stars-track');
+  const rateFrom = e => {
+    const r = track.getBoundingClientRect();
+    const x = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
+    setLogRating(Math.max(0.5, Math.min(5, Math.ceil((x / r.width) * 10) / 2)));
+  };
+  track.addEventListener('click', rateFrom);
+  return ov;
+}
+
+window.openLogSheet = function(triggerEl, subject) {
+  const album = (window.currentBentoAlbum && currentBentoAlbum()) || window.activeAlbum || window.featuredAlbum;
+  // subject lets a song (or anything) reuse the sheet; falls back to the album
+  const subj = subject || (album ? { image: album.image, title: album.album, subtitle: album.artist } : null);
+  if (!subj) return;
+  const host = (triggerEl && triggerEl.closest && triggerEl.closest('.app-screen'))
+             || document.querySelector('.app-screen') || document.body;
+  const ov = ensureLogSheet();
+  host.appendChild(ov);   // mount into the triggering phone screen so it stays in-frame
+
+  SDLOG = { subject: subj, rating: 0, listened: false, later: false, fav: false };
+  ov.querySelector('.sd-log-cover').style.backgroundImage = `url("${subj.image}")`;
+  ov.querySelector('.sd-log-album').textContent = subj.title;
+  ov.querySelector('.sd-log-artist').textContent = subj.subtitle;
+  ov.querySelector('.sd-log-write').value = '';
+  ov.querySelector('.sd-log-review').classList.remove('has-text');
+  ov.querySelectorAll('.sd-log-opt').forEach(b => b.classList.remove('on'));
+  setLogRating(0);
+  requestAnimationFrame(() => ov.classList.add('open'));
+};
+
+window.closeLogSheet = function() {
+  const ov = document.getElementById('sd-log');
+  if (ov) ov.classList.remove('open');
+};
+
+function setLogRating(v) {
+  if (!SDLOG) return;
+  SDLOG.rating = v;
+  const ov = document.getElementById('sd-log');
+  if (!ov) return;
+  ov.querySelector('.sd-log-stars-fill').style.width = (v / 5 * 100) + '%';
+  ov.querySelector('.sd-log-rate-val').textContent = v ? String(v).replace(/\.0$/, '') : '';
+}
+
+function toggleLogOpt(k, btn) {
+  if (!SDLOG) return;
+  SDLOG[k] = !SDLOG[k];
+  btn.classList.toggle('on', SDLOG[k]);
+}
 
 document.addEventListener('DOMContentLoaded', init);

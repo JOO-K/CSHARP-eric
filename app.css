@@ -23,6 +23,9 @@
   --text3:    #302e2c;
   --star:     #e8a83c;
 
+  /* Vinyl record silhouette (disc with a center hole) — used to mask rating units */
+  --vinyl-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' fill-rule='evenodd' d='M12 1a11 11 0 1 0 0 22 11 11 0 0 0 0-22Zm0 8.6a2.4 2.4 0 1 0 0 4.8 2.4 2.4 0 0 0 0-4.8Z'/%3E%3C/svg%3E");
+
   /* Tab bar */
   --tab-bg:   #0a0908;
   --tab-h:    83px;
@@ -1378,16 +1381,18 @@
 /* ============================================================
    HALF STARS
    ============================================================ */
-.hstars { display: inline-flex; gap: 1px; }
-.hstar { font-size: 14px; line-height: 1; }
-.hstar.full  { color: var(--star); }
-.hstar.empty { color: var(--text3); }
-.hstar.half {
-  background: linear-gradient(90deg, var(--star) 50%, var(--text3) 50%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+.hstars { display: inline-flex; gap: 1.5px; align-items: center; vertical-align: middle; }
+/* Each rating unit is a vinyl record: a CSS mask clips the background to the
+   disc shape, so full/empty/half coloring (incl. the 50/50 split) still works. */
+.hstar {
+  display: inline-block; width: 14px; height: 14px; flex: 0 0 auto;
+  background: var(--text3);
+  -webkit-mask: var(--vinyl-mask) center / contain no-repeat;
+          mask: var(--vinyl-mask) center / contain no-repeat;
 }
+.hstar.full  { background: var(--star); }
+.hstar.empty { background: var(--text3); }
+.hstar.half  { background: linear-gradient(90deg, var(--star) 50%, var(--text3) 50%); }
 
 /* ============================================================
    BENTO HOME
@@ -2427,28 +2432,126 @@
 }
 
 /* BOTTOM NAV ───────────────────────────────────────────────── */
+/* Bottom nav — filleted shelf. Tall left logo column + concave swoop
+   down to a shorter icon strip; rounded convex top-right corner.
+   Shape is an SVG silhouette; logo + items are absolute overlays. */
 .v3-bottom-nav {
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  padding: 5px 4px 9px;
+  position: relative;
   flex-shrink: 0;
-  border-top: 1px solid rgba(255,255,255,0.06);
+  height: 84px;
 }
-.v3-tab {
-  display: flex; flex-direction: column; align-items: center; gap: 2px;
-  background: none; border: none;
-  font-size: 8px; font-weight: 600; letter-spacing: 0.2px;
-  color: rgba(232,226,214,0.3);
-  padding: 5px 10px; border-radius: 12px;
-  cursor: pointer; font-family: var(--font-main);
-  transition: color .15s, background .15s;
-  flex: 1;
+/* The shelf is the filleted shape itself — the left ~83% of the bar.
+   The narrow remaining space holds the floating hand-toggle. */
+.v3-nav-shelf {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 83%;
 }
-.v3-tab.active {
-  color: #e8e2d6;
+/* "Home is on" highlight — bento accent, strongest under the logo, gradient-
+   fading rightward into the other sections. Masked to the filleted shape. */
+.v3-nav-hi {
+  position: absolute; inset: 0;
+  z-index: 1; pointer-events: none;
+  /* Solid bento box color across the home cell, then an eased feather so the
+     bleed reads fluid rather than a hard ramp — kept tight (~25%→36%). */
+  --hi: var(--v3-box1-color, #2a1e22);
+  background: linear-gradient(90deg,
+      var(--hi) 0%,
+      var(--hi) 26%,
+      color-mix(in srgb, var(--hi) 78%, transparent) 27.5%,
+      color-mix(in srgb, var(--hi) 40%, transparent) 29%,
+      color-mix(in srgb, var(--hi) 12%, transparent) 30.5%,
+      transparent 32%);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 553 169' preserveAspectRatio='none'%3E%3Cpath d='M0.721208 168.043V0.0429077C-1.40921 24.7832 10.9472 74.2638 77.4163 74.2638C89.2853 74.2638 107.897 74.2638 131.21 74.2638C232.131 74.2638 421.145 74.2638 532.526 74.2638C543.572 74.2638 552.5 83.2181 552.5 94.2638V168.043H0.721208Z' fill='%23fff'/%3E%3C/svg%3E") no-repeat center / 100% 100%;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 553 169' preserveAspectRatio='none'%3E%3Cpath d='M0.721208 168.043V0.0429077C-1.40921 24.7832 10.9472 74.2638 77.4163 74.2638C89.2853 74.2638 107.897 74.2638 131.21 74.2638C232.131 74.2638 421.145 74.2638 532.526 74.2638C543.572 74.2638 552.5 83.2181 552.5 94.2638V168.043H0.721208Z' fill='%23fff'/%3E%3C/svg%3E") no-repeat center / 100% 100%;
 }
-.v3-tab svg { width: 17px; height: 17px; }
+/* The silhouette. Fill = screen bg so it reads as a continuous shelf;
+   a hairline stroke outlines it. Stretched to the box (preserveAspectRatio
+   none) — overlays use % of the same box so they stay aligned. */
+.v3-nav-shape {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  color: #111116;                 /* drives fill via currentColor */
+  z-index: 0;
+}
+.v3-nav-shape path {
+  fill: currentColor;
+  stroke: rgba(255,255,255,0.10);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+/* Logo — occupies the full-height left column (sits raised, in the swoop) */
+.v3-nav-logo {
+  position: absolute; left: 0; top: 44%; bottom: 3px; width: 26%;
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: none; cursor: pointer; padding: 0;
+  z-index: 2;
+}
+.v3-nav-logo img {
+  width: 36px; height: 36px; object-fit: contain; display: block;
+  filter: invert(1);   /* render badge white (keeps square corners) — reads on the dark home highlight in both themes */
+  transition: transform .18s;
+}
+.v3-nav-logo:hover img { transform: scale(1.06); }
+
+/* Items — live in the lower strip (top: 44.2% ≈ the fillet's bottom edge) */
+.v3-nav-items {
+  position: absolute; left: 26%; right: 0; top: 44.2%; bottom: 0;
+  display: flex; align-items: center; justify-content: space-around;
+  z-index: 2;
+}
+.v3-nav-item {
+  position: relative;
+  flex: 1; height: 100%;
+  background: none; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(232,226,214,0.34);
+  transition: color .18s;
+}
+.v3-nav-item.active { color: #e8e2d6; }
+.v3-nav-item svg { width: 20px; height: 20px; position: relative; z-index: 1; transition: transform .18s; }
+/* Section divider — soft vertical hairline that fades out at both ends (no harsh cutoff) */
+.v3-nav-item::before {
+  content: ''; position: absolute; left: 0; top: 16%; bottom: 16%;
+  width: 1px;
+  background: linear-gradient(rgba(232,226,214,0) 0%, rgba(232,226,214,0.16) 45%, rgba(232,226,214,0.16) 55%, rgba(232,226,214,0) 100%);
+}
+/* Glossy hover fill — bento accent, VAIO / early-2000s MP3 sheen */
+.v3-nav-item::after {
+  content: ''; position: absolute; left: 8%; right: 8%; top: 12%; bottom: 12%;
+  border-radius: 7px;
+  background: linear-gradient(color-mix(in srgb, var(--v3-accent) 34%, transparent), color-mix(in srgb, var(--v3-accent) 10%, transparent));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.20);
+  opacity: 0; transition: opacity .18s;
+  pointer-events: none;
+}
+.v3-nav-item:hover { color: #e8e2d6; }
+.v3-nav-item:hover::after { opacity: 1; }
+.v3-nav-item:hover svg { transform: scale(1.09); }
+
+/* Hand-layout toggle switch — reflects .s-home-v3--left, fires toggleHand() */
+/* Floats in the empty space to the right of the 75% shelf, aligned to the icon strip */
+.v3-nav-toggle {
+  position: absolute;
+  left: 83%; right: 0; top: 44.2%; bottom: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: none; cursor: pointer; padding: 0;
+  z-index: 2;
+}
+.v3-nav-switch {
+  position: relative;
+  width: 34px; height: 18px; border-radius: 999px;
+  background: rgba(232,226,214,0.16);
+  transition: background .2s;
+}
+.v3-nav-knob {
+  position: absolute; top: 2px; left: 2px;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: #e8e2d6;
+  transition: transform .2s;
+  transform: translateX(16px);          /* right-hand state (default off) */
+}
+.s-home-v3--left .v3-nav-knob { transform: translateX(0); }   /* left-hand */
+.s-home-v3--left .v3-nav-switch { background: rgba(232,226,214,0.30); }   /* on = subtle, neutral */
 
 /* Registered property so --v3-accent can be CSS-transitioned */
 @property --v3-accent {
@@ -2946,10 +3049,13 @@
    padding-top clears the CD spinning above this column. */
 .v3-rev-actions {
   flex-shrink: 0;
+  width: 58px;                   /* reserve the CD-column width so the review box never shifts,
+                                    regardless of how many streaming icons are inside */
   display: grid;
-  grid-auto-flow: column;
-  grid-template-columns: repeat(2, 27px);   /* 27 + 27 + 4 = 58px ≈ CD width (15.97% of bento) */
+  grid-auto-flow: row;
+  grid-template-columns: 27px;   /* single column of streaming links now that fav/later/shop moved to the log sheet */
   grid-template-rows: repeat(3, 27px);
+  justify-content: start;        /* icons on the left side of the reserved column, under the CD like before */
   gap: 4px;
   padding-top: 30px;
   pointer-events: none;   /* empty top area doesn't block the CD overlapping above */
@@ -3077,6 +3183,8 @@
    the grid shrank (from the 22% column to a CD-width 58px) to re-align 'your review'
    with the album stats text above it. Right-hand mode sits at the panel edge already. */
 .s-home-v3--left .v3-rev-mine { margin-left: 12px; }
+/* Long album titles wrap to two lines in review mode — drop the CTA down a line to stay aligned */
+.v3-rev-title-2line .v3-rev-mine { margin-top: 50px; }
 .v3-rev-mine-hd {
   font-size: 8px; font-weight: 700; letter-spacing: 0.8px;
   text-transform: uppercase; color: rgba(232,226,214,0.42);
@@ -3152,12 +3260,52 @@
 .v3-rev-media::-webkit-scrollbar { display: none; }
 .v3-rev-photo {
   flex: 0 0 auto;
-  width: 84px; height: 62px;
+  width: 64px; height: 64px;
   border-radius: 7px;
   background-size: cover; background-position: center;
   background-color: rgba(232,226,214,0.06);
 }
 .s-home-v3--light .v3-rev-photo { background-color: rgba(26,18,8,0.06); }
+
+/* Tracklist — full-width, rate individual songs. Scrolls after ~8 rows. */
+.v3-rev-songs { width: 100%; margin: 10px 0 2px; }
+.v3-rev-songs-scroll { display: flex; flex-direction: column; }
+.v3-rev-songs--scroll .v3-rev-songs-scroll {
+  max-height: 255px;              /* ~8.5 rows → the 9th peeks through */
+  overflow-y: auto;
+  scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(to bottom, #000 82%, transparent);
+          mask-image: linear-gradient(to bottom, #000 82%, transparent);
+}
+.v3-rev-songs-scroll::-webkit-scrollbar { display: none; }
+.v3-song-row {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; height: 30px; box-sizing: border-box;
+  padding: 0 12px; text-align: left;
+  background: none; border: none; cursor: pointer;
+  border-top: 1px solid rgba(232,226,214,0.06);
+  color: #e8e2d6; font-family: var(--font-main); font-size: 12px;
+}
+.v3-song-row:first-child { border-top: none; }
+.v3-song-row:hover { background: rgba(232,226,214,0.045); }
+.v3-song-num {
+  width: 16px; flex-shrink: 0; text-align: right;
+  color: rgba(232,226,214,0.4); font-size: 10px; font-family: var(--font-mono);
+}
+.v3-song-title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.v3-song-dur {
+  flex-shrink: 0; color: rgba(232,226,214,0.4);
+  font-size: 10px; font-family: var(--font-mono);
+}
+.v3-song-rate {
+  flex-shrink: 0; display: inline-flex; align-items: center; gap: 5px;
+  min-width: 62px; justify-content: flex-end;
+  color: var(--star); font-size: 11px; font-weight: 700; font-family: var(--font-mono);
+}
+.s-home-v3--light .v3-song-row { color: #1a1208; border-top-color: rgba(26,18,8,0.07); }
+.s-home-v3--light .v3-song-row:hover { background: rgba(26,18,8,0.04); }
+.s-home-v3--light .v3-song-num,
+.s-home-v3--light .v3-song-dur { color: rgba(26,18,8,0.45); }
 
 /* Filters — text tabs, not pills; full-width with a divider above */
 .v3-rev-filters {
@@ -3295,18 +3443,26 @@
 .s-home-v3--light .v3-friend-artist { color: rgba(26,18,8,0.38); }
 .s-home-v3--light .v3-friend-quote { color: rgba(26,18,8,0.5); }
 .s-home-v3--light .v3-friend-likes { color: rgba(26,18,8,0.28); }
-.s-home-v3--light .v3-tab {
+.s-home-v3--light .v3-nav-item {
   color: rgba(26,18,8,0.32);
 }
-.s-home-v3--light .v3-tab.active {
+.s-home-v3--light .v3-nav-item.active {
   color: #1a1208;
 }
 .s-home-v3--light .v3-icon-btn {
   background: rgba(26,18,8,0.18);
   color: rgba(26,18,8,0.85);
 }
-.s-home-v3--light .v3-bottom-nav {
-  border-top-color: rgba(26,18,8,0.08);
+.s-home-v3--light .v3-nav-shape { color: #f0ece3; }
+.s-home-v3--light .v3-nav-shape path { stroke: rgba(26,18,8,0.12); }
+.s-home-v3--light .v3-nav-switch { background: rgba(26,18,8,0.16); }
+.s-home-v3--light.s-home-v3--left .v3-nav-switch { background: rgba(26,18,8,0.30); }
+.s-home-v3--light .v3-nav-knob { background: #1a1208; }
+.s-home-v3--light .v3-nav-item::before {
+  background: linear-gradient(rgba(26,18,8,0) 0%, rgba(26,18,8,0.16) 45%, rgba(26,18,8,0.16) 55%, rgba(26,18,8,0) 100%);
+}
+.s-home-v3--light .v3-nav-item::after {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.55);   /* keeps accent bg from base rule */
 }
 /* Blue box - light */
 .s-home-v3--light .v3-blue {
@@ -3337,3 +3493,142 @@
   color: #1a1208;
 }
 .s-home-v3--light .v3-stream-cancel { color: rgba(26,18,8,0.3); }
+
+/* ══════════════════════════════════════════════════════════════
+   LOG / REVIEW CTA + BOTTOM SHEET  (Letterboxd-style)
+   ══════════════════════════════════════════════════════════════ */
+
+/* The single call-to-action that replaces the old inline compose block */
+.v3-rev-cta {
+  display: inline-flex; align-items: center; gap: 8px;
+  width: fit-content; max-width: 100%;
+  margin-left: -2px;
+  padding: 10px 16px;
+  background: var(--v3-box1-color, rgba(232,226,214,0.08));
+  color: #e8e2d6;
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 7px;
+  font-family: var(--font-main); font-size: 13px; font-weight: 600;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+  transition: filter .15s, transform .06s;
+}
+.v3-rev-cta svg { width: 16px; height: 16px; flex-shrink: 0; }
+.v3-rev-cta:hover  { filter: brightness(1.12); }
+.v3-rev-cta:active { transform: scale(0.985); }
+.s-home-v3--light .v3-rev-cta {
+  color: #1a1208;
+  border-color: rgba(26,18,8,0.14);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.5);
+}
+
+/* Overlay: scoped to the phone screen it's mounted in (.app-screen is relative) */
+.sd-log-overlay {
+  position: absolute; inset: 0; z-index: 200;
+  display: flex; align-items: flex-end; justify-content: center;
+  background: rgba(0,0,0,0);
+  visibility: hidden;
+  transition: background .25s ease, visibility 0s .25s;
+}
+.sd-log-overlay.open {
+  visibility: visible;
+  background: rgba(0,0,0,0.55);
+  transition: background .25s ease;
+}
+.sd-log-sheet {
+  width: calc(100% - 20px);        /* 10px side margins — matches the bento */
+  margin-bottom: 10px;             /* float off the bottom edge too */
+  background: #1c1c22;
+  color: #e8e2d6;
+  border-radius: 20px;
+  padding: 9px 14px 14px;
+  box-shadow: 0 -10px 34px rgba(0,0,0,0.5);
+  transform: translateY(130%);
+  transition: transform .3s cubic-bezier(.22,1,.36,1);
+  font-family: var(--font-main);
+}
+.sd-log-overlay.open .sd-log-sheet { transform: translateY(0); }
+
+.sd-log-grab {
+  width: 38px; height: 4px; border-radius: 999px;
+  background: rgba(232,226,214,0.25);
+  margin: 0 auto 15px;
+}
+.sd-log-head { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+.sd-log-cover {
+  width: 46px; height: 46px; border-radius: 7px; flex-shrink: 0;
+  background: #333 center/cover no-repeat;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.45);
+}
+.sd-log-meta { flex: 1; min-width: 0; }
+.sd-log-album  { font-size: 14px; font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sd-log-artist { font-size: 12px; font-weight: 700; color: rgba(232,226,214,0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sd-log-x {
+  background: none; border: none; color: rgba(232,226,214,0.5);
+  font-size: 15px; cursor: pointer; padding: 4px; line-height: 1;
+}
+
+/* Rate — the vinyl is the hero: large, centered, near the top */
+.sd-log-rate {
+  display: flex; flex-direction: column; align-items: center; gap: 7px;
+  padding: 12px 0 18px;
+}
+.sd-log-stars-track { position: relative; display: inline-flex; cursor: pointer; }
+.sd-log-stars-empty, .sd-log-stars-fill { display: flex; gap: 8px; }
+.sd-log-stars-empty { color: rgba(232,226,214,0.20); }
+.sd-log-stars-fill {
+  position: absolute; top: 0; left: 0; width: 0;
+  overflow: hidden;
+  color: var(--star, #e8a83c);
+}
+.sd-rec { width: 32px; height: 32px; flex: 0 0 auto; display: block; }
+.sd-log-rate-val { font-size: 13px; font-weight: 700; color: var(--star, #e8a83c); min-height: 15px; }
+
+/* Options — one line, three equal cells */
+.sd-log-opts { display: flex; gap: 8px; }
+.sd-log-opt {
+  flex: 1;
+  display: flex; flex-direction: column; align-items: center; gap: 7px;
+  padding: 12px 6px;
+  background: rgba(232,226,214,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  color: rgba(232,226,214,0.7); font-family: inherit; font-size: 11px; font-weight: 600;
+  cursor: pointer; transition: color .15s, background .15s, border-color .15s;
+}
+.sd-log-opt-ico { display: inline-flex; width: 22px; height: 22px; color: rgba(232,226,214,0.55); transition: color .15s; }
+.sd-log-opt-ico svg { width: 22px; height: 22px; }
+.sd-log-opt.on { color: #fff; background: rgba(232,226,214,0.10); border-color: rgba(255,255,255,0.16); }
+.sd-log-opt.on .sd-log-opt-ico { color: var(--star, #e8a83c); }
+.sd-log-opt[data-k="fav"].on .sd-log-opt-ico { color: #ff5c8a; }
+
+.sd-log-review { position: relative; padding: 12px 0 0; }
+.sd-log-write {
+  width: 100%; box-sizing: border-box; resize: none;
+  min-height: 88px;
+  background: rgba(232,226,214,0.06);
+  border: 1px solid rgba(232,226,214,0.1);
+  border-radius: 12px;
+  padding: 12px 12px 44px;   /* bottom room: clears the Save button + keeps a margin under the last line */
+  color: #e8e2d6; font-family: inherit; font-size: 13px; line-height: 1.5;
+}
+.sd-log-write::placeholder { color: rgba(232,226,214,0.35); }
+.sd-log-write:focus { outline: none; border-color: rgba(232,226,214,0.25); }
+
+/* Save: only appears once there's review text, tucked into the box's lower-right */
+.sd-log-save {
+  position: absolute; right: 9px; bottom: 10px;
+  padding: 7px 16px;
+  background: var(--star, #e8a83c); color: #1a1208;
+  border: none; border-radius: 999px;
+  font-family: inherit; font-weight: 700; font-size: 12px;
+  cursor: pointer;
+  opacity: 0; transform: translateY(4px); pointer-events: none;
+  transition: opacity .15s, transform .15s, filter .15s;
+}
+.sd-log-review.has-text .sd-log-save { opacity: 1; transform: none; pointer-events: auto; }
+.sd-log-save:hover  { filter: brightness(1.06); }
+.sd-log-save:active { filter: brightness(1.1); }
+
+/* Previews disabled for now — hide the speaker arm/disarm control */
+.v3-preview-btn { display: none !important; }
