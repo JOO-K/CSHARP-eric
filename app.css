@@ -2732,7 +2732,7 @@
   background-color: #c4bbb0;
 }
 .s-home-v3--light .v3-for-single::after {
-  box-shadow: inset 3px 3px 7px rgba(116,150,179,0.32), inset -4px -4px 6px #d8d2c8;
+  box-shadow: none;   /* emboss read badly on cream — flat edge instead */
 }
 .v3-search-pill {
   position: absolute;

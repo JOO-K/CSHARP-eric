@@ -1038,9 +1038,25 @@ function computeAlbumColors(url) {
         box2 = `linear-gradient(155deg,rgb(${cl(b2r)},${cl(b2g)},${cl(b2b)}),rgb(${cl(Math.min(b2r+6,40))},${cl(Math.min(b2g+6,40))},${cl(Math.min(b2b+14,65))}))`;
       }
 
+        // ── Light-theme palette: same extracted hue, but tinted onto the cream bg ──
+        // instead of a dark box. Mix the accent toward #f0ece3 so the box reads as a
+        // pale wash of the album colour — a slight lift over the dark theme's boxes.
+        const ah = accent.replace('#','');
+        const AR = parseInt(ah.slice(0,2),16), AG = parseInt(ah.slice(2,4),16), AB = parseInt(ah.slice(4,6),16);
+        const CR = 240, CG = 236, CB = 227;              // #f0ece3 cream
+        const mixC = (c, a, t) => Math.round(c*(1-t) + a*t);
+        const t1 = 0.20;                                  // box1 — the visible tint
+        const L1r = mixC(CR,AR,t1), L1g = mixC(CG,AG,t1), L1b = mixC(CB,AB,t1);
+        const t2 = 0.10;                                  // box2 — subtler, cooler wash
+        const L2r = mixC(CR,AR,t2), L2g = mixC(CG,AG,t2), L2b = mixC(CB,AB,t2);
+        const box1L = `linear-gradient(155deg,rgb(${cl(L1r+6)},${cl(L1g+6)},${cl(L1b+6)}),rgb(${cl(L1r-6)},${cl(L1g-6)},${cl(L1b-6)}))`;
+        const box2L = `linear-gradient(155deg,rgb(${cl(L2r+5)},${cl(L2g+5)},${cl(L2b+7)}),rgb(${cl(L2r-4)},${cl(L2g-4)},${cl(L2b-2)}))`;
+
         const colors = {
           accent, box1, box2,
           box1color: `rgb(${cl(b1r)},${cl(b1g)},${cl(b1b)})`,
+          box1L, box2L,
+          box1colorL: `rgb(${L1r},${L1g},${L1b})`,
         };
         COLOR_CACHE.set(url, colors);
         resolve(colors);
@@ -1055,10 +1071,11 @@ function computeAlbumColors(url) {
 
 function applyColorVars(screenEl, c) {
   if (!screenEl || !c) return;
+  const light = screenEl.classList.contains('s-home-v3--light');
   screenEl.style.setProperty('--v3-accent', c.accent);
-  screenEl.style.setProperty('--v3-box1-bg', c.box1);
-  screenEl.style.setProperty('--v3-box2-bg', c.box2);
-  screenEl.style.setProperty('--v3-box1-color', c.box1color);
+  screenEl.style.setProperty('--v3-box1-bg', light ? (c.box1L || c.box1) : c.box1);
+  screenEl.style.setProperty('--v3-box2-bg', light ? (c.box2L || c.box2) : c.box2);
+  screenEl.style.setProperty('--v3-box1-color', light ? (c.box1colorL || c.box1color) : c.box1color);
 }
 
 // Apply the palette for a KNOWN image URL. Uses the album's own (relative) image, which
