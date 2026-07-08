@@ -3109,7 +3109,7 @@
 
 /* Flood: screen bg becomes the bento color; the bento melts into it */
 .s-home-v3--review { background: var(--v3-box1-color, #241820); }
-.s-home-v3--light.s-home-v3--review { background: #f0ece3; }
+.s-home-v3--light.s-home-v3--review { background: var(--v3-box1-color, #f0ece3); }
 .v3-bg-fill { transition: filter 0.35s ease; }
 .s-home-v3--review .v3-bg-fill { filter: none; }
 

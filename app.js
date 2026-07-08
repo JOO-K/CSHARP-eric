@@ -1045,9 +1045,9 @@ function computeAlbumColors(url) {
         const AR = parseInt(ah.slice(0,2),16), AG = parseInt(ah.slice(2,4),16), AB = parseInt(ah.slice(4,6),16);
         const CR = 240, CG = 236, CB = 227;              // #f0ece3 cream
         const mixC = (c, a, t) => Math.round(c*(1-t) + a*t);
-        const t1 = 0.20;                                  // box1 — the visible tint
+        const t1 = 0.44;                                  // box1 — the visible tint
         const L1r = mixC(CR,AR,t1), L1g = mixC(CG,AG,t1), L1b = mixC(CB,AB,t1);
-        const t2 = 0.10;                                  // box2 — subtler, cooler wash
+        const t2 = 0.25;                                  // box2 — subtler, cooler wash
         const L2r = mixC(CR,AR,t2), L2g = mixC(CG,AG,t2), L2b = mixC(CB,AB,t2);
         const box1L = `linear-gradient(155deg,rgb(${cl(L1r+6)},${cl(L1g+6)},${cl(L1b+6)}),rgb(${cl(L1r-6)},${cl(L1g-6)},${cl(L1b-6)}))`;
         const box2L = `linear-gradient(155deg,rgb(${cl(L2r+5)},${cl(L2g+5)},${cl(L2b+7)}),rgb(${cl(L2r-4)},${cl(L2g-4)},${cl(L2b-2)}))`;
