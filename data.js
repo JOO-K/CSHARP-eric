@@ -676,6 +676,15 @@
     if (typeof navigate === 'function') navigate('album');
   };
 
+  // A friend "recommends" an album when they have activity on it (FRIEND_ACTIVITY).
+  // Otherwise the album is algo-served and gets no friend tag.
+  window.friendRecFor = function (album) {
+    if (!album || !window.FRIEND_ACTIVITY) return null;
+    return window.FRIEND_ACTIVITY.find(
+      f => f.album === album.album && f.artist === album.artist
+    ) || null;
+  };
+
   window.fmtRc = function (n) {
     return n >= 1000 ? (n / 1000).toFixed(1).replace('.0', '') + 'k' : String(n);
   };

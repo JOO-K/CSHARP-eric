@@ -590,13 +590,13 @@ const SCREENS = [
             </svg>
 
             <!-- Album art: SVG x=1–538, y=0.5–534.5 → left 0.14% top 0.07% w 77.83% h 79.70% -->
-            <div class="v3-album" onclick="navigate('album')"
+            <div class="v3-album" onclick="onAlbumArt(this)"
                  style="background-image:url('images/album-crystalcastles1.png')"></div>
 
             <!-- Stats strip: expanded to top 77% h 22.92% to fit album/artist name -->
             <div class="v3-blue" onclick="event.stopPropagation(); enterReview(this.closest('.s-home-v3'))">
               <div class="v3-blue-info-row">
-                <span class="v3-blue-title"><span class="v3-blue-album"></span><span class="v3-blue-date v3-blue-date--fs"></span></span>
+                <span class="v3-blue-title"><span class="v3-blue-album" onclick="event.stopPropagation(); onAlbumTitle(this)"></span><span class="v3-blue-date v3-blue-date--fs"></span></span>
                 <span class="v3-blue-sep">·</span>
                 <span class="v3-blue-artist"></span>
                 <span class="v3-blue-date v3-blue-date--inline"></span>
@@ -653,6 +653,12 @@ const SCREENS = [
                stopPropagation keeps clicks from bubbling to the viewer's variant-switch wrapper -->
           <div class="v3-review-panel" onclick="event.stopPropagation()" onmousedown="event.stopPropagation()">
 
+            <!-- Friend rec tag — shown only when a friend has activity on this album (else algo-served: no tag) -->
+            <div class="v3-rev-rec" hidden>
+              <span class="v3-rev-rec-av"></span>
+              <span class="v3-rev-rec-txt"><b class="v3-rev-rec-name"></b> listened to this</span>
+            </div>
+
             <!-- Top row: streaming links (centered under CD) + your review (aligned to stats text).
                  Uses the bento's 78/22 split so it mirrors with the hand layout. -->
             <div class="v3-rev-top">
@@ -679,6 +685,13 @@ const SCREENS = [
               </div>
 
             </div><!-- /v3-rev-top -->
+
+            <!-- Review-spread histogram — distribution of ratings across ½→5 vinyls -->
+            <div class="v3-rev-hist">
+              <div class="v3-rev-hist-hd">Ratings <span class="v3-rev-hist-sub"></span></div>
+              <div class="v3-rev-hist-bars"></div>
+              <div class="v3-rev-hist-axis"><span>½</span><span>5</span></div>
+            </div>
 
             <!-- Tracklist — rate individual songs; scrolls after ~8 rows, 9th fades to hint more -->
             <div class="v3-rev-songs"></div>
@@ -782,13 +795,13 @@ const SCREENS = [
             </svg>
 
             <!-- Album art -->
-            <div class="v3-album" onclick="navigate('album')"
+            <div class="v3-album" onclick="onAlbumArt(this)"
                  style="background-image:url('images/album-crystalcastles1.png')"></div>
 
             <!-- Stats strip -->
             <div class="v3-blue" onclick="event.stopPropagation(); enterReview(this.closest('.s-home-v3'))">
               <div class="v3-blue-info-row">
-                <span class="v3-blue-title"><span class="v3-blue-album"></span><span class="v3-blue-date v3-blue-date--fs"></span></span>
+                <span class="v3-blue-title"><span class="v3-blue-album" onclick="event.stopPropagation(); onAlbumTitle(this)"></span><span class="v3-blue-date v3-blue-date--fs"></span></span>
                 <span class="v3-blue-sep">·</span>
                 <span class="v3-blue-artist"></span>
                 <span class="v3-blue-date v3-blue-date--inline"></span>
@@ -845,6 +858,12 @@ const SCREENS = [
                stopPropagation keeps clicks from bubbling to the viewer's variant-switch wrapper -->
           <div class="v3-review-panel" onclick="event.stopPropagation()" onmousedown="event.stopPropagation()">
 
+            <!-- Friend rec tag — shown only when a friend has activity on this album (else algo-served: no tag) -->
+            <div class="v3-rev-rec" hidden>
+              <span class="v3-rev-rec-av"></span>
+              <span class="v3-rev-rec-txt"><b class="v3-rev-rec-name"></b> listened to this</span>
+            </div>
+
             <!-- Top row: streaming links (centered under CD) + your review (aligned to stats text).
                  Uses the bento's 78/22 split so it mirrors with the hand layout. -->
             <div class="v3-rev-top">
@@ -871,6 +890,13 @@ const SCREENS = [
               </div>
 
             </div><!-- /v3-rev-top -->
+
+            <!-- Review-spread histogram — distribution of ratings across ½→5 vinyls -->
+            <div class="v3-rev-hist">
+              <div class="v3-rev-hist-hd">Ratings <span class="v3-rev-hist-sub"></span></div>
+              <div class="v3-rev-hist-bars"></div>
+              <div class="v3-rev-hist-axis"><span>½</span><span>5</span></div>
+            </div>
 
             <!-- Tracklist — rate individual songs; scrolls after ~8 rows, 9th fades to hint more -->
             <div class="v3-rev-songs"></div>

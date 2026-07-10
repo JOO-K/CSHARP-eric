@@ -290,9 +290,25 @@ window.enterReview = function (scr) {
     }
   }, 170);
 };
+// ── Album page — a variation of the fullscreen review state ──
+// Reached by tapping the album title once you're in the review state; the cover
+// blows up to a large square, the back button drops, everything below stays.
+window.onAlbumTitle = function (el) {
+  const scr = el && el.closest('.s-home-v3');
+  if (!scr) return;
+  if (!scr.classList.contains('s-home-v3--review')) { enterReview(scr); return; }
+  scr.classList.toggle('s-home-v3--album');
+};
+window.onAlbumArt = function (el) {
+  const scr = el && el.closest('.s-home-v3');
+  if (scr && scr.classList.contains('s-home-v3--album')) { scr.classList.remove('s-home-v3--album'); return; }
+  navigate('album');
+};
+
 window.exitReview = function (scr) {
   if (!scr) return;
   scr.classList.remove('s-home-v3--review');
+  scr.classList.remove('s-home-v3--album');
   scr.classList.remove('v3-rev-title-2line');
   // Restore the album name in full (in case Back was hit mid-typewriter) + reset fade
   const album = scr.querySelector('.v3-blue-album');
@@ -306,6 +322,8 @@ window.exitReview = function (scr) {
 // Live pill doubles as the back button when review mode is open
 window.onLivePill = function (btn) {
   const scr = btn.closest('.s-home-v3');
+  // In the album view, Back steps back to the fullscreen review state (not all the way out).
+  if (scr && scr.classList.contains('s-home-v3--album')) { scr.classList.remove('s-home-v3--album'); return; }
   if (scr && scr.classList.contains('s-home-v3--review')) exitReview(scr);
   else navigate('feed');
 };
@@ -399,6 +417,8 @@ function populateReviewPanel(scr) {
   if (ta) { ta.value = ''; autoGrowReview(ta); }
   // clear listen-later / favorite toggles when the album changes
   scr.querySelectorAll('.v3-rev-btn.on').forEach(b => b.classList.remove('on'));
+  populateRecTag(scr, a);
+  populateHist(scr, a);
   populateSongList(scr);
   populateComposeMedia(scr);
   const active = scr.querySelector('.v3-rev-filter.active');
@@ -434,6 +454,33 @@ function songsFor(album) {
   }
   return out;
 }
+// Rating-distribution histogram — 10 buckets (½★ … 5★), seeded per album and
+// peaked around the album's own score so each album has a distinct, stable spread.
+function ratingSpreadFor(album) {
+  const rnd = seedRand((album.album || 'x') + '::spread');
+  const peak = Math.min(10, Math.max(1, Math.round((album.rating || 4) * 2)));
+  const w = [];
+  for (let i = 1; i <= 10; i++) {
+    const d = i - peak;
+    let v = Math.exp(-(d * d) / 5.5);       // bell curve centered on the score
+    v *= 0.6 + rnd() * 0.75;                // per-bucket jitter
+    if (i <= 2) v *= 0.35 + rnd() * 0.3;    // very low ratings are rarer
+    w.push(v);
+  }
+  const max = Math.max(...w) || 1;
+  return w.map(v => Math.max(0.05, v / max));   // normalize 0–1, keep a visible floor
+}
+function populateHist(scr, album) {
+  const box = scr && scr.querySelector('.v3-rev-hist');
+  if (!box || !album) return;
+  const bars = ratingSpreadFor(album);
+  const barsEl = box.querySelector('.v3-rev-hist-bars');
+  if (barsEl) barsEl.innerHTML = bars.map((h, i) =>
+    `<span class="v3-rev-hist-bar" title="${(i + 1) / 2}★"><span style="height:${Math.round(h * 100)}%"></span></span>`
+  ).join('');
+  const sub = box.querySelector('.v3-rev-hist-sub');
+  if (sub) sub.textContent = (window.fmtRc ? fmtRc(album.reviewCount || 0) : (album.reviewCount || 0)) + ' reviews';
+}
 function populateSongList(scr) {
   const wrap = scr && scr.querySelector('.v3-rev-songs');
   if (!wrap) return;
@@ -443,17 +490,30 @@ function populateSongList(scr) {
   wrap.classList.toggle('v3-rev-songs--scroll', songs.length > 8);
   wrap.innerHTML = `<div class="v3-rev-songs-scroll">` + songs.map(s => `
     <button class="v3-song-row" onclick="event.stopPropagation(); openSongLog(this)" data-title="${s.title}">
-      <span class="v3-song-num">${s.n}</span>
       <span class="v3-song-title">${s.title}</span>
       <span class="v3-song-dur">${s.dur}</span>
-      <span class="v3-song-rate">${s.rating.toFixed(1)}${halfStars(s.rating, 12)}</span>
+      <span class="v3-song-rate">${s.rating.toFixed(1)}</span>
     </button>`).join('') + `</div>`;
 }
 window.openSongLog = function(el) {
   const scr = el.closest('.app-screen');
   const a = (scr && scr._album) || window.activeAlbum || window.featuredAlbum;
-  openLogSheet(el, { image: a ? a.image : '', title: el.dataset.title, subtitle: a ? a.album : '' });
+  openLogSheet(el, { image: a ? a.image : '', title: el.dataset.title, subtitle: a ? a.album : '', isSong: true });
 };
+
+// Friend-rec tag at the top of the review panel — populated only when a friend
+// has activity on this album; otherwise it's algo-served and stays hidden.
+function populateRecTag(scr, album) {
+  const rec = scr && scr.querySelector('.v3-rev-rec');
+  if (!rec) return;
+  const f = (window.friendRecFor && window.friendRecFor(album)) || null;
+  if (!f) { rec.hidden = true; return; }
+  rec.hidden = false;
+  const av = rec.querySelector('.v3-rev-rec-av');
+  if (av) { av.style.background = f.grad; av.textContent = f.init; }
+  const nm = rec.querySelector('.v3-rev-rec-name');
+  if (nm) nm.textContent = f.user;
+}
 
 // Photo / media strip under the compose block. Placeholder for now: the album cover
 // plus a rotating handful of other covers standing in for photoshoot / press images.
@@ -1535,7 +1595,8 @@ const SDLOG_ICONS = {
 // A single vinyl record used as the rating unit (label punched in the sheet bg colour)
 const SDLOG_REC = `<svg class="sd-rec" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="currentColor"/><circle cx="12" cy="12" r="8" fill="none" stroke="rgba(0,0,0,0.28)" stroke-width="0.8"/><circle cx="12" cy="12" r="4.4" fill="#1c1c22"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/></svg>`;
 const SDLOG_RECS = SDLOG_REC.repeat(5);
-let SDLOG = null;   // { album, rating, listened, later, fav }
+const SDLOG_PENCIL = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>`;
+let SDLOG = null;   // { subject, rating, listened, later, fav, songs:[{title,rating,text}] }
 
 function ensureLogSheet() {
   let ov = document.getElementById('sd-log');
@@ -1568,7 +1629,13 @@ function ensureLogSheet() {
       </div>
       <div class="sd-log-review">
         <textarea class="sd-log-write" rows="3" placeholder="Write a review…"></textarea>
-        <button class="sd-log-save">Save</button>
+      </div>
+      <div class="sd-log-songs" hidden>
+        <div class="sd-log-songs-hd">Songs <span class="sd-log-songs-sub">optional — only rated or reviewed songs get logged</span></div>
+        <div class="sd-log-songs-list"></div>
+      </div>
+      <div class="sd-log-foot">
+        <button class="sd-log-save">Save log</button>
       </div>
     </div>`;
 
@@ -1576,12 +1643,8 @@ function ensureLogSheet() {
   ov.addEventListener('mousedown', e => e.stopPropagation());
   ov.querySelector('.sd-log-sheet').addEventListener('click', e => e.stopPropagation());
   ov.querySelector('.sd-log-x').addEventListener('click', closeLogSheet);
-  ov.querySelector('.sd-log-save').addEventListener('click', closeLogSheet);
+  ov.querySelector('.sd-log-save').addEventListener('click', commitLog);
   ov.querySelectorAll('.sd-log-opt').forEach(b => b.addEventListener('click', () => toggleLogOpt(b.dataset.k, b)));
-
-  const write = ov.querySelector('.sd-log-write');
-  const review = ov.querySelector('.sd-log-review');
-  write.addEventListener('input', () => review.classList.toggle('has-text', write.value.trim().length > 0));
 
   const track = ov.querySelector('.sd-log-stars-track');
   const rateFrom = e => {
@@ -1590,6 +1653,33 @@ function ensureLogSheet() {
     setLogRating(Math.max(0.5, Math.min(5, Math.ceil((x / r.width) * 10) / 2)));
   };
   track.addEventListener('click', rateFrom);
+
+  // Per-song rating + note (event-delegated over the song list)
+  const songs = ov.querySelector('.sd-log-songs-list');
+  songs.addEventListener('click', e => {
+    const rt = e.target.closest('.sd-log-song-rate-track');
+    if (rt) {
+      const row = rt.closest('.sd-log-song');
+      const r = rt.getBoundingClientRect();
+      const x = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
+      setSongRating(+row.dataset.i, Math.max(0.5, Math.min(5, Math.ceil((x / r.width) * 10) / 2)));
+      return;
+    }
+    const nb = e.target.closest('.sd-log-song-note-btn');
+    if (nb) {
+      const row = nb.closest('.sd-log-song');
+      row.classList.toggle('open-note');
+      const inp = row.querySelector('.sd-log-song-note');
+      if (row.classList.contains('open-note') && inp) inp.focus();
+    }
+  });
+  songs.addEventListener('input', e => {
+    const inp = e.target.closest('.sd-log-song-note');
+    if (!inp || !SDLOG) return;
+    const row = inp.closest('.sd-log-song');
+    const i = +row.dataset.i;
+    if (SDLOG.songs[i]) { SDLOG.songs[i].text = inp.value; markSongLogged(row, i); }
+  });
   return ov;
 }
 
@@ -1603,16 +1693,71 @@ window.openLogSheet = function(triggerEl, subject) {
   const ov = ensureLogSheet();
   host.appendChild(ov);   // mount into the triggering phone screen so it stays in-frame
 
-  SDLOG = { subject: subj, rating: 0, listened: false, later: false, fav: false };
+  SDLOG = { subject: subj, rating: 0, listened: false, later: false, fav: false, songs: [] };
   ov.querySelector('.sd-log-cover').style.backgroundImage = `url("${subj.image}")`;
   ov.querySelector('.sd-log-album').textContent = subj.title;
   ov.querySelector('.sd-log-artist').textContent = subj.subtitle;
   ov.querySelector('.sd-log-write').value = '';
-  ov.querySelector('.sd-log-review').classList.remove('has-text');
   ov.querySelectorAll('.sd-log-opt').forEach(b => b.classList.remove('on'));
   setLogRating(0);
+  // Album mode → per-song rows below; single-song mode → no nested song list.
+  if (subj.isSong) { const box = ov.querySelector('.sd-log-songs'); if (box) box.hidden = true; }
+  else fillLogSongs(ov, album);
+  const sheet = ov.querySelector('.sd-log-sheet');
+  if (sheet) sheet.scrollTop = 0;
   requestAnimationFrame(() => ov.classList.add('open'));
 };
+
+// Build the per-song rating/review rows for an album's log sheet.
+function fillLogSongs(ov, album) {
+  const box = ov.querySelector('.sd-log-songs');
+  const list = ov.querySelector('.sd-log-songs-list');
+  if (!box || !list) return;
+  const songs = album ? songsFor(album) : [];
+  if (!songs.length) { box.hidden = true; list.innerHTML = ''; if (SDLOG) SDLOG.songs = []; return; }
+  if (SDLOG) SDLOG.songs = songs.map(s => ({ title: s.title, rating: 0, text: '' }));
+  box.hidden = false;
+  list.innerHTML = songs.map((s, i) => `
+    <div class="sd-log-song" data-i="${i}">
+      <span class="sd-log-song-num">${i + 1}</span>
+      <span class="sd-log-song-title">${s.title}</span>
+      <span class="sd-log-song-val"></span>
+      <span class="sd-log-song-rate-track">
+        <span class="sd-log-song-empty">${SDLOG_RECS}</span>
+        <span class="sd-log-song-fill" style="width:0">${SDLOG_RECS}</span>
+      </span>
+      <button class="sd-log-song-note-btn" aria-label="Add note">${SDLOG_PENCIL}</button>
+      <input class="sd-log-song-note" placeholder="Add a note…" />
+    </div>`).join('');
+}
+
+function setSongRating(i, v) {
+  if (!SDLOG || !SDLOG.songs[i]) return;
+  SDLOG.songs[i].rating = v;
+  const ov = document.getElementById('sd-log');
+  const row = ov && ov.querySelector(`.sd-log-song[data-i="${i}"]`);
+  if (!row) return;
+  const fill = row.querySelector('.sd-log-song-fill');
+  if (fill) fill.style.width = (v / 5 * 100) + '%';
+  const val = row.querySelector('.sd-log-song-val');
+  if (val) val.textContent = v ? String(v).replace(/\.0$/, '') : '';
+  markSongLogged(row, i);
+}
+
+// A song is "logged" once it has a rating or a note; reflected as a highlight.
+function markSongLogged(row, i) {
+  const s = SDLOG && SDLOG.songs[i];
+  const logged = !!s && (s.rating > 0 || (s.text && s.text.trim().length > 0));
+  row.classList.toggle('is-logged', logged);
+}
+
+// Save: keep only songs the user actually rated or reviewed, then close.
+function commitLog() {
+  if (SDLOG && SDLOG.songs) {
+    SDLOG.loggedSongs = SDLOG.songs.filter(s => s.rating > 0 || (s.text && s.text.trim().length > 0));
+  }
+  closeLogSheet();
+}
 
 window.closeLogSheet = function() {
   const ov = document.getElementById('sd-log');

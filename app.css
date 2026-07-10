@@ -3166,6 +3166,38 @@
 .s-home-v3--review .v3-for-single { width: 19.1%; top: 15.23%; height: 68.55%; }                      /* right-hand: lowered so its bottom (83.78%) aligns with the album cover bottom */
 .s-home-v3--left.s-home-v3--review .v3-for-single { left: 0.07%; width: 19.1%; top: 15.23%; height: 68.55%; }  /* left-hand: lowered so its bottom aligns with the album cover bottom */
 
+/* ══ Album view — the fullscreen review state with a BIGGER cover ══
+   Identical to fullscreen review, only the album art swells to a full-width square,
+   which grows the bento taller and pushes the stats/CD + the whole panel below down.
+   Nothing else about the layout changes — the CD stays in its fullscreen spot (and
+   follows hand mode), and the panel content keeps the fullscreen arrangement. */
+.s-home-v3--review.s-home-v3--album .v3-bento { aspect-ratio: 689 / 862; }
+.s-home-v3--review.s-home-v3--album .v3-album {
+  left: 0; top: 0; width: 100%; height: auto; aspect-ratio: 1;
+  border-radius: 12px;
+}
+/* For-You strip drops away (no room beside a full-width cover). The Back pill stays,
+   upper-left — in album view it steps back to the fullscreen state (see onLivePill). */
+.s-home-v3--review.s-home-v3--album .v3-for-single { display: none; }
+/* Stats fall just below the enlarged cover (cover bottom ≈ 80%). */
+.s-home-v3--review.s-home-v3--album .v3-blue { top: 81%; }
+/* CD: raised so its top lines up with the top of the album name; kept circular so the
+   taller bento can't stretch it into an ellipse (hand mode still controls the side). */
+.s-home-v3--review.s-home-v3--album .v3-cd { top: 84%; height: auto; aspect-ratio: 1; }
+/* Pull the whole review panel (friend pill + CTA + histogram + tracklist) up so it sits
+   ~15px below the album's review-numbers row instead of way down the taller bento. */
+.s-home-v3--review.s-home-v3--album .v3-review-panel { margin-top: -28px; }
+
+/* Seamless grow: toggling into album view swells the cover to fill the width while
+   the bento (and its %-positioned stats + CD) glide to the taller layout. Scoped to
+   review mode so it only animates the album toggle, never the home render. */
+.s-home-v3--review .v3-bento { transition: aspect-ratio 0.42s cubic-bezier(0.4,0,0.2,1); }
+.s-home-v3--review .v3-album {
+  transition: left 0.42s cubic-bezier(0.4,0,0.2,1), top 0.42s cubic-bezier(0.4,0,0.2,1),
+              width 0.42s cubic-bezier(0.4,0,0.2,1), border-radius 0.42s ease;
+}
+.s-home-v3--review .v3-blue { transition: top 0.42s cubic-bezier(0.4,0,0.2,1); }
+
 /* Live pill ⇄ Back arrow */
 .v3-back-content { display: none; align-items: center; gap: 3px; }
 .s-home-v3--review .v3-live-content { display: none; }
@@ -3268,7 +3300,65 @@
 .s-home-v3--light .v3-rev-photo { background-color: rgba(26,18,8,0.06); }
 
 /* Tracklist — full-width, rate individual songs. Scrolls after ~8 rows. */
-.v3-rev-songs { width: 100%; margin: 10px 0 2px; }
+.v3-rev-songs { width: 100%; box-sizing: border-box; margin: 10px 0 2px; }
+/* Shift the tracklist into the stats/CTA column so song titles line up with the album
+   name, artist and the "Review, rate, log" button (mirrors with hand layout).
+   Left-hand: action grid (10 + 58) + mine (12 margin) sits to the left; songs already
+   add 12 via the row → 80 total lands the title on the CTA/album line. */
+.s-home-v3--left .v3-rev-songs { padding-left: 80px; }
+
+/* Review-spread histogram — 10 buckets (½★ … 5★), between the CTA and the tracklist */
+/* Negative top pulls the histogram (and the tracklist below it) up beside the taller
+   streaming-icon column, so "the review" sits ~10px under the Review/rate/log button. */
+.v3-rev-hist { box-sizing: border-box; padding-left: 12px; padding-right: 12px; margin: -36px 0 4px; }
+.s-home-v3--left .v3-rev-hist { padding-left: 92px; }
+.v3-rev-hist-hd {
+  display: flex; align-items: baseline; gap: 8px; margin-bottom: 7px;
+  font-size: 8px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase;
+  color: rgba(232,226,214,0.42);
+}
+.v3-rev-hist-sub { font-size: 8px; font-weight: 500; letter-spacing: 0.4px; color: rgba(232,226,214,0.3); }
+.v3-rev-hist-bars {
+  display: flex; align-items: flex-end; gap: 3px; height: 32px;
+  padding-bottom: 5px; border-bottom: 1px solid rgba(232,226,214,0.1);
+}
+.v3-rev-hist-bar { flex: 1; height: 100%; display: flex; align-items: flex-end; }
+.v3-rev-hist-bar > span {
+  display: block; width: 100%; min-height: 2px; border-radius: 2px 2px 0 0;
+  background: linear-gradient(to top, rgba(232,168,60,0.4), var(--star, #e8a83c));
+}
+.v3-rev-hist-axis {
+  display: flex; justify-content: space-between; margin-top: 4px;
+  font-size: 9px; color: rgba(232,226,214,0.4); font-family: var(--font-mono);
+}
+.s-home-v3--light .v3-rev-hist-hd { color: rgba(26,18,8,0.42); }
+.s-home-v3--light .v3-rev-hist-sub { color: rgba(26,18,8,0.32); }
+.s-home-v3--light .v3-rev-hist-bars { border-bottom-color: rgba(26,18,8,0.12); }
+.s-home-v3--light .v3-rev-hist-axis { color: rgba(26,18,8,0.4); }
+
+/* ── Review section = the bento's column grid, continued BELOW the bento ──
+   CD column → streaming icons (10px under the CD). Content column → CTA, then the
+   reviews (10px under the CTA). The icon column is taken OUT OF FLOW (absolute) so
+   its height can never drag the reviews down — that was the broken spacing. */
+.s-home-v3--review .v3-review-panel { position: relative; }
+.s-home-v3--review .v3-rev-actions {
+  position: absolute; top: 7px;
+  display: flex; flex-direction: column; gap: 9px;
+  width: auto; height: auto; margin: 0; padding: 0;
+  grid-template-columns: none; grid-template-rows: none;
+}
+.s-home-v3--review.s-home-v3--left    .v3-rev-actions { left: 18px; right: auto; }
+.s-home-v3--review:not(.s-home-v3--left) .v3-rev-actions { right: 18px; left: auto; }
+.s-home-v3--review .v3-rev-actions .v3-rev-btn { width: 34px; height: 34px; }
+/* Album view: icons ride up with the raised CD (and the pulled-up panel). */
+.s-home-v3--review.s-home-v3--album .v3-rev-actions { top: 3px; }
+/* Push the CTA content column clear of the absolute icon column (so a friend pill
+   dropping the CTA can't slide it under the icons). Matches the pill's own inset. */
+.s-home-v3--review.s-home-v3--left    .v3-rev-mine { margin-left: 81px; }
+.s-home-v3--review:not(.s-home-v3--left) .v3-rev-mine { margin-right: 81px; }
+/* Reviews sit exactly 10px below the CTA button (icon column no longer in the way). */
+.s-home-v3--review .v3-rev-mine { padding-bottom: 0; }
+.s-home-v3--review .v3-rev-hist { margin-top: 10px; }
 .v3-rev-songs-scroll { display: flex; flex-direction: column; }
 .v3-rev-songs--scroll .v3-rev-songs-scroll {
   max-height: 255px;              /* ~8.5 rows → the 9th peeks through */
@@ -3279,18 +3369,22 @@
 }
 .v3-rev-songs-scroll::-webkit-scrollbar { display: none; }
 .v3-song-row {
+  position: relative;   /* anchor for the hanging track number */
   display: flex; align-items: center; gap: 10px;
-  width: 100%; height: 30px; box-sizing: border-box;
-  padding: 0 12px; text-align: left;
+  width: 100%; height: 36px; box-sizing: border-box;
+  padding: 0 12px; text-align: left;   /* title starts at 12px → aligns with album name, artist & the CTA */
   background: none; border: none; cursor: pointer;
   border-top: 1px solid rgba(232,226,214,0.06);
   color: #e8e2d6; font-family: var(--font-main); font-size: 12px;
 }
 .v3-song-row:first-child { border-top: none; }
 .v3-song-row:hover { background: rgba(232,226,214,0.045); }
+/* Number hangs in the left gutter so it doesn't push the title off the album-name line */
 .v3-song-num {
-  width: 16px; flex-shrink: 0; text-align: right;
-  color: rgba(232,226,214,0.4); font-size: 10px; font-family: var(--font-mono);
+  position: absolute; left: 0; top: 0; height: 100%;
+  display: flex; align-items: center; justify-content: flex-start;
+  width: 12px; pointer-events: none;
+  color: rgba(232,226,214,0.4); font-size: 9.5px; font-family: var(--font-mono);
 }
 .v3-song-title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .v3-song-dur {
@@ -3298,10 +3392,33 @@
   font-size: 10px; font-family: var(--font-mono);
 }
 .v3-song-rate {
-  flex-shrink: 0; display: inline-flex; align-items: center; gap: 5px;
-  min-width: 62px; justify-content: flex-end;
-  color: var(--star); font-size: 11px; font-weight: 700; font-family: var(--font-mono);
+  flex-shrink: 0; display: inline-flex; align-items: center;
+  min-width: 28px; justify-content: flex-end;
+  color: var(--star); font-size: 11.5px; font-weight: 700; font-family: var(--font-mono);
 }
+/* Friend-rec tag — sits at the top of the review panel; hidden when algo-served */
+.v3-rev-rec {
+  display: flex; align-items: center; gap: 8px; width: fit-content;
+  margin: 0 0 0 10px; padding: 5px 12px 5px 5px;
+  background: rgba(232,226,214,0.06); border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 999px; font-size: 11.5px; color: rgba(232,226,214,0.75);
+}
+/* Align the friend pill with the album name / CTA content column (mirrors hand layout) */
+.s-home-v3--left .v3-rev-rec { margin-left: 90px; }
+.v3-rev-rec[hidden] { display: none; }
+/* When the friend pill shows, push the CTA + streaming icons ~8px below it.
+   Also drop the button/icon column's own top offsets (only needed in the no-pill layout). */
+.v3-rev-rec:not([hidden]) + .v3-rev-top { margin-top: 8px; }
+.v3-rev-rec:not([hidden]) + .v3-rev-top .v3-rev-mine { margin-top: 0; }
+.v3-rev-rec:not([hidden]) + .v3-rev-top .v3-rev-actions { padding-top: 0; }
+.v3-rev-rec-av {
+  width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 700; color: #fff;
+}
+.v3-rev-rec-name { color: #e8e2d6; font-weight: 700; }
+.s-home-v3--light .v3-rev-rec { background: rgba(26,18,8,0.05); border-color: rgba(26,18,8,0.1); color: rgba(26,18,8,0.7); }
+.s-home-v3--light .v3-rev-rec-name { color: #1a1208; }
 .s-home-v3--light .v3-song-row { color: #1a1208; border-top-color: rgba(26,18,8,0.07); }
 .s-home-v3--light .v3-song-row:hover { background: rgba(26,18,8,0.04); }
 .s-home-v3--light .v3-song-num,
@@ -3502,6 +3619,7 @@
 .v3-rev-cta {
   display: inline-flex; align-items: center; gap: 8px;
   width: fit-content; max-width: 100%;
+  white-space: nowrap;   /* "Review, rate, log" always stays on one line */
   margin-left: -2px;
   padding: 10px 16px;
   background: var(--v3-box1-color, rgba(232,226,214,0.08));
@@ -3547,7 +3665,11 @@
   transform: translateY(130%);
   transition: transform .3s cubic-bezier(.22,1,.36,1);
   font-family: var(--font-main);
+  max-height: calc(100% - 20px);
+  overflow-y: auto;
+  scrollbar-width: none;
 }
+.sd-log-sheet::-webkit-scrollbar { display: none; }
 .sd-log-overlay.open .sd-log-sheet { transform: translateY(0); }
 
 .sd-log-grab {
@@ -3610,24 +3732,72 @@
   background: rgba(232,226,214,0.06);
   border: 1px solid rgba(232,226,214,0.1);
   border-radius: 12px;
-  padding: 12px 12px 44px;   /* bottom room: clears the Save button + keeps a margin under the last line */
+  padding: 12px;
   color: #e8e2d6; font-family: inherit; font-size: 13px; line-height: 1.5;
 }
 .sd-log-write::placeholder { color: rgba(232,226,214,0.35); }
 .sd-log-write:focus { outline: none; border-color: rgba(232,226,214,0.25); }
 
-/* Save: only appears once there's review text, tucked into the box's lower-right */
+/* Per-song rating + review list (album log sheet only) */
+.sd-log-songs { padding-top: 14px; }
+.sd-log-songs-hd {
+  display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px;
+  font-size: 12px; font-weight: 700; color: #e8e2d6;
+}
+.sd-log-songs-sub { font-size: 10px; font-weight: 500; color: rgba(232,226,214,0.4); }
+.sd-log-songs-list { display: flex; flex-direction: column; }
+.sd-log-song {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 7px 8px; border-radius: 9px;
+  border-left: 2px solid transparent;
+  transition: background .15s, border-color .15s;
+}
+.sd-log-song.is-logged { background: rgba(232,168,60,0.08); border-left-color: var(--star, #e8a83c); }
+.sd-log-song-num {
+  width: 16px; flex-shrink: 0; text-align: right;
+  font-size: 10px; font-family: var(--font-mono); color: rgba(232,226,214,0.4);
+}
+.sd-log-song-title {
+  flex: 1; min-width: 0; font-size: 12.5px; color: #e8e2d6;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sd-log-song-val {
+  flex-shrink: 0; min-width: 12px; text-align: right;
+  font-size: 11px; font-weight: 700; font-family: var(--font-mono); color: var(--star, #e8a83c);
+}
+.sd-log-song-rate-track { position: relative; display: inline-flex; cursor: pointer; flex-shrink: 0; }
+.sd-log-song-empty, .sd-log-song-fill { display: flex; gap: 4px; }
+.sd-log-song-empty { color: rgba(232,226,214,0.20); }
+.sd-log-song-fill { position: absolute; top: 0; left: 0; width: 0; overflow: hidden; color: var(--star, #e8a83c); }
+.sd-log-song .sd-rec { width: 14px; height: 14px; }
+.sd-log-song-note-btn {
+  flex-shrink: 0; width: 26px; height: 26px; padding: 5px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(232,226,214,0.06); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px; color: rgba(232,226,214,0.55); cursor: pointer;
+  transition: color .15s, background .15s;
+}
+.sd-log-song-note-btn svg { width: 15px; height: 15px; }
+.sd-log-song.open-note .sd-log-song-note-btn { color: var(--star, #e8a83c); background: rgba(232,168,60,0.12); }
+.sd-log-song-note {
+  display: none; flex: 0 0 100%; box-sizing: border-box; margin: 6px 0 2px;
+  background: rgba(232,226,214,0.06); border: 1px solid rgba(232,226,214,0.1);
+  border-radius: 8px; padding: 7px 10px;
+  color: #e8e2d6; font-family: inherit; font-size: 12px;
+}
+.sd-log-song-note::placeholder { color: rgba(232,226,214,0.35); }
+.sd-log-song-note:focus { outline: none; border-color: rgba(232,226,214,0.25); }
+.sd-log-song.open-note .sd-log-song-note { display: block; }
+
+/* Save — always available, in the sheet footer */
+.sd-log-foot { display: flex; justify-content: flex-end; padding-top: 14px; }
 .sd-log-save {
-  position: absolute; right: 9px; bottom: 10px;
-  padding: 7px 16px;
+  padding: 9px 20px;
   background: var(--star, #e8a83c); color: #1a1208;
   border: none; border-radius: 999px;
-  font-family: inherit; font-weight: 700; font-size: 12px;
-  cursor: pointer;
-  opacity: 0; transform: translateY(4px); pointer-events: none;
-  transition: opacity .15s, transform .15s, filter .15s;
+  font-family: inherit; font-weight: 700; font-size: 12.5px;
+  cursor: pointer; transition: filter .15s;
 }
-.sd-log-review.has-text .sd-log-save { opacity: 1; transform: none; pointer-events: auto; }
 .sd-log-save:hover  { filter: brightness(1.06); }
 .sd-log-save:active { filter: brightness(1.1); }
 
