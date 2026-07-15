@@ -3145,8 +3145,26 @@
   position: relative;
   width: 20px; height: 20px;
   color: #e8e2d6;
+  /* Idle "breath": once per cycle the whole formation spreads slightly and nudges
+     toward the arrow tip, then settles — so the arrow feels alive, not frozen.
+     Lives on .v3-ring (not .v3-ring-spin) because the swipe rotation writes an inline
+     transform onto .v3-ring-spin; keeping them on separate elements lets both compose. */
+  animation: v3-ring-idle 5s ease-in-out infinite;
 }
 .s-home-v3--light .v3-ring { color: #1a1208; }
+/* left-hand → arrow points right, so the idle nudge mirrors */
+.s-home-v3--left .v3-ring { animation-name: v3-ring-idle-left; }
+@keyframes v3-ring-idle {
+  0%, 78%, 100% { transform: scale(1)    translateX(0); }
+  89%           { transform: scale(1.22) translateX(-1.5px); }  /* separate + point toward tip (left) */
+}
+@keyframes v3-ring-idle-left {
+  0%, 78%, 100% { transform: scale(1)    translateX(0); }
+  89%           { transform: scale(1.22) translateX(1.5px); }   /* mirrored: point toward tip (right) */
+}
+@media (prefers-reduced-motion: reduce) {
+  .v3-ring { animation: none; }
+}
 .v3-ring-spin {
   position: absolute; inset: 0;
   animation: none;   /* static idle — the reaction classes (swipe/foryou/cd) drive motion */
