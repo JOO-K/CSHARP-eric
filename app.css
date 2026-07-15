@@ -3142,6 +3142,7 @@
 /* Live pill ring — 6 dots in a ring. Idle = slow spin; reacts to swipe / For You / CD. */
 .v3-ring {
   position: relative;
+  display: inline-block;   /* REQUIRED: transform is ignored on inline elements, so the idle animation below is a no-op without this */
   width: 20px; height: 20px;
   color: #e8e2d6;
   /* Idle "breath": once per cycle the whole formation spreads slightly and nudges
