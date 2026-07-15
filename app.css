@@ -3617,6 +3617,9 @@
    streaming-icon column, so "the review" sits ~10px under the Review/rate/log button. */
 .v3-rev-hist { box-sizing: border-box; padding-left: 12px; padding-right: 12px; margin: -36px 0 4px; }
 .s-home-v3--left .v3-rev-hist { padding-left: 92px; }
+/* Right-hand (CD on the right): mirror the shift so the bars clear the CD column instead of
+   running full width into it — matches the tracklist's right-hand padding above. */
+.s-home-v3:not(.s-home-v3--left) .v3-rev-hist { padding-right: 92px; }
 .v3-rev-hist-hd {
   display: flex; align-items: baseline; gap: 8px; margin-bottom: 7px;
   font-size: 8px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase;
