@@ -2438,9 +2438,8 @@
   background: none;
   border: none;
 }
-/* hidden in the fullscreen review state — visibility (not display) so it keeps its
-   space and the bento doesn't jump up when the bubble disappears */
-.s-home-v3--review .v3-nowbar { visibility: hidden; }
+/* now shown in every state, including the fullscreen review (album / artist) view —
+   the friends-listening ticker stays visible above the nav at all times */
 .v3-now-text {
   flex: 1;
   min-width: 0;
