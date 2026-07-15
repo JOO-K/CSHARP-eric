@@ -3153,13 +3153,21 @@
 .s-home-v3--light .v3-ring { color: #1a1208; }
 /* left-hand → arrow points right, so the idle nudge mirrors */
 .s-home-v3--left .v3-ring { animation-name: v3-ring-idle-left; }
+/* A clear two-beat "point" gesture toward the tip (with a slight spread), once per 5s.
+   Rests ~3s, then double-nudges — deliberate enough to read as alive, not a frozen blip. */
 @keyframes v3-ring-idle {
-  0%, 78%, 100% { transform: scale(1)    translateX(0); }
-  89%           { transform: scale(1.22) translateX(-1.5px); }  /* separate + point toward tip (left) */
+  0%, 58%, 100% { transform: translateX(0)     scale(1); }
+  66%           { transform: translateX(-3px)  scale(1.16); }  /* nudge toward tip (left) */
+  74%           { transform: translateX(0.5px) scale(1.02); }  /* recoil */
+  82%           { transform: translateX(-2.4px) scale(1.12); } /* second, smaller nudge */
+  90%           { transform: translateX(0)     scale(1); }
 }
-@keyframes v3-ring-idle-left {
-  0%, 78%, 100% { transform: scale(1)    translateX(0); }
-  89%           { transform: scale(1.22) translateX(1.5px); }   /* mirrored: point toward tip (right) */
+@keyframes v3-ring-idle-left {   /* mirrored: arrow points right */
+  0%, 58%, 100% { transform: translateX(0)      scale(1); }
+  66%           { transform: translateX(3px)    scale(1.16); }
+  74%           { transform: translateX(-0.5px) scale(1.02); }
+  82%           { transform: translateX(2.4px)  scale(1.12); }
+  90%           { transform: translateX(0)      scale(1); }
 }
 @media (prefers-reduced-motion: reduce) {
   .v3-ring { animation: none; }
