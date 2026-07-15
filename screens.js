@@ -657,7 +657,7 @@ const SCREENS = [
 
             <!-- Live corner button — sits in the bento's top corner notch; becomes Back in review mode -->
             <button class="v3-search-pill v3-live-pill" onclick="event.stopPropagation(); onLivePill(this)">
-              <span class="v3-live-content"><span class="v3-ring"><span class="v3-ring-spin"><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i></span></span></span>
+              <span class="v3-live-content"><span class="v3-ring v3-arrow"><span class="v3-ring-spin"><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i></span></span></span>
               <span class="v3-back-content"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Back</span>
             </button>
 
@@ -731,28 +731,8 @@ const SCREENS = [
             <div class="v3-now-wave" aria-hidden="true"></div>
           </div>
 
-          <!-- BOTTOM NAV — filleted shelf: logo · Home · Trending · Playlists · hand-toggle -->
-          <nav class="v3-bottom-nav">
-            <div class="v3-nav-shelf">
-            <svg class="v3-nav-shape" viewBox="0 0 553 131" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><path d="M500.7 49.7942C535.714 49.7942 552.5 41.9079 552.5 0V18.3881V56.4474V130H0.5V69.7942C0.5 58.7485 9.42773 49.7942 20.4734 49.7942H421.959H500.7Z"/></svg>
-            <div class="v3-nav-hi" aria-hidden="true"></div>
-            <button class="v3-nav-logo" onclick="navigate('home')" title="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/></svg></button>
-            <div class="v3-nav-items">
-              <button class="v3-nav-item" onclick="navigate('wall')" title="Trending">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="2.5" y="2.5" width="5" height="5" rx="1.2"/><rect x="9.5" y="2.5" width="5" height="5" rx="1.2"/><rect x="16.5" y="2.5" width="5" height="5" rx="1.2"/><rect x="2.5" y="9.5" width="5" height="5" rx="1.2"/><rect x="9.5" y="9.5" width="5" height="5" rx="1.2"/><rect x="16.5" y="9.5" width="5" height="5" rx="1.2"/><rect x="2.5" y="16.5" width="5" height="5" rx="1.2"/><rect x="9.5" y="16.5" width="5" height="5" rx="1.2"/><rect x="16.5" y="16.5" width="5" height="5" rx="1.2"/></svg>
-              </button>
-              <button class="v3-nav-item" onclick="navigate('playlists')" title="Playlists">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
-              </button>
-              <button class="v3-nav-item" onclick="navigate('profile')" title="Profile">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              </button>
-            </div>
-            </div><!-- /v3-nav-shelf -->
-            <button class="v3-nav-toggle" onclick="toggleHand()" title="Flip left/right layout">
-              <span class="v3-nav-switch"><span class="v3-nav-knob"></span></span>
-            </button>
-          </nav>
+          <!-- BOTTOM NAV — shared glass console (see bottomNav helper) -->
+          ${bottomNav('home')}
 
           <!-- Streaming service action sheet -->
           <div class="v3-stream-overlay"
@@ -908,7 +888,7 @@ const SCREENS = [
 
             <!-- Live corner button — sits in the bento's top corner notch; becomes Back in review mode -->
             <button class="v3-search-pill v3-live-pill" onclick="event.stopPropagation(); onLivePill(this)">
-              <span class="v3-live-content"><span class="v3-ring"><span class="v3-ring-spin"><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i></span></span></span>
+              <span class="v3-live-content"><span class="v3-ring v3-arrow"><span class="v3-ring-spin"><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i></span></span></span>
               <span class="v3-back-content"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Back</span>
             </button>
 
@@ -982,28 +962,8 @@ const SCREENS = [
             <div class="v3-now-wave" aria-hidden="true"></div>
           </div>
 
-          <!-- BOTTOM NAV — filleted shelf: logo · Home · Trending · Playlists · hand-toggle -->
-          <nav class="v3-bottom-nav">
-            <div class="v3-nav-shelf">
-            <svg class="v3-nav-shape" viewBox="0 0 553 131" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><path d="M500.7 49.7942C535.714 49.7942 552.5 41.9079 552.5 0V18.3881V56.4474V130H0.5V69.7942C0.5 58.7485 9.42773 49.7942 20.4734 49.7942H421.959H500.7Z"/></svg>
-            <div class="v3-nav-hi" aria-hidden="true"></div>
-            <button class="v3-nav-logo" onclick="navigate('home')" title="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/></svg></button>
-            <div class="v3-nav-items">
-              <button class="v3-nav-item" onclick="navigate('wall')" title="Trending">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="2.5" y="2.5" width="5" height="5" rx="1.2"/><rect x="9.5" y="2.5" width="5" height="5" rx="1.2"/><rect x="16.5" y="2.5" width="5" height="5" rx="1.2"/><rect x="2.5" y="9.5" width="5" height="5" rx="1.2"/><rect x="9.5" y="9.5" width="5" height="5" rx="1.2"/><rect x="16.5" y="9.5" width="5" height="5" rx="1.2"/><rect x="2.5" y="16.5" width="5" height="5" rx="1.2"/><rect x="9.5" y="16.5" width="5" height="5" rx="1.2"/><rect x="16.5" y="16.5" width="5" height="5" rx="1.2"/></svg>
-              </button>
-              <button class="v3-nav-item" onclick="navigate('playlists')" title="Playlists">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
-              </button>
-              <button class="v3-nav-item" onclick="navigate('profile')" title="Profile">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              </button>
-            </div>
-            </div><!-- /v3-nav-shelf -->
-            <button class="v3-nav-toggle" onclick="toggleHand()" title="Flip left/right layout">
-              <span class="v3-nav-switch"><span class="v3-nav-knob"></span></span>
-            </button>
-          </nav>
+          <!-- BOTTOM NAV — shared glass console (see bottomNav helper) -->
+          ${bottomNav('home')}
 
           <!-- Streaming sheet -->
           <div class="v3-stream-overlay" style="display:none" onclick="this.style.display='none'">
@@ -1816,28 +1776,19 @@ function wallHtml(light) {
       </div>`;
 }
 
+// Bottom nav — glass "console" bar: raised center hump (holds the now-playing bubble)
+// with 4 buttons in the lower bar. Floats centered, off the bottom, over the content.
 function bottomNav(active = 'home') {
   const on = id => active === id ? ' active' : '';
   return `
           <nav class="v3-bottom-nav">
-            <div class="v3-nav-shelf">
-            <svg class="v3-nav-shape" viewBox="0 0 553 131" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><path d="M500.7 49.7942C535.714 49.7942 552.5 41.9079 552.5 0V18.3881V56.4474V130H0.5V69.7942C0.5 58.7485 9.42773 49.7942 20.4734 49.7942H421.959H500.7Z"/></svg>
-            ${active === 'home' ? '<div class="v3-nav-hi" aria-hidden="true"></div>' : ''}
-            <button class="v3-nav-logo${on('home')}" onclick="navigate('home')" title="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/></svg></button>
+            <div class="v3-nav-glass" aria-hidden="true"></div>
+            <svg class="v3-nav-shape" viewBox="0 0 553 126" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><path d="M517.5 125H35.5C16.17 125 0.5 109.33 0.5 90V79.7942C0.5 60.4642 16.17 44.7942 35.5 44.7942L47.3137 44.7942C58.1862 44.7942 67 35.9803 67 25.1079C67 11.5173 78.0173 0.5 91.6079 0.5L460.892 0.500022C474.483 0.500023 485.5 11.5174 485.5 25.1079C485.5 35.9804 494.314 44.7942 505.186 44.7942H517.5C536.83 44.7942 552.5 60.4642 552.5 79.7942V90C552.5 109.33 536.83 125 517.5 125Z"/></svg>
             <div class="v3-nav-items">
-              <button class="v3-nav-item${on('wall')}" onclick="navigate('wall')" title="Trending">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="2.5" y="2.5" width="5" height="5" rx="1.2"/><rect x="9.5" y="2.5" width="5" height="5" rx="1.2"/><rect x="16.5" y="2.5" width="5" height="5" rx="1.2"/><rect x="2.5" y="9.5" width="5" height="5" rx="1.2"/><rect x="9.5" y="9.5" width="5" height="5" rx="1.2"/><rect x="16.5" y="9.5" width="5" height="5" rx="1.2"/><rect x="2.5" y="16.5" width="5" height="5" rx="1.2"/><rect x="9.5" y="16.5" width="5" height="5" rx="1.2"/><rect x="16.5" y="16.5" width="5" height="5" rx="1.2"/></svg>
-              </button>
-              <button class="v3-nav-item${on('playlists')}" onclick="navigate('playlists')" title="Playlists">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
-              </button>
-              <button class="v3-nav-item${on('profile')}" onclick="navigate('profile')" title="Profile">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              </button>
+              <button class="v3-nav-item${on('home')}" onclick="navigate('home')" title="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/></svg></button>
+              <button class="v3-nav-item${on('wall')}" onclick="navigate('wall')" title="Trending"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="2.5" y="2.5" width="5" height="5" rx="1.2"/><rect x="9.5" y="2.5" width="5" height="5" rx="1.2"/><rect x="16.5" y="2.5" width="5" height="5" rx="1.2"/><rect x="2.5" y="9.5" width="5" height="5" rx="1.2"/><rect x="9.5" y="9.5" width="5" height="5" rx="1.2"/><rect x="16.5" y="9.5" width="5" height="5" rx="1.2"/><rect x="2.5" y="16.5" width="5" height="5" rx="1.2"/><rect x="9.5" y="16.5" width="5" height="5" rx="1.2"/><rect x="16.5" y="16.5" width="5" height="5" rx="1.2"/></svg></button>
+              <button class="v3-nav-item${on('playlists')}" onclick="navigate('playlists')" title="Playlists"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></button>
+              <button class="v3-nav-item${on('profile')}" onclick="navigate('profile')" title="Profile"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></button>
             </div>
-            </div>
-            ${active === 'home' ? `<button class="v3-nav-toggle" onclick="toggleHand()" title="Flip left/right layout">
-              <span class="v3-nav-switch"><span class="v3-nav-knob"></span></span>
-            </button>` : ''}
           </nav>`;
 }

@@ -267,8 +267,79 @@ function setMainAlbum(screenEl, album, animate = false, animateText = animate) {
 }
 
 // ── Fullscreen review mode ────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+//  BACK-NAVIGATION HISTORY
+//  A single global stack of view snapshots. Every forward transition pushes the view it
+//  leaves; Back pops one and restores it atomically (no flashing through in-between states).
+//  A snapshot is either a home-shell state {review,album,artist,albumRef} or {screenId}.
+// ══════════════════════════════════════════════════════════════
+let backStack = [];
+
+function homeShells() {
+  // the home-shell instances currently in the DOM (dark + light on desktop; one on mobile)
+  return [...document.querySelectorAll('.s-home-v3')].filter(el => el.querySelector('.v3-album'));
+}
+function snapView(scr) {
+  if (scr && scr.classList.contains('s-home-v3--review')) {
+    return {
+      review: true,
+      album:  scr.classList.contains('s-home-v3--album'),
+      artist: scr.classList.contains('s-home-v3--artist'),
+      albumRef: scr._album,
+    };
+  }
+  return { review: false, screenId: currentScreen().id };   // bento home, or a plain screen
+}
+function pushBack() {
+  const scr = homeShells()[0];
+  if (scr) backStack.push(snapView(scr));
+}
+function measure2Line(scr) {
+  const alb = scr.querySelector('.v3-blue-album');
+  if (!alb) return;
+  alb.style.transition = 'none'; alb.style.fontSize = '18px';
+  const lh = parseFloat(getComputedStyle(alb).lineHeight) || 20;
+  scr.classList.toggle('v3-rev-title-2line', alb.getBoundingClientRect().height > lh * 1.5);
+  alb.style.transition = ''; alb.style.fontSize = '';
+}
+// Drop straight into the album page for `album`, all classes set at once (no review flash).
+function enterAlbumPageState(scr, album) {
+  setMainAlbum(scr, album, false);
+  scr.classList.remove('s-home-v3--artist');
+  scr.classList.add('s-home-v3--review', 's-home-v3--album');
+  populateReviewPanel(scr);
+  measure2Line(scr);
+  const body = scr.querySelector('.v3-body'); if (body) body.scrollTop = 0;
+}
+// Restore an arbitrary home-shell snapshot in one shot.
+function applyShellState(scr, snap) {
+  if (snap.albumRef) setMainAlbum(scr, snap.albumRef, false);   // restores cover/name (undoes artist)
+  scr.classList.toggle('s-home-v3--review', !!snap.review);
+  scr.classList.toggle('s-home-v3--album',  !!snap.album);
+  scr.classList.toggle('s-home-v3--artist', !!snap.artist);
+  scr.classList.remove('v3-rev-title-2line');
+  if (snap.review) {
+    populateReviewPanel(scr);
+    if (snap.artist) populateArtistPage(scr);
+    else measure2Line(scr);
+  }
+  const body = scr.querySelector('.v3-body'); if (body) body.scrollTop = 0;
+}
+window.goBack = function () {
+  const snap = backStack.pop();
+  const shells = homeShells();
+  if (!snap) { shells.forEach(s => exitReview(s)); return; }          // nothing recorded → bento
+  if (snap.review) { shells.forEach(s => applyShellState(s, snap)); return; }   // an earlier shell state
+  if (snap.screenId && snap.screenId !== currentScreen().id) {        // a different screen
+    navigate(snap.screenId, 'back');
+    return;
+  }
+  shells.forEach(s => exitReview(s));                                  // the bento home
+};
+
 window.enterReview = function (scr) {
   if (!scr) return;
+  if (!scr.classList.contains('s-home-v3--review')) pushBack();   // record the bento before entering
   const album = scr.querySelector('.v3-blue-album');
   const albumText = album ? album.textContent : '';
 
@@ -305,11 +376,14 @@ window.onAlbumTitle = function (el) {
   const scr = el && el.closest('.s-home-v3');
   if (!scr) return;
   if (!scr.classList.contains('s-home-v3--review')) { enterReview(scr); return; }
-  scr.classList.toggle('s-home-v3--album');
+  if (!scr.classList.contains('s-home-v3--album')) {   // review → album page (forward)
+    pushBack();
+    homeShells().forEach(s => s.classList.add('s-home-v3--album'));
+  }
 };
 window.onAlbumArt = function (el) {
   const scr = el && el.closest('.s-home-v3');
-  if (scr && scr.classList.contains('s-home-v3--album')) { scr.classList.remove('s-home-v3--album'); return; }
+  if (!scr || scr.classList.contains('s-home-v3--review')) return;   // in-shell handled by setMainAlbum's tap
   navigate('album');
 };
 
@@ -324,11 +398,13 @@ const ARTIST_IMG = {
 window.onArtistName = function (el) {
   const scr = el && el.closest('.s-home-v3');
   if (!scr) return;
-  scr.classList.add('s-home-v3--review', 's-home-v3--album', 's-home-v3--artist');
-  populateReviewPanel(scr);
-  populateArtistPage(scr);
-  const body = scr.querySelector('.v3-body');
-  if (body) body.scrollTop = 0;
+  pushBack();   // record the current view (review or album page) before the artist page
+  homeShells().forEach(s => {
+    s.classList.add('s-home-v3--review', 's-home-v3--album', 's-home-v3--artist');
+    populateReviewPanel(s);
+    populateArtistPage(s);
+    const body = s.querySelector('.v3-body'); if (body) body.scrollTop = 0;
+  });
 };
 function populateArtistPage(scr) {
   const a = scr._album || window.activeAlbum || window.featuredAlbum;
@@ -358,6 +434,7 @@ window.exitReview = function (scr) {
   if (!scr) return;
   scr.classList.remove('s-home-v3--review');
   scr.classList.remove('s-home-v3--album');
+  scr.classList.remove('s-home-v3--artist');
   scr.classList.remove('v3-rev-title-2line');
   // Restore the album name in full (in case Back was hit mid-typewriter) + reset fade
   const album = scr.querySelector('.v3-blue-album');
@@ -402,29 +479,20 @@ window.pickWallTime = function (el) {
 // album, arriving from another screen (e.g. trending). Back returns to that origin screen.
 window.openAlbumPage = function (album) {
   if (!album) return;
-  const origin = currentScreen().id;      // e.g. 'wall' — where Back should return to
   window.activeAlbum = album;
+  const shells = homeShells();
+  // Already on the home shell (e.g. tapping an album on the artist page) → transition in place.
+  if (currentScreen().id === 'home' && shells.length) {
+    pushBack();                                        // remember the current view (artist page, etc.)
+    shells.forEach(s => enterAlbumPageState(s, album));
+    return;
+  }
+  // Coming from another screen (e.g. trending): remember it, then go home + straight to album page.
+  const originSnap = { review: false, screenId: currentScreen().id };
   navigate('home');
-  // After home renders + populates (2 rAFs), set this album and drop into the album page.
   requestAnimationFrame(() => requestAnimationFrame(() => {
-    const homes = [...document.querySelectorAll('.s-home-v3')].filter(el => el.querySelector('.v3-album'));
-    homes.forEach(scr => {
-      scr._albumOrigin = origin;
-      setMainAlbum(scr, album, false);
-      // Land directly on the album page — add both states at once so the fullscreen
-      // review state never flashes on the way in.
-      scr.classList.add('s-home-v3--review', 's-home-v3--album');
-      populateReviewPanel(scr);
-      const body = scr.querySelector('.v3-body');
-      if (body) body.scrollTop = 0;
-      const alb = scr.querySelector('.v3-blue-album');
-      if (alb) {
-        alb.style.transition = 'none'; alb.style.fontSize = '18px';
-        const lh = parseFloat(getComputedStyle(alb).lineHeight) || 20;
-        scr.classList.toggle('v3-rev-title-2line', alb.getBoundingClientRect().height > lh * 1.5);
-        alb.style.transition = ''; alb.style.fontSize = '';
-      }
-    });
+    backStack.push(originSnap);                        // Back → that origin screen
+    homeShells().forEach(s => enterAlbumPageState(s, album));
   }));
 };
 
@@ -437,7 +505,7 @@ function reactRing(screenEl, type) {
   void ring.offsetWidth;                       // restart the animation if re-triggered
   ring.classList.add('v3-ring--' + type);
   clearTimeout(ring._reactT);
-  ring._reactT = setTimeout(() => ring.classList.remove('v3-ring--' + type), 650);
+  ring._reactT = setTimeout(() => ring.classList.remove('v3-ring--' + type), type === 'foryou' ? 340 : 650);
 }
 window.reactRing = reactRing;
 
@@ -470,28 +538,12 @@ window.playPreview = function (el, e) {
   else fetchPreviewUrl(album).then(start);
 };
 
-// Live pill doubles as the back button when review mode is open
+// Live pill doubles as the Back button in the fullscreen states — pops the history stack.
 window.onLivePill = function (btn) {
   const scr = btn.closest('.s-home-v3');
   if (!scr) return;
-  // Artist page → Back returns to the album page (restore the album cover + info).
-  if (scr.classList.contains('s-home-v3--artist')) {
-    scr.classList.remove('s-home-v3--artist');
-    if (scr._album) setMainAlbum(scr, scr._album, false);
-    return;
-  }
-  // Opened from another page (e.g. trending) → Back returns straight there, not to review.
-  if (scr._albumOrigin) {
-    const origin = scr._albumOrigin;
-    scr._albumOrigin = null;
-    exitReview(scr);
-    navigate(origin, 'back');
-    return;
-  }
-  // In the album view, Back steps back to the fullscreen review state (not all the way out).
-  if (scr.classList.contains('s-home-v3--album')) { scr.classList.remove('s-home-v3--album'); return; }
-  if (scr.classList.contains('s-home-v3--review')) exitReview(scr);
-  else reactRing(scr, 'foryou');   // regular state: the ring is a living indicator, not a link
+  if (scr.classList.contains('s-home-v3--review')) { goBack(); return; }
+  toggleHand();   // regular bento state: the pill is the hand-layout switch
 };
 // Tap a star to set your own rating — left half = .5, right half = whole
 window.setMyRating = function (starEl, e) {
@@ -875,7 +927,11 @@ function applyHand(screenEl) {
 }
 window.toggleHand = function () {
   localStorage.setItem('spindeck-hand', getHand() === 'left' ? 'right' : 'left');
-  document.querySelectorAll('.s-home-v3').forEach(applyHand);
+  document.querySelectorAll('.s-home-v3').forEach(scr => {
+    scr.classList.add('v3-hand-swapping');   // freeze the For You slide so it snaps, not floats
+    applyHand(scr);                           // mirror the cells (instant) + morph the arrow dots
+    requestAnimationFrame(() => requestAnimationFrame(() => scr.classList.remove('v3-hand-swapping')));
+  });
 };
 
 // The album carousel: featured first, then trending. Main + For You are one apart.
@@ -940,6 +996,31 @@ function setupAlbumSwipe(screenEl) {
   let active = false, decided = false, horizontal = false, dir = 0, targetIdx = 0, stepDir = 1;
   let cur = null, peek = null, fy = null, fyCur = null, fyPeek = null;
 
+  // Ring (in the Live pill) reacts LIVE to the swipe: dots form a ring and partially rotate
+  // as you drag, then complete a full spin on commit (or unwind on cancel) — tactile.
+  let ringAngle = 0;
+  function ringDrag(p) {
+    const ring = screenEl.querySelector('.v3-ring');
+    const spin = screenEl.querySelector('.v3-ring-spin');
+    if (!ring) return;
+    ring.classList.add('v3-ring--swipe');            // dots separate into the ring
+    ringAngle = p * 210;                             // partial rotation tracks the finger
+    if (spin) { spin.style.transition = 'none'; spin.style.transform = `rotate(${ringAngle}deg)`; }
+  }
+  function ringRelease(committed) {
+    const ring = screenEl.querySelector('.v3-ring');
+    const spin = screenEl.querySelector('.v3-ring-spin');
+    if (!ring) return;
+    if (spin) {
+      spin.style.transition = 'transform 0.34s cubic-bezier(0.2,0.85,0.25,1)';
+      spin.style.transform = `rotate(${committed ? ringAngle + (ringAngle >= 0 ? 360 : -360) : 0}deg)`;
+    }
+    setTimeout(() => {
+      ring.classList.remove('v3-ring--swipe');       // dots reform the arrow the instant the spin lands
+      if (spin) { spin.style.transition = ''; spin.style.transform = ''; }
+    }, committed ? 340 : 300);
+  }
+
   function buildLayers() {
     const seq = albumSeq();
     const idx = screenEl._albumIdx || 0;
@@ -992,7 +1073,7 @@ function setupAlbumSwipe(screenEl) {
     const basePct = dir < 0 ? 100 : -100;
     const offPct = dir < 0 ? -100 : 100;
     if (committed) {
-      reactRing(screenEl, 'swipe');
+      ringRelease(true);   // finish the full spin
       cur.style.transform  = `translateX(${offPct}%)`;
       peek.style.transform = 'translateX(0%)';
       if (fyCur) { fyCur.style.transform = `translateX(${offPct}%)`; fyPeek.style.transform = 'translateX(0%)'; }
@@ -1000,6 +1081,7 @@ function setupAlbumSwipe(screenEl) {
       const ta = albumSeq()[targetIdx];
       if (ta) applyAlbumColorsUrl(screenEl, ta.image);
     } else {
+      ringRelease(false);   // unwind back to the arrow
       cur.style.transform  = 'translateX(0%)';
       peek.style.transform = `translateX(${basePct}%)`;
       if (fyCur) { fyCur.style.transform = 'translateX(0%)'; fyPeek.style.transform = `translateX(${basePct}%)`; }
@@ -1052,10 +1134,11 @@ function setupAlbumSwipe(screenEl) {
     if (e.cancelable) e.preventDefault();
     progress = Math.max(-1, Math.min(1, mx / width));
     render();
+    ringDrag(progress);
   }
 
   function onUp() {
-    if (horizontal && cur) finish(Math.abs(progress) >= 0.45);
+    if (horizontal && cur) finish(Math.abs(progress) >= 0.33);
     setTimeout(() => { album._swiped = false; }, 60);   // let a real tap through afterwards
     cleanup();
   }

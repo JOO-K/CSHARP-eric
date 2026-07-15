@@ -2424,8 +2424,8 @@
 /* NOW-PLAYING TICKER — glossy "bubble" pill above the bento ──── */
 .v3-nowbar {
   position: absolute;
-  right: 12px;
-  bottom: 53px;                 /* right-aligned, just above the nav; feed scrolls behind it */
+  left: 50%; transform: translateX(-50%);   /* centered, filling the console's top indent */
+  bottom: 65px;
   z-index: 6;
   width: 54%;
   height: 22px;
@@ -2433,14 +2433,10 @@
   align-items: center;
   gap: 7px;
   padding: 0 7px 0 10px;
-  border-radius: 999px;
   overflow: hidden;
-  /* flat frosted pill (gloss removed) */
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.13);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.32);
-  -webkit-backdrop-filter: blur(12px) saturate(150%);
-  backdrop-filter: blur(12px) saturate(150%);
+  /* no background of its own — it sits inside the glass console indent */
+  background: none;
+  border: none;
 }
 /* hidden in the fullscreen review state — visibility (not display) so it keeps its
    space and the bento doesn't jump up when the bubble disappears */
@@ -2494,11 +2490,6 @@
   50%      { transform: scaleY(1); }
 }
 /* Light theme */
-.s-home-v3--light .v3-nowbar {
-  background: rgba(255,255,255,0.5);
-  border: 1px solid rgba(255,255,255,0.7);
-  box-shadow: 0 4px 12px rgba(30,20,10,0.12);
-}
 .s-home-v3--light .v3-now-name   { color: #c8891f; }
 .s-home-v3--light .v3-now-sep    { color: rgba(26,18,8,0.35); }
 .s-home-v3--light .v3-now-song,
@@ -2631,128 +2622,59 @@
   color: rgba(232,226,214,0.25);
 }
 
-/* BOTTOM NAV ───────────────────────────────────────────────── */
-/* Bottom nav — filleted shelf. Tall left logo column + concave swoop
-   down to a shorter icon strip; rounded convex top-right corner.
-   Shape is an SVG silhouette; logo + items are absolute overlays. */
+/* BOTTOM NAV — floating glass "console" ─────────────────────────
+   A wide rounded bar with a raised center hump (holds the now-playing bubble) and
+   4 buttons in the lower bar. Floats centered, ~10px off the bottom, over the content;
+   the frosted-glass fill obscures whatever scrolls behind it. */
 .v3-bottom-nav {
   position: absolute;
-  left: 0; right: 0; bottom: 0;   /* sits at the bottom of the app rectangle, above the home indicator */
-  height: 58px;   /* matches the shorter resized SVG (was 68px) */
-  z-index: 5;     /* overlays the body so feed content scrolls behind it */
+  left: 50%; transform: translateX(-50%);   /* centered */
+  bottom: 24px;                              /* floating off the bottom */
+  width: 72%;                                /* the only scale lever — keeps proportions */
+  aspect-ratio: 553 / 126;                   /* never distort the SVG; scale uniformly via width */
+  z-index: 5;
 }
-/* The shelf is the filleted shape itself — the left ~83% of the bar.
-   The narrow remaining space holds the floating hand-toggle. */
-.v3-nav-shelf {
-  position: absolute; right: 0; top: 0; bottom: 0; width: 74%;   /* flipped to the right; toggle floats on the left */
-}
-/* "Home is on" highlight — bento accent, strongest under the logo, gradient-
-   fading rightward into the other sections. Masked to the filleted shape. */
-.v3-nav-hi {
+/* Frosted-glass fill, clipped to the console shape */
+.v3-nav-glass {
   position: absolute; inset: 0;
-  z-index: 1; pointer-events: none;
-  /* Solid bento box color across the home cell, then an eased feather so the
-     bleed reads fluid rather than a hard ramp — kept tight (~25%→36%). */
-  --hi: var(--v3-box1-color, #2a1e22);
-  background: linear-gradient(90deg,
-      var(--hi) 0%,
-      var(--hi) 26%,
-      color-mix(in srgb, var(--hi) 78%, transparent) 27.5%,
-      color-mix(in srgb, var(--hi) 40%, transparent) 29%,
-      color-mix(in srgb, var(--hi) 12%, transparent) 30.5%,
-      transparent 32%);
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 553 131' preserveAspectRatio='none'%3E%3Cpath d='M500.7 49.7942C535.714 49.7942 552.5 41.9079 552.5 0V18.3881V56.4474V130H0.5V69.7942C0.5 58.7485 9.42773 49.7942 20.4734 49.7942H421.959H500.7Z' fill='%23fff'/%3E%3C/svg%3E") no-repeat center / 100% 100%;
-          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 553 131' preserveAspectRatio='none'%3E%3Cpath d='M500.7 49.7942C535.714 49.7942 552.5 41.9079 552.5 0V18.3881V56.4474V130H0.5V69.7942C0.5 58.7485 9.42773 49.7942 20.4734 49.7942H421.959H500.7Z' fill='%23fff'/%3E%3C/svg%3E") no-repeat center / 100% 100%;
+  z-index: 0; pointer-events: none;
+  background: rgba(26,26,32,0.42);
+  -webkit-backdrop-filter: blur(22px) saturate(175%);
+          backdrop-filter: blur(22px) saturate(175%);
+  box-shadow: 0 10px 34px rgba(0,0,0,0.42);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 553 126' preserveAspectRatio='none'%3E%3Cpath d='M517.5 125H35.5C16.17 125 0.5 109.33 0.5 90V79.7942C0.5 60.4642 16.17 44.7942 35.5 44.7942L47.3137 44.7942C58.1862 44.7942 67 35.9803 67 25.1079C67 11.5173 78.0173 0.5 91.6079 0.5L460.892 0.500022C474.483 0.500023 485.5 11.5174 485.5 25.1079C485.5 35.9804 494.314 44.7942 505.186 44.7942H517.5C536.83 44.7942 552.5 60.4642 552.5 79.7942V90C552.5 109.33 536.83 125 517.5 125Z' fill='%23fff'/%3E%3C/svg%3E") no-repeat center / 100% 100%;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 553 126' preserveAspectRatio='none'%3E%3Cpath d='M517.5 125H35.5C16.17 125 0.5 109.33 0.5 90V79.7942C0.5 60.4642 16.17 44.7942 35.5 44.7942L47.3137 44.7942C58.1862 44.7942 67 35.9803 67 25.1079C67 11.5173 78.0173 0.5 91.6079 0.5L460.892 0.500022C474.483 0.500023 485.5 11.5174 485.5 25.1079C485.5 35.9804 494.314 44.7942 505.186 44.7942H517.5C536.83 44.7942 552.5 60.4642 552.5 79.7942V90C552.5 109.33 536.83 125 517.5 125Z' fill='%23fff'/%3E%3C/svg%3E") no-repeat center / 100% 100%;
 }
-/* The silhouette. Fill = screen bg so it reads as a continuous shelf;
-   a hairline stroke outlines it. Stretched to the box (preserveAspectRatio
-   none) — overlays use % of the same box so they stay aligned. */
+/* Hairline outline over the glass */
 .v3-nav-shape {
   position: absolute; inset: 0;
   width: 100%; height: 100%;
-  color: #111116;                 /* drives fill via currentColor */
-  z-index: 0;
+  z-index: 1; pointer-events: none;
 }
 .v3-nav-shape path {
-  fill: currentColor;
-  stroke: rgba(255,255,255,0.10);
+  fill: none;
+  stroke: rgba(255,255,255,0.2);
   stroke-width: 1;
   vector-effect: non-scaling-stroke;
 }
-
-/* Logo — occupies the full-height left column (sits raised, in the swoop) */
-.v3-nav-logo {
-  position: absolute; left: 0; top: 44%; bottom: 3px; width: 26%;
-  display: flex; align-items: center; justify-content: center;
-  background: none; border: none; cursor: pointer; padding: 0;
-  z-index: 2;
-}
-.v3-nav-logo svg {
-  width: 22px; height: 22px; display: block;
-  color: #e8e2d6;   /* off-white — reads on the dark home highlight in both themes */
-  transition: transform .18s;
-}
-.v3-nav-logo:hover svg { transform: scale(1.08); }
-
-/* Items — live in the lower strip (top: 44.2% ≈ the fillet's bottom edge) */
+/* 4 buttons — spread across the lower bar (below the center hump) */
 .v3-nav-items {
-  position: absolute; left: 26%; right: 0; top: 44.2%; bottom: 0;
+  position: absolute; left: 0; right: 0; top: 40%; bottom: 0;
   display: flex; align-items: center; justify-content: space-around;
   z-index: 2;
 }
 .v3-nav-item {
-  position: relative;
   flex: 1; height: 100%;
   background: none; border: none; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  color: rgba(232,226,214,0.34);
-  transition: color .18s;
+  color: rgba(232,226,214,0.45);
+  transition: color .18s, transform .1s;
 }
 .v3-nav-item.active { color: #e8e2d6; }
-.v3-nav-item svg { width: 20px; height: 20px; position: relative; z-index: 1; transition: transform .18s; }
-/* Section divider — soft vertical hairline that fades out at both ends (no harsh cutoff) */
-.v3-nav-item::before {
-  content: ''; position: absolute; left: 0; top: 16%; bottom: 16%;
-  width: 1px;
-  background: linear-gradient(rgba(232,226,214,0) 0%, rgba(232,226,214,0.16) 45%, rgba(232,226,214,0.16) 55%, rgba(232,226,214,0) 100%);
-}
-/* Glossy hover fill — bento accent, VAIO / early-2000s MP3 sheen */
-.v3-nav-item::after {
-  content: ''; position: absolute; left: 8%; right: 8%; top: 12%; bottom: 12%;
-  border-radius: 7px;
-  background: linear-gradient(color-mix(in srgb, var(--v3-accent) 34%, transparent), color-mix(in srgb, var(--v3-accent) 10%, transparent));
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.20);
-  opacity: 0; transition: opacity .18s;
-  pointer-events: none;
-}
+.v3-nav-item svg { width: 21px; height: 21px; transition: transform .18s; }
 .v3-nav-item:hover { color: #e8e2d6; }
-.v3-nav-item:hover::after { opacity: 1; }
-.v3-nav-item:hover svg { transform: scale(1.09); }
-
-/* Hand-layout toggle switch — reflects .s-home-v3--left, fires toggleHand() */
-/* Floats in the empty space to the right of the 75% shelf, aligned to the icon strip */
-.v3-nav-toggle {
-  position: absolute;
-  left: 0; right: 74%; top: 44.2%; bottom: 7px;   /* lifted 7px off the bottom */
-  display: flex; align-items: center; justify-content: center;
-  background: none; border: none; cursor: pointer; padding: 0;
-  z-index: 2;
-}
-.v3-nav-switch {
-  position: relative;
-  width: 34px; height: 18px; border-radius: 999px;
-  background: #34343c;              /* solid (no longer translucent) */
-  transition: background .2s;
-}
-.v3-nav-knob {
-  position: absolute; top: 2px; left: 2px;
-  width: 14px; height: 14px; border-radius: 50%;
-  background: #e8e2d6;
-  transition: transform .2s;
-  transform: translateX(16px);          /* right-hand state (default off) */
-}
-.s-home-v3--left .v3-nav-knob { transform: translateX(0); }   /* left-hand */
-.s-home-v3--left .v3-nav-switch { background: #56565f; }   /* on = solid, lighter */
+.v3-nav-item:hover svg { transform: scale(1.1); }
+.v3-nav-item:active { transform: scale(0.92); }
 
 /* Registered property so --v3-accent can be CSS-transitioned */
 @property --v3-accent {
@@ -2785,6 +2707,9 @@
   flex-shrink: 0;
   margin: 10px 10px 22px;
 }
+/* Hand swap: the only cell that slides is the For You box (it has a left transition) —
+   freeze it so it snaps instead of floating across. The arrow dots morph visibly. */
+.v3-hand-swapping .v3-for-single { transition: none; }
 
 /* Background fill SVG — fills only inside the outer bento frame shape */
 .v3-bg-fill {
@@ -3189,6 +3114,23 @@
   z-index: 6;
 }
 .s-home-v3--left .v3-live-pill { left: 0.07%; right: auto; }
+/* Hand-layout switch — now lives inside the Live pill (bento state); Back replaces it in review */
+.v3-live-pill .v3-nav-switch {
+  position: relative;
+  width: 30px; height: 16px; border-radius: 999px;
+  background: #34343c; transition: background .2s;
+}
+.v3-live-pill .v3-nav-knob {
+  position: absolute; top: 2px; left: 2px;
+  width: 12px; height: 12px; border-radius: 50%;
+  background: #e8e2d6; transition: transform .2s;
+  transform: translateX(14px);            /* right-hand (default off) */
+}
+.s-home-v3--left .v3-live-pill .v3-nav-knob { transform: translateX(0); }   /* left-hand */
+.s-home-v3--left .v3-live-pill .v3-nav-switch { background: #56565f; }
+.s-home-v3--light .v3-live-pill .v3-nav-switch { background: #cfc9be; }
+.s-home-v3--light .v3-live-pill .v3-nav-knob { background: #1a1208; }
+.s-home-v3--light.s-home-v3--left .v3-live-pill .v3-nav-switch { background: #b3ab9d; }
 .v3-live-dot {
   width: 7px; height: 7px; border-radius: 50%;
   background: #e6484d; flex-shrink: 0;
@@ -3202,46 +3144,61 @@
 .v3-ring {
   position: relative;
   width: 20px; height: 20px;
-  color: rgba(232,226,214,0.85);
+  color: #e8e2d6;
 }
-.s-home-v3--light .v3-ring { color: rgba(26,18,8,0.7); }
+.s-home-v3--light .v3-ring { color: #1a1208; }
 .v3-ring-spin {
   position: absolute; inset: 0;
-  animation: v3ringspin 7s linear infinite;   /* idle: slow spin */
+  animation: none;   /* static idle — the reaction classes (swipe/foryou/cd) drive motion */
 }
 .v3-ring-dot {
   position: absolute; top: 50%; left: 50%;
-  width: 3px; height: 3px; margin: -1.5px;
-  border-radius: 50%;
+  width: 3px; height: 3px; margin: -1.5px;   /* slightly smaller */
+  border-radius: 50%;                        /* circles */
   background: currentColor;
+  transition: transform 0.4s cubic-bezier(0.34, 1.45, 0.5, 1);   /* the dots MORPH between formations */
 }
-.v3-ring-dot:nth-child(1) { transform: rotate(0deg)   translateY(-7.5px); }
-.v3-ring-dot:nth-child(2) { transform: rotate(60deg)  translateY(-7.5px); }
-.v3-ring-dot:nth-child(3) { transform: rotate(120deg) translateY(-7.5px); }
-.v3-ring-dot:nth-child(4) { transform: rotate(180deg) translateY(-7.5px); }
-.v3-ring-dot:nth-child(5) { transform: rotate(240deg) translateY(-7.5px); }
-.v3-ring-dot:nth-child(6) { transform: rotate(300deg) translateY(-7.5px); }
-@keyframes v3ringspin { to { transform: rotate(360deg); } }
+/* For You bloom is snappier than the others */
+.v3-ring--foryou .v3-ring-dot { transition-duration: 0.2s; }
+/* ── Formation: ARROW (idle) — points left. Tail dots slid 2px toward the front. ── */
+.v3-ring-dot:nth-child(1) { transform: translate(5px, 0); }    /* tail  (was 7) */
+.v3-ring-dot:nth-child(2) { transform: translate(1px, 0); }    /* shaft (was 3) */
+.v3-ring-dot:nth-child(3) { transform: translate(-3px, 0); }   /* shaft (was -1) */
+.v3-ring-dot:nth-child(4) { transform: translate(-7px, 0); }   /* tip */
+.v3-ring-dot:nth-child(5) { transform: translate(-5px, -4px); } /* upper head arm — 2px toward the tip */
+.v3-ring-dot:nth-child(6) { transform: translate(-5px, 4px); }  /* lower head arm — 2px toward the tip */
+/* left-hand → the dots slide to the MIRRORED arrow (points right) */
+.s-home-v3--left .v3-ring-dot:nth-child(1) { transform: translate(-5px, 0); }
+.s-home-v3--left .v3-ring-dot:nth-child(2) { transform: translate(-1px, 0); }
+.s-home-v3--left .v3-ring-dot:nth-child(3) { transform: translate(3px,  0); }
+.s-home-v3--left .v3-ring-dot:nth-child(4) { transform: translate(7px,  0); }
+.s-home-v3--left .v3-ring-dot:nth-child(5) { transform: translate(5px, -4px); }
+.s-home-v3--left .v3-ring-dot:nth-child(6) { transform: translate(5px,  4px); }
+/* ── Formation: SWIPE — the dots separate into a ring (hexagon) ── */
+.v3-ring--swipe .v3-ring-dot:nth-child(1) { transform: translate(0, -7px); }
+.v3-ring--swipe .v3-ring-dot:nth-child(2) { transform: translate(6px, -3.5px); }
+.v3-ring--swipe .v3-ring-dot:nth-child(3) { transform: translate(6px, 3.5px); }
+.v3-ring--swipe .v3-ring-dot:nth-child(4) { transform: translate(0, 7px); }
+.v3-ring--swipe .v3-ring-dot:nth-child(5) { transform: translate(-6px, 3.5px); }
+.v3-ring--swipe .v3-ring-dot:nth-child(6) { transform: translate(-6px, -3.5px); }
+/* ── Formation: FOR YOU — the dots scatter outward (a bloom), distinct from the ring ── */
+.v3-ring--foryou .v3-ring-dot:nth-child(1) { transform: translate(-9px, -3px); }
+.v3-ring--foryou .v3-ring-dot:nth-child(2) { transform: translate(-4px, 8px); }
+.v3-ring--foryou .v3-ring-dot:nth-child(3) { transform: translate(4px, -8px); }
+.v3-ring--foryou .v3-ring-dot:nth-child(4) { transform: translate(9px, 3px); }
+.v3-ring--foryou .v3-ring-dot:nth-child(5) { transform: translate(-8px, 6px); }
+.v3-ring--foryou .v3-ring-dot:nth-child(6) { transform: translate(8px, -6px); }
+/* ── Formation: CD — the dots snap into a tight 2×3 grid ── */
+.v3-ring--cd .v3-ring-dot:nth-child(1) { transform: translate(-3px, -4px); }
+.v3-ring--cd .v3-ring-dot:nth-child(2) { transform: translate(-3px, 0); }
+.v3-ring--cd .v3-ring-dot:nth-child(3) { transform: translate(-3px, 4px); }
+.v3-ring--cd .v3-ring-dot:nth-child(4) { transform: translate(3px, -4px); }
+.v3-ring--cd .v3-ring-dot:nth-child(5) { transform: translate(3px, 0); }
+.v3-ring--cd .v3-ring-dot:nth-child(6) { transform: translate(3px, 4px); }
 
-/* Swipe: one quick full spin (on the rotating layer) */
-.v3-ring--swipe .v3-ring-spin { animation: v3ringswipe 0.6s cubic-bezier(0.34,1.2,0.64,1); }
-@keyframes v3ringswipe { from { transform: rotate(0); } to { transform: rotate(360deg); } }
-
-/* For You tap: the ring pops outward (composes over the spin) */
-.v3-ring--foryou { animation: v3ringpop 0.5s ease; }
-@keyframes v3ringpop {
-  0% { transform: scale(1); }
-  35% { transform: scale(1.45); }
-  100% { transform: scale(1); }
-}
-
-/* CD tap: a quick wobble */
-.v3-ring--cd { animation: v3ringwobble 0.5s ease; }
-@keyframes v3ringwobble {
-  0%, 100% { transform: rotate(0); }
-  25% { transform: rotate(-22deg); }
-  75% { transform: rotate(22deg); }
-}
+/* Swipe rotation is driven live from the drag (see setupAlbumSwipe): partial turn while
+   dragging, completing a full spin on commit — so it feels tactile. */
+.v3-ring-spin { will-change: transform; }
 @keyframes v3livepulse {
   0%,100% { opacity: 1; }
   50%     { opacity: 0.45; }
@@ -3939,7 +3896,7 @@
 .s-home-v3--light .v3-friend-quote { color: rgba(26,18,8,0.5); }
 .s-home-v3--light .v3-friend-likes { color: rgba(26,18,8,0.28); }
 .s-home-v3--light .v3-nav-item {
-  color: rgba(26,18,8,0.32);
+  color: rgba(26,18,8,0.4);
 }
 .s-home-v3--light .v3-nav-item.active {
   color: #1a1208;
@@ -3948,17 +3905,9 @@
   background: rgba(26,18,8,0.18);
   color: rgba(26,18,8,0.85);
 }
-.s-home-v3--light .v3-nav-shape { color: #f0ece3; }
-.s-home-v3--light .v3-nav-shape path { stroke: rgba(26,18,8,0.12); }
-.s-home-v3--light .v3-nav-switch { background: #cfc9be; }
-.s-home-v3--light.s-home-v3--left .v3-nav-switch { background: #b3ab9d; }
-.s-home-v3--light .v3-nav-knob { background: #1a1208; }
-.s-home-v3--light .v3-nav-item::before {
-  background: linear-gradient(rgba(26,18,8,0) 0%, rgba(26,18,8,0.16) 45%, rgba(26,18,8,0.16) 55%, rgba(26,18,8,0) 100%);
-}
-.s-home-v3--light .v3-nav-item::after {
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.55);   /* keeps accent bg from base rule */
-}
+/* Glass console — light theme (frosted cream) */
+.s-home-v3--light .v3-nav-glass { background: rgba(255,255,255,0.5); box-shadow: 0 10px 34px rgba(30,20,10,0.16); }
+.s-home-v3--light .v3-nav-shape path { stroke: rgba(26,18,8,0.16); }
 /* Blue box - light */
 .s-home-v3--light .v3-blue {
   background: transparent;
