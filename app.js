@@ -1352,6 +1352,30 @@ window.togglePreview = function (e) {
 const COLOR_CACHE   = new Map();   // image url → { accent, box1, box2, box1color }
 const COLOR_PENDING = new Map();   // image url → in-flight Promise (dedupe concurrent loads)
 
+// ROYGBIV hue buckets — perceptual ranges (not equal 360/7 slices), index 0=red … 6=violet.
+// Red wraps around 0°. Used to vote for the album's dominant hue family by pixel area.
+function hueBucket(h) {
+  if (h < 15 || h >= 345) return 0;   // red
+  if (h < 45)  return 1;              // orange
+  if (h < 70)  return 2;              // yellow
+  if (h < 165) return 3;             // green
+  if (h < 255) return 4;             // blue
+  if (h < 290) return 5;             // indigo
+  return 6;                          // violet
+}
+// HSV → RGB.  h∈[0,360)  s,v∈[0,1]  →  [r,g,b] in 0..255
+function hsv2rgb(h, s, v) {
+  const c = v * s, x = c * (1 - Math.abs((h / 60) % 2 - 1)), m = v - c;
+  let r, g, b;
+  if (h < 60)       [r,g,b] = [c,x,0];
+  else if (h < 120) [r,g,b] = [x,c,0];
+  else if (h < 180) [r,g,b] = [0,c,x];
+  else if (h < 240) [r,g,b] = [0,x,c];
+  else if (h < 300) [r,g,b] = [x,0,c];
+  else              [r,g,b] = [c,0,x];
+  return [(r + m) * 255, (g + m) * 255, (b + m) * 255];
+}
+
 // Extract the palette for one image URL. Resolves from cache instantly if present,
 // dedupes concurrent extractions, and never rejects: on a tainted canvas (file://) or
 // load error it resolves null so callers keep the CSS defaults.
@@ -1372,38 +1396,46 @@ function computeAlbumColors(url) {
         ctx.drawImage(img, 0, 0, sz, sz);
         const d = ctx.getImageData(0, 0, sz, sz).data;
 
-        // Pass 1: overall average, saturation-weighted vibrant colour, and mean saturation.
-        let tR = 0, tG = 0, tB = 0, n = 0;   // overall average
-        let wR = 0, wG = 0, wB = 0, wSum = 0; // saturation-weighted vibrant colour
-        let satSum = 0;                        // colourfulness of the whole cover
+        // Pass 1: greyscale stats + a 7-bucket ROYGBIV hue histogram of the COLOURED pixels.
+        // The dominant hue is chosen by AREA ALONE (no saturation/brightness weighting) — that
+        // is what stops mixed covers collapsing into one homogenous brown. Saturation/brightness
+        // only come in afterwards, to shape the representative colour inside the winning bucket.
+        let tR = 0, tG = 0, tB = 0, n = 0;   // overall average (greyscale detection)
+        let satSum = 0, darkCount = 0;         // colourfulness + how much of the cover is near-black
+        const SATFLOOR = 0.12;                 // below this a pixel is near-grey → hue is noise, no vote
+        const NB = 7;
+        const hCount = new Array(NB).fill(0);              // AREA vote per hue bucket
+        const hSin = new Array(NB).fill(0), hCos = new Array(NB).fill(0);   // count-weighted hue (circular mean)
+        const sW = new Array(NB).fill(0), s2 = new Array(NB).fill(0), vW = new Array(NB).fill(0); // sat/val, sat-weighted
         for (let i = 0; i < d.length; i += 4) {
           if (d[i+3] < 120) continue;
           const r = d[i], g = d[i+1], b = d[i+2];
-          const mx = Math.max(r,g,b), mn = Math.min(r,g,b);
-          const sat = mx ? (mx-mn)/mx : 0;
+          const mx = Math.max(r,g,b), mn = Math.min(r,g,b), dd = mx - mn;
+          const sat = mx ? dd/mx : 0;
+          const val = mx / 255;
           const lum = (mx+mn)/510;
           tR += r; tG += g; tB += b; n++;
           satSum += sat;
-          // Weighted HUE vote. Normalise each pixel to full brightness (max channel → 255)
-          // before adding it in, so a DARK saturated navy counts as much as a BRIGHT warm
-          // pixel — otherwise raw-RGB averaging is biased toward bright pixels and a small
-          // warm highlight beats a large dark-blue field. Weight by area × vividness (sat²).
-          // Low floor keeps deep-but-saturated colours in the vote; only true black is cut.
-          if (lum > 0.05 && lum < 0.95) {
-            const norm = 255 / mx;
-            const w = sat * sat;
-            wR += r*norm*w; wG += g*norm*w; wB += b*norm*w; wSum += w;
-          }
+          if (lum <= 0.05 || (sat < SATFLOOR && lum < 0.22)) darkCount++;   // near-black / very-dark neutral
+          if (sat < SATFLOOR || lum <= 0.05 || lum >= 0.97) continue;   // only vivid-enough pixels vote a hue
+          let h = 0;
+          if (dd) { h = (mx===r) ? ((g-b)/dd)%6 : (mx===g) ? (b-r)/dd+2 : (r-g)/dd+4; h *= 60; if (h < 0) h += 360; }
+          const bk = hueBucket(h), rad = h * Math.PI/180;
+          hCount[bk] += 1;                     // pure area — one pixel, one vote
+          hSin[bk] += Math.sin(rad); hCos[bk] += Math.cos(rad);
+          sW[bk] += sat; s2[bk] += sat*sat; vW[bk] += val*sat;
         }
         if (!n) { resolve(null); return; }
 
         const meanSat = satSum / n;                  // ~0 greyscale · ~0.3+ colourful
+        const votes = hCount.reduce((a,c)=>a+c, 0);  // how many pixels had a real hue
+        const darkFrac = darkCount / n;              // black-dominant covers → neutral grey, not mud
         const cl  = v => Math.max(0, Math.min(255, Math.round(v)));
         const hex = v => cl(v).toString(16).padStart(2,'0');
 
         let accent, b1r, b1g, b1b, box1, box2;
 
-        if (meanSat < 0.10 || wSum === 0) {
+        if (meanSat < 0.10 || votes < n * 0.02) {
         // ── Near-greyscale cover → stay dark, but carry the cover's subtle tint ──
         // B&W covers still lean faintly warm (sepia/film) or cool (silver/cyanotype).
         // Pull that cast out of the mean colour and amplify it onto a FIXED dark box,
@@ -1423,9 +1455,32 @@ function computeAlbumColors(url) {
         const aBase = 172;                         // fixed readable lightness, tinted to match
         const accAmp = 4.6;
         accent = `#${hex(aBase + rawR * accAmp)}${hex(aBase + rawG * accAmp)}${hex(aBase + rawB * accAmp)}`;
+      } else if (darkFrac >= 0.33) {
+        // ── Black-dominant / high-contrast cover → NEUTRAL grey ──
+        // e.g. a black cover with a vivid accent (black + yellow). The dark tone dominates,
+        // and averaging it WITH the accent is exactly what made the muddy brown — so render a
+        // clean neutral grey bento with no hue tint at all.
+        b1r = 42; b1g = 42; b1b = 46;
+        box1 = `linear-gradient(155deg,rgb(42,42,46),rgb(50,50,55))`;
+        box2 = `linear-gradient(155deg,rgb(22,22,26),rgb(28,28,33))`;
+        accent = '#b9b9c1';
       } else {
-        // ── Colourful cover → vibrant accent from the weighted average ───
-        const ar = wR/wSum, ag = wG/wSum, ab = wB/wSum;
+        // ── Colourful cover → dominant ROYGBIV hue → representative accent ──
+        // Winning bucket = most pixel area. On a tie, >= resolves to the HIGHER bucket
+        // (violet-ward), per spec ("in even numbers take the highest one").
+        let dom = 0;
+        for (let k = 1; k < NB; k++) if (hCount[k] >= hCount[dom]) dom = k;
+        // Representative colour of that hue family:
+        //   hue  = circular mean of the bucket's pixels
+        //   sat  = Σsat²/Σsat  (leans toward the family's more vivid pixels, not the muddy ones)
+        //   val  = Σ(val·sat)/Σsat  (brightness of the coloured pixels, not the dark background)
+        let Hd = Math.atan2(hSin[dom], hCos[dom]) * 180/Math.PI; if (Hd < 0) Hd += 360;
+        let Sd = sW[dom] ? s2[dom]/sW[dom] : 0.5;
+        let Vd = sW[dom] ? vW[dom]/sW[dom] : 0.6;
+        Sd = Math.max(0.42, Math.min(1, Sd));       // floors keep the bento from sliding back to mud
+        Vd = Math.max(0.45, Math.min(1, Vd));
+        const rep = hsv2rgb(Hd, Sd, Vd);
+        const ar = rep[0], ag = rep[1], ab = rep[2];
         let bAR = ar, bAG = ag, bAB = ab;
         const aLum = (Math.max(bAR,bAG,bAB) + Math.min(bAR,bAG,bAB)) / 510;
         if (aLum < 0.55) {                          // boost so the score reads on dark
