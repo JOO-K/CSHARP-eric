@@ -3142,37 +3142,11 @@
 /* Live pill ring — 6 dots in a ring. Idle = slow spin; reacts to swipe / For You / CD. */
 .v3-ring {
   position: relative;
-  display: inline-block;   /* REQUIRED: transform is ignored on inline elements, so the idle animation below is a no-op without this */
+  display: inline-block;   /* keeps the 20×20 box explicit (span would otherwise be inline) */
   width: 20px; height: 20px;
   color: #e8e2d6;
-  /* Idle "breath": once per cycle the whole formation spreads slightly and nudges
-     toward the arrow tip, then settles — so the arrow feels alive, not frozen.
-     Lives on .v3-ring (not .v3-ring-spin) because the swipe rotation writes an inline
-     transform onto .v3-ring-spin; keeping them on separate elements lets both compose. */
-  animation: v3-ring-idle 5s ease-in-out infinite;
 }
 .s-home-v3--light .v3-ring { color: #1a1208; }
-/* left-hand → arrow points right, so the idle nudge mirrors */
-.s-home-v3--left .v3-ring { animation-name: v3-ring-idle-left; }
-/* A clear two-beat "point" gesture toward the tip (with a slight spread), once per 5s.
-   Rests ~3s, then double-nudges — deliberate enough to read as alive, not a frozen blip. */
-@keyframes v3-ring-idle {
-  0%, 58%, 100% { transform: translateX(0)     scale(1); }
-  66%           { transform: translateX(-3px)  scale(1.16); }  /* nudge toward tip (left) */
-  74%           { transform: translateX(0.5px) scale(1.02); }  /* recoil */
-  82%           { transform: translateX(-2.4px) scale(1.12); } /* second, smaller nudge */
-  90%           { transform: translateX(0)     scale(1); }
-}
-@keyframes v3-ring-idle-left {   /* mirrored: arrow points right */
-  0%, 58%, 100% { transform: translateX(0)      scale(1); }
-  66%           { transform: translateX(3px)    scale(1.16); }
-  74%           { transform: translateX(-0.5px) scale(1.02); }
-  82%           { transform: translateX(2.4px)  scale(1.12); }
-  90%           { transform: translateX(0)      scale(1); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .v3-ring { animation: none; }
-}
 .v3-ring-spin {
   position: absolute; inset: 0;
   animation: none;   /* static idle — the reaction classes (swipe/foryou/cd) drive motion */
@@ -3183,7 +3157,39 @@
   border-radius: 50%;                        /* circles */
   background: currentColor;
   transition: transform 0.4s cubic-bezier(0.34, 1.45, 0.5, 1);   /* the dots MORPH between formations */
+  /* Idle emphasis: each dot eases OUTWARD from the arrow's centre, holds briefly, then
+     settles back — once every 5s. Rides on the independent `translate` property so it
+     COMPOSES with the formation `transform` above instead of overwriting it. Per-dot
+     outward vector comes from --sx/--sy (set below); centre-ish dots barely move. */
+  animation: v3-dot-sep 5s ease-in-out infinite;
 }
+@keyframes v3-dot-sep {
+  0%, 55%, 100% { translate: 0 0; }
+  70%, 80%      { translate: var(--sx, 0) var(--sy, 0); }
+}
+/* Pause the emphasis while the dots are in a reaction formation (swipe / For You / CD),
+   so the pulse never fights the morph; it resumes once they reform the arrow. */
+.v3-ring--swipe  .v3-ring-dot,
+.v3-ring--foryou .v3-ring-dot,
+.v3-ring--cd     .v3-ring-dot { animation: none; translate: 0 0; }
+@media (prefers-reduced-motion: reduce) {
+  .v3-ring-dot { animation: none; }
+}
+/* Outward separation vectors — right-hand arrow (points left). Tail pushes right, tip
+   pushes left, the head arms fan out diagonally, the shaft (centre) barely stirs. */
+.v3-ring-dot:nth-child(1) { --sx: 2.6px;  --sy: 0; }     /* tail → out (right) */
+.v3-ring-dot:nth-child(2) { --sx: 0.8px;  --sy: 0; }     /* shaft → tiny */
+.v3-ring-dot:nth-child(3) { --sx: -0.8px; --sy: 0; }     /* shaft → tiny */
+.v3-ring-dot:nth-child(4) { --sx: -2.6px; --sy: 0; }     /* tip → out (left) */
+.v3-ring-dot:nth-child(5) { --sx: -1px;   --sy: -2.4px; }/* upper arm → diagonal out */
+.v3-ring-dot:nth-child(6) { --sx: -1px;   --sy: 2.4px; } /* lower arm → diagonal out */
+/* left-hand arrow (points right) → mirror the x component */
+.s-home-v3--left .v3-ring-dot:nth-child(1) { --sx: -2.6px; }
+.s-home-v3--left .v3-ring-dot:nth-child(2) { --sx: -0.8px; }
+.s-home-v3--left .v3-ring-dot:nth-child(3) { --sx: 0.8px; }
+.s-home-v3--left .v3-ring-dot:nth-child(4) { --sx: 2.6px; }
+.s-home-v3--left .v3-ring-dot:nth-child(5) { --sx: 1px; }
+.s-home-v3--left .v3-ring-dot:nth-child(6) { --sx: 1px; }
 /* For You bloom is snappier than the others */
 .v3-ring--foryou .v3-ring-dot { transition-duration: 0.2s; }
 /* ── Formation: ARROW (idle) — points left. Tail dots slid 2px toward the front. ── */
