@@ -207,8 +207,10 @@ function setMainAlbum(screenEl, album, animate = false, animateText = animate) {
   // In fullscreen review, a 2-line album title needs the CTA pushed down a line
   if (albumNameEl && screenEl.classList.contains('s-home-v3--review')) {
     albumNameEl.textContent = album.album;                 // full text for a sync measure
-    const lh = parseFloat(getComputedStyle(albumNameEl).lineHeight) || 28;
-    screenEl.classList.toggle('v3-rev-title-2line', albumNameEl.offsetHeight > lh * 1.5);
+    // .v3-blue-album is display:inline in review — its bounding box spans all line boxes,
+    // so height > 1.5 lines means the title wrapped to two lines (offsetHeight would lie).
+    const lh2 = parseFloat(getComputedStyle(albumNameEl).lineHeight) || 20;
+    screenEl.classList.toggle('v3-rev-title-2line', albumNameEl.getBoundingClientRect().height > lh2 * 1.5);
     if (animateText) albumNameEl.textContent = '';         // let the typewrite refill from empty
   }
 
@@ -282,10 +284,16 @@ window.enterReview = function (scr) {
     // 3. Album typewrites back in below the artist, at the larger 18px size
     if (album) {
       album.style.opacity = '1';
-      // Measure the full title first (sync reflow) so a 2-line album name pushes the CTA down a line
       album.textContent = albumText;
-      const lh = parseFloat(getComputedStyle(album).lineHeight) || 28;
-      scr.classList.toggle('v3-rev-title-2line', album.offsetHeight > lh * 1.5);
+      // The review font-size (18px) is still mid-transition here, so force it (no tween) to
+      // measure wrapping at the FINAL size. An inline element's bounding box spans all its
+      // line boxes, so height > 1.5 lines ⇒ the title wrapped to two lines.
+      album.style.transition = 'none';
+      album.style.fontSize = '18px';
+      const lh2 = parseFloat(getComputedStyle(album).lineHeight) || 20;
+      scr.classList.toggle('v3-rev-title-2line', album.getBoundingClientRect().height > lh2 * 1.5);
+      album.style.transition = '';
+      album.style.fontSize = '';
       typewrite(album, albumText, 24);
     }
   }, 170);
@@ -305,6 +313,47 @@ window.onAlbumArt = function (el) {
   navigate('album');
 };
 
+// ── Artist page — an --artist variation of the album page: banner instead of the
+//    square cover, no CD / tracklist, artist + genre text, and a grid of albums below.
+const ARTIST_IMG = {
+  'Crystal Castles': 'images/artist-crystalcastles.jpg',
+  'Phoebe Bridgers': 'images/artist-phoebe.jpg',
+  '100 gecs': 'images/artist-100gecs.jpg',
+  'Carpenter Brut': 'images/artist-carpenterbrut.jpg',
+};
+window.onArtistName = function (el) {
+  const scr = el && el.closest('.s-home-v3');
+  if (!scr) return;
+  scr.classList.add('s-home-v3--review', 's-home-v3--album', 's-home-v3--artist');
+  populateReviewPanel(scr);
+  populateArtistPage(scr);
+  const body = scr.querySelector('.v3-body');
+  if (body) body.scrollTop = 0;
+};
+function populateArtistPage(scr) {
+  const a = scr._album || window.activeAlbum || window.featuredAlbum;
+  if (!a) return;
+  const banner = ARTIST_IMG[a.artist] || a.image;
+  const albumEl = scr.querySelector('.v3-album');
+  if (albumEl) albumEl.style.backgroundImage = `url('${banner}')`;
+  const nameEl = scr.querySelector('.v3-blue-album');     // now the artist name
+  if (nameEl) nameEl.textContent = a.artist;
+  const genreEl = scr.querySelector('.v3-blue-artist');   // now the genre
+  if (genreEl) genreEl.textContent = a.genre || '';
+  const grid = scr.querySelector('.v3-artist-albums');
+  if (grid) {
+    const arch = window.ARCHIVE || [];
+    let albums = arch.filter(x => x.artist === a.artist);
+    if (albums.length < 3) albums = albums.concat(arch.filter(x => x.artist !== a.artist)).slice(0, 6);
+    grid.innerHTML = '<div class="wall2-grid">' + albums.map(al => `
+      <div class="wall2-cell" onclick="event.stopPropagation(); openAlbumPage(ARCHIVE.find(x=>x.album==='${al.album.replace(/'/g, "\\'")}')||ARCHIVE[0])">
+        <div class="wall2-art" style="background-image:url('${al.image}')"></div>
+        <div class="wall2-meta"><span class="wall2-album">${al.album}</span><span class="wall2-artist">${al.artist}</span></div>
+        <div class="wall2-rating">${halfStars(al.rating, 11)}<span class="wall2-score">${al.rating.toFixed(1)}</span></div>
+      </div>`).join('') + '</div>';
+  }
+}
+
 window.exitReview = function (scr) {
   if (!scr) return;
   scr.classList.remove('s-home-v3--review');
@@ -319,13 +368,130 @@ window.exitReview = function (scr) {
   const body = scr.querySelector('.v3-body');
   if (body) body.scrollTop = 0;
 };
+// Trending page — Genres / time-range filter panels (in-flow so they don't clip in the scroller).
+function closeWallMenus(scr) {
+  scr.querySelectorAll('.wall2-menu').forEach(m => (m.hidden = true));
+  scr.querySelectorAll('.wall2-drop-btn').forEach(b => b.classList.remove('open'));
+}
+window.toggleWallPanel = function (btn) {
+  const scr = btn.closest('.app-screen');
+  if (!scr) return;
+  const wrap = btn.closest('.wall2-menuwrap');
+  const menu = wrap && wrap.querySelector('.wall2-menu');
+  const wasOpen = menu && !menu.hidden;
+  closeWallMenus(scr);
+  if (menu && !wasOpen) { menu.hidden = false; btn.classList.add('open'); }
+};
+window.pickWallGenre = function (el) {
+  const menu = el.closest('.wall2-menu');
+  if (menu) menu.querySelectorAll('.wall2-menu-item').forEach(g => g.classList.remove('active'));
+  el.classList.add('active');
+  closeWallMenus(el.closest('.app-screen'));
+};
+window.pickWallTime = function (el) {
+  const scr = el.closest('.app-screen');
+  const menu = el.closest('.wall2-menu');
+  if (menu) menu.querySelectorAll('.wall2-menu-item').forEach(o => o.classList.remove('active'));
+  el.classList.add('active');
+  const lbl = scr.querySelector('.wall2-time-label');
+  if (lbl) lbl.textContent = el.textContent.replace(/^(This |Past )/, '');
+  closeWallMenus(scr);
+};
+
+// Open the official album page (the fullscreen --album state on the home shell) for a given
+// album, arriving from another screen (e.g. trending). Back returns to that origin screen.
+window.openAlbumPage = function (album) {
+  if (!album) return;
+  const origin = currentScreen().id;      // e.g. 'wall' — where Back should return to
+  window.activeAlbum = album;
+  navigate('home');
+  // After home renders + populates (2 rAFs), set this album and drop into the album page.
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const homes = [...document.querySelectorAll('.s-home-v3')].filter(el => el.querySelector('.v3-album'));
+    homes.forEach(scr => {
+      scr._albumOrigin = origin;
+      setMainAlbum(scr, album, false);
+      // Land directly on the album page — add both states at once so the fullscreen
+      // review state never flashes on the way in.
+      scr.classList.add('s-home-v3--review', 's-home-v3--album');
+      populateReviewPanel(scr);
+      const body = scr.querySelector('.v3-body');
+      if (body) body.scrollTop = 0;
+      const alb = scr.querySelector('.v3-blue-album');
+      if (alb) {
+        alb.style.transition = 'none'; alb.style.fontSize = '18px';
+        const lh = parseFloat(getComputedStyle(alb).lineHeight) || 20;
+        scr.classList.toggle('v3-rev-title-2line', alb.getBoundingClientRect().height > lh * 1.5);
+        alb.style.transition = ''; alb.style.fontSize = '';
+      }
+    });
+  }));
+};
+
+// Live-pill ring reactions — swipe / For You / CD each fire a distinct animation;
+// idle it spins slowly. (Later this can become a real music visualizer.)
+function reactRing(screenEl, type) {
+  const ring = screenEl && screenEl.querySelector('.v3-ring');
+  if (!ring) return;
+  ring.classList.remove('v3-ring--swipe', 'v3-ring--foryou', 'v3-ring--cd');
+  void ring.offsetWidth;                       // restart the animation if re-triggered
+  ring.classList.add('v3-ring--' + type);
+  clearTimeout(ring._reactT);
+  ring._reactT = setTimeout(() => ring.classList.remove('v3-ring--' + type), 650);
+}
+window.reactRing = reactRing;
+
+// CD tap — react the ring and open the streaming sheet (streaming now lives behind the CD).
+window.onCdTap = function (el, e) {
+  if (e) e.stopPropagation();
+  const scr = el.closest('.s-home-v3');
+  if (!scr) return;
+  reactRing(scr, 'cd');
+  const ov = scr.querySelector('.v3-stream-overlay');
+  if (ov) ov.style.display = 'flex';
+};
+
+// Play a 30s preview from the stream sheet — toggles play/pause on the button itself.
+window.playPreview = function (el, e) {
+  if (e) e.stopPropagation();
+  const album = (window.currentBentoAlbum && currentBentoAlbum()) || window.activeAlbum || window.featuredAlbum;
+  if (!album) return;
+  const a = previewAudioEl();
+  unlockAudio(a);                          // iOS: unlock inside the tap gesture
+  if (el.classList.contains('playing')) { a.pause(); el.classList.remove('playing'); return; }
+  a.onended = () => el.classList.remove('playing');
+  const start = (url) => {
+    if (!url) { el.classList.add('none'); setTimeout(() => el.classList.remove('none'), 1400); return; }
+    if (a.src !== url) { a.src = url; a.currentTime = 0; }
+    a.play().then(() => { PREVIEW.unlocked = true; el.classList.add('playing'); }).catch(() => {});
+  };
+  const cached = PREVIEW_CACHE.get(albumKey(album).toLowerCase());
+  if (cached !== undefined) start(cached);
+  else fetchPreviewUrl(album).then(start);
+};
+
 // Live pill doubles as the back button when review mode is open
 window.onLivePill = function (btn) {
   const scr = btn.closest('.s-home-v3');
+  if (!scr) return;
+  // Artist page → Back returns to the album page (restore the album cover + info).
+  if (scr.classList.contains('s-home-v3--artist')) {
+    scr.classList.remove('s-home-v3--artist');
+    if (scr._album) setMainAlbum(scr, scr._album, false);
+    return;
+  }
+  // Opened from another page (e.g. trending) → Back returns straight there, not to review.
+  if (scr._albumOrigin) {
+    const origin = scr._albumOrigin;
+    scr._albumOrigin = null;
+    exitReview(scr);
+    navigate(origin, 'back');
+    return;
+  }
   // In the album view, Back steps back to the fullscreen review state (not all the way out).
-  if (scr && scr.classList.contains('s-home-v3--album')) { scr.classList.remove('s-home-v3--album'); return; }
-  if (scr && scr.classList.contains('s-home-v3--review')) exitReview(scr);
-  else navigate('feed');
+  if (scr.classList.contains('s-home-v3--album')) { scr.classList.remove('s-home-v3--album'); return; }
+  if (scr.classList.contains('s-home-v3--review')) exitReview(scr);
+  else reactRing(scr, 'foryou');   // regular state: the ring is a living indicator, not a link
 };
 // Tap a star to set your own rating — left half = .5, right half = whole
 window.setMyRating = function (starEl, e) {
@@ -422,7 +588,7 @@ function populateReviewPanel(scr) {
   populateSongList(scr);
   populateComposeMedia(scr);
   const active = scr.querySelector('.v3-rev-filter.active');
-  populateReviewList(scr, active ? active.dataset.f : 'friends');
+  populateReviewList(scr, active ? active.dataset.f : 'popular');
 }
 
 // ── Tracklist under the review CTA ────────────────────────────
@@ -515,9 +681,15 @@ function populateRecTag(scr, album) {
   if (nm) nm.textContent = f.user;
 }
 
-// Photo / media strip under the compose block. Placeholder for now: the album cover
-// plus a rotating handful of other covers standing in for photoshoot / press images.
-// Swap in a real `album.photos` array later to show genuine media.
+// Generic behind-the-scenes / press photos (not album covers) — the media column is
+// meant to be BTS shots. Only artist photos exist so far; swap in a real `album.photos`
+// array per album to show genuine media.
+const BTS_PHOTOS = [
+  'images/artist-phoebe.jpg',
+  'images/artist-crystalcastles.jpg',
+  'images/artist-100gecs.jpg',
+  'images/artist-carpenterbrut.jpg',
+];
 function populateComposeMedia(scr) {
   const strip = scr && scr.querySelector('.v3-rev-media');
   if (!strip) return;
@@ -527,15 +699,13 @@ function populateComposeMedia(scr) {
   if (a && Array.isArray(a.photos) && a.photos.length) {
     imgs = a.photos;                                   // real media once it's wired up
   } else {
-    const idx = arch.indexOf(a);
-    const others = [];
-    for (let i = 1; others.length < 8 && i < arch.length; i++) {
-      others.push(arch[(idx + i) % arch.length].image);
-    }
-    imgs = [a && a.image, ...others].filter(Boolean);
+    // Rotate the generic BTS pool by album index so different albums vary.
+    const off = Math.max(0, arch.indexOf(a));
+    imgs = BTS_PHOTOS.map((_, i) => BTS_PHOTOS[(i + off) % BTS_PHOTOS.length]);
   }
-  strip.innerHTML = imgs.map(src =>
-    `<div class="v3-rev-photo" style="background-image:url('${src}')"></div>`).join('');
+  // The top item is the music video — gets a play button to signal it's playable.
+  strip.innerHTML = imgs.map((src, i) =>
+    `<div class="v3-rev-photo${i === 0 ? ' v3-rev-photo--video' : ''}" style="background-image:url('${src}')">${i === 0 ? '<span class="v3-rev-play"></span>' : ''}</div>`).join('');
 }
 
 // Deterministic engagement meta (time / likes / comments) for a review, so the
@@ -592,8 +762,12 @@ function renderFriendFeed(screenEl) {
           <span class="v3-friend-name">${f.user}</span>
           <span class="v3-friend-time">${f.ago}</span>
         </div>
-        <div class="v3-friend-album">${f.album}</div>
-        <div class="v3-friend-artist">${f.artist} · ${f.year}</div>
+        <div class="v3-friend-meta">
+          <span class="v3-friend-album">${f.album}</span>
+          <span class="v3-friend-sep">·</span>
+          <span class="v3-friend-artist">${f.artist}</span>
+          <span class="v3-friend-date">${f.year}</span>
+        </div>
         <div class="v3-friend-row">
           ${halfStars(f.rating, 10)}
           <span class="v3-friend-likes">♥ ${f.likes}</span>
@@ -603,6 +777,92 @@ function renderFriendFeed(screenEl) {
       </div>
     </div>`;
   }).join('');
+}
+
+// ── Now-playing ticker: what friends are listening to right now ──
+const NOW_WAVE_BARS = 5;
+
+// Build the colorful waveform once per bar (structure is static; CSS animates it).
+function buildNowWave(waveEl) {
+  if (!waveEl || waveEl._built) return;
+  waveEl._built = true;
+  let html = '';
+  for (let i = 0; i < NOW_WAVE_BARS; i++) {
+    const delay = (i * 0.06).toFixed(2);
+    const dur = (0.7 + (i % 5) * 0.13).toFixed(2);
+    html += `<span class="v3-now-bar" style="animation-delay:${delay}s;animation-duration:${dur}s"></span>`;
+  }
+  waveEl.innerHTML = html;
+}
+
+// A shuffled handful of friends "currently listening" — song title is generated
+// deterministically from the album (no real per-song data; mirrors songsFor()).
+function nowFriends() {
+  const src = window.FRIEND_ACTIVITY || [];
+  return [...src].sort(() => Math.random() - 0.5).slice(0, 4).map(f => ({
+    name: f.user,
+    song: (songsFor({ album: f.album, tracks: 10 })[0] || {}).title || 'Untitled',
+    album: f.album,
+    artist: f.artist,
+  }));
+}
+
+function paintNow(textEl, item) {
+  if (!textEl || !item) return;
+  textEl.innerHTML =
+    `<span class="v3-now-name">${item.name}</span>` +
+    `<span class="v3-now-song">${item.song}</span>` +
+    `<span class="v3-now-album">${item.album}</span>` +
+    `<span class="v3-now-artist">${item.artist}</span>`;
+  fitNowText(textEl);
+}
+
+// Grow the ticker text to fill the pill when the names are short: bump font-size
+// (and raise opsz alongside it) until the line nearly spans the available width.
+// Long entries stay at the base size and just condense/ellipsize as before.
+function fitNowText(textEl) {
+  const MIN = 11.5, MAX = 16;
+  const avail = textEl.clientWidth;
+  if (!avail) return;                        // hidden instance — leave at base size
+  let size = MIN;
+  textEl.style.fontSize = size + 'px';
+  while (size < MAX && textEl.scrollWidth < avail - 2) {
+    size += 0.5;
+    textEl.style.fontSize = size + 'px';
+  }
+  if (textEl.scrollWidth > avail && size > MIN) {
+    size -= 0.5;
+    textEl.style.fontSize = size + 'px';
+  }
+  const opsz = Math.max(25, Math.min(48, Math.round(size * 2.6)));
+  textEl.style.fontVariationSettings = `'wdth' 25, 'opsz' ${opsz}`;
+}
+
+function renderNowBar(screenEl) {
+  const bar = screenEl.querySelector('.v3-nowbar');
+  if (!bar) return;
+  const textEl = bar.querySelector('.v3-now-text');
+  const waveEl = bar.querySelector('.v3-now-wave');
+  buildNowWave(waveEl);
+
+  const list = nowFriends();
+  if (!list.length) return;
+
+  if (screenEl._nowTimer) { clearInterval(screenEl._nowTimer); screenEl._nowTimer = null; }
+  let i = 0;
+  paintNow(textEl, list[i]);
+
+  // Shuffle through friends if more than one is listening at once.
+  if (list.length > 1) {
+    screenEl._nowTimer = setInterval(() => {
+      bar.classList.add('is-swapping');            // fade + lift out
+      setTimeout(() => {
+        i = (i + 1) % list.length;
+        paintNow(textEl, list[i]);
+        bar.classList.remove('is-swapping');       // fade back in
+      }, 300);
+    }, 4200);
+  }
 }
 
 // ── Hand layout (left/right) ──────────────────────────────────
@@ -654,6 +914,7 @@ function populateHomeData(screenEl) {
 
   setMainAlbum(screenEl, seq[idx], false);
   renderFriendFeed(screenEl);
+  renderNowBar(screenEl);
 
   const forSingle = screenEl.querySelector('.v3-for-single');
   if (forSingle) {
@@ -661,7 +922,7 @@ function populateHomeData(screenEl) {
     forSingle.style.backgroundImage = `url('${seq[nextIdx].image}')`;
     preloadForYou(seq, nextIdx);
     // Tapping For You promotes the queued album — same as swiping forward
-    forSingle.onclick = (e) => { e.stopPropagation(); applyAlbumIndex(screenEl, (screenEl._albumIdx || 0) + 1, true, true); };
+    forSingle.onclick = (e) => { e.stopPropagation(); reactRing(screenEl, 'foryou'); applyAlbumIndex(screenEl, (screenEl._albumIdx || 0) + 1, true, true); };
   }
 
   setupAlbumSwipe(screenEl);
@@ -731,6 +992,7 @@ function setupAlbumSwipe(screenEl) {
     const basePct = dir < 0 ? 100 : -100;
     const offPct = dir < 0 ? -100 : 100;
     if (committed) {
+      reactRing(screenEl, 'swipe');
       cur.style.transform  = `translateX(${offPct}%)`;
       peek.style.transform = 'translateX(0%)';
       if (fyCur) { fyCur.style.transform = `translateX(${offPct}%)`; fyPeek.style.transform = 'translateX(0%)'; }
@@ -1131,11 +1393,12 @@ function computeAlbumColors(url) {
 
 function applyColorVars(screenEl, c) {
   if (!screenEl || !c) return;
-  const light = screenEl.classList.contains('s-home-v3--light');
   screenEl.style.setProperty('--v3-accent', c.accent);
-  screenEl.style.setProperty('--v3-box1-bg', light ? (c.box1L || c.box1) : c.box1);
-  screenEl.style.setProperty('--v3-box2-bg', light ? (c.box2L || c.box2) : c.box2);
-  screenEl.style.setProperty('--v3-box1-color', light ? (c.box1colorL || c.box1color) : c.box1color);
+  // Bento + fullscreen use the SAME album-derived color in both themes (dark values),
+  // so the light theme no longer lightens the bento/review flood.
+  screenEl.style.setProperty('--v3-box1-bg', c.box1);
+  screenEl.style.setProperty('--v3-box2-bg', c.box2);
+  screenEl.style.setProperty('--v3-box1-color', c.box1color);
 }
 
 // Apply the palette for a KNOWN image URL. Uses the album's own (relative) image, which
@@ -1174,19 +1437,10 @@ function renderSingle() {
   const c = document.getElementById('phone-container');
   const s = currentScreen();
 
-  if (s.variants.length <= 1) {
-    c.className = '';
-    c.innerHTML = `
-      <div class="var-col">
-        ${s.variants[0].version ? `<div class="var-label">${s.variants[0].version}</div>` : ''}
-        <div class="phone-wrap">${buildPhoneHTML(s)}</div>
-      </div>`;
-    setPhoneScale();
-    return;
-  }
-
+  // Always lay out as a 2-up (dark + light) so the phone is the SAME size on every page
+  // and doesn't jump when switching. Pages with one variant just fill the left slot.
   c.className = 'multi-variant';
-  const n      = s.variants.length;
+  const n      = Math.max(s.variants.length, 2);
   const scaleH = (c.clientHeight - 70) / 852;
   const scaleW = (c.clientWidth  / n - 20) / 393;
   const scale  = Math.min(scaleH, scaleW, 0.88);
@@ -1631,7 +1885,7 @@ function ensureLogSheet() {
         <textarea class="sd-log-write" rows="3" placeholder="Write a review…"></textarea>
       </div>
       <div class="sd-log-songs" hidden>
-        <div class="sd-log-songs-hd">Songs <span class="sd-log-songs-sub">optional — only rated or reviewed songs get logged</span></div>
+        <div class="sd-log-songs-hd">Songs <span class="sd-log-songs-sub">optional — only rated songs get logged</span></div>
         <div class="sd-log-songs-list"></div>
       </div>
       <div class="sd-log-foot">
@@ -1685,8 +1939,14 @@ function ensureLogSheet() {
 
 window.openLogSheet = function(triggerEl, subject) {
   const album = (window.currentBentoAlbum && currentBentoAlbum()) || window.activeAlbum || window.featuredAlbum;
-  // subject lets a song (or anything) reuse the sheet; falls back to the album
-  const subj = subject || (album ? { image: album.image, title: album.album, subtitle: album.artist } : null);
+  const scrEl = triggerEl && triggerEl.closest && triggerEl.closest('.s-home-v3');
+  const artistMode = scrEl && scrEl.classList.contains('s-home-v3--artist');
+  // subject lets a song / artist reuse the sheet; falls back to the album
+  let subj = subject;
+  if (!subj) {
+    if (artistMode && album) subj = { image: ARTIST_IMG[album.artist] || album.image, title: album.artist, subtitle: album.genre || '', isArtist: true };
+    else if (album) subj = { image: album.image, title: album.album, subtitle: album.artist };
+  }
   if (!subj) return;
   const host = (triggerEl && triggerEl.closest && triggerEl.closest('.app-screen'))
              || document.querySelector('.app-screen') || document.body;
@@ -1700,9 +1960,19 @@ window.openLogSheet = function(triggerEl, subject) {
   ov.querySelector('.sd-log-write').value = '';
   ov.querySelectorAll('.sd-log-opt').forEach(b => b.classList.remove('on'));
   setLogRating(0);
-  // Album mode → per-song rows below; single-song mode → no nested song list.
-  if (subj.isSong) { const box = ov.querySelector('.sd-log-songs'); if (box) box.hidden = true; }
-  else fillLogSongs(ov, album);
+  // Album mode → per-song rows below; single-song mode → no nested song list,
+  // and no text review (songs are vinyl-rated only).
+  const reviewBox = ov.querySelector('.sd-log-review');
+  if (subj.isSong) {
+    const box = ov.querySelector('.sd-log-songs'); if (box) box.hidden = true;
+    if (reviewBox) reviewBox.hidden = true;                 // song: vinyl only
+  } else if (subj.isArtist) {
+    const box = ov.querySelector('.sd-log-songs'); if (box) box.hidden = true;
+    if (reviewBox) reviewBox.hidden = false;                // artist: vinyl + text review, no songs
+  } else {
+    if (reviewBox) reviewBox.hidden = false;
+    fillLogSongs(ov, album);
+  }
   const sheet = ov.querySelector('.sd-log-sheet');
   if (sheet) sheet.scrollTop = 0;
   requestAnimationFrame(() => ov.classList.add('open'));
@@ -1726,8 +1996,6 @@ function fillLogSongs(ov, album) {
         <span class="sd-log-song-empty">${SDLOG_RECS}</span>
         <span class="sd-log-song-fill" style="width:0">${SDLOG_RECS}</span>
       </span>
-      <button class="sd-log-song-note-btn" aria-label="Add note">${SDLOG_PENCIL}</button>
-      <input class="sd-log-song-note" placeholder="Add a note…" />
     </div>`).join('');
 }
 

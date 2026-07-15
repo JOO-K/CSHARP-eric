@@ -332,7 +332,7 @@ const SCREENS = [
             <!-- FRIEND ACTIVITY — notification pills -->
             <div class="dorf-act-hd">
               <span class="dorf-act-label">Friend Activity</span>
-              <button class="dorf-act-seeall" onclick="navigate('feed')">See all ›</button>
+              <button class="dorf-act-seeall" onclick="navigate('wall')">See all ›</button>
             </div>
             <div class="dorf-act-list">
               <div class="dorf-act-pill" onclick="navigate('album')">
@@ -566,6 +566,32 @@ const SCREENS = [
         html: `
         <div class="app-screen s-home-v3">
 
+          <!-- TOP HEADER: bubble cluster (left) · spindeck wordmark (center) · single bubble (right).
+               Fixed height pushes the bento + everything below it ~100px down the flex column. -->
+          <div class="v3-header">
+            <div class="v3-header-bubbles">
+              <!-- Notifications: friends adding you, replies to your reviews, etc.
+                   .has-notif expands the bubble into a blue pill with the unread count on the right.
+                   Click toggles the state (mockup demo). -->
+              <button class="v3-bubble v3-bubble--notif has-notif" title="Notifications" aria-label="Notifications"
+                      onclick="this.classList.toggle('has-notif')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                <span class="v3-bubble-count">+5</span>
+              </button>
+            </div>
+            <div class="v3-header-logo">spindeck</div>
+            <div class="v3-header-right">
+              <!-- Settings (inner) -->
+              <button class="v3-bubble v3-bubble--settings" title="Settings" aria-label="Settings">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              </button>
+              <!-- Search (outer/rightmost) -->
+              <button class="v3-bubble v3-bubble--search" title="Search" aria-label="Search" onclick="navigate('search')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+              </button>
+            </div>
+          </div>
+
           <!-- Scrollable body: bento + feed scroll together -->
           <div class="v3-body">
 
@@ -598,7 +624,7 @@ const SCREENS = [
               <div class="v3-blue-info-row">
                 <span class="v3-blue-title"><span class="v3-blue-album" onclick="event.stopPropagation(); onAlbumTitle(this)"></span><span class="v3-blue-date v3-blue-date--fs"></span></span>
                 <span class="v3-blue-sep">·</span>
-                <span class="v3-blue-artist"></span>
+                <span class="v3-blue-artist" onclick="event.stopPropagation(); onArtistName(this)"></span>
                 <span class="v3-blue-date v3-blue-date--inline"></span>
               </div>
               <div class="v3-blue-stars-row">
@@ -616,7 +642,7 @@ const SCREENS = [
             <div class="v3-cd"
                  style="background-image:url('images/album-crystalcastles1.png')"
                  title="Play / pause preview"
-                 onclick="togglePreview(event)">
+                 onclick="onCdTap(this, event)">
               <div class="v3-cd-hole"></div>
             </div>
 
@@ -631,7 +657,7 @@ const SCREENS = [
 
             <!-- Live corner button — sits in the bento's top corner notch; becomes Back in review mode -->
             <button class="v3-search-pill v3-live-pill" onclick="event.stopPropagation(); onLivePill(this)">
-              <span class="v3-live-content"><span class="v3-live-dot"></span><span class="v3-live-label">Live</span></span>
+              <span class="v3-live-content"><span class="v3-ring"><span class="v3-ring-spin"><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i></span></span></span>
               <span class="v3-back-content"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Back</span>
             </button>
 
@@ -639,11 +665,6 @@ const SCREENS = [
 
           <!-- SCROLL: app name + friends feed -->
           <div class="v3-scroll-area">
-
-            <div class="v3-feed-hd">
-              <span class="v3-feed-title">Friend Activity</span>
-              <button class="v3-feed-seeall" onclick="navigate('feed')">See all ›</button>
-            </div>
 
             <div class="v3-feed-items"></div>
 
@@ -663,18 +684,9 @@ const SCREENS = [
                  Uses the bento's 78/22 split so it mirrors with the hand layout. -->
             <div class="v3-rev-top">
 
-              <!-- Action grid — 2×3: streaming (left col) · save/fav/shop (right col) -->
-              <div class="v3-rev-actions">
-                <a class="v3-rev-btn v3-rev-btn--spotify" title="Spotify" onclick="event.stopPropagation()">
-                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.52 17.34c-.24.36-.66.48-1.02.24-2.82-1.74-6.36-2.1-10.56-1.14-.42.12-.78-.18-.9-.54-.12-.42.18-.78.54-.9 4.56-1.02 8.52-.6 11.64 1.32.42.18.48.66.3 1.02zm1.44-3.3c-.3.42-.84.6-1.26.3-3.24-1.98-8.16-2.58-11.94-1.38-.48.12-1.02-.12-1.14-.6-.12-.48.12-1.02.6-1.14 4.38-1.32 9.78-.72 13.5 1.56.36.24.54.84.24 1.26zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.3c-.6.18-1.2-.18-1.38-.72-.18-.6.18-1.2.72-1.38 4.26-1.26 11.28-1.02 15.72 1.62.54.3.72 1.02.42 1.56-.3.42-1.02.6-1.56.3z"/></svg>
-                </a>
-                <a class="v3-rev-btn v3-rev-btn--apple" title="Apple Music" onclick="event.stopPropagation()">
-                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.05 12.04c-.03-2.7 2.2-4 2.3-4.06-1.25-1.83-3.2-2.08-3.9-2.11-1.66-.17-3.24.97-4.08.97-.84 0-2.14-.95-3.52-.92-1.81.03-3.48 1.05-4.41 2.67-1.88 3.27-.48 8.1 1.35 10.76.9 1.3 1.97 2.76 3.38 2.71 1.36-.05 1.87-.88 3.51-.88 1.64 0 2.1.88 3.53.85 1.46-.03 2.38-1.33 3.27-2.63 1.03-1.51 1.46-2.97 1.48-3.05-.03-.01-2.84-1.09-2.87-4.32zM14.53 4.37c.74-.9 1.24-2.15 1.1-3.4-1.07.04-2.36.71-3.13 1.61-.69.8-1.29 2.07-1.13 3.29 1.19.09 2.42-.6 3.16-1.5z"/></svg>
-                </a>
-                <a class="v3-rev-btn v3-rev-btn--yt" title="YouTube Music" onclick="event.stopPropagation()">
-                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm-2 14V8l6 4-6 4z"/></svg>
-                </a>
-              </div>
+              <!-- Media column — album photos flow vertically down the CD side, fading out.
+                   (Streaming icons removed — streaming now lives behind the CD tap.) -->
+              <div class="v3-rev-media"></div>
 
               <!-- Your rating + written review + submit — aligned to the stats text -->
               <div class="v3-rev-mine">
@@ -686,9 +698,8 @@ const SCREENS = [
 
             </div><!-- /v3-rev-top -->
 
-            <!-- Review-spread histogram — distribution of ratings across ½→5 vinyls -->
+            <!-- Rating distribution bars (header text removed, bars kept) -->
             <div class="v3-rev-hist">
-              <div class="v3-rev-hist-hd">Ratings <span class="v3-rev-hist-sub"></span></div>
               <div class="v3-rev-hist-bars"></div>
               <div class="v3-rev-hist-axis"><span>½</span><span>5</span></div>
             </div>
@@ -696,13 +707,13 @@ const SCREENS = [
             <!-- Tracklist — rate individual songs; scrolls after ~8 rows, 9th fades to hint more -->
             <div class="v3-rev-songs"></div>
 
-            <!-- Photos / media — small horizontal strip; right edge fades to hint you can swipe -->
-            <div class="v3-rev-media"></div>
+            <!-- Artist page — grid of the artist's albums (trending style; shown only in --artist state) -->
+            <div class="v3-artist-albums"></div>
 
             <!-- Other users' reviews — full width -->
             <div class="v3-rev-filters">
-              <button class="v3-rev-filter active" data-f="friends" onclick="setReviewFilter(this)">Friends</button>
-              <button class="v3-rev-filter" data-f="popular" onclick="setReviewFilter(this)">Popular</button>
+              <button class="v3-rev-filter active" data-f="popular" onclick="setReviewFilter(this)">Popular</button>
+              <button class="v3-rev-filter" data-f="friends" onclick="setReviewFilter(this)">Friends</button>
               <button class="v3-rev-filter" data-f="new" onclick="setReviewFilter(this)">New</button>
               <span class="v3-rev-count"></span>
             </div>
@@ -712,12 +723,20 @@ const SCREENS = [
           </div><!-- /v3-review-panel -->
           </div><!-- /v3-body -->
 
+          <!-- NOW-PLAYING TICKER — a friend's live listen (name · song · album · artist)
+               with a waveform on the right. Sits just above the bottom nav, left-aligned
+               by the nav's left curve. app.js fills it and cycles through listeners. -->
+          <div class="v3-nowbar">
+            <div class="v3-now-text"></div>
+            <div class="v3-now-wave" aria-hidden="true"></div>
+          </div>
+
           <!-- BOTTOM NAV — filleted shelf: logo · Home · Trending · Playlists · hand-toggle -->
           <nav class="v3-bottom-nav">
             <div class="v3-nav-shelf">
-            <svg class="v3-nav-shape" viewBox="0 0 553 169" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><path d="M0.721208 168.043V0.0429077C-1.40921 24.7832 10.9472 74.2638 77.4163 74.2638C89.2853 74.2638 107.897 74.2638 131.21 74.2638C232.131 74.2638 421.145 74.2638 532.526 74.2638C543.572 74.2638 552.5 83.2181 552.5 94.2638V168.043H0.721208Z"/></svg>
+            <svg class="v3-nav-shape" viewBox="0 0 553 131" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><path d="M500.7 49.7942C535.714 49.7942 552.5 41.9079 552.5 0V18.3881V56.4474V130H0.5V69.7942C0.5 58.7485 9.42773 49.7942 20.4734 49.7942H421.959H500.7Z"/></svg>
             <div class="v3-nav-hi" aria-hidden="true"></div>
-            <button class="v3-nav-logo" onclick="navigate('home')" title="Home"><img src="images/spindeck-logo.png" alt="Spindeck"/></button>
+            <button class="v3-nav-logo" onclick="navigate('home')" title="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/></svg></button>
             <div class="v3-nav-items">
               <button class="v3-nav-item" onclick="navigate('wall')" title="Trending">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="2.5" y="2.5" width="5" height="5" rx="1.2"/><rect x="9.5" y="2.5" width="5" height="5" rx="1.2"/><rect x="16.5" y="2.5" width="5" height="5" rx="1.2"/><rect x="2.5" y="9.5" width="5" height="5" rx="1.2"/><rect x="9.5" y="9.5" width="5" height="5" rx="1.2"/><rect x="16.5" y="9.5" width="5" height="5" rx="1.2"/><rect x="2.5" y="16.5" width="5" height="5" rx="1.2"/><rect x="9.5" y="16.5" width="5" height="5" rx="1.2"/><rect x="16.5" y="16.5" width="5" height="5" rx="1.2"/></svg>
@@ -741,6 +760,11 @@ const SCREENS = [
                onclick="this.style.display='none'">
             <div class="v3-stream-sheet" onclick="event.stopPropagation()">
               <div class="v3-stream-handle"></div>
+              <button class="v3-stream-preview" onclick="playPreview(this, event)">
+                <span class="v3-stream-preview-ico"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
+                <span class="v3-stream-preview-txt">Listen to preview</span>
+                <span class="v3-stream-preview-dur">0:30</span>
+              </button>
               <div class="v3-stream-label">Listen on</div>
               <button class="v3-stream-app">
                 <div class="v3-stream-icon" style="background:#1DB954">
@@ -753,6 +777,28 @@ const SCREENS = [
                   <svg width="13" height="16" viewBox="0 0 13 16" fill="white"><path d="M6.5 0L8 3.5 13 4.3l-3.5 3.4.8 4.8L6.5 10.5 2.2 12.5l.8-4.8L0 4.3l5-.8z"/></svg>
                 </div>
                 Apple Music
+              </button>
+              <button class="v3-stream-app">
+                <div class="v3-stream-icon" style="background:linear-gradient(135deg,#ff5500,#ff8800)">
+                  <svg width="17" height="11" viewBox="0 0 24 16" fill="white"><rect x="2" y="7" width="1.8" height="6" rx=".9"/><rect x="6" y="4" width="1.8" height="9" rx=".9"/><rect x="10" y="6" width="1.8" height="7" rx=".9"/><rect x="14" y="2" width="1.8" height="11" rx=".9"/><rect x="18" y="8" width="1.8" height="5" rx=".9"/></svg>
+                </div>
+                SoundCloud
+              </button>
+              <div class="v3-stream-label">Save</div>
+              <button class="v3-stream-save" onclick="event.stopPropagation(); this.classList.toggle('on')">
+                <span class="v3-stream-sico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M7 8a5 5 0 0 1 10 0c0 3-2.2 4.1-3.4 5.3-.8.8-1.2 1.5-1.2 2.7A2.4 2.4 0 0 1 7.6 17"/><path d="M9.6 8.5a2.6 2.6 0 0 1 4.9-.6"/></svg></span>
+                <span class="v3-stream-stext">Listened</span>
+                <span class="v3-stream-check"></span>
+              </button>
+              <button class="v3-stream-save" onclick="event.stopPropagation(); this.classList.toggle('on')">
+                <span class="v3-stream-sico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 1.8"/></svg></span>
+                <span class="v3-stream-stext">Listen later</span>
+                <span class="v3-stream-check"></span>
+              </button>
+              <button class="v3-stream-save" onclick="event.stopPropagation(); this.classList.toggle('on')">
+                <span class="v3-stream-sico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="7" x2="14" y2="7"/><line x1="4" y1="12" x2="11" y2="12"/><line x1="4" y1="17" x2="11" y2="17"/><line x1="17" y1="10" x2="17" y2="18"/><line x1="13" y1="14" x2="21" y2="14"/></svg></span>
+                <span class="v3-stream-stext">Add to playlist</span>
+                <span class="v3-stream-check"></span>
               </button>
               <button class="v3-stream-cancel"
                       onclick="this.closest('.v3-stream-overlay').style.display='none'">
@@ -770,6 +816,32 @@ const SCREENS = [
         thumb: ['accent','w60','w80','w60','w80'],
         html: `
         <div class="app-screen s-home-v3 s-home-v3--light">
+
+          <!-- TOP HEADER: bubble cluster (left) · spindeck wordmark (center) · single bubble (right).
+               Fixed height pushes the bento + everything below it ~100px down the flex column. -->
+          <div class="v3-header">
+            <div class="v3-header-bubbles">
+              <!-- Notifications: friends adding you, replies to your reviews, etc.
+                   .has-notif expands the bubble into a blue pill with the unread count on the right.
+                   Click toggles the state (mockup demo). -->
+              <button class="v3-bubble v3-bubble--notif has-notif" title="Notifications" aria-label="Notifications"
+                      onclick="this.classList.toggle('has-notif')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                <span class="v3-bubble-count">+5</span>
+              </button>
+            </div>
+            <div class="v3-header-logo">spindeck</div>
+            <div class="v3-header-right">
+              <!-- Settings (inner) -->
+              <button class="v3-bubble v3-bubble--settings" title="Settings" aria-label="Settings">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              </button>
+              <!-- Search (outer/rightmost) -->
+              <button class="v3-bubble v3-bubble--search" title="Search" aria-label="Search" onclick="navigate('search')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+              </button>
+            </div>
+          </div>
 
           <!-- Scrollable body: bento + feed scroll together -->
           <div class="v3-body">
@@ -803,7 +875,7 @@ const SCREENS = [
               <div class="v3-blue-info-row">
                 <span class="v3-blue-title"><span class="v3-blue-album" onclick="event.stopPropagation(); onAlbumTitle(this)"></span><span class="v3-blue-date v3-blue-date--fs"></span></span>
                 <span class="v3-blue-sep">·</span>
-                <span class="v3-blue-artist"></span>
+                <span class="v3-blue-artist" onclick="event.stopPropagation(); onArtistName(this)"></span>
                 <span class="v3-blue-date v3-blue-date--inline"></span>
               </div>
               <div class="v3-blue-stars-row">
@@ -821,7 +893,7 @@ const SCREENS = [
             <div class="v3-cd"
                  style="background-image:url('images/album-crystalcastles1.png')"
                  title="Play / pause preview"
-                 onclick="togglePreview(event)">
+                 onclick="onCdTap(this, event)">
               <div class="v3-cd-hole"></div>
             </div>
 
@@ -836,7 +908,7 @@ const SCREENS = [
 
             <!-- Live corner button — sits in the bento's top corner notch; becomes Back in review mode -->
             <button class="v3-search-pill v3-live-pill" onclick="event.stopPropagation(); onLivePill(this)">
-              <span class="v3-live-content"><span class="v3-live-dot"></span><span class="v3-live-label">Live</span></span>
+              <span class="v3-live-content"><span class="v3-ring"><span class="v3-ring-spin"><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i></span></span></span>
               <span class="v3-back-content"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Back</span>
             </button>
 
@@ -844,11 +916,6 @@ const SCREENS = [
 
           <!-- SCROLL: app name + friends feed -->
           <div class="v3-scroll-area">
-
-            <div class="v3-feed-hd">
-              <span class="v3-feed-title">Friend Activity</span>
-              <button class="v3-feed-seeall" onclick="navigate('feed')">See all ›</button>
-            </div>
 
             <div class="v3-feed-items"></div>
 
@@ -868,18 +935,9 @@ const SCREENS = [
                  Uses the bento's 78/22 split so it mirrors with the hand layout. -->
             <div class="v3-rev-top">
 
-              <!-- Action grid — 2×3: streaming (left col) · save/fav/shop (right col) -->
-              <div class="v3-rev-actions">
-                <a class="v3-rev-btn v3-rev-btn--spotify" title="Spotify" onclick="event.stopPropagation()">
-                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.52 17.34c-.24.36-.66.48-1.02.24-2.82-1.74-6.36-2.1-10.56-1.14-.42.12-.78-.18-.9-.54-.12-.42.18-.78.54-.9 4.56-1.02 8.52-.6 11.64 1.32.42.18.48.66.3 1.02zm1.44-3.3c-.3.42-.84.6-1.26.3-3.24-1.98-8.16-2.58-11.94-1.38-.48.12-1.02-.12-1.14-.6-.12-.48.12-1.02.6-1.14 4.38-1.32 9.78-.72 13.5 1.56.36.24.54.84.24 1.26zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.3c-.6.18-1.2-.18-1.38-.72-.18-.6.18-1.2.72-1.38 4.26-1.26 11.28-1.02 15.72 1.62.54.3.72 1.02.42 1.56-.3.42-1.02.6-1.56.3z"/></svg>
-                </a>
-                <a class="v3-rev-btn v3-rev-btn--apple" title="Apple Music" onclick="event.stopPropagation()">
-                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.05 12.04c-.03-2.7 2.2-4 2.3-4.06-1.25-1.83-3.2-2.08-3.9-2.11-1.66-.17-3.24.97-4.08.97-.84 0-2.14-.95-3.52-.92-1.81.03-3.48 1.05-4.41 2.67-1.88 3.27-.48 8.1 1.35 10.76.9 1.3 1.97 2.76 3.38 2.71 1.36-.05 1.87-.88 3.51-.88 1.64 0 2.1.88 3.53.85 1.46-.03 2.38-1.33 3.27-2.63 1.03-1.51 1.46-2.97 1.48-3.05-.03-.01-2.84-1.09-2.87-4.32zM14.53 4.37c.74-.9 1.24-2.15 1.1-3.4-1.07.04-2.36.71-3.13 1.61-.69.8-1.29 2.07-1.13 3.29 1.19.09 2.42-.6 3.16-1.5z"/></svg>
-                </a>
-                <a class="v3-rev-btn v3-rev-btn--yt" title="YouTube Music" onclick="event.stopPropagation()">
-                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm-2 14V8l6 4-6 4z"/></svg>
-                </a>
-              </div>
+              <!-- Media column — album photos flow vertically down the CD side, fading out.
+                   (Streaming icons removed — streaming now lives behind the CD tap.) -->
+              <div class="v3-rev-media"></div>
 
               <!-- Your rating + written review + submit — aligned to the stats text -->
               <div class="v3-rev-mine">
@@ -891,9 +949,8 @@ const SCREENS = [
 
             </div><!-- /v3-rev-top -->
 
-            <!-- Review-spread histogram — distribution of ratings across ½→5 vinyls -->
+            <!-- Rating distribution bars (header text removed, bars kept) -->
             <div class="v3-rev-hist">
-              <div class="v3-rev-hist-hd">Ratings <span class="v3-rev-hist-sub"></span></div>
               <div class="v3-rev-hist-bars"></div>
               <div class="v3-rev-hist-axis"><span>½</span><span>5</span></div>
             </div>
@@ -901,13 +958,13 @@ const SCREENS = [
             <!-- Tracklist — rate individual songs; scrolls after ~8 rows, 9th fades to hint more -->
             <div class="v3-rev-songs"></div>
 
-            <!-- Photos / media — small horizontal strip; right edge fades to hint you can swipe -->
-            <div class="v3-rev-media"></div>
+            <!-- Artist page — grid of the artist's albums (trending style; shown only in --artist state) -->
+            <div class="v3-artist-albums"></div>
 
             <!-- Other users' reviews — full width -->
             <div class="v3-rev-filters">
-              <button class="v3-rev-filter active" data-f="friends" onclick="setReviewFilter(this)">Friends</button>
-              <button class="v3-rev-filter" data-f="popular" onclick="setReviewFilter(this)">Popular</button>
+              <button class="v3-rev-filter active" data-f="popular" onclick="setReviewFilter(this)">Popular</button>
+              <button class="v3-rev-filter" data-f="friends" onclick="setReviewFilter(this)">Friends</button>
               <button class="v3-rev-filter" data-f="new" onclick="setReviewFilter(this)">New</button>
               <span class="v3-rev-count"></span>
             </div>
@@ -917,12 +974,20 @@ const SCREENS = [
           </div><!-- /v3-review-panel -->
           </div><!-- /v3-body -->
 
+          <!-- NOW-PLAYING TICKER — a friend's live listen (name · song · album · artist)
+               with a waveform on the right. Sits just above the bottom nav, left-aligned
+               by the nav's left curve. app.js fills it and cycles through listeners. -->
+          <div class="v3-nowbar">
+            <div class="v3-now-text"></div>
+            <div class="v3-now-wave" aria-hidden="true"></div>
+          </div>
+
           <!-- BOTTOM NAV — filleted shelf: logo · Home · Trending · Playlists · hand-toggle -->
           <nav class="v3-bottom-nav">
             <div class="v3-nav-shelf">
-            <svg class="v3-nav-shape" viewBox="0 0 553 169" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><path d="M0.721208 168.043V0.0429077C-1.40921 24.7832 10.9472 74.2638 77.4163 74.2638C89.2853 74.2638 107.897 74.2638 131.21 74.2638C232.131 74.2638 421.145 74.2638 532.526 74.2638C543.572 74.2638 552.5 83.2181 552.5 94.2638V168.043H0.721208Z"/></svg>
+            <svg class="v3-nav-shape" viewBox="0 0 553 131" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><path d="M500.7 49.7942C535.714 49.7942 552.5 41.9079 552.5 0V18.3881V56.4474V130H0.5V69.7942C0.5 58.7485 9.42773 49.7942 20.4734 49.7942H421.959H500.7Z"/></svg>
             <div class="v3-nav-hi" aria-hidden="true"></div>
-            <button class="v3-nav-logo" onclick="navigate('home')" title="Home"><img src="images/spindeck-logo.png" alt="Spindeck"/></button>
+            <button class="v3-nav-logo" onclick="navigate('home')" title="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/></svg></button>
             <div class="v3-nav-items">
               <button class="v3-nav-item" onclick="navigate('wall')" title="Trending">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="2.5" y="2.5" width="5" height="5" rx="1.2"/><rect x="9.5" y="2.5" width="5" height="5" rx="1.2"/><rect x="16.5" y="2.5" width="5" height="5" rx="1.2"/><rect x="2.5" y="9.5" width="5" height="5" rx="1.2"/><rect x="9.5" y="9.5" width="5" height="5" rx="1.2"/><rect x="16.5" y="9.5" width="5" height="5" rx="1.2"/><rect x="2.5" y="16.5" width="5" height="5" rx="1.2"/><rect x="9.5" y="16.5" width="5" height="5" rx="1.2"/><rect x="16.5" y="16.5" width="5" height="5" rx="1.2"/></svg>
@@ -944,6 +1009,11 @@ const SCREENS = [
           <div class="v3-stream-overlay" style="display:none" onclick="this.style.display='none'">
             <div class="v3-stream-sheet" onclick="event.stopPropagation()">
               <div class="v3-stream-handle"></div>
+              <button class="v3-stream-preview" onclick="playPreview(this, event)">
+                <span class="v3-stream-preview-ico"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
+                <span class="v3-stream-preview-txt">Listen to preview</span>
+                <span class="v3-stream-preview-dur">0:30</span>
+              </button>
               <div class="v3-stream-label">Listen on</div>
               <button class="v3-stream-app">
                 <div class="v3-stream-icon" style="background:#1DB954">
@@ -957,6 +1027,28 @@ const SCREENS = [
                 </div>
                 Apple Music
               </button>
+              <button class="v3-stream-app">
+                <div class="v3-stream-icon" style="background:linear-gradient(135deg,#ff5500,#ff8800)">
+                  <svg width="17" height="11" viewBox="0 0 24 16" fill="white"><rect x="2" y="7" width="1.8" height="6" rx=".9"/><rect x="6" y="4" width="1.8" height="9" rx=".9"/><rect x="10" y="6" width="1.8" height="7" rx=".9"/><rect x="14" y="2" width="1.8" height="11" rx=".9"/><rect x="18" y="8" width="1.8" height="5" rx=".9"/></svg>
+                </div>
+                SoundCloud
+              </button>
+              <div class="v3-stream-label">Save</div>
+              <button class="v3-stream-save" onclick="event.stopPropagation(); this.classList.toggle('on')">
+                <span class="v3-stream-sico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M7 8a5 5 0 0 1 10 0c0 3-2.2 4.1-3.4 5.3-.8.8-1.2 1.5-1.2 2.7A2.4 2.4 0 0 1 7.6 17"/><path d="M9.6 8.5a2.6 2.6 0 0 1 4.9-.6"/></svg></span>
+                <span class="v3-stream-stext">Listened</span>
+                <span class="v3-stream-check"></span>
+              </button>
+              <button class="v3-stream-save" onclick="event.stopPropagation(); this.classList.toggle('on')">
+                <span class="v3-stream-sico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 1.8"/></svg></span>
+                <span class="v3-stream-stext">Listen later</span>
+                <span class="v3-stream-check"></span>
+              </button>
+              <button class="v3-stream-save" onclick="event.stopPropagation(); this.classList.toggle('on')">
+                <span class="v3-stream-sico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="7" x2="14" y2="7"/><line x1="4" y1="12" x2="11" y2="12"/><line x1="4" y1="17" x2="11" y2="17"/><line x1="17" y1="10" x2="17" y2="18"/><line x1="13" y1="14" x2="21" y2="14"/></svg></span>
+                <span class="v3-stream-stext">Add to playlist</span>
+                <span class="v3-stream-check"></span>
+              </button>
               <button class="v3-stream-cancel" onclick="this.closest('.v3-stream-overlay').style.display='none'">Cancel</button>
             </div>
           </div>
@@ -967,167 +1059,14 @@ const SCREENS = [
     ]
   },
 
-  // ── 4. LIVE FEED (TikTok-style) ─────────────────────────────
-  {
-    id: 'feed', name: 'Live Feed', statusTheme: 'light',
-    variants: [
-      {
-        label: 'Albums', version: 'v1.0',
-        thumb: ['accent','w80','accent','w60','w80'],
-        get html() {
-          const items = (window.ARCHIVE || []).slice(0, 8);
-          return `
-        <div class="app-screen s-livefeed">
-          ${topNav('feed')}
-          <div class="lfeed-toggle">
-            <button class="lft-btn active">Albums</button>
-            <button class="lft-btn">Songs</button>
-          </div>
-          <div class="lfeed-scroll">
-            ${items.map((a, i) => `
-            <div class="lfeed-card">
-              <div class="lfeed-bg" style="background-image:url('${a.image}')"></div>
-              <div class="lfeed-overlay"></div>
-              <div class="lfeed-content">
-                <div class="lfeed-art-wrap">
-                  <div class="lfeed-art" style="background-image:url('${a.image}')"></div>
-                </div>
-                <div class="lfeed-meta">
-                  <div class="lfeed-artist">${a.artist.toUpperCase()}</div>
-                  <div class="lfeed-title">${a.album}</div>
-                  <div class="lfeed-genre">${a.year} · ${a.genre}</div>
-                </div>
-                <div class="lfeed-rating">
-                  <span class="lfeed-score">${a.rating.toFixed(1)}</span>
-                  <span class="lfeed-score-sub">/ 5</span>
-                  ${halfStars(a.rating, 13)}
-                </div>
-                <div class="lfeed-rc"><strong>${window.fmtRc ? window.fmtRc(a.reviewCount) : a.reviewCount}</strong> reviews</div>
-                <div class="lfeed-today">↑ ${Math.max(18, Math.round(a.reviewCount * 0.003))} reviewed today</div>
-                <div class="lfeed-actions">
-                  <button class="lfeed-skip" onclick="navigate('home')">Skip</button>
-                  <button class="lfeed-log" onclick="openAlbum(ARCHIVE.find(x=>x.album==='${a.album.replace(/'/g,"\\'")}')||ARCHIVE[0]);navigate('review')">Log Album ↗</button>
-                </div>
-                <div class="lfeed-hint">${i < items.length - 1 ? '↑ &nbsp; scroll for next' : '&nbsp;'}</div>
-              </div>
-            </div>`).join('')}
-          </div>
-        </div>`;
-        }
-      },
-      {
-        label: 'Songs', version: 'v1.1',
-        thumb: ['w80','accent','w60','accent','w70'],
-        html: `
-        <div class="app-screen s-livefeed">
-          ${topNav('feed')}
-
-          <div class="lfeed-toggle">
-            <button class="lft-btn">Albums</button>
-            <button class="lft-btn active">Songs</button>
-          </div>
-
-          <div class="lfeed-scroll">
-
-            <!-- Song Card 1: Garden Song -->
-            <div class="lfeed-card">
-              <div class="lfeed-bg" style="background-image:url('images/album-punisher.png')"></div>
-              <div class="lfeed-overlay"></div>
-              <div class="lfeed-content">
-                <div class="lfeed-art-wrap">
-                  <div class="lfeed-art" style="background-image:url('images/album-punisher.png')"></div>
-                </div>
-                <div class="lfeed-meta">
-                  <div class="lfeed-artist">PHOEBE BRIDGERS · Punisher</div>
-                  <div class="lfeed-title">Garden Song</div>
-                  <div class="lfeed-genre">Track 1 · 3:58 · Indie Folk</div>
-                </div>
-                <div class="lfeed-rating">
-                  <span class="lfeed-score">4.9</span>
-                  <span class="lfeed-score-sub">/ 5</span>
-                  ${halfStars(5, 13)}
-                </div>
-                <div class="lfeed-rc"><strong>48,200</strong> reviews</div>
-                <div class="lfeed-today">↑ 312 reviewed today</div>
-                <div class="lfeed-actions">
-                  <button class="lfeed-skip" onclick="navigate('home')">Skip</button>
-                  <button class="lfeed-log" onclick="navigate('review')">Log Track ↗</button>
-                </div>
-                <div class="lfeed-hint">↑ &nbsp; scroll for next</div>
-              </div>
-            </div>
-
-            <!-- Song Card 2: Crimewave -->
-            <div class="lfeed-card">
-              <div class="lfeed-bg" style="background-image:url('images/album-crystalcastles1.png')"></div>
-              <div class="lfeed-overlay"></div>
-              <div class="lfeed-content">
-                <div class="lfeed-art-wrap">
-                  <div class="lfeed-art" style="background-image:url('images/album-crystalcastles1.png')"></div>
-                </div>
-                <div class="lfeed-meta">
-                  <div class="lfeed-artist">CRYSTAL CASTLES · Crystal Castles</div>
-                  <div class="lfeed-title">Crimewave</div>
-                  <div class="lfeed-genre">Track 3 · 3:28 · Electronic</div>
-                </div>
-                <div class="lfeed-rating">
-                  <span class="lfeed-score">4.8</span>
-                  <span class="lfeed-score-sub">/ 5</span>
-                  ${halfStars(5, 13)}
-                </div>
-                <div class="lfeed-rc"><strong>22,841</strong> reviews</div>
-                <div class="lfeed-today">↑ 94 reviewed today</div>
-                <div class="lfeed-actions">
-                  <button class="lfeed-skip" onclick="navigate('home')">Skip</button>
-                  <button class="lfeed-log" onclick="navigate('review')">Log Track ↗</button>
-                </div>
-                <div class="lfeed-hint">↑ &nbsp; scroll for next</div>
-              </div>
-            </div>
-
-          </div>
-        </div>`
-      }
-    ]
-  },
 
   // ── 5. WALL OF ALBUMS ───────────────────────────────────────
   {
     id: 'wall', name: 'Album Wall', statusTheme: 'light',
-    variants: [{
-      label: 'v1',
-      thumb: ['w80','w80','w80','w80','w80'],
-      get html() {
-        const items = (window.ARCHIVE || []).slice().sort((a,b) => b.rating - a.rating);
-        return `
-      <div class="app-screen s-wall">
-        <div class="wall-header">
-          <button class="app-nav-btn" onclick="navigate('home')" style="margin-right:8px"><span class="app-nav-back">‹</span></button>
-          <div class="wall-title">Albums</div>
-        </div>
-        <div class="wall-cats-wrap">
-          <button class="wall-cat active">Popular</button>
-          <button class="wall-cat">New Releases</button>
-          <button class="wall-cat">Top Reviewed</button>
-          <button class="wall-cat">Your Taste</button>
-          <button class="wall-cat">Electronic</button>
-          <button class="wall-cat">Indie</button>
-          <button class="wall-cat">Hip-Hop</button>
-          <button class="wall-cat">J / K</button>
-        </div>
-        <div class="wall-grid">
-          ${items.slice(0,20).map((a,i) => `
-          <div class="wall-cell" onclick="openAlbum(ARCHIVE.find(x=>x.album==='${a.album.replace(/'/g,'\\\'')}')||ARCHIVE[0])">
-            <div class="wall-cell-art" style="background-image:url('${a.image}')"></div>
-            <div class="wall-cell-info">
-              <div class="wall-cell-rating">★${a.rating.toFixed(1)}</div>
-              <div class="wall-cell-name">${a.album.length > 13 ? a.album.slice(0,12)+'…' : a.album}</div>
-            </div>
-          </div>`).join('')}
-        </div>
-      </div>`;
-      }
-    }]
+    variants: [
+      { label: 'Float·Dark',  version: 'v1', thumb: ['w80','w80','w80','w80','w80'], get html() { return wallHtml(false); } },
+      { label: 'Float·Light', version: 'v2', thumb: ['w80','w80','w80','w80','w80'], get html() { return wallHtml(true);  } },
+    ]
   },
 
   // ── 6. SEARCH ───────────────────────────────────────────────
@@ -1753,49 +1692,6 @@ const SCREENS = [
     ]
   },
 
-  // ── 13. SWIPE REVIEW ────────────────────────────────────────
-  {
-    id: 'swipe', name: 'Swipe Review', statusTheme: 'dark',
-    variants: [{
-      label: 'v1',
-      thumb: ['accent','w80','accent','w60','w80'],
-      html: `
-      <div class="app-screen s-swipe">
-        <div class="swipe-feed">
-          <div class="swipe-card">
-            <div class="swipe-bg" style="background-image:url('images/album-punisher.png')"></div>
-            <div class="swipe-overlay"></div>
-            <div class="swipe-content">
-              <div class="swipe-cover-wrap">
-                <div class="swipe-cover" style="background-image:url('images/album-punisher.png')"></div>
-              </div>
-              <div class="swipe-info">
-                <div class="swipe-album-name">Punisher</div>
-                <div class="swipe-artist-name">Phoebe Bridgers</div>
-                <div class="swipe-meta">2020 · Indie Folk · Dead Oceans</div>
-              </div>
-              <div class="swipe-rating-section">
-                <div class="swipe-rating-label">rate this album</div>
-                <div class="swipe-stars">
-                  <div class="swipe-star-wrap"><div class="swipe-star-bg">★</div><div class="swipe-star-fill full">★</div></div>
-                  <div class="swipe-star-wrap"><div class="swipe-star-bg">★</div><div class="swipe-star-fill full">★</div></div>
-                  <div class="swipe-star-wrap"><div class="swipe-star-bg">★</div><div class="swipe-star-fill full">★</div></div>
-                  <div class="swipe-star-wrap"><div class="swipe-star-bg">★</div><div class="swipe-star-fill full">★</div></div>
-                  <div class="swipe-star-wrap"><div class="swipe-star-bg">★</div><div class="swipe-star-fill half">★</div></div>
-                </div>
-                <div class="swipe-score">4.5 / 5 · half stars on</div>
-              </div>
-              <div class="swipe-actions">
-                <button class="swipe-skip" onclick="navigate('home')">Skip</button>
-                <button class="swipe-log" onclick="navigate('review')">Log Album ↗</button>
-              </div>
-              <div class="swipe-up-hint">↑ &nbsp; swipe for next</div>
-            </div>
-          </div>
-        </div>
-      </div>`
-    }]
-  },
 
 ];
 
@@ -1804,7 +1700,6 @@ function topNav(active) {
   return `
   <div class="top-nav">
     <button class="tn-tab${active==='playlists'?' active':''}" onclick="navigate('playlists')">Playlists</button>
-    <button class="tn-tab tn-center${active==='feed'?' active':''}" onclick="navigate('feed')">Live Feed</button>
     <button class="tn-tab${active==='home'?' active':''}" onclick="navigate('home')">Home</button>
   </div>`;
 }
@@ -1836,4 +1731,113 @@ function tabBar(active) {
       <span>${t.label}</span>
     </button>`).join('')}
   </nav>`;
+}
+
+// ─── Constant app furniture (shared across pages) ───────────────
+// The header, now-playing ticker, and bottom nav are the same on every page
+// that opts into the .s-home-v3 shell. Keep these as the single source of truth.
+
+function appHeader() {
+  return `
+          <div class="v3-header">
+            <div class="v3-header-bubbles">
+              <button class="v3-bubble v3-bubble--notif has-notif" title="Notifications" aria-label="Notifications"
+                      onclick="this.classList.toggle('has-notif')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                <span class="v3-bubble-count">+5</span>
+              </button>
+            </div>
+            <div class="v3-header-logo">spindeck</div>
+            <div class="v3-header-right">
+              <button class="v3-bubble v3-bubble--settings" title="Settings" aria-label="Settings">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              </button>
+              <button class="v3-bubble v3-bubble--search" title="Search" aria-label="Search" onclick="navigate('search')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+              </button>
+            </div>
+          </div>`;
+}
+
+function nowBar() {
+  return `
+          <div class="v3-nowbar">
+            <div class="v3-now-text"></div>
+            <div class="v3-now-wave" aria-hidden="true"></div>
+          </div>`;
+}
+
+// Album wall (Trending) — themed so it can render as a dark + light pair.
+function wallHtml(light) {
+  const items = (window.ARCHIVE || []).slice().sort((a, b) => b.rating - a.rating);
+  return `
+      <div class="app-screen s-home-v3 s-wall2${light ? ' s-home-v3--light' : ''}">
+        ${appHeader()}
+        <div class="v3-body">
+          <div class="wall2-scroll">
+            <div class="wall2-bar">
+              <button class="wall2-cat active" onclick="event.stopPropagation()">Popular</button>
+              <div class="wall2-menuwrap">
+                <button class="wall2-cat wall2-drop-btn" onclick="event.stopPropagation(); toggleWallPanel(this)">Genres <span class="wall2-chev">▾</span></button>
+                <div class="wall2-menu wall2-menu--genres" hidden>
+                  <button class="wall2-menu-item active" onclick="event.stopPropagation(); pickWallGenre(this)">Electronic</button>
+                  <button class="wall2-menu-item" onclick="event.stopPropagation(); pickWallGenre(this)">Hip-Hop</button>
+                  <button class="wall2-menu-item" onclick="event.stopPropagation(); pickWallGenre(this)">Indie</button>
+                  <button class="wall2-menu-item" onclick="event.stopPropagation(); pickWallGenre(this)">Jazz</button>
+                  <button class="wall2-menu-item" onclick="event.stopPropagation(); pickWallGenre(this)">Pop</button>
+                  <button class="wall2-menu-item" onclick="event.stopPropagation(); pickWallGenre(this)">R&amp;B / Soul</button>
+                  <button class="wall2-menu-item" onclick="event.stopPropagation(); pickWallGenre(this)">Rock</button>
+                </div>
+              </div>
+              <div class="wall2-menuwrap wall2-menuwrap--right">
+                <button class="wall2-cat wall2-drop-btn" onclick="event.stopPropagation(); toggleWallPanel(this)"><span class="wall2-time-label">Week</span> <span class="wall2-chev">▾</span></button>
+                <div class="wall2-menu wall2-menu--time" hidden>
+                  <button class="wall2-menu-item wall2-time-opt active" onclick="event.stopPropagation(); pickWallTime(this)">This Week</button>
+                  <button class="wall2-menu-item wall2-time-opt" onclick="event.stopPropagation(); pickWallTime(this)">This Month</button>
+                  <button class="wall2-menu-item wall2-time-opt" onclick="event.stopPropagation(); pickWallTime(this)">Past 3 Months</button>
+                </div>
+              </div>
+            </div>
+            <div class="wall2-grid">
+              ${items.slice(0, 24).map((a, i) => `
+              <div class="wall2-cell" onclick="openAlbumPage(ARCHIVE.find(x=>x.album==='${a.album.replace(/'/g, '\\\'')}')||ARCHIVE[0])">
+                <div class="wall2-art" style="background-image:url('${a.image}')">${i < 3 ? `<span class="wall2-rank">${i + 1}</span>` : ''}</div>
+                <div class="wall2-meta">
+                  <span class="wall2-album">${a.album}</span>
+                  <span class="wall2-artist">${a.artist}</span>
+                </div>
+                <div class="wall2-rating">${halfStars(a.rating, 11)}<span class="wall2-score">${a.rating.toFixed(1)}</span></div>
+              </div>`).join('')}
+            </div>
+          </div>
+        </div>
+        ${nowBar()}
+        ${bottomNav('wall')}
+      </div>`;
+}
+
+function bottomNav(active = 'home') {
+  const on = id => active === id ? ' active' : '';
+  return `
+          <nav class="v3-bottom-nav">
+            <div class="v3-nav-shelf">
+            <svg class="v3-nav-shape" viewBox="0 0 553 131" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><path d="M500.7 49.7942C535.714 49.7942 552.5 41.9079 552.5 0V18.3881V56.4474V130H0.5V69.7942C0.5 58.7485 9.42773 49.7942 20.4734 49.7942H421.959H500.7Z"/></svg>
+            ${active === 'home' ? '<div class="v3-nav-hi" aria-hidden="true"></div>' : ''}
+            <button class="v3-nav-logo${on('home')}" onclick="navigate('home')" title="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/></svg></button>
+            <div class="v3-nav-items">
+              <button class="v3-nav-item${on('wall')}" onclick="navigate('wall')" title="Trending">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="2.5" y="2.5" width="5" height="5" rx="1.2"/><rect x="9.5" y="2.5" width="5" height="5" rx="1.2"/><rect x="16.5" y="2.5" width="5" height="5" rx="1.2"/><rect x="2.5" y="9.5" width="5" height="5" rx="1.2"/><rect x="9.5" y="9.5" width="5" height="5" rx="1.2"/><rect x="16.5" y="9.5" width="5" height="5" rx="1.2"/><rect x="2.5" y="16.5" width="5" height="5" rx="1.2"/><rect x="9.5" y="16.5" width="5" height="5" rx="1.2"/><rect x="16.5" y="16.5" width="5" height="5" rx="1.2"/></svg>
+              </button>
+              <button class="v3-nav-item${on('playlists')}" onclick="navigate('playlists')" title="Playlists">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+              </button>
+              <button class="v3-nav-item${on('profile')}" onclick="navigate('profile')" title="Profile">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </button>
+            </div>
+            </div>
+            ${active === 'home' ? `<button class="v3-nav-toggle" onclick="toggleHand()" title="Flip left/right layout">
+              <span class="v3-nav-switch"><span class="v3-nav-knob"></span></span>
+            </button>` : ''}
+          </nav>`;
 }

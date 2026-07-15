@@ -2265,6 +2265,104 @@
   --text3: rgba(232,226,214,0.14);  /* grey empty stars, overrides global */
 }
 
+/* TOP HEADER — bubbles · wordmark · bubble ─────────────────────
+   3-col grid keeps the wordmark centered regardless of side widths.
+   Fixed height creates the ~100px drop of the bento + body below it. */
+.v3-header {
+  flex-shrink: 0;
+  height: 60px;   /* reduced 20px; the body gains matching top padding so the bento stays put */
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 0 10px;   /* match the bento's 10px side margin */
+}
+.v3-header-bubbles {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-self: start;
+  align-self: start;   /* pin bubbles into the top-left corner */
+  margin-top: 10px;
+}
+.v3-header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-self: end;
+  align-self: start;   /* pin bubbles into the top-right corner */
+  margin-top: 10px;
+}
+.v3-header-logo {
+  font-family: var(--font-main);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: rgba(232,226,214,0.92);
+  align-self: start;      /* sit in the same top band as the bubbles */
+  margin-top: 10px;
+  height: 30px;           /* = bubble height, so text centers on bubble centers */
+  display: flex;
+  align-items: center;
+}
+.v3-bubble {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+  color: rgba(232,226,214,0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s;
+}
+.v3-bubble svg { width: 15px; height: 15px; }
+
+/* Notification pill — expands right & turns blue when there are unread notifications */
+.v3-bubble--notif {
+  overflow: hidden;
+  transition: background 0.2s, border-color 0.2s, color 0.2s, padding 0.25s ease;
+}
+.v3-bubble-count {
+  display: none;
+  font-family: var(--font-main);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+.v3-bubble--notif.has-notif {
+  width: auto;
+  min-width: 30px;
+  border-radius: 999px;
+  padding: 0 9px 0 8px;
+  gap: 5px;
+  /* keep the normal bubble fill; only the outline / stroke / count go colored */
+  border-color: #3b82f6;
+  color: #3b82f6;
+}
+.v3-bubble--notif.has-notif svg { color: #3b82f6; }
+.v3-bubble--notif.has-notif .v3-bubble-count { display: block; color: #3b82f6; }
+.v3-bubble:hover {
+  background: rgba(255,255,255,0.13);
+  border-color: rgba(255,255,255,0.2);
+}
+/* Light theme */
+.s-home-v3--light .v3-header-logo { color: rgba(26,18,8,0.9); }
+.s-home-v3--light .v3-bubble {
+  background: rgba(26,18,8,0.06);
+  border: 1px solid rgba(26,18,8,0.18);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.5);
+  color: rgba(26,18,8,0.62);
+}
+.s-home-v3--light .v3-bubble:hover {
+  background: rgba(26,18,8,0.12);
+  border-color: rgba(26,18,8,0.28);
+}
+
 /* TOP BAR (search only) ────────────────────────────────────── */
 .v3-topbar {
   display: flex;
@@ -2316,12 +2414,101 @@
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
+  padding-top: 20px;   /* clearance so the bento's top drop shadow isn't clipped by the header edge */
+  /* fade the scrolling content out toward the bottom, before it reaches the nav/toggle */
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 74px), transparent 100%);
+          mask-image: linear-gradient(to bottom, #000 calc(100% - 74px), transparent 100%);
 }
 .v3-body::-webkit-scrollbar { display: none; }
 
+/* NOW-PLAYING TICKER — glossy "bubble" pill above the bento ──── */
+.v3-nowbar {
+  position: absolute;
+  right: 12px;
+  bottom: 53px;                 /* right-aligned, just above the nav; feed scrolls behind it */
+  z-index: 6;
+  width: 54%;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 7px 0 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  /* flat frosted pill (gloss removed) */
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.13);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.32);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  backdrop-filter: blur(12px) saturate(150%);
+}
+/* hidden in the fullscreen review state — visibility (not display) so it keeps its
+   space and the bento doesn't jump up when the bubble disappears */
+.s-home-v3--review .v3-nowbar { visibility: hidden; }
+.v3-now-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  font-size: 11.5px;
+  /* Roboto Flex, width axis at its minimum (25) to pack in more info; opsz raised */
+  font-family: 'Roboto Flex', var(--font-main);
+  font-variation-settings: 'wdth' 25, 'opsz' 25;
+  /* fade the right edge so long lines don't hard-clip against the wave */
+  -webkit-mask-image: linear-gradient(90deg, #000 84%, transparent);
+  mask-image: linear-gradient(90deg, #000 84%, transparent);
+  transition: opacity 0.28s ease, transform 0.28s ease;
+}
+.v3-nowbar.is-swapping .v3-now-text { opacity: 0; transform: translateY(-4px); }
+.v3-now-name   { font-weight: 700; color: var(--star); flex-shrink: 0; }
+.v3-now-sep    { color: rgba(232,226,214,0.35); }
+.v3-now-song   { font-weight: 600; color: rgba(232,226,214,0.92); }
+.v3-now-album  { font-weight: 400; color: rgba(232,226,214,0.7); }
+.v3-now-artist { font-weight: 700; color: rgba(232,226,214,0.92); }
+/* colorful animated waveform */
+.v3-now-wave {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 1.5px;
+  height: 11px;
+  padding-right: 2px;
+}
+.v3-now-bar {
+  width: 2.5px;
+  height: 100%;
+  border-radius: 2px;
+  background: #fff;
+  transform: scaleY(0.28);
+  transform-origin: center;
+  opacity: 0.92;
+  animation-name: nowWave;
+  animation-iteration-count: infinite;
+  animation-timing-function: ease-in-out;
+}
+@keyframes nowWave {
+  0%, 100% { transform: scaleY(0.25); }
+  50%      { transform: scaleY(1); }
+}
+/* Light theme */
+.s-home-v3--light .v3-nowbar {
+  background: rgba(255,255,255,0.5);
+  border: 1px solid rgba(255,255,255,0.7);
+  box-shadow: 0 4px 12px rgba(30,20,10,0.12);
+}
+.s-home-v3--light .v3-now-name   { color: #c8891f; }
+.s-home-v3--light .v3-now-sep    { color: rgba(26,18,8,0.35); }
+.s-home-v3--light .v3-now-song,
+.s-home-v3--light .v3-now-artist { color: rgba(26,18,8,0.92); }
+.s-home-v3--light .v3-now-album  { color: rgba(26,18,8,0.6); }
+.s-home-v3--light .v3-now-bar    { background: rgba(26,18,8,0.8); }
+
 /* SCROLL AREA ──────────────────────────────────────────────── */
 .v3-scroll-area {
-  padding: 30px 12px 8px;
+  padding: 30px 12px 88px;   /* bottom clears the nav/nowbar overlay so nothing is cut off */
 }
 .v3-brand-row {
   display: flex;
@@ -2372,8 +2559,8 @@
 }
 .v3-friend-card:last-child { border-bottom: none; }
 .v3-friend-art {
-  width: 44px;
-  height: 44px;
+  width: 60px; height: 60px;   /* larger square — reads as full-height vs the old 44px */
+  align-self: center;
   border-radius: 7px;
   background-size: cover;
   background-position: center;
@@ -2400,15 +2587,28 @@
   color: rgba(232,226,214,0.22);
   margin-left: auto;
 }
+.v3-friend-meta {
+  display: flex; align-items: baseline; gap: 4px;
+  min-width: 0; margin-bottom: 1px;
+}
 .v3-friend-album {
   font-size: 12px; font-weight: 400;
   color: #e8e2d6;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  flex: 0 1 auto; min-width: 0;
+}
+.v3-friend-sep {
+  font-size: 9px; color: rgba(232,226,214,0.28); flex-shrink: 0;
 }
 .v3-friend-artist {
-  font-size: 10px; font-weight: 700;
-  color: rgba(232,226,214,0.35);
-  margin-bottom: 1px;
+  font-size: 11px; font-weight: 700;
+  color: rgba(232,226,214,0.6);
+  white-space: nowrap; flex-shrink: 0;
+}
+.v3-friend-date {
+  font-size: 10px; font-weight: 400;
+  color: rgba(232,226,214,0.3);
+  flex-shrink: 0;
 }
 .v3-friend-row {
   display: flex;
@@ -2436,14 +2636,15 @@
    down to a shorter icon strip; rounded convex top-right corner.
    Shape is an SVG silhouette; logo + items are absolute overlays. */
 .v3-bottom-nav {
-  position: relative;
-  flex-shrink: 0;
-  height: 84px;
+  position: absolute;
+  left: 0; right: 0; bottom: 0;   /* sits at the bottom of the app rectangle, above the home indicator */
+  height: 58px;   /* matches the shorter resized SVG (was 68px) */
+  z-index: 5;     /* overlays the body so feed content scrolls behind it */
 }
 /* The shelf is the filleted shape itself — the left ~83% of the bar.
    The narrow remaining space holds the floating hand-toggle. */
 .v3-nav-shelf {
-  position: absolute; left: 0; top: 0; bottom: 0; width: 83%;
+  position: absolute; right: 0; top: 0; bottom: 0; width: 74%;   /* flipped to the right; toggle floats on the left */
 }
 /* "Home is on" highlight — bento accent, strongest under the logo, gradient-
    fading rightward into the other sections. Masked to the filleted shape. */
@@ -2460,8 +2661,8 @@
       color-mix(in srgb, var(--hi) 40%, transparent) 29%,
       color-mix(in srgb, var(--hi) 12%, transparent) 30.5%,
       transparent 32%);
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 553 169' preserveAspectRatio='none'%3E%3Cpath d='M0.721208 168.043V0.0429077C-1.40921 24.7832 10.9472 74.2638 77.4163 74.2638C89.2853 74.2638 107.897 74.2638 131.21 74.2638C232.131 74.2638 421.145 74.2638 532.526 74.2638C543.572 74.2638 552.5 83.2181 552.5 94.2638V168.043H0.721208Z' fill='%23fff'/%3E%3C/svg%3E") no-repeat center / 100% 100%;
-          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 553 169' preserveAspectRatio='none'%3E%3Cpath d='M0.721208 168.043V0.0429077C-1.40921 24.7832 10.9472 74.2638 77.4163 74.2638C89.2853 74.2638 107.897 74.2638 131.21 74.2638C232.131 74.2638 421.145 74.2638 532.526 74.2638C543.572 74.2638 552.5 83.2181 552.5 94.2638V168.043H0.721208Z' fill='%23fff'/%3E%3C/svg%3E") no-repeat center / 100% 100%;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 553 131' preserveAspectRatio='none'%3E%3Cpath d='M500.7 49.7942C535.714 49.7942 552.5 41.9079 552.5 0V18.3881V56.4474V130H0.5V69.7942C0.5 58.7485 9.42773 49.7942 20.4734 49.7942H421.959H500.7Z' fill='%23fff'/%3E%3C/svg%3E") no-repeat center / 100% 100%;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 553 131' preserveAspectRatio='none'%3E%3Cpath d='M500.7 49.7942C535.714 49.7942 552.5 41.9079 552.5 0V18.3881V56.4474V130H0.5V69.7942C0.5 58.7485 9.42773 49.7942 20.4734 49.7942H421.959H500.7Z' fill='%23fff'/%3E%3C/svg%3E") no-repeat center / 100% 100%;
 }
 /* The silhouette. Fill = screen bg so it reads as a continuous shelf;
    a hairline stroke outlines it. Stretched to the box (preserveAspectRatio
@@ -2486,12 +2687,12 @@
   background: none; border: none; cursor: pointer; padding: 0;
   z-index: 2;
 }
-.v3-nav-logo img {
-  width: 36px; height: 36px; object-fit: contain; display: block;
-  filter: invert(1);   /* render badge white (keeps square corners) — reads on the dark home highlight in both themes */
+.v3-nav-logo svg {
+  width: 22px; height: 22px; display: block;
+  color: #e8e2d6;   /* off-white — reads on the dark home highlight in both themes */
   transition: transform .18s;
 }
-.v3-nav-logo:hover img { transform: scale(1.06); }
+.v3-nav-logo:hover svg { transform: scale(1.08); }
 
 /* Items — live in the lower strip (top: 44.2% ≈ the fillet's bottom edge) */
 .v3-nav-items {
@@ -2532,7 +2733,7 @@
 /* Floats in the empty space to the right of the 75% shelf, aligned to the icon strip */
 .v3-nav-toggle {
   position: absolute;
-  left: 83%; right: 0; top: 44.2%; bottom: 0;
+  left: 0; right: 74%; top: 44.2%; bottom: 7px;   /* lifted 7px off the bottom */
   display: flex; align-items: center; justify-content: center;
   background: none; border: none; cursor: pointer; padding: 0;
   z-index: 2;
@@ -2540,7 +2741,7 @@
 .v3-nav-switch {
   position: relative;
   width: 34px; height: 18px; border-radius: 999px;
-  background: rgba(232,226,214,0.16);
+  background: #34343c;              /* solid (no longer translucent) */
   transition: background .2s;
 }
 .v3-nav-knob {
@@ -2551,7 +2752,7 @@
   transform: translateX(16px);          /* right-hand state (default off) */
 }
 .s-home-v3--left .v3-nav-knob { transform: translateX(0); }   /* left-hand */
-.s-home-v3--left .v3-nav-switch { background: rgba(232,226,214,0.30); }   /* on = subtle, neutral */
+.s-home-v3--left .v3-nav-switch { background: #56565f; }   /* on = solid, lighter */
 
 /* Registered property so --v3-accent can be CSS-transitioned */
 @property --v3-accent {
@@ -2594,15 +2795,15 @@
   z-index: 0;
   color: var(--v3-box1-color, #3a1e2e);
   filter:
-    drop-shadow(-7px -7px 16px rgba(255,255,255,0.18))
-    drop-shadow(7px 7px 12px rgba(0,0,0,0.75));
+    drop-shadow(0 6px 14px rgba(0,0,0,0.5))
+    drop-shadow(0 16px 34px rgba(0,0,0,0.55));
 }
 .v3-bg-fill path { stroke: none; }
 .s-home-v3--light .v3-bg-fill {
   color: var(--v3-box1-color, #f0ece3);   /* procedural light tint (falls back to cream) */
   filter:
-    drop-shadow(-7px -7px 16px #d8d2c8)
-    drop-shadow(7px 7px 10px rgba(116,150,179,0.27));
+    drop-shadow(0 8px 16px rgba(30,20,10,0.18))
+    drop-shadow(0 20px 40px rgba(30,20,10,0.26));
 }
 
 /* All bento cells absolutely positioned from SVG coordinate space */
@@ -2886,9 +3087,6 @@
   0%, 18%  { transform: translateX(0); }
   78%, 100% { transform: translateX(var(--quote-scroll, -60%)); }
 }
-.s-home-v3--light .v3-blue-quote-text {
-  color: rgba(26,18,8,0.52);
-}
 
 /* Corner gap: spinning CD (bottom-right, no box bg) */
 .v3-corner {
@@ -2999,6 +3197,51 @@
 }
 .v3-live-label { color: rgba(232,226,214,0.9); }
 .s-home-v3--light .v3-live-label { color: rgba(26,18,8,0.85); }
+
+/* Live pill ring — 6 dots in a ring. Idle = slow spin; reacts to swipe / For You / CD. */
+.v3-ring {
+  position: relative;
+  width: 20px; height: 20px;
+  color: rgba(232,226,214,0.85);
+}
+.s-home-v3--light .v3-ring { color: rgba(26,18,8,0.7); }
+.v3-ring-spin {
+  position: absolute; inset: 0;
+  animation: v3ringspin 7s linear infinite;   /* idle: slow spin */
+}
+.v3-ring-dot {
+  position: absolute; top: 50%; left: 50%;
+  width: 3px; height: 3px; margin: -1.5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.v3-ring-dot:nth-child(1) { transform: rotate(0deg)   translateY(-7.5px); }
+.v3-ring-dot:nth-child(2) { transform: rotate(60deg)  translateY(-7.5px); }
+.v3-ring-dot:nth-child(3) { transform: rotate(120deg) translateY(-7.5px); }
+.v3-ring-dot:nth-child(4) { transform: rotate(180deg) translateY(-7.5px); }
+.v3-ring-dot:nth-child(5) { transform: rotate(240deg) translateY(-7.5px); }
+.v3-ring-dot:nth-child(6) { transform: rotate(300deg) translateY(-7.5px); }
+@keyframes v3ringspin { to { transform: rotate(360deg); } }
+
+/* Swipe: one quick full spin (on the rotating layer) */
+.v3-ring--swipe .v3-ring-spin { animation: v3ringswipe 0.6s cubic-bezier(0.34,1.2,0.64,1); }
+@keyframes v3ringswipe { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+
+/* For You tap: the ring pops outward (composes over the spin) */
+.v3-ring--foryou { animation: v3ringpop 0.5s ease; }
+@keyframes v3ringpop {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.45); }
+  100% { transform: scale(1); }
+}
+
+/* CD tap: a quick wobble */
+.v3-ring--cd { animation: v3ringwobble 0.5s ease; }
+@keyframes v3ringwobble {
+  0%, 100% { transform: rotate(0); }
+  25% { transform: rotate(-22deg); }
+  75% { transform: rotate(22deg); }
+}
 @keyframes v3livepulse {
   0%,100% { opacity: 1; }
   50%     { opacity: 0.45; }
@@ -3098,9 +3341,9 @@
 .v3-rev-btn--fav.on svg { fill: #ff5a6e; }
 /* Light theme */
 .s-home-v3--light .v3-rev-btn {
-  color: rgba(26,18,8,0.38); border-color: rgba(26,18,8,0.12); background: rgba(26,18,8,0.03);
+  color: rgba(232,226,214,0.38); border-color: rgba(232,226,214,0.12); background: rgba(232,226,214,0.03);
 }
-.s-home-v3--light .v3-rev-btn:hover { border-color: rgba(26,18,8,0.26); background: rgba(26,18,8,0.06); }
+.s-home-v3--light .v3-rev-btn:hover { border-color: rgba(232,226,214,0.26); background: rgba(232,226,214,0.06); }
 .s-home-v3--review .v3-hand-toggle { display: none; }   /* dev button out of the way */
 @keyframes v3revin {
   from { opacity: 0; transform: translateY(10px); }
@@ -3140,7 +3383,7 @@
   line-height: 1.12;
   font-variation-settings: 'wdth' 85;   /* condense the variable font so long titles fit */
 }
-.s-home-v3--light.s-home-v3--review .v3-blue-album { color: rgba(26,18,8,0.9); }
+.s-home-v3--light.s-home-v3--review .v3-blue-album { color: rgba(232,226,214,0.9); }
 /* Release year beside the album title — smaller + lighter than the album name */
 .s-home-v3--review .v3-blue-title {
   position: relative; top: 2px;
@@ -3157,7 +3400,7 @@
   font-size: 12px; font-weight: 300;
   color: rgba(232,226,214,0.5);
 }
-.s-home-v3--light.s-home-v3--review .v3-blue-date--fs { color: rgba(26,18,8,0.5); }
+.s-home-v3--light.s-home-v3--review .v3-blue-date--fs { color: rgba(232,226,214,0.5); }
 /* Push the rest of the stats down ~1 line to make room */
 .s-home-v3--review .v3-blue-stars-row { margin-top: 7px; }
 
@@ -3172,6 +3415,60 @@
    Nothing else about the layout changes — the CD stays in its fullscreen spot (and
    follows hand mode), and the panel content keeps the fullscreen arrangement. */
 .s-home-v3--review.s-home-v3--album .v3-bento { aspect-ratio: 689 / 862; }
+/* The pill height is a % of the bento; the album bento is taller (862 vs 638), so counter
+   it here to keep the Back button the same size as in the fullscreen review state. */
+.s-home-v3--review.s-home-v3--album .v3-live-pill { height: 7.54%; }
+/* Nudge the Back pill away from whichever edge it sits on (mirrors with hand layout) */
+.s-home-v3--review.s-home-v3--album.s-home-v3--left .v3-live-pill { transform: translate(4px, 4px); }
+.s-home-v3--review.s-home-v3--album:not(.s-home-v3--left) .v3-live-pill { transform: translate(-4px, 4px); }
+
+/* ── ARTIST PAGE — an --artist variation of the album page ────────────────
+   Banner (full width, fading top+bottom into the bg) instead of the square cover;
+   no CD / tracklist / media; a grid of the artist's albums below the info. */
+.s-home-v3--review.s-home-v3--album.s-home-v3--artist .v3-album {
+  left: -10px; width: calc(100% + 20px);   /* edge-to-edge, past the bento's 10px margins */
+  top: -20px;                              /* lift the banner up so more of it shows above the fade */
+  border-radius: 0;
+  box-shadow: none;
+  /* as tall as the album cover (inherits aspect-ratio:1), fading top+bottom into the bg */
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 6%, #000 76%, transparent 100%);
+          mask-image: linear-gradient(to bottom, transparent 0%, #000 6%, #000 76%, transparent 100%);
+}
+.s-home-v3--artist .v3-cd,
+.s-home-v3--artist .v3-preview-btn,
+.s-home-v3--artist .v3-nav-toggle,
+.s-home-v3--artist .v3-rev-songs,
+.s-home-v3--artist .v3-rev-media,
+.s-home-v3--artist .v3-blue-date { display: none; }
+/* Left-align the artist name / genre / stars */
+.s-home-v3--artist .v3-blue {
+  left: 0; width: 100%;
+  align-items: flex-start; text-align: left;
+}
+.s-home-v3--artist .v3-blue-info-row,
+.s-home-v3--artist .v3-blue-stars-row,
+.s-home-v3--artist .v3-blue-title { align-items: flex-start; justify-content: flex-start; text-align: left; }
+/* Left-align the Review/rate/log button with the text (drop the CD-column offset) */
+.s-home-v3--artist .v3-rev-mine {
+  margin-left: 0 !important; margin-right: 0 !important;
+  align-items: flex-start;
+}
+/* Artist page uses the default theme background, not the album's procedural color */
+.s-home-v3--review.s-home-v3--artist { background: #111116; }
+.s-home-v3--light.s-home-v3--review.s-home-v3--artist { background: #f0ece3; }
+.s-home-v3--artist .v3-bg-fill { display: none; }
+/* Match the trending page's 12px side margins (drop the review panel's extra 10px inset) */
+.s-home-v3--artist .v3-review-panel { padding-left: 0; padding-right: 0; }
+/* Genre — smaller + grey */
+.s-home-v3--artist .v3-blue-artist { font-size: 10px; font-weight: 400; color: rgba(232,226,214,0.5); }
+.s-home-v3--light.s-home-v3--artist .v3-blue-artist { color: rgba(26,18,8,0.45); }
+/* Rating bars — full width on the artist page (ignore the hand-column shift) */
+.s-home-v3--review.s-home-v3--artist .v3-rev-hist {
+  padding-left: 12px; padding-right: 12px; margin: 8px 0 8px;
+}
+/* Albums grid — only shown on the artist page (trending styling reused inside) */
+.v3-artist-albums { display: none; }
+.s-home-v3--artist .v3-artist-albums { display: block; padding: 2px 12px 0; }
 .s-home-v3--review.s-home-v3--album .v3-album {
   left: 0; top: 0; width: 100%; height: auto; aspect-ratio: 1;
   border-radius: 12px;
@@ -3215,8 +3512,9 @@
    the grid shrank (from the 22% column to a CD-width 58px) to re-align 'your review'
    with the album stats text above it. Right-hand mode sits at the panel edge already. */
 .s-home-v3--left .v3-rev-mine { margin-left: 12px; }
-/* Long album titles wrap to two lines in review mode — drop the CTA down a line to stay aligned */
-.v3-rev-title-2line .v3-rev-mine { margin-top: 50px; }
+/* Long album titles wrap to two lines in review mode — drop the CTA (and everything
+   below it, which follows in flow) down an extra line to clear the taller title. */
+.v3-rev-title-2line .v3-rev-mine { margin-top: 48px; }
 .v3-rev-mine-hd {
   font-size: 8px; font-weight: 700; letter-spacing: 0.8px;
   text-transform: uppercase; color: rgba(232,226,214,0.42);
@@ -3266,8 +3564,8 @@
   animation: v3caret 2.8s ease-in-out infinite;
 }
 @keyframes v3caret { 0%, 100% { opacity: 1; } 50% { opacity: 0.12; } }
-.s-home-v3--light .v3-rev-ph { color: rgba(26,18,8,0.3); }
-.s-home-v3--light .v3-rev-caret { background: rgba(26,18,8,0.4); }
+.s-home-v3--light .v3-rev-ph { color: rgba(232,226,214,0.3); }
+.s-home-v3--light .v3-rev-caret { background: rgba(232,226,214,0.4); }
 .v3-rev-submit {
   margin-top: 11px; align-self: flex-end; display: none;   /* shown by JS only once there's text */
   padding: 4px 12px; border-radius: 999px;
@@ -3281,23 +3579,38 @@
 
 /* Photo / media strip — small, horizontally scrollable; right edge fades to hint swipe */
 .v3-rev-media {
-  display: flex; gap: 6px;
-  margin: 13px 12px 4px;
-  overflow-x: auto; overflow-y: hidden;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-  -webkit-mask-image: linear-gradient(to right, #000 85%, transparent);
-          mask-image: linear-gradient(to right, #000 85%, transparent);
+  display: flex; flex-direction: column; gap: 8px;
 }
 .v3-rev-media::-webkit-scrollbar { display: none; }
 .v3-rev-photo {
   flex: 0 0 auto;
-  width: 64px; height: 64px;
+  width: 46px; height: 46px;
   border-radius: 7px;
   background-size: cover; background-position: center;
   background-color: rgba(232,226,214,0.06);
+  position: relative;
 }
-.s-home-v3--light .v3-rev-photo { background-color: rgba(26,18,8,0.06); }
+/* Music-video thumbnail — play badge */
+.v3-rev-play {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.v3-rev-play::before {
+  content: '';
+  position: absolute;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: rgba(0,0,0,0.5);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+}
+.v3-rev-play::after {
+  content: '';
+  position: relative;
+  border-style: solid;
+  border-width: 5px 0 5px 8px;
+  border-color: transparent transparent transparent #fff;
+  margin-left: 2px;
+}
+.s-home-v3--light .v3-rev-photo { background-color: rgba(232,226,214,0.06); }
 
 /* Tracklist — full-width, rate individual songs. Scrolls after ~8 rows. */
 .v3-rev-songs { width: 100%; box-sizing: border-box; margin: 10px 0 2px; }
@@ -3306,6 +3619,9 @@
    Left-hand: action grid (10 + 58) + mine (12 margin) sits to the left; songs already
    add 12 via the row → 80 total lands the title on the CTA/album line. */
 .s-home-v3--left .v3-rev-songs { padding-left: 80px; }
+/* Right-hand (CD on the right): mirror the shift so the tracklist lines up with the
+   stats/CTA column on the left instead of running full width into the CD side. */
+.s-home-v3:not(.s-home-v3--left) .v3-rev-songs { padding-right: 80px; }
 
 /* Review-spread histogram — 10 buckets (½★ … 5★), between the CTA and the tracklist */
 /* Negative top pulls the histogram (and the tracklist below it) up beside the taller
@@ -3331,25 +3647,28 @@
   display: flex; justify-content: space-between; margin-top: 4px;
   font-size: 9px; color: rgba(232,226,214,0.4); font-family: var(--font-mono);
 }
-.s-home-v3--light .v3-rev-hist-hd { color: rgba(26,18,8,0.42); }
-.s-home-v3--light .v3-rev-hist-sub { color: rgba(26,18,8,0.32); }
-.s-home-v3--light .v3-rev-hist-bars { border-bottom-color: rgba(26,18,8,0.12); }
-.s-home-v3--light .v3-rev-hist-axis { color: rgba(26,18,8,0.4); }
+.s-home-v3--light .v3-rev-hist-hd { color: rgba(232,226,214,0.42); }
+.s-home-v3--light .v3-rev-hist-sub { color: rgba(232,226,214,0.32); }
+.s-home-v3--light .v3-rev-hist-bars { border-bottom-color: rgba(232,226,214,0.12); }
+.s-home-v3--light .v3-rev-hist-axis { color: rgba(232,226,214,0.4); }
 
 /* ── Review section = the bento's column grid, continued BELOW the bento ──
    CD column → streaming icons (10px under the CD). Content column → CTA, then the
    reviews (10px under the CTA). The icon column is taken OUT OF FLOW (absolute) so
    its height can never drag the reviews down — that was the broken spacing. */
 .s-home-v3--review .v3-review-panel { position: relative; }
-.s-home-v3--review .v3-rev-actions {
-  position: absolute; top: 7px;
-  display: flex; flex-direction: column; gap: 9px;
-  width: auto; height: auto; margin: 0; padding: 0;
-  grid-template-columns: none; grid-template-rows: none;
+/* Media column — rides the CD side in review, flowing straight down and fading out. */
+.s-home-v3--review .v3-rev-media {
+  position: absolute; top: 11px;   /* lowered 4px */
+  width: 46px; max-height: 360px;
+  margin: 0; padding: 0;
+  overflow: hidden;
+  /* fade only near the bottom, matching the tracklist (which fades at 82%) */
+  -webkit-mask-image: linear-gradient(to bottom, #000 80%, transparent 100%);
+          mask-image: linear-gradient(to bottom, #000 80%, transparent 100%);
 }
-.s-home-v3--review.s-home-v3--left    .v3-rev-actions { left: 18px; right: auto; }
-.s-home-v3--review:not(.s-home-v3--left) .v3-rev-actions { right: 18px; left: auto; }
-.s-home-v3--review .v3-rev-actions .v3-rev-btn { width: 34px; height: 34px; }
+.s-home-v3--review.s-home-v3--left    .v3-rev-media { left: 25px; right: auto; }
+.s-home-v3--review:not(.s-home-v3--left) .v3-rev-media { right: 25px; left: auto; }
 /* Album view: icons ride up with the raised CD (and the pulled-up panel). */
 .s-home-v3--review.s-home-v3--album .v3-rev-actions { top: 3px; }
 /* Push the CTA content column clear of the absolute icon column (so a friend pill
@@ -3417,12 +3736,12 @@
   font-size: 9px; font-weight: 700; color: #fff;
 }
 .v3-rev-rec-name { color: #e8e2d6; font-weight: 700; }
-.s-home-v3--light .v3-rev-rec { background: rgba(26,18,8,0.05); border-color: rgba(26,18,8,0.1); color: rgba(26,18,8,0.7); }
-.s-home-v3--light .v3-rev-rec-name { color: #1a1208; }
-.s-home-v3--light .v3-song-row { color: #1a1208; border-top-color: rgba(26,18,8,0.07); }
-.s-home-v3--light .v3-song-row:hover { background: rgba(26,18,8,0.04); }
+.s-home-v3--light .v3-rev-rec { background: rgba(232,226,214,0.05); border-color: rgba(232,226,214,0.1); color: rgba(232,226,214,0.7); }
+.s-home-v3--light .v3-rev-rec-name { color: #e8e2d6; }
+.s-home-v3--light .v3-song-row { color: #e8e2d6; border-top-color: rgba(232,226,214,0.07); }
+.s-home-v3--light .v3-song-row:hover { background: rgba(232,226,214,0.04); }
 .s-home-v3--light .v3-song-num,
-.s-home-v3--light .v3-song-dur { color: rgba(26,18,8,0.45); }
+.s-home-v3--light .v3-song-dur { color: rgba(232,226,214,0.45); }
 
 /* Filters — text tabs, not pills; full-width with a divider above */
 .v3-rev-filters {
@@ -3430,7 +3749,7 @@
   padding: 15px 0 5px; margin: 16px 12px 0;
   border-top: 1px solid rgba(232,226,214,0.1);
 }
-.s-home-v3--light .v3-rev-filters { border-top-color: rgba(26,18,8,0.1); }
+.s-home-v3--light .v3-rev-filters { border-top-color: rgba(232,226,214,0.1); }
 .v3-rev-filter {
   padding: 0; border: none; background: none;
   color: rgba(232,226,214,0.4);
@@ -3472,25 +3791,25 @@
 }
 
 /* Light theme */
-.s-home-v3--light .v3-rev-mine-hd { color: rgba(26,18,8,0.42); }
-.s-home-v3--light .v3-rev-album-name { color: rgba(26,18,8,0.7); }
-.s-home-v3--light .v3-rev-star { color: rgba(26,18,8,0.16); }
+.s-home-v3--light .v3-rev-mine-hd { color: rgba(232,226,214,0.42); }
+.s-home-v3--light .v3-rev-album-name { color: rgba(232,226,214,0.7); }
+.s-home-v3--light .v3-rev-star { color: rgba(232,226,214,0.16); }
 .s-home-v3--light .v3-rev-star.half {
-  background: linear-gradient(90deg, var(--star, #e8a83c) 50%, rgba(26,18,8,0.16) 50%);
+  background: linear-gradient(90deg, var(--star, #e8a83c) 50%, rgba(232,226,214,0.16) 50%);
   -webkit-background-clip: text; background-clip: text;
   -webkit-text-fill-color: transparent;
 }
-.s-home-v3--light .v3-rev-write { color: #1a1208; }
+.s-home-v3--light .v3-rev-write { color: #e8e2d6; }
 .s-home-v3--light .v3-rev-write::placeholder { color: transparent; }
-.s-home-v3--light .v3-rev-filter { color: rgba(26,18,8,0.4); }
+.s-home-v3--light .v3-rev-filter { color: rgba(232,226,214,0.4); }
 .s-home-v3--light .v3-rev-filter.active { color: var(--v3-accent, #b06a2a); }
-.s-home-v3--light .v3-rev-count { color: rgba(26,18,8,0.35); }
-.s-home-v3--light .v3-rev-card { border-bottom-color: rgba(26,18,8,0.09); }
-.s-home-v3--light .v3-rev-name { color: rgba(26,18,8,0.8); }
-.s-home-v3--light .v3-rev-time { color: rgba(26,18,8,0.22); }
-.s-home-v3--light .v3-rev-likes { color: rgba(26,18,8,0.28); }
-.s-home-v3--light .v3-rev-text { color: rgba(26,18,8,0.5); }
-.s-home-v3--light .v3-rev-empty { color: rgba(26,18,8,0.4); }
+.s-home-v3--light .v3-rev-count { color: rgba(232,226,214,0.35); }
+.s-home-v3--light .v3-rev-card { border-bottom-color: rgba(232,226,214,0.09); }
+.s-home-v3--light .v3-rev-name { color: rgba(232,226,214,0.8); }
+.s-home-v3--light .v3-rev-time { color: rgba(232,226,214,0.22); }
+.s-home-v3--light .v3-rev-likes { color: rgba(232,226,214,0.28); }
+.s-home-v3--light .v3-rev-text { color: rgba(232,226,214,0.5); }
+.s-home-v3--light .v3-rev-empty { color: rgba(232,226,214,0.4); }
 
 /* Streaming service sheet */
 .v3-stream-overlay {
@@ -3511,6 +3830,32 @@
   width: 36px; height: 4px;
   background: rgba(255,255,255,0.13); border-radius: 99px;
   margin: 0 auto 14px;
+}
+/* Listen-to-preview button (accent) at the top of the sheet */
+.v3-stream-preview {
+  width: 100%; padding: 12px 16px; margin-bottom: 8px;
+  background: rgba(232,168,60,0.13);
+  border: 1px solid rgba(232,168,60,0.4);
+  border-radius: 14px;
+  color: var(--star, #e8a83c); font-size: 14px; font-weight: 700;
+  cursor: pointer; font-family: var(--font-main);
+  display: flex; align-items: center; gap: 12px; text-align: left;
+  transition: background .15s, opacity .15s;
+}
+.v3-stream-preview.none { opacity: 0.5; }
+.v3-stream-preview-ico {
+  width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+  background: var(--star, #e8a83c); color: #16130d;
+  display: flex; align-items: center; justify-content: center; gap: 3px;
+}
+.v3-stream-preview-ico svg { width: 15px; height: 15px; margin-left: 2px; }
+.v3-stream-preview-txt { flex: 1; }
+.v3-stream-preview-dur { font-family: var(--font-mono); font-size: 11px; opacity: 0.85; }
+/* Playing → swap the play triangle for a pause glyph */
+.v3-stream-preview.playing .v3-stream-preview-ico svg { display: none; }
+.v3-stream-preview.playing .v3-stream-preview-ico::before,
+.v3-stream-preview.playing .v3-stream-preview-ico::after {
+  content: ''; width: 3px; height: 12px; background: #16130d; border-radius: 1px;
 }
 .v3-stream-label {
   font-size: 9.5px; font-weight: 700;
@@ -3541,6 +3886,37 @@
   cursor: pointer; font-family: var(--font-main);
   margin-top: 2px;
 }
+/* Save row — Listened / Listen later / Add to playlist (toggle on tap) */
+.v3-stream-save {
+  width: 100%; padding: 11px 16px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 14px;
+  color: #e8e2d6; font-size: 14px; font-weight: 600;
+  cursor: pointer; font-family: var(--font-main);
+  display: flex; align-items: center; gap: 12px; text-align: left;
+  transition: background .15s, border-color .15s;
+}
+.v3-stream-sico {
+  width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,0.06); color: rgba(232,226,214,0.75);
+}
+.v3-stream-sico svg { width: 17px; height: 17px; }
+.v3-stream-stext { flex: 1; }
+.v3-stream-check {
+  width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+  border: 1.5px solid rgba(255,255,255,0.2);
+  display: flex; align-items: center; justify-content: center;
+}
+.v3-stream-save.on { background: rgba(232,168,60,0.12); border-color: rgba(232,168,60,0.4); }
+.v3-stream-save.on .v3-stream-sico { background: var(--star, #e8a83c); color: #16130d; }
+.v3-stream-save.on .v3-stream-check { border-color: var(--star, #e8a83c); background: var(--star, #e8a83c); }
+.v3-stream-save.on .v3-stream-check::after { content: '✓'; color: #16130d; font-size: 12px; font-weight: 800; }
+/* Light theme */
+.s-home-v3--light .v3-stream-save { background: rgba(26,18,8,0.04); border-color: rgba(26,18,8,0.08); color: #1a1208; }
+.s-home-v3--light .v3-stream-sico { background: rgba(26,18,8,0.06); color: rgba(26,18,8,0.7); }
+.s-home-v3--light .v3-stream-check { border-color: rgba(26,18,8,0.2); }
 
 
 /* ── v3 Light theme overrides (s-home-v3--light) ──────────── */
@@ -3557,7 +3933,9 @@
 .s-home-v3--light .v3-friend-album { color: #1a1208; }
 .s-home-v3--light .v3-friend-name { color: rgba(26,18,8,0.8); }
 .s-home-v3--light .v3-friend-time { color: rgba(26,18,8,0.22); }
-.s-home-v3--light .v3-friend-artist { color: rgba(26,18,8,0.38); }
+.s-home-v3--light .v3-friend-artist { color: rgba(26,18,8,0.55); }
+.s-home-v3--light .v3-friend-sep { color: rgba(26,18,8,0.28); }
+.s-home-v3--light .v3-friend-date { color: rgba(26,18,8,0.3); }
 .s-home-v3--light .v3-friend-quote { color: rgba(26,18,8,0.5); }
 .s-home-v3--light .v3-friend-likes { color: rgba(26,18,8,0.28); }
 .s-home-v3--light .v3-nav-item {
@@ -3572,8 +3950,8 @@
 }
 .s-home-v3--light .v3-nav-shape { color: #f0ece3; }
 .s-home-v3--light .v3-nav-shape path { stroke: rgba(26,18,8,0.12); }
-.s-home-v3--light .v3-nav-switch { background: rgba(26,18,8,0.16); }
-.s-home-v3--light.s-home-v3--left .v3-nav-switch { background: rgba(26,18,8,0.30); }
+.s-home-v3--light .v3-nav-switch { background: #cfc9be; }
+.s-home-v3--light.s-home-v3--left .v3-nav-switch { background: #b3ab9d; }
 .s-home-v3--light .v3-nav-knob { background: #1a1208; }
 .s-home-v3--light .v3-nav-item::before {
   background: linear-gradient(rgba(26,18,8,0) 0%, rgba(26,18,8,0.16) 45%, rgba(26,18,8,0.16) 55%, rgba(26,18,8,0) 100%);
@@ -3585,13 +3963,9 @@
 .s-home-v3--light .v3-blue {
   background: transparent;
 }
-.s-home-v3--light .v3-blue-artist { color: rgba(26,18,8,0.82); }
-.s-home-v3--light .v3-blue-date { color: rgba(26,18,8,0.42); }
-.s-home-v3--light .v3-blue-date--inline::before { color: rgba(26,18,8,0.25); }
-.s-home-v3--light .v3-blue-sep { color: rgba(26,18,8,0.18); }
-.s-home-v3--light .v3-blue-album { color: rgba(26,18,8,0.45); }
-.s-home-v3--light .v3-blue-count { color: rgba(26,18,8,0.35); }
-.s-home-v3--light .v3-blue-score { color: rgba(26,18,8,0.58); }
+/* Bento stats text: the bento is the same dark album color in both themes now, so its
+   text stays the dark-theme off-white in light mode too (inherits the base .v3-blue-* rules).
+   Only the feed BELOW the bento keeps black light-theme text. */
 /* CD hole - light */
 .s-home-v3--light .v3-cd-hole { background: #f0ece3; }
 .s-home-v3--light .v3-search-pill {
@@ -3635,10 +4009,10 @@
 .v3-rev-cta:hover  { filter: brightness(1.12); }
 .v3-rev-cta:active { transform: scale(0.985); }
 .s-home-v3--light .v3-rev-cta {
-  background: rgba(26,18,8,0.05);   /* fixed neutral — don't track the album's procedural tint */
-  color: #1a1208;
-  border-color: rgba(26,18,8,0.14);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.5);
+  background: rgba(232,226,214,0.05);   /* fixed neutral — don't track the album's procedural tint */
+  color: #e8e2d6;
+  border-color: rgba(232,226,214,0.14);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
 }
 
 /* Overlay: scoped to the phone screen it's mounted in (.app-screen is relative) */
@@ -3665,7 +4039,8 @@
   transform: translateY(130%);
   transition: transform .3s cubic-bezier(.22,1,.36,1);
   font-family: var(--font-main);
-  max-height: calc(100% - 20px);
+  height: 75%;                     /* takes ~75% of the screen */
+  max-height: 75%;
   overflow-y: auto;
   scrollbar-width: none;
 }
@@ -3803,3 +4178,127 @@
 
 /* Previews disabled for now — hide the speaker arm/disarm control */
 .v3-preview-btn { display: none !important; }
+
+/* ============================================================
+   ALBUM WALL v2 — trending page adapted to the home shell.
+   Uses the shared .s-home-v3 shell (header · nowbar · bottom nav);
+   only the scroll content below is wall-specific.
+   ============================================================ */
+.wall2-scroll {
+  padding: 4px 12px 96px;   /* .v3-body is the scroller; bottom clears the nowbar/nav overlay */
+}
+.wall2-hd {
+  display: flex; align-items: baseline; gap: 8px;
+  padding: 2px 0 12px;
+}
+.wall2-title {
+  font-family: var(--font-main); font-size: 22px; font-weight: 800;
+  letter-spacing: -0.6px; color: #e8e2d6;
+}
+.wall2-sub {
+  font-family: var(--font-mono); font-size: 10px;
+  color: rgba(232,226,214,0.34); letter-spacing: 0.2px;
+}
+.wall2-bar {
+  display: flex; align-items: center; gap: 7px;
+  padding-bottom: 12px;
+}
+.wall2-cat {
+  flex-shrink: 0;
+  padding: 6px 13px; border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(232,226,214,0.6);
+  font-family: var(--font-main); font-size: 11.5px; font-weight: 600;
+  cursor: pointer; white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 4px;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.wall2-cat:hover { background: rgba(255,255,255,0.1); color: #e8e2d6; }
+.wall2-cat.active {
+  background: var(--star); border-color: var(--star); color: #16130d;
+}
+.wall2-chev { font-size: 8px; opacity: 0.75; }
+.wall2-drop-btn.open { background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.22); color: #e8e2d6; }
+.wall2-menuwrap { position: relative; display: inline-flex; }
+.wall2-menuwrap--right { margin-left: auto; }   /* the time filter sits on the right */
+/* Compact dropdown popup anchored to its button (left for genres, right for time) */
+.wall2-menu {
+  position: absolute; top: calc(100% + 6px); z-index: 40;
+  min-width: 132px; padding: 5px;
+  display: flex; flex-direction: column; gap: 1px;
+  background: #1d1d24;
+  border-radius: 11px;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.06);
+}
+.wall2-menu[hidden] { display: none; }
+.wall2-menu--genres { left: 0; }
+.wall2-menu--time { right: 0; }
+.wall2-menu-item {
+  padding: 8px 12px; border-radius: 7px; border: none; background: none;
+  color: rgba(232,226,214,0.8);
+  font-family: var(--font-main); font-size: 11.5px; font-weight: 600;
+  cursor: pointer; text-align: left; white-space: nowrap;
+  transition: background .12s, color .12s;
+}
+.wall2-menu-item:hover { background: rgba(255,255,255,0.08); color: #e8e2d6; }
+.wall2-menu-item.active { color: var(--star); }
+/* Light theme */
+.s-home-v3--light .wall2-drop-btn.open { background: rgba(26,18,8,0.12); border-color: rgba(26,18,8,0.22); color: #1a1208; }
+.s-home-v3--light .wall2-menu { background: #f4efe6; box-shadow: 0 12px 30px rgba(30,20,10,0.2), inset 0 1px 0 rgba(255,255,255,0.7); }
+.s-home-v3--light .wall2-menu-item { color: rgba(26,18,8,0.75); }
+.s-home-v3--light .wall2-menu-item:hover { background: rgba(26,18,8,0.07); color: #1a1208; }
+.s-home-v3--light .wall2-menu-item.active { color: #b06a2a; }
+.wall2-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px 8px;
+}
+.wall2-cell { cursor: pointer; min-width: 0; }
+.wall2-art {
+  position: relative;
+  width: 100%; aspect-ratio: 1;
+  border-radius: 6px;
+  background-size: cover; background-position: center;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.45), 0 2px 5px rgba(0,0,0,0.4);
+  transition: transform .16s;
+}
+.wall2-cell:hover .wall2-art { transform: translateY(-2px); }
+.wall2-rank {
+  position: absolute; top: -6px; left: -6px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--star); color: #16130d;
+  font-family: var(--font-main); font-size: 11px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+}
+.wall2-meta { margin-top: 6px; display: flex; flex-direction: column; min-width: 0; }
+.wall2-album {
+  font-size: 11px; font-weight: 400; color: #e8e2d6;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.wall2-artist {
+  font-size: 9px; font-weight: 700; color: rgba(232,226,214,0.45);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.wall2-rating { margin-top: 1px; display: flex; align-items: center; gap: 4px; }
+.wall2-score {
+  font-size: 10px; font-weight: 700; color: rgba(232,226,214,0.6);
+  font-family: var(--font-mono);
+}
+/* Wall — light theme */
+.s-home-v3--light .wall2-title  { color: #1a1208; }
+.s-home-v3--light .wall2-sub    { color: rgba(26,18,8,0.4); }
+.s-home-v3--light .wall2-cat {
+  background: rgba(26,18,8,0.05);
+  border-color: rgba(26,18,8,0.12);
+  color: rgba(26,18,8,0.6);
+}
+.s-home-v3--light .wall2-cat:hover { background: rgba(26,18,8,0.1); color: #1a1208; }
+.s-home-v3--light .wall2-cat.active { color: #16130d; }
+.s-home-v3--light .wall2-album  { color: #1a1208; }
+.s-home-v3--light .wall2-artist { color: rgba(26,18,8,0.5); }
+.s-home-v3--light .wall2-score  { color: rgba(26,18,8,0.55); }
+.s-home-v3--light .wall2-art {
+  box-shadow: 0 6px 14px rgba(30,20,10,0.18), 0 2px 5px rgba(30,20,10,0.15);
+}
