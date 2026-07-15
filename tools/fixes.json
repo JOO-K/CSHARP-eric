@@ -1,0 +1,83 @@
+[
+  {
+    "artist": "Justice",
+    "artistImg": "images/artist-justice.jpg",
+    "albums": [
+      {
+        "album": "Justice",
+        "year": "2007",
+        "genre": "Electro",
+        "tracks": 12,
+        "image": "images/album-justice-justice.jpg"
+      },
+      {
+        "album": "Hyperdrama",
+        "year": "2024",
+        "genre": "Electro",
+        "tracks": 13,
+        "image": "images/album-justice-hyperdrama.jpg"
+      },
+      {
+        "album": "Woman Worldwide",
+        "year": "2018",
+        "genre": "Electro",
+        "tracks": 15,
+        "image": "images/album-justice-womanworldwide.jpg"
+      }
+    ]
+  },
+  {
+    "artist": "M.I.A.",
+    "artistImg": "images/artist-mia.jpg",
+    "albums": [
+      {
+        "album": "Kala",
+        "year": "2007",
+        "genre": "Electro",
+        "tracks": 12,
+        "image": "images/album-mia-kala.jpg"
+      },
+      {
+        "album": "Matangi",
+        "year": "2018",
+        "genre": "Electro",
+        "tracks": 16,
+        "image": "images/album-mia-matangi.jpg"
+      },
+      {
+        "album": "AIM (Deluxe)",
+        "year": "2016",
+        "genre": "Electro",
+        "tracks": 17,
+        "image": "images/album-mia-aim.jpg"
+      }
+    ]
+  },
+  {
+    "artist": "Remulak",
+    "artistImg": "images/artist-remulak.jpg",
+    "albums": [
+      {
+        "album": "Café del Mar Ibiza Chillout Mix III (DJ Mix)",
+        "year": "2023",
+        "genre": "Electro",
+        "tracks": 28,
+        "image": "images/album-remulak-cafdelmaribizachillout.jpg"
+      },
+      {
+        "album": "Afterglow",
+        "year": "2023",
+        "genre": "Rap/Hip Hop",
+        "tracks": 1,
+        "image": "images/album-remulak-afterglow.jpg"
+      },
+      {
+        "album": "Moments of Happiness (It's a Melody)",
+        "year": "2021",
+        "genre": "Rap/Hip Hop",
+        "tracks": 1,
+        "image": "images/album-remulak-momentsofhappiness.jpg"
+      }
+    ]
+  }
+]

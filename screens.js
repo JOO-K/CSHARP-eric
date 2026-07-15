@@ -1148,63 +1148,69 @@ const SCREENS = [
     variants: [{
       label: 'v1',
       thumb: ['accent','w70','w80','w50','w80'],
-      html: `
+      get html() {
+        const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        // onclick-safe: survives HTML-decode then JS single-quote parse
+        const oc = s => String(s).replace(/\\/g,'\\\\').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,"\\'");
+        const artist = window.activeArtist ||
+                       (window.activeAlbum && window.activeAlbum.artist) || 'Phoebe Bridgers';
+        let albums = (window.ARCHIVE || []).filter(x => x.artist === artist);
+        if (!albums.length && window.activeAlbum) albums = [window.activeAlbum];
+        albums = albums.slice().sort((a,b) => (b.rating - a.rating) || (b.reviewCount - a.reviewCount));
+        const first = albums[0] || {};
+        const photo = (window.ARTIST_IMG && window.ARTIST_IMG[artist]) || first.image || 'images/artist-phoebe.jpg';
+        const genre = first.genre || '';
+        const desc  = first.artistDesc || '';
+        const totalRev = albums.reduce((s,a) => s + (a.reviewCount||0), 0);
+        const avg = totalRev ? (albums.reduce((s,a)=>s + a.rating*(a.reviewCount||0),0)/totalRev) : (first.rating||0);
+        const listeners = Math.round(totalRev * 6.2);
+        const fr = window.fmtRc || (n => String(n));
+        return `
       <div class="app-screen s-artist">
         <div class="artist-hero">
-          <div class="artist-hero-img" style="background-image:url('images/artist-phoebe.jpg');background-size:cover;background-position:center top"></div>
+          <div class="artist-hero-img" style="background-image:url('${photo}');background-size:cover;background-position:center top"></div>
           <div class="artist-hero-overlay"></div>
-          <button class="album-back-btn" onclick="navigate('search')">‹</button>
-          <div class="artist-hero-name">Phoebe Bridgers</div>
+          <button class="album-back-btn" onclick="goBack()">‹</button>
+          <div class="artist-hero-name">${esc(artist)}</div>
         </div>
 
-        <div class="artist-meta">Indie Folk · American · 2014–present</div>
+        <div class="artist-meta">${[genre && esc(genre), albums.length + ' album' + (albums.length===1?'':'s')].filter(Boolean).join(' · ')}</div>
 
         <div class="artist-stats">
           <div class="album-stat">
             <div class="album-stat-val" style="display:flex;flex-direction:column;align-items:center;gap:3px">
-              <span style="font-size:18px;font-weight:800;letter-spacing:-0.5px">2.8K</span>
-              <div>${halfStars(4.5, 12)}</div>
+              <span style="font-size:18px;font-weight:800;letter-spacing:-0.5px">${fr(totalRev)}</span>
+              <div>${halfStars(Math.round(avg*2)/2, 12)}</div>
             </div>
             <div class="album-stat-lbl">Reviews</div>
           </div>
           <div class="album-stat">
             <div class="album-stat-val" style="display:flex;flex-direction:column;align-items:center;gap:3px">
-              <span style="font-size:18px;font-weight:800;letter-spacing:-0.5px">156K</span>
+              <span style="font-size:18px;font-weight:800;letter-spacing:-0.5px">${fr(listeners)}</span>
             </div>
             <div class="album-stat-lbl">Listeners</div>
           </div>
           <div class="album-stat">
-            <div class="album-stat-val" style="font-size:18px;font-weight:800;letter-spacing:-0.5px">4.6</div>
+            <div class="album-stat-val" style="font-size:18px;font-weight:800;letter-spacing:-0.5px">${avg.toFixed(1)}</div>
             <div class="album-stat-lbl">Avg Rating</div>
           </div>
         </div>
 
+        ${desc ? `<div style="padding:2px 20px 0;font-size:11px;color:var(--text2);line-height:1.5">${esc(first.artistBio || desc)}</div>` : ''}
+
         <div style="padding:0 20px">
           <div class="section-title" style="margin-top:16px;margin-bottom:12px">Top Albums</div>
           <div class="artist-albums-grid">
-            <div class="artist-album-item" onclick="navigate('album')">
-              <div class="album-art" style="width:100%;aspect-ratio:1;border-radius:8px;background-image:url('images/album-punisher.png');background-size:cover;background-position:center"></div>
-              <div style="font-size:12px;font-weight:600;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Punisher</div>
-              <div style="display:flex;align-items:center;gap:4px;margin-top:2px">${halfStars(4.5, 10)}<span style="font-size:9px;color:var(--text2);font-family:var(--font-mono)">(3.2k)</span></div>
-            </div>
-            <div class="artist-album-item" onclick="navigate('album')">
-              <div class="album-art" style="width:100%;aspect-ratio:1;border-radius:8px;background:linear-gradient(135deg,#1e3a5f,#374151)"></div>
-              <div style="font-size:12px;font-weight:600;margin-top:5px">Stranger in the Alps</div>
-              <div style="display:flex;align-items:center;gap:4px;margin-top:2px">${halfStars(4.5, 10)}<span style="font-size:9px;color:var(--text2);font-family:var(--font-mono)">(1.8k)</span></div>
-            </div>
-            <div class="artist-album-item" onclick="navigate('album')">
-              <div class="album-art" style="width:100%;aspect-ratio:1;border-radius:8px;background:linear-gradient(135deg,#1c1917,#44403c)"></div>
-              <div style="font-size:12px;font-weight:600;margin-top:5px">boygenius EP</div>
-              <div style="display:flex;align-items:center;gap:4px;margin-top:2px">${halfStars(4.5, 10)}<span style="font-size:9px;color:var(--text2);font-family:var(--font-mono)">(2.1k)</span></div>
-            </div>
-            <div class="artist-album-item" onclick="navigate('album')">
-              <div class="album-art" style="width:100%;aspect-ratio:1;border-radius:8px;background:linear-gradient(135deg,#0f172a,#1e293b)"></div>
-              <div style="font-size:12px;font-weight:600;margin-top:5px">the record</div>
-              <div style="display:flex;align-items:center;gap:4px;margin-top:2px">${halfStars(4.5, 10)}<span style="font-size:9px;color:var(--text2);font-family:var(--font-mono)">(904)</span></div>
-            </div>
+            ${albums.map(al => `
+            <div class="artist-album-item" onclick="openAlbumFor('${oc(al.artist)}','${oc(al.album)}')">
+              <div class="album-art" style="width:100%;aspect-ratio:1;border-radius:8px;background-image:url('${al.image}');background-size:cover;background-position:center"></div>
+              <div style="font-size:12px;font-weight:600;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(al.album)}</div>
+              <div style="display:flex;align-items:center;gap:4px;margin-top:2px">${halfStars(al.rating, 10)}<span style="font-size:9px;color:var(--text2);font-family:var(--font-mono)">(${fr(al.reviewCount)})</span></div>
+            </div>`).join('')}
           </div>
         </div>
-      </div>`
+      </div>`;
+      }
     }]
   },
 

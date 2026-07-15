@@ -1,0 +1,925 @@
+[
+  {
+    "artist": "Trippie Redd",
+    "artistImg": "images/artist-trippieredd.jpg",
+    "albums": [
+      {
+        "album": "genre : sadboy",
+        "year": "2024",
+        "genre": "Rap/Hip Hop",
+        "tracks": 10,
+        "image": "images/album-trippieredd-genresadboy.jpg"
+      },
+      {
+        "album": "LIFE'S A TRIP",
+        "year": "2018",
+        "genre": "Rap/Hip Hop",
+        "tracks": 14,
+        "image": "images/album-trippieredd-lifesatrip.jpg"
+      },
+      {
+        "album": "Trip At Knight",
+        "year": "2021",
+        "genre": "Rap/Hip Hop",
+        "tracks": 18,
+        "image": "images/album-trippieredd-tripatknight.jpg"
+      }
+    ]
+  },
+  {
+    "artist": "Justice",
+    "artistImg": "images/artist-justice.jpg",
+    "albums": [
+      {
+        "album": "Justice",
+        "year": "2007",
+        "genre": "Electro",
+        "tracks": 12,
+        "image": "images/album-justice-justice.jpg"
+      },
+      {
+        "album": "Hyperdrama",
+        "year": "2024",
+        "genre": "Electro",
+        "tracks": 13,
+        "image": "images/album-justice-hyperdrama.jpg"
+      },
+      {
+        "album": "Woman Worldwide",
+        "year": "2018",
+        "genre": "Electro",
+        "tracks": 15,
+        "image": "images/album-justice-womanworldwide.jpg"
+      }
+    ]
+  },
+  {
+    "artist": "Men I Trust",
+    "artistImg": "images/artist-menitrust.jpg",
+    "albums": [
+      {
+        "album": "Equus Caballus",
+        "year": "2025",
+        "genre": "Alternative",
+        "tracks": 13,
+        "image": "images/album-menitrust-equuscaballus.jpg"
+      },
+      {
+        "album": "Oncle Jazz",
+        "year": "2019",
+        "genre": "Pop",
+        "tracks": 24,
+        "image": "images/album-menitrust-onclejazz.jpg"
+      },
+      {
+        "album": "Untourable Album",
+        "year": "2023",
+        "genre": "Pop",
+        "tracks": 15,
+        "image": "images/album-menitrust-untourablealbum.jpg"
+      }
+    ]
+  },
+  {
+    "artist": "Leessang",
+    "artistImg": "images/artist-leessang.jpg",
+    "albums": [
+      {
+        "album": "AsuRaBalBalTa",
+        "year": "2011",
+        "genre": "Asian Music",
+        "tracks": 13,
+        "image": "images/album-leessang-asurabalbalta.jpg"
+      },
+      {
+        "album": "Leessang Of Honey Familly",
+        "year": "2002",
+        "genre": "Rap/Hip Hop",
+        "tracks": 16,
+        "image": "images/album-leessang-leessangofhoneyfamilly.jpg"
+      },
+      {
+        "album": "Leessang 3 - Library Of Soul",
+        "year": "2005",
+        "genre": "Asian Music",
+        "tracks": 13,
+        "image": "images/album-leessang-leessang3libraryofsoul.jpg"
+      }
+    ]
+  },
+  {
+    "artist": "Freestylers",
+    "artistImg": "images/artist-freestylers.jpg",
+    "albums": [
+      {
+        "album": "We Rock Hard",
+        "year": "2016",
+        "genre": "Electro",
+        "tracks": 15,
+        "image": "images/album-freestylers-werockhard.jpg"
+      },
+      {
+        "album": "Raw As F**k",
+        "year": "2012",
+        "genre": "Dance",
+        "tracks": 13,
+        "image": "images/album-freestylers-rawasfk.jpg"
+      },
+      {
+        "album": "Adventures In Freestyle",
+        "year": "2006",
+        "genre": "Dance",
+        "tracks": 15,
+        "image": "images/album-freestylers-adventuresinfreestyle.jpg"
+      }
+    ]
+  },
+  {
+    "artist": "Cake Pop",
+    "artistImg": "images/artist-cakepop.jpg",
+    "albums": [
+      {
+        "album": "Cake Pop 2",
+        "year": "2021",
+        "genre": "Electro",
+        "tracks": 10,
+        "image": "images/album-cakepop-cakepop2.jpg"
+      }
+    ]
+  },
+  {
+    "artist": "Kanye West",
+    "artistImg": "images/artist-kanyewest.jpg",
+    "albums": [
+      {
+        "album": "Graduation",
+        "year": "2007",
+        "genre": "Rap/Hip Hop",
+        "tracks": 14,
+        "image": "images/album-kanyewest-graduation.jpg"
+      },
+      {
+        "album": "The College Dropout",
+        "year": "2004",
+        "genre": "Rap/Hip Hop",
+        "tracks": 21,
+        "image": "images/album-kanyewest-thecollegedropout.jpg"
+      },
+      {
+        "album": "My Beautiful Dark Twisted Fantasy",
+        "year": "2010",
+        "genre": "Rap/Hip Hop",
+        "tracks": 13,
+        "image": "images/album-kanyewest-mybeautifuldarktwisted.jpg"
+      }
+    ]
+  },
+  {
+    "artist": "100 gecs",
+    "artistImg": "images/artist-100gecs.jpg",
+    "albums": [
+      {
+        "album": "1000 gecs and The Tree of Clues",
+        "year": "2020",
+        "genre": "Alternative",
+        "tracks": 19,
+        "image": "images/album-100gecs-1000gecsandthetreeofcl.jpg"
+      },
+      {
+        "album": "10,000 gecs",
+        "year": "2023",
+        "genre": "Alternative",
+        "tracks": 10,
+        "image": "images/album-100gecs-10000gecs.jpg"
+      },
+      {
+        "album": "1000 gecs",
+        "year": "2019",
+        "genre": "Alternative",
+        "tracks": 10,
+        "image": "images/album-100gecs-1000gecs.jpg"
+      }
+    ]
+  },
+  {
+    "artist": "Tim Presley",
+    "artistImg": "images/artist-timpresley.jpg",
+    "albums": [
+      {
+        "album": "The Wink",
+        "year": "2016",
+        "genre": "Rock",
+        "tracks": 12,
+        "image": "images/album-timpresley-thewink.jpg"
+      },
+      {
+        "album": "Must Let Go",
+        "year": "2020",
+        "genre": "Alternative",
+        "tracks": 1,
+        "image": "images/album-timpresley-mustletgo.jpg"
+      }
+    ]
+  },
+  {
+    "artist": "death's dynamic shroud",
+    "artistImg": "images/artist-deathsdynamicshroud.jpg",
+    "albums": [
+      {
+        "album": "Darklife",
+        "year": "2022",
+        "genre": "Electro",
+        "tracks": 15,
+        "image": "images/album-deathsdynamicshroud-darklife.jpg"
+      },
+      {
+        "album": "I'll Try Living Like This",
+        "year": "2015",
+        "genre": "Electro",
+        "tracks": 12,
+        "image": "images/album-deathsdynamicshroud-illtrylivinglikethis.jpg"
+      },
+      {
+        "album": "Faith In Persona",
+        "year": "2022",
+        "genre": "Electro",
+        "tracks": 9,
+        "image": "images/album-deathsdynamicshroud-faithinpersona.jpg"
+      }
+    ]
+  },
+  {
+    "artist": "$uicideboy$",
+    "artistImg": "images/artist-uicideboy.jpg",
+    "albums": [
+      {
+        "album": "THY KINGDOM COME",
+        "year": "2025",
+        "genre": "Rap/Hip Hop",
+        "tracks": 10,
+        "image": "images/album-uicideboy-thykingdomcome.jpg"
+      },
+      {
+        "album": "THY WILL BE DONE",
+        "year": "2025",
+        "genre": "Rap/Hip Hop",
+        "tracks": 10,
+        "image": "images/album-uicideboy-thywillbedone.jpg"
+      },
+      {
+        "album": "Sing Me a Lullaby, My Sweet Temptation",
+        "year": "2022",
+        "genre": "Rap/Hip Hop",
+        "tracks": 13,
+        "image": "images/album-uicideboy-singmealullabymysweett.jpg"
+      }
+    ]
+  },
+  {
+    "artist": "Bugseed",
+    "artistImg": "images/artist-bugseed.jpg",
+    "albums": [
+      {
+        "album": "Bohemian Beatnik",
+        "year": "2010",
+        "genre": "Rap/Hip Hop",
+        "tracks": 15,
+        "image": "images/album-bugseed-bohemianbeatnik.jpg"
+      },
+      {
+        "album": "Soundcraft",
+        "year": "2014",
+        "genre": "Rap/Hip Hop",
+        "tracks": 18,
+        "image": "images/album-bugseed-soundcraft.jpg"
+      },
+      {
+        "album": "Fresh Jive",
+        "year": "2018",
+        "genre": "Rap/Hip Hop",
+        "tracks": 8,
+        "image": "images/album-bugseed-freshjive.jpg"
+      }
+    ]
+  },
+  {
+    "artist": "CoryaYo",
+    "artistImg": "images/artist-coryayo.jpg",
+    "albums": [
+      {
+        "album": "Ra",
+        "year": "2018",
+        "genre": "Rap/Hip Hop",
+        "tracks": 13,
+        "image": "images/album-coryayo-ra.jpg"
+      },
+      {
+        "album": "Waves",
+        "year": "2015",
+        "genre": "Rap/Hip Hop",
+        "tracks": 22,
+        "image": "images/album-coryayo-waves.jpg"
+      },
+      {
+        "album": "Late Bloom",
+        "year": "2019",
+        "genre": "Rap/Hip Hop",
+        "tracks": 13,
+        "image": "images/album-coryayo-latebloom.jpg"
+      }
+    ]
+  },
+  {
+    "artist": "Remulak",
+    "artistImg": "images/artist-remulak.jpg",
+    "albums": [
+      {
+        "album": "Café del Mar Ibiza Chillout Mix III (DJ Mix)",
+        "year": "2023",
+        "genre": "Electro",
+        "tracks": 28,
+        "image": "images/album-remulak-cafdelmaribizachillout.jpg"
+      },
+      {
+        "album": "Afterglow",
+        "year": "2023",
+        "genre": "Rap/Hip Hop",
+        "tracks": 1,
+        "image": "images/album-remulak-afterglow.jpg"
+      },
+      {
+        "album": "Moments of Happiness (It's a Melody)",
+        "year": "2021",
+        "genre": "Rap/Hip Hop",
+        "tracks": 1,
+        "image": "images/album-remulak-momentsofhappiness.jpg"
+      }
+    ]
+  },
+  {
+    "artist": "J.Rawls",
+    "artistImg": "images/artist-jrawls.jpg",
+    "albums": [
+      {
+        "album": "Essence of Soul",
+        "year": "2005",
+        "genre": "Rap/Hip Hop",
+        "tracks": 12,
+        "image": "images/album-jrawls-essenceofsoul.jpg"
+      },
+      {
+        "album": "Hotel Beats, Vol. 1",
+        "year": "2017",
+        "genre": "Rap/Hip Hop",
+        "tracks": 21,
+        "image": "images/album-jrawls-hotelbeatsvol1.jpg"
+      },
+      {
+        "album": "Hotel Beats, Vol. 2",
+        "year": "2017",
+        "genre": "Rap/Hip Hop",
+        "tracks": 23,
+        "image": "images/album-jrawls-hotelbeatsvol2.jpg"
+      }
+    ]
+  },
+  {
+    "artist": "Pigeondust",
+    "artistImg": "images/artist-pigeondust.jpg",
+    "albums": [
+      {
+        "album": "Moon, Wisdom & Slackness",
+        "year": "2015",
+        "genre": "Electro",
+        "tracks": 17,
+        "image": "images/album-pigeondust-moonwisdomslackness.jpg"
+      },
+      {
+        "album": "Way Back When",
+        "year": "2020",
+        "genre": "Rap/Hip Hop",
+        "tracks": 36,
+        "image": "images/album-pigeondust-waybackwhen.jpg"
+      },
+      {
+        "album": "Chillhop Timezones Japan",
+        "year": "2025",
+        "genre": "Alternative",
+        "tracks": 20,
+        "image": "images/album-pigeondust-chillhoptimezonesjapan.jpg"
+      }
+    ]
+  },
+  {
+    "artist": "Shiro Sagisu",
+    "artistImg": "images/artist-shirosagisu.jpg",
+    "albums": [
+      {
+        "album": "NEON GENESIS EVANGELION (Original Series Soundtrack)",
+        "year": "2019",
+        "genre": "Films/Games",
+        "tracks": 22,
+        "image": "images/album-shirosagisu-neongenesisevangelion.jpg"
+      },
+      {
+        "album": "TV Animation BLEACH Original Soundtrack 3",
+        "year": "2008",
+        "genre": "Films/Games",
+        "tracks": 27,
+        "image": "images/album-shirosagisu-tvanimationbleachorigi.jpg"
+      },
+      {
+        "album": "TV Animation BLEACH Original Soundtrack 1",
+        "year": "2005",
+        "genre": "Films/Games",
+        "tracks": 25,
+        "image": "images/album-shirosagisu-tvanimationbleachorigi.jpg"
+      }
+    ]
+  },
+  {
+    "artist": "Jan Panenka",
+    "artistImg": "images/artist-janpanenka.jpg",
+    "albums": [
+      {
+        "album": "Mozart: Quintet in E-Flat Major - Beethoven: Sextet in E-Flat Major",
+        "year": "2023",
+        "genre": "Classical",
+        "tracks": 7,
+        "image": "images/album-janpanenka-mozartquintetineflatma.jpg"
+      },
+      {
+        "album": "Beethoven, Concierto para Piano No. 1 y Concierto para Piano No. 2",
+        "year": "2025",
+        "genre": "Classical",
+        "tracks": 6,
+        "image": "images/album-janpanenka-beethovenconciertopara.jpg"
+      },
+      {
+        "album": "Bořkovec, Podešva: Sonatas for Violin and Piano",
+        "year": "2024",
+        "genre": "Classical",
+        "tracks": 8,
+        "image": "images/album-janpanenka-bokovecpodevasonatasfo.jpg"
+      }
+    ]
+  },
+  {
+    "artist": "BAYNK",
+    "artistImg": "images/artist-baynk.jpg",
+    "albums": [
+      {
+        "album": "ADOLESCENCE",
+        "year": "2022",
+        "genre": "Electro",
+        "tracks": 10,
+        "image": "images/album-baynk-adolescence.jpg"
+      },
+      {
+        "album": "SENESCENCE",
+        "year": "2024",
+        "genre": "Electro",
+        "tracks": 10,
+        "image": "images/album-baynk-senescence.jpg"
+      },
+      {
+        "album": "Someone's EP II",
+        "year": "2019",
+        "genre": "Electro",
+        "tracks": 7,
+        "image": "images/album-baynk-someonesepii.jpg"
+      }
+    ]
+  },
+  {
+    "artist": "Vance Joy",
+    "artistImg": "images/artist-vancejoy.jpg",
+    "albums": [
+      {
+        "album": "Dream Your Life Away",
+        "year": "2014",
+        "genre": "Alternative",
+        "tracks": 13,
+        "image": "images/album-vancejoy-dreamyourlifeaway.jpg"
+      },
+      {
+        "album": "Nation of Two",
+        "year": "2018",
+        "genre": "Alternative",
+        "tracks": 13,
+        "image": "images/album-vancejoy-nationoftwo.jpg"
+      },
+      {
+        "album": "In Our Own Sweet Time",
+        "year": "2022",
+        "genre": "Alternative",
+        "tracks": 12,
+        "image": "images/album-vancejoy-inourownsweettime.jpg"
+      }
+    ]
+  },
+  {
+    "artist": "A. G. Cook",
+    "artistImg": "images/artist-agcook.jpg",
+    "albums": [
+      {
+        "album": "Soft Rock",
+        "year": "2023",
+        "genre": "Electro",
+        "tracks": 12,
+        "image": "images/album-agcook-softrock.jpg"
+      },
+      {
+        "album": "Britpop",
+        "year": "2024",
+        "genre": "Pop",
+        "tracks": 24,
+        "image": "images/album-agcook-britpop.jpg"
+      },
+      {
+        "album": "7G",
+        "year": "2020",
+        "genre": "",
+        "tracks": 49,
+        "image": "images/album-agcook-7g.jpg"
+      }
+    ]
+  },
+  {
+    "artist": "Dutch Disorder",
+    "artistImg": "images/artist-dutchdisorder.jpg",
+    "albums": [
+      {
+        "album": "Heroine",
+        "year": "2007",
+        "genre": "Electro",
+        "tracks": 1,
+        "image": "images/album-dutchdisorder-heroine.jpg"
+      }
+    ]
+  },
+  {
+    "artist": "DAVICHI",
+    "artistImg": "images/artist-davichi.jpg",
+    "albums": [
+      {
+        "album": "여성시대 / 영원한 사랑",
+        "year": "2009",
+        "genre": "Asian Music",
+        "tracks": 3,
+        "image": "images/album-davichi-.jpg"
+      },
+      {
+        "album": "Doom at Your Service (Original Television Soundtrack) Pt. 5",
+        "year": "2021",
+        "genre": "Films/Games",
+        "tracks": 2,
+        "image": "images/album-davichi-doomatyourservicept5.jpg"
+      },
+      {
+        "album": "Descendants Of The Sun Pt.3 (Original Television Soundtrack)",
+        "year": "2016",
+        "genre": "Films/Games",
+        "tracks": 2,
+        "image": "images/album-davichi-descendantsofthesunpt3.jpg"
+      }
+    ]
+  },
+  {
+    "artist": "BläZy",
+    "artistImg": "images/artist-blzy.jpg",
+    "albums": [
+      {
+        "album": "Polychrome",
+        "year": "2025",
+        "genre": "Rap/Hip Hop",
+        "tracks": 10,
+        "image": "images/album-blzy-polychrome.jpg"
+      }
+    ]
+  },
+  {
+    "artist": "Frou Frou",
+    "artistImg": "images/artist-froufrou.jpg",
+    "albums": [
+      {
+        "album": "Details",
+        "year": "2002",
+        "genre": "Rock",
+        "tracks": 11,
+        "image": "images/album-froufrou-details.jpg"
+      },
+      {
+        "album": "Off Cuts",
+        "year": "2022",
+        "genre": "Alternative",
+        "tracks": 6,
+        "image": "images/album-froufrou-offcuts.jpg"
+      },
+      {
+        "album": "new kind of FAK",
+        "year": "2024",
+        "genre": "Electro",
+        "tracks": 4,
+        "image": "images/album-froufrou-newkindoffak.jpg"
+      }
+    ]
+  },
+  {
+    "artist": "Niki Istrefi",
+    "artistImg": "images/artist-nikiistrefi.jpg",
+    "albums": [
+      {
+        "album": "EUROMANTIC001",
+        "year": "2017",
+        "genre": "Electro",
+        "tracks": 4,
+        "image": "images/album-nikiistrefi-euromantic001.jpg"
+      },
+      {
+        "album": "Confront The Assault (SCX020)",
+        "year": "2022",
+        "genre": "Electro",
+        "tracks": 5,
+        "image": "images/album-nikiistrefi-confronttheassault.jpg"
+      },
+      {
+        "album": "Body Changes Are Natural",
+        "year": "2020",
+        "genre": "Electro",
+        "tracks": 4,
+        "image": "images/album-nikiistrefi-bodychangesarenatural.jpg"
+      }
+    ]
+  },
+  {
+    "artist": "Megumi Hayashibara",
+    "artistImg": "images/artist-megumihayashibara.jpg",
+    "albums": [
+      {
+        "album": "スレイヤーズMEGUMIXXX",
+        "year": "2020",
+        "genre": "Films/Games",
+        "tracks": 33,
+        "image": "images/album-megumihayashibara-megumixxx.jpg"
+      },
+      {
+        "album": "Fifty～Fifty",
+        "year": "2018",
+        "genre": "Films/Games",
+        "tracks": 14,
+        "image": "images/album-megumihayashibara-fiftyfifty.jpg"
+      },
+      {
+        "album": "Evangelion Finally",
+        "year": "2020",
+        "genre": "Films/Games",
+        "tracks": 15,
+        "image": "images/album-megumihayashibara-evangelionfinally.jpg"
+      }
+    ]
+  },
+  {
+    "artist": "Yoko Takahashi",
+    "artistImg": "images/artist-yokotakahashi.jpg",
+    "albums": [
+      {
+        "album": "Evangelion Finally",
+        "year": "2020",
+        "genre": "Films/Games",
+        "tracks": 15,
+        "image": "images/album-yokotakahashi-evangelionfinally.jpg"
+      },
+      {
+        "album": "EVANGELION ETERNALLY",
+        "year": "2023",
+        "genre": "Films/Games",
+        "tracks": 8,
+        "image": "images/album-yokotakahashi-evangelioneternally.jpg"
+      },
+      {
+        "album": "Soreha Toki ni Anata wo hagemashi, Toki ni Sasae to naru Mono",
+        "year": "2020",
+        "genre": "Films/Games",
+        "tracks": 11,
+        "image": "images/album-yokotakahashi-sorehatokinianatawohag.jpg"
+      }
+    ]
+  },
+  {
+    "artist": "Arianne",
+    "artistImg": "images/artist-arianne.jpg",
+    "albums": [
+      {
+        "album": "Como Cantavam Nossos Pais (Ao Vivo)",
+        "year": "2018",
+        "genre": "",
+        "tracks": 9,
+        "image": "images/album-arianne-comocantavamnossospais.jpg"
+      },
+      {
+        "album": "Teus Altares",
+        "year": "2026",
+        "genre": "Christian",
+        "tracks": 2,
+        "image": "images/album-arianne-teusaltares.jpg"
+      },
+      {
+        "album": "30 Anos no Brasil (Ao Vivo)",
+        "year": "2025",
+        "genre": "",
+        "tracks": 6,
+        "image": "images/album-arianne-30anosnobrasil.jpg"
+      }
+    ]
+  },
+  {
+    "artist": "Florence + The Machine",
+    "artistImg": "images/artist-florencethemachine.jpg",
+    "albums": [
+      {
+        "album": "Between Two Lungs",
+        "year": "2010",
+        "genre": "Alternative",
+        "tracks": 25,
+        "image": "images/album-florencethemachine-betweentwolungs.jpg"
+      },
+      {
+        "album": "Everybody Scream",
+        "year": "2025",
+        "genre": "Alternative",
+        "tracks": 12,
+        "image": "images/album-florencethemachine-everybodyscream.jpg"
+      },
+      {
+        "album": "How Big, How Blue, How Beautiful (Deluxe)",
+        "year": "2015",
+        "genre": "Alternative",
+        "tracks": 16,
+        "image": "images/album-florencethemachine-howbighowbluehowbeauti.jpg"
+      }
+    ]
+  },
+  {
+    "artist": "M.I.A.",
+    "artistImg": "images/artist-mia.jpg",
+    "albums": [
+      {
+        "album": "Kala",
+        "year": "2007",
+        "genre": "Electro",
+        "tracks": 12,
+        "image": "images/album-mia-kala.jpg"
+      },
+      {
+        "album": "Matangi",
+        "year": "2018",
+        "genre": "Electro",
+        "tracks": 16,
+        "image": "images/album-mia-matangi.jpg"
+      },
+      {
+        "album": "AIM (Deluxe)",
+        "year": "2016",
+        "genre": "Electro",
+        "tracks": 17,
+        "image": "images/album-mia-aim.jpg"
+      }
+    ]
+  },
+  {
+    "artist": "Kid Cudi",
+    "artistImg": "images/artist-kidcudi.jpg",
+    "albums": [
+      {
+        "album": "Man On The Moon: The End Of Day",
+        "year": "2009",
+        "genre": "Rap/Hip Hop",
+        "tracks": 15,
+        "image": "images/album-kidcudi-manonthemoontheendofda.jpg"
+      },
+      {
+        "album": "Man On The Moon II: The Legend Of Mr. Rager",
+        "year": "2010",
+        "genre": "Rap/Hip Hop",
+        "tracks": 17,
+        "image": "images/album-kidcudi-manonthemooniithelegen.jpg"
+      },
+      {
+        "album": "Entergalactic",
+        "year": "2022",
+        "genre": "R&B",
+        "tracks": 15,
+        "image": "images/album-kidcudi-entergalactic.jpg"
+      }
+    ]
+  },
+  {
+    "artist": "The Killers",
+    "artistImg": "images/artist-thekillers.jpg",
+    "albums": [
+      {
+        "album": "Hot Fuss",
+        "year": "2004",
+        "genre": "Rock",
+        "tracks": 12,
+        "image": "images/album-thekillers-hotfuss.jpg"
+      },
+      {
+        "album": "Direct Hits",
+        "year": "2013",
+        "genre": "Alternative",
+        "tracks": 18,
+        "image": "images/album-thekillers-directhits.jpg"
+      },
+      {
+        "album": "Sam's Town",
+        "year": "2006",
+        "genre": "Pop",
+        "tracks": 12,
+        "image": "images/album-thekillers-samstown.jpg"
+      }
+    ]
+  },
+  {
+    "artist": "Syko",
+    "artistImg": "images/artist-syko.jpg",
+    "albums": [
+      {
+        "album": "Singles Collection (2017-2023)",
+        "year": "2025",
+        "genre": "Rap/Hip Hop",
+        "tracks": 14,
+        "image": "images/album-syko-singlescollection.jpg"
+      },
+      {
+        "album": "Monster",
+        "year": "2023",
+        "genre": "Rap/Hip Hop",
+        "tracks": 10,
+        "image": "images/album-syko-monster.jpg"
+      },
+      {
+        "album": "PLANET SYKO",
+        "year": "2019",
+        "genre": "Rap/Hip Hop",
+        "tracks": 7,
+        "image": "images/album-syko-planetsyko.jpg"
+      }
+    ]
+  },
+  {
+    "artist": "Joey Bada$$",
+    "artistImg": "images/artist-joeybada.jpg",
+    "albums": [
+      {
+        "album": "1999",
+        "year": "2018",
+        "genre": "Rap/Hip Hop",
+        "tracks": 15,
+        "image": "images/album-joeybada-1999.jpg"
+      },
+      {
+        "album": "ALL-AMERIKKKAN BADA$$",
+        "year": "2020",
+        "genre": "Rap/Hip Hop",
+        "tracks": 12,
+        "image": "images/album-joeybada-allamerikkkanbada.jpg"
+      },
+      {
+        "album": "2000",
+        "year": "2022",
+        "genre": "Rap/Hip Hop",
+        "tracks": 14,
+        "image": "images/album-joeybada-2000.jpg"
+      }
+    ]
+  },
+  {
+    "artist": "Earl Sweatshirt",
+    "artistImg": "images/artist-earlsweatshirt.jpg",
+    "albums": [
+      {
+        "album": "Why Lawd?",
+        "year": "2024",
+        "genre": "Rap/Hip Hop",
+        "tracks": 19,
+        "image": "images/album-earlsweatshirt-whylawd.jpg"
+      },
+      {
+        "album": "LOADING...",
+        "year": "2025",
+        "genre": "Rap/Hip Hop",
+        "tracks": 6,
+        "image": "images/album-earlsweatshirt-loading.jpg"
+      },
+      {
+        "album": "Animals Have Feelings",
+        "year": "2016",
+        "genre": "Electro",
+        "tracks": 22,
+        "image": "images/album-earlsweatshirt-animalshavefeelings.jpg"
+      }
+    ]
+  }
+]
