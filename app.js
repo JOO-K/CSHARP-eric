@@ -432,6 +432,10 @@ function populateArtistPage(scr) {
 
 window.exitReview = function (scr) {
   if (!scr) return;
+  // Freeze the For You box's geometry transition on the way back to the bento —
+  // it should already be sitting in its spot, not slide into it (same trick as toggleHand).
+  scr.classList.add('v3-hand-swapping');
+  requestAnimationFrame(() => requestAnimationFrame(() => scr.classList.remove('v3-hand-swapping')));
   scr.classList.remove('s-home-v3--review');
   scr.classList.remove('s-home-v3--album');
   scr.classList.remove('s-home-v3--artist');
@@ -475,10 +479,103 @@ window.pickWallTime = function (el) {
   closeWallMenus(scr);
 };
 
+// Playlists page — in-page tab switching (Lists / Artists / Albums / Songs / Genres).
+window.plTab = function (btn, tab) {
+  const scr = btn.closest('.app-screen');
+  if (!scr) return;
+  // Discover (outside the pill bar) acts as a tab too — clear/set active on both
+  scr.querySelectorAll('.pl2-bar .wall2-cat, .pl2-discover').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  scr.querySelectorAll('.pl2-sec').forEach(s => { s.hidden = s.dataset.tab !== tab; });
+};
+// Open a playlist's page from the Lists tab. plLists() (screens.js) is the
+// shared data source; the playlist screen's getter renders window.activePlaylist.
+window.openPlaylistPage = function (name) {
+  const pl = plLists().find(l => l.name === name);
+  if (!pl) return;
+  window.activePlaylist = pl;
+  navigate('playlist');
+};
+// Favorite the playlist — heart toggle; count follows, and the change is kept
+// on activePlaylist so it survives a re-render of this screen.
+window.togglePlFav = function (btn) {
+  const on = btn.classList.toggle('on');
+  const n = btn.querySelector('.plp-fav-n');
+  const v = (parseInt(n && n.textContent, 10) || 0) + (on ? 1 : -1);
+  if (n) n.textContent = v;
+  if (window.activePlaylist) { window.activePlaylist.favs = v; window.activePlaylist.faved = on; }
+  if (on) plRingSmile(btn.closest('.app-screen'));   // the back-pill dots grin about it
+};
+// Morph the back pill's arrow dots into the smiley face for a beat, then back.
+function plRingSmile(scope) {
+  (scope || document).querySelectorAll('.plp-ring').forEach(ring => {
+    ring.classList.add('v3-ring--smile');
+    clearTimeout(ring._smT);
+    ring._smT = setTimeout(() => ring.classList.remove('v3-ring--smile'), 1800);
+  });
+}
+// The mascot peeks intermittently — every so often the arrow reforms into the
+// smiley for a moment, purely for personality. No-ops when no playlist page is up.
+setInterval(() => plRingSmile(document), 11000);
+
+// First home render of the session: the live-pill dots greet you. Smiley for
+// ~5 seconds, then a wink + grin, then they morph into the arrow and get to work.
+let ringGreeted = false;
+function greetRing() {
+  if (ringGreeted) return;
+  const rings = [...document.querySelectorAll('.v3-live-pill .v3-ring')];
+  if (!rings.length) return;
+  ringGreeted = true;
+  rings.forEach(r => r.classList.add('v3-ring--smile'));
+  setTimeout(() => rings.forEach(r => r.classList.add('v3-ring--wink')), 3700);
+  setTimeout(() => rings.forEach(r => r.classList.remove('v3-ring--wink', 'v3-ring--smile')), 5000);
+}
+// CD tap → pick a streaming platform to open this playlist on (prototype menu).
+window.togglePlPlat = function (cd) {
+  const hero = cd.closest('.plp-hero');
+  const menu = hero && hero.querySelector('.plp-plat');
+  if (menu) menu.hidden = !menu.hidden;
+};
+// Playlists song row → log sheet for that song. Subject is passed inline from
+// data-attrs: the playlists screen has no _album, so openSongLog's fallback
+// (activeAlbum/featuredAlbum) would caption the sheet with the wrong album.
+window.plSongTap = function (el) {
+  openLogSheet(el, { image: el.dataset.image, title: el.dataset.title, subtitle: el.dataset.sub, isSong: true });
+};
+// Open the artist page for an artist by name, arriving from another screen
+// (e.g. the playlists Artists tab) — mirrors openAlbumPage: go home, enter the
+// --artist state, and Back returns to the origin screen.
+window.openArtistPageFor = function (artistName) {
+  const album = (window.ARCHIVE || []).find(a => a.artist === artistName);
+  if (!album) return;
+  window.activeAlbum = album;
+  const enter = s => {
+    setMainAlbum(s, album, false);
+    s.classList.add('s-home-v3--review', 's-home-v3--album', 's-home-v3--artist');
+    populateReviewPanel(s);
+    populateArtistPage(s);
+    const body = s.querySelector('.v3-body'); if (body) body.scrollTop = 0;
+  };
+  if (currentScreen().id === 'home' && homeShells().length) {
+    pushBack();
+    homeShells().forEach(enter);
+    return;
+  }
+  const originSnap = { review: false, screenId: currentScreen().id };
+  navigate('home');
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    backStack.push(originSnap);                        // Back → that origin screen
+    homeShells().forEach(enter);
+  }));
+};
+
 // Open the official album page (the fullscreen --album state on the home shell) for a given
 // album, arriving from another screen (e.g. trending). Back returns to that origin screen.
-window.openAlbumPage = function (album) {
+window.openAlbumPage = function (album, pinnedReview) {
   if (!album) return;
+  // A review tapped in a feed rides along and gets pinned atop the album's
+  // review list; any other path into an album page clears the pin.
+  window._pinnedReview = pinnedReview || null;
   window.activeAlbum = album;
   const shells = homeShells();
   // Already on the home shell (e.g. tapping an album on the artist page) → transition in place.
@@ -781,7 +878,24 @@ function populateReviewList(scr, filter) {
   else if (filter === 'new') revs.reverse();
   const countEl = scr.querySelector('.v3-rev-count');
   if (countEl) countEl.textContent = `${window.fmtRc(a.reviewCount || revs.length)} reviews`;
-  list.innerHTML = revs.map((r, i) => {
+  // A review arrived pinned from the home feed → it leads the list, regardless of filter
+  const pin = (window._pinnedReview && window._pinnedReview.album === a.album) ? window._pinnedReview : null;
+  const pinHtml = pin ? `
+    <div class="v3-rev-card v3-rev-card--pinned">
+      <div class="v3-rev-card-top">
+        <div class="v3-rev-av" style="background:${pin.grad || '#555'}">${pin.init || '?'}</div>
+        <span class="v3-rev-name">${pin.name || 'Listener'}</span>
+        <span class="v3-rev-pin-chip">from your feed</span>
+        <span class="v3-rev-time">${pin.ago || ''}</span>
+      </div>
+      <div class="v3-rev-meta">
+        ${halfStars(pin.rating || 4, 10)}
+        <span class="v3-rev-likes">♥ ${pin.likes || 0}</span>
+        <span class="v3-rev-likes">💬 ${pin.comments || 0}</span>
+      </div>
+      <div class="v3-rev-text">${pin.text || ''}</div>
+    </div>` : '';
+  list.innerHTML = pinHtml + revs.map((r, i) => {
     const m = revMeta(r, i);
     return `
     <div class="v3-rev-card">
@@ -800,14 +914,49 @@ function populateReviewList(scr, filter) {
   }).join('') || `<div class="v3-rev-empty">No reviews yet — be the first.</div>`;
 }
 
+// Friend-feed card taps: the card is the review → album page scrolled to the
+// review section with that review pinned on top; the art is the album → album
+// page from the top. (i indexes window.FRIEND_ACTIVITY — no attr-escaping woes.)
+function friendAlbumFor(f) {
+  return (window.ARCHIVE || []).find(x => x.album === f.album && x.artist === f.artist)
+      || (window.ARCHIVE || []).find(x => x.album === f.album) || null;
+}
+window.openFriendAlbum = function (i) {
+  const f = (window.FRIEND_ACTIVITY || [])[i];
+  const album = f && friendAlbumFor(f);
+  if (album) openAlbumPage(album);
+};
+window.openFriendReview = function (i) {
+  const f = (window.FRIEND_ACTIVITY || [])[i];
+  const album = f && friendAlbumFor(f);
+  if (!album) return;
+  openAlbumPage(album, {
+    album: f.album, name: f.user, init: f.init, grad: f.grad,
+    rating: f.rating, text: f.quote, ago: f.ago, likes: f.likes, comments: f.comments,
+  });
+  // After the album state renders, glide each shell down to the review list.
+  // Rect deltas are visually scaled by the phone-wrap transform → divide it out.
+  setTimeout(() => {
+    homeShells().forEach(s => {
+      const body = s.querySelector('.v3-body');
+      const target = s.querySelector('.v3-rev-list');
+      if (!body || !target) return;
+      const scale = body.getBoundingClientRect().width / body.offsetWidth || 1;
+      const top = (target.getBoundingClientRect().top - body.getBoundingClientRect().top) / scale + body.scrollTop - 130;
+      body.scrollTo({ top: Math.max(top, 0), behavior: 'smooth' });
+    });
+  }, 150);
+};
+
 function renderFriendFeed(screenEl) {
   const container = screenEl.querySelector('.v3-feed-items');
   if (!container || !window.FRIEND_ACTIVITY) return;
   const picked = [...window.FRIEND_ACTIVITY].sort(() => Math.random() - 0.5).slice(0, 6);
   container.innerHTML = picked.map(f => {
+    const idx = window.FRIEND_ACTIVITY.indexOf(f);
     const artStyle = f.image ? `background-image:url('${f.image}')` : `background:#444`;
-    return `<div class="v3-friend-card" onclick="navigate('album')">
-      <div class="v3-friend-art" style="${artStyle}"></div>
+    return `<div class="v3-friend-card" onclick="event.stopPropagation(); openFriendReview(${idx})">
+      <div class="v3-friend-art" style="${artStyle}" onclick="event.stopPropagation(); openFriendAlbum(${idx})"></div>
       <div class="v3-friend-body">
         <div class="v3-friend-who">
           <div class="v3-friend-av" style="background:${f.grad}">${f.init}</div>
@@ -962,7 +1111,12 @@ function populateHomeData(screenEl) {
   const seq = albumSeq();
   if (!seq.length) return;
   preloadColors(seq);
+  // Fresh render: the markup is right-handed and the stored hand pref lands a
+  // frame after first paint — freeze the For You geometry transition so the box
+  // appears in its spot instead of sliding across (Eric's #1 pet peeve).
+  screenEl.classList.add('v3-hand-swapping');
   applyHand(screenEl);
+  requestAnimationFrame(() => requestAnimationFrame(() => screenEl.classList.remove('v3-hand-swapping')));
 
   if (screenEl._albumIdx == null) screenEl._albumIdx = 0;
   const idx = ((screenEl._albumIdx % seq.length) + seq.length) % seq.length;
@@ -982,6 +1136,7 @@ function populateHomeData(screenEl) {
   }
 
   setupAlbumSwipe(screenEl);
+  greetRing();   // first home render of the session → the dots say hi
 }
 
 // Swipe the album art to move through albums: drag-left = next, drag-right = previous.
@@ -1631,6 +1786,11 @@ function initDragScroll(el) {
 
 window.pickVariant = function(screenId, idx) {
   if (_dragActive) return;
+  // No-op when the clicked column is already the active variant — a bubbled
+  // click would otherwise re-render the screen and wipe in-page state
+  // (open menus, tab selection, the back-pill smile).
+  const s = SCREENS.find(x => x.id === screenId);
+  if (s && getVariantIdx(s) === idx) return;
   setVariant(screenId, idx);
 };
 

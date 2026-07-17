@@ -44,7 +44,8 @@
 | `song` | Song / Track | 1 |
 | `review` | Review Page | 1 |
 | `profile` | Profile | 1 |
-| `playlists` | Playlists | My Lists, Artists, Albums, Songs, Genres |
+| `playlists` | Playlists | Float·Dark, Float·Light |
+| `playlist` | Playlist Page (detail) | Float·Dark, Float·Light |
 | `swipe` | Swipe Review | 1 |
 
 Navigate between screens with `navigate('screen-id')` — called from `onclick` handlers in screen HTML.
@@ -238,6 +239,8 @@ Fillet positions:
 
 Contains brand row ("CHARP / music, reviewed."), friend activity feed header, and `.v3-friend-card` items.
 
+**Feed card taps** (`renderFriendFeed` in app.js — cards carry an index into `FRIEND_ACTIVITY`, no attribute escaping): tapping the **art** → `openFriendAlbum(i)` → that album's page from the top; tapping the **card** (the review) → `openFriendReview(i)` → `openAlbumPage(album, pinnedReview)` — the album page opens, `.v3-body` smooth-scrolls to the review list (rect math divided by the phone-wrap scale), and the tapped review renders **pinned first** in `populateReviewList` (`.v3-rev-card--pinned`, star-outlined with a "from your feed" chip; survives filter switches, cleared whenever an album page opens without a pin). The old `navigate('album')` (deprecated standalone album screen) is no longer used by the feed.
+
 ### Bottom Nav — filleted shelf (Sony-VAIO / MP3 vibe)
 `.v3-bottom-nav` is a redesigned shelf, not a flat tab row. Structure:
 - **`.v3-nav-shape`** — an SVG silhouette (from `BOTTOM_NAV.svg`) that only spans the **left ~83%** (`.v3-nav-shelf`): a tall left logo column, a concave fillet swoop down to a shorter icon strip, and a rounded top-right. Filled with the screen bg + hairline stroke.
@@ -275,6 +278,32 @@ Light theme overrides these with hardcoded values (`background: #999`) — still
 - `animateText` → **type** motion (artist/album typewriter, stars fade, quote typewriter).
 
 They're decoupled because a **swipe** already filmstrips the cover art itself, so it passes `animate:false, animateText:true` (via `applyAlbumIndex(..., animateText)`) — the art slides through the swipe layers while the title/quote still typewrite in. A **"For You" tap** passes both `true`.
+
+---
+
+## Playlists / Library v2 (`playlistsHtml(light)` in screens.js)
+
+Adapted to the home shell like the wall: `.s-home-v3 .s-pl2` + `appHeader()` + `.v3-body > .pl2-scroll` + `nowBar()` + `bottomNav('playlists')`, rendered as a Float·Dark/Float·Light getter pair. **Playlists only** — no page title (the pills ARE the header; the old "Library / yours, catalogued" heading and the Artists/Albums/Songs/Genres tabs are gone). The top bar (`.pl2-topbar`) is two sort pills, then on the right an embossed **Discover** button and an embossed **"+" (new playlist) button** (both share the `.v3-search-pill` neu-emboss; "+" is prototype-only, no handler). Pills reuse the wall's `.wall2-bar`/`.wall2-cat`, switched client-side by `plTab(btn, tab)` in app.js (toggles `hidden` on `.pl2-sec[data-tab]` sections; no re-navigation — `plTab` also clears/sets `.active` on `.pl2-discover`, which acts as a third tab and fills `var(--star)` when active); the pill row scrolls horizontally and **fades out at the right edge** (CSS mask) when it overflows:
+- **All Playlists** — chronological (the `plLists()` order)
+- **Popularity** — favs desc
+- **Discover** — community playlists (`creator !== 'you'`), most-loved first (`plays` still lives in `plLists()` data, currently unused)
+
+Card geometry comes from Eric's `PlaylistBox_NEW.svg` / `PlaylistHLBox_NEW.svg` (688×158, scaled ~0.51): a split card — custom image panel (left) flush against the info panel (right: large title / `by creator · edited Xd ago` / `N songs · ♥ favs`). The `--hl` variant carves a concave scoop from the info panel's **lower-right** corner (screen-bg carve path, theme-specific color) and seats Eric's rounded tag in it with an icon centered inside; the tag recolors per type — **yellow + crown = community favorite (favs > 25)**, **blue + candle = staff pick (`staff: true` in `plLists()`)**; staff pick wins the slot if both apply. Ten sample lists (data in `plLists()`, shared with the playlist page) carry memey user-typed titles (mixed case, stray symbols — they're personal, not editorial), **custom cover art** (`images/playlist-*.jpg`, sourced from Eric's own images — deliberately NOT album covers), an `edited` stamp, and `plays`. Card click → `openPlaylistPage(name)`.
+
+Apostrophes in names are escaped with the same inline `replace(/'/g, '\\\'')` idiom the wall uses. (`openArtistPageFor` in app.js and the `.pl2-artist`/`.pl2-song`/`.pl2-genre` CSS survive from the removed tabs, currently unused.)
+
+## Playlist Page (`playlistPageHtml(light)` in screens.js)
+
+The detail page for one song playlist. Geometry from Eric's `PlaylistPageBox.svg` (688×303): the hero is an `aspect-ratio: 688/303` box — image panel + CD are positioned divs (percent coords straight from the SVG); the info panel and Popular dog-ear are **his exact SVG paths inlined** (`.plp-shape-panel`/`.plp-shape-tag`, filled via CSS per theme). The info panel has a concave swoop carved from its bottom-right; the spinning CD (reuses `v3spin` + `.v3-cd-hole`) seats in it and overflows below the panel.
+
+- Rendered from `window.activePlaylist` (set by `openPlaylistPage(name)` in app.js; falls back to `plLists()[0]`).
+- Info panel text: title / `by creator` / `N songs · edited Xd ago` / **majority genres** (`.plp-genres`, top 3 genres counted across the tracklist's albums, faint light letters).
+- Tracklist: seeded (`seedRand(name + '::pl')`) pick of archive albums, one `songsFor()` track each — deterministic per playlist. Rows are **one line** (song title boldest → album mid → artist lightest — deliberate exception to the artist-bold convention) that **fades out via mask** when too long, plus a numeric rating and duration. Ratings cluster near 4.0 (±0.35) with 1–2 seeded outliers (dud or banger). Row click → log sheet via `plSongTap`.
+- **Back pill** (`.plp-back-pill`, above the hero): styled like the home live pill (same `.v3-search-pill` neu-emboss — solid bg, dual shadow, no border) and reuses its 6-dot ring — arrow points **left** (back) regardless of hand mode; the formation rules sit before the reaction/smile formations in app.css so those still win. `.v3-ring--smile` morphs the dots into a mascot smiley (2 eyes + 4-dot smile): flashed by `plRingSmile()` when you favorite the playlist, and intermittently on an 11s timer.
+- **Home-load greeting** (`greetRing()` in app.js, called from `populateHomeData`, once per session): on the first home render the live-pill dots start as the smiley for ~10s, do a `.v3-ring--wink` (right eye squints + mouth corners lift, via keyframes that out-specific the smile's `animation: none`) at ~8.7s, then morph into the arrow.
+- **CD click** → `togglePlPlat`: streaming-platform menu (Spotify / Apple Music / SoundCloud, same icons as the review page's stream sheet), reusing `.wall2-menu` styling.
+- **Favorite**: `.plp-fav` heart pill → `togglePlFav` — toggles, adjusts the count, and persists `favs`/`faved` onto `activePlaylist` so re-renders keep the state.
+- `‹ Library` back button → `navigate('playlists')`; bottom nav stays on the playlists tab.
 
 ---
 

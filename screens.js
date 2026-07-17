@@ -1378,283 +1378,17 @@ const SCREENS = [
   {
     id: 'playlists', name: 'Playlists', statusTheme: 'light',
     variants: [
-      {
-        label: 'My Lists', version: 'v1.0',
-        thumb: ['w80','accent','w60','w80','w70'],
-        html: `
-        <div class="app-screen s-playlists">
-          ${topNav('playlists')}
-          <div class="home-header" style="padding:10px 16px 8px">
-            <div class="home-logo" style="font-size:16px">My Library</div>
-            <button class="icon-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
-          </div>
-          <div class="pl-exp-tabs">
-            <button class="pl-exp-tab active">My Lists</button>
-            <button class="pl-exp-tab" onclick="navigate('playlists')">Artists</button>
-            <button class="pl-exp-tab" onclick="navigate('playlists')">Albums</button>
-            <button class="pl-exp-tab" onclick="navigate('playlists')">Songs</button>
-            <button class="pl-exp-tab" onclick="navigate('playlists')">Genres</button>
-          </div>
+      { label: 'Float·Dark',  version: 'v2', thumb: ['w80','accent','w60','w80','w70'], get html() { return playlistsHtml(false); } },
+      { label: 'Float·Light', version: 'v2', thumb: ['w80','accent','w60','w80','w70'], get html() { return playlistsHtml(true);  } },
+    ]
+  },
 
-          <!-- Trending review highlight -->
-          <div style="padding:12px 16px 0">
-            <div class="pl-trending-review" onclick="navigate('album')">
-              <div class="pl-tr-badge">Trending Review · from your network</div>
-              <div class="pl-tr-quote">"this album rewired my brain. nothing before or after sounds like it"</div>
-              <div class="pl-tr-meta">
-                <div class="pl-tr-av" style="background:linear-gradient(135deg,#164e63,#0284c7)">SF</div>
-                <span class="pl-tr-by-text">staticfog on 1000 gecs &nbsp;${halfStars(5, 10)}</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="feed" style="padding:8px 16px 16px;gap:10px">
-            <div class="playlist-card">
-              <div class="pl-art-stack">
-                <div class="album-art" style="width:52px;height:52px;border-radius:6px;background:linear-gradient(135deg,#0f172a,#4338ca)"></div>
-                <div class="album-art" style="width:52px;height:52px;border-radius:6px;background:linear-gradient(135deg,#1a1a4e,#4a0e8f)"></div>
-                <div class="album-art" style="width:52px;height:52px;border-radius:6px;background:linear-gradient(135deg,#1b4332,#40916c)"></div>
-              </div>
-              <div class="pl-info"><div class="pl-name">Desert Island Picks</div><div class="pl-meta">12 albums · Updated 2d ago</div></div>
-            </div>
-            <div class="playlist-card">
-              <div class="pl-art-stack">
-                <div class="album-art" style="width:52px;height:52px;border-radius:6px;background:linear-gradient(135deg,#3b0000,#991b1b)"></div>
-                <div class="album-art" style="width:52px;height:52px;border-radius:6px;background:linear-gradient(135deg,#0f172a,#7c3aed)"></div>
-              </div>
-              <div class="pl-info"><div class="pl-name">Late Night Drives</div><div class="pl-meta">8 albums · Updated 1w ago</div></div>
-            </div>
-            <div class="playlist-card">
-              <div class="pl-art-stack">
-                <div class="album-art" style="width:52px;height:52px;border-radius:6px;background:linear-gradient(135deg,#1e3a5f,#0ea5e9)"></div>
-              </div>
-              <div class="pl-info"><div class="pl-name">Jazz Essentials</div><div class="pl-meta">5 albums · Updated 3w ago</div></div>
-            </div>
-          </div>
-        </div>`
-      },
-      {
-        label: 'Artists', version: 'v1.1',
-        thumb: ['accent','w70','w80','w60','w80'],
-        html: `
-        <div class="app-screen s-playlists">
-          ${topNav('playlists')}
-          <div class="home-header" style="padding:10px 16px 8px">
-            <div class="home-logo" style="font-size:16px">My Library</div>
-          </div>
-          <div class="pl-exp-tabs">
-            <button class="pl-exp-tab" onclick="navigate('playlists')">My Lists</button>
-            <button class="pl-exp-tab active">Artists</button>
-            <button class="pl-exp-tab" onclick="navigate('playlists')">Albums</button>
-            <button class="pl-exp-tab" onclick="navigate('playlists')">Songs</button>
-            <button class="pl-exp-tab" onclick="navigate('playlists')">Genres</button>
-          </div>
-          <div style="flex:1;overflow-y:auto;padding:0 16px;scrollbar-width:none">
-            <div class="pl-artist-row" onclick="navigate('artist')">
-              <div class="pla-art" style="background-image:url('images/artist-phoebe.jpg')"></div>
-              <div class="pla-info">
-                <div class="pla-name">Phoebe Bridgers</div>
-                <div class="pla-genre">Indie Folk · American</div>
-                <div class="pla-star-row">${halfStars(4.5, 13)}<span class="pla-rc">(2,847 reviews)</span></div>
-              </div>
-            </div>
-            <div class="pl-artist-row" onclick="navigate('artist')">
-              <div class="pla-art" style="background-image:url('images/artist-crystalcastles.jpg')"></div>
-              <div class="pla-info">
-                <div class="pla-name">Crystal Castles</div>
-                <div class="pla-genre">Electronic · Canadian</div>
-                <div class="pla-star-row">${halfStars(4.5, 13)}<span class="pla-rc">(1,892 reviews)</span></div>
-              </div>
-            </div>
-            <div class="pl-artist-row" onclick="navigate('artist')">
-              <div class="pla-art" style="background-image:url('images/artist-100gecs.jpg')"></div>
-              <div class="pla-info">
-                <div class="pla-name">100 gecs</div>
-                <div class="pla-genre">Hyperpop · American</div>
-                <div class="pla-star-row">${halfStars(4.5, 13)}<span class="pla-rc">(5,014 reviews)</span></div>
-              </div>
-            </div>
-            <div class="pl-artist-row" onclick="navigate('artist')">
-              <div class="pla-art" style="background-image:url('images/artist-carpenterbrut.jpg')"></div>
-              <div class="pla-info">
-                <div class="pla-name">Carpenter Brut</div>
-                <div class="pla-genre">Darksynth · French</div>
-                <div class="pla-star-row">${halfStars(4, 13)}<span class="pla-rc">(981 reviews)</span></div>
-              </div>
-            </div>
-            <div class="pl-artist-row" onclick="navigate('artist')">
-              <div class="pla-art" style="background:linear-gradient(135deg,#1a1a3e,#4c1d95)"></div>
-              <div class="pla-info">
-                <div class="pla-name">Burial</div>
-                <div class="pla-genre">UK Garage / Ambient · UK</div>
-                <div class="pla-star-row">${halfStars(5, 13)}<span class="pla-rc">(3,221 reviews)</span></div>
-              </div>
-            </div>
-          </div>
-        </div>`
-      },
-      {
-        label: 'Albums', version: 'v1.2',
-        thumb: ['w70','accent','w80','accent','w60'],
-        html: `
-        <div class="app-screen s-playlists">
-          ${topNav('playlists')}
-          <div class="home-header" style="padding:10px 16px 8px">
-            <div class="home-logo" style="font-size:16px">My Library</div>
-          </div>
-          <div class="pl-exp-tabs">
-            <button class="pl-exp-tab" onclick="navigate('playlists')">My Lists</button>
-            <button class="pl-exp-tab" onclick="navigate('playlists')">Artists</button>
-            <button class="pl-exp-tab active">Albums</button>
-            <button class="pl-exp-tab" onclick="navigate('playlists')">Songs</button>
-            <button class="pl-exp-tab" onclick="navigate('playlists')">Genres</button>
-          </div>
-          <div style="flex:1;overflow-y:auto;padding:8px 16px 16px;scrollbar-width:none">
-            <div class="pl-album-grid">
-              <div class="pl-album-item" onclick="navigate('album')">
-                <div class="pl-album-art" style="background-image:url('images/album-punisher.png')"></div>
-                <div class="pl-album-title">Punisher</div>
-                <div class="pl-album-rc">3.2k reviews · ${halfStars(4.5, 9)}</div>
-              </div>
-              <div class="pl-album-item" onclick="navigate('album')">
-                <div class="pl-album-art" style="background-image:url('images/album-crystalcastles1.png')"></div>
-                <div class="pl-album-title">Crystal Castles</div>
-                <div class="pl-album-rc">1.9k reviews · ${halfStars(4.5, 9)}</div>
-              </div>
-              <div class="pl-album-item" onclick="navigate('album')">
-                <div class="pl-album-art" style="background:linear-gradient(135deg,#042a10,#6aff3a 130%)"></div>
-                <div class="pl-album-title">1000 gecs</div>
-                <div class="pl-album-rc">5.0k reviews · ${halfStars(4.5, 9)}</div>
-              </div>
-              <div class="pl-album-item" onclick="navigate('album')">
-                <div class="pl-album-art" style="background:linear-gradient(135deg,#2a0044,#ff1a6e 200%)"></div>
-                <div class="pl-album-title">Leather Teeth</div>
-                <div class="pl-album-rc">981 reviews · ${halfStars(4, 9)}</div>
-              </div>
-              <div class="pl-album-item" onclick="navigate('album')">
-                <div class="pl-album-art" style="background:linear-gradient(135deg,#1e3a5f,#374151)"></div>
-                <div class="pl-album-title">Stranger Alps</div>
-                <div class="pl-album-rc">1.8k reviews · ${halfStars(4.5, 9)}</div>
-              </div>
-              <div class="pl-album-item" onclick="navigate('album')">
-                <div class="pl-album-art" style="background:linear-gradient(135deg,#1a1a3e,#4c1d95)"></div>
-                <div class="pl-album-title">Untrue</div>
-                <div class="pl-album-rc">3.2k reviews · ${halfStars(5, 9)}</div>
-              </div>
-            </div>
-          </div>
-        </div>`
-      },
-      {
-        label: 'Songs', version: 'v1.3',
-        thumb: ['w60','w80','accent','w70','w80'],
-        html: `
-        <div class="app-screen s-playlists">
-          ${topNav('playlists')}
-          <div class="home-header" style="padding:10px 16px 8px">
-            <div class="home-logo" style="font-size:16px">My Library</div>
-          </div>
-          <div class="pl-exp-tabs">
-            <button class="pl-exp-tab" onclick="navigate('playlists')">My Lists</button>
-            <button class="pl-exp-tab" onclick="navigate('playlists')">Artists</button>
-            <button class="pl-exp-tab" onclick="navigate('playlists')">Albums</button>
-            <button class="pl-exp-tab active">Songs</button>
-            <button class="pl-exp-tab" onclick="navigate('playlists')">Genres</button>
-          </div>
-          <div style="flex:1;overflow-y:auto;padding:0 16px;scrollbar-width:none">
-            <div class="pl-song-row" onclick="navigate('song')">
-              <div class="pls-num">1</div>
-              <div class="pls-art" style="background-image:url('images/album-punisher.png')"></div>
-              <div class="pls-info"><div class="pls-title">Garden Song</div><div class="pls-artist">Phoebe Bridgers</div></div>
-              <div class="pls-right"><div class="pls-dur">3:58</div><div class="pls-rating">4.9 ★</div></div>
-            </div>
-            <div class="pl-song-row" onclick="navigate('song')">
-              <div class="pls-num">2</div>
-              <div class="pls-art" style="background-image:url('images/album-crystalcastles1.png')"></div>
-              <div class="pls-info"><div class="pls-title">Crimewave</div><div class="pls-artist">Crystal Castles</div></div>
-              <div class="pls-right"><div class="pls-dur">3:28</div><div class="pls-rating">4.8 ★</div></div>
-            </div>
-            <div class="pl-song-row" onclick="navigate('song')">
-              <div class="pls-num">3</div>
-              <div class="pls-art" style="background:linear-gradient(135deg,#042a10,#6aff3a 130%)"></div>
-              <div class="pls-info"><div class="pls-title">xXXi_wud_nvrstøp_ÿ (1)</div><div class="pls-artist">100 gecs</div></div>
-              <div class="pls-right"><div class="pls-dur">2:04</div><div class="pls-rating">4.7 ★</div></div>
-            </div>
-            <div class="pl-song-row" onclick="navigate('song')">
-              <div class="pls-num">4</div>
-              <div class="pls-art" style="background-image:url('images/album-punisher.png')"></div>
-              <div class="pls-info"><div class="pls-title">Savior Complex</div><div class="pls-artist">Phoebe Bridgers</div></div>
-              <div class="pls-right"><div class="pls-dur">4:16</div><div class="pls-rating">4.9 ★</div></div>
-            </div>
-            <div class="pl-song-row" onclick="navigate('song')">
-              <div class="pls-num">5</div>
-              <div class="pls-art" style="background:linear-gradient(135deg,#2a0044,#ff1a6e 200%)"></div>
-              <div class="pls-info"><div class="pls-title">Hairpray Queen</div><div class="pls-artist">Carpenter Brut</div></div>
-              <div class="pls-right"><div class="pls-dur">5:12</div><div class="pls-rating">4.6 ★</div></div>
-            </div>
-            <div class="pl-song-row" onclick="navigate('song')">
-              <div class="pls-num">6</div>
-              <div class="pls-art" style="background:linear-gradient(135deg,#1a1a3e,#4c1d95)"></div>
-              <div class="pls-info"><div class="pls-title">Archangel</div><div class="pls-artist">Burial</div></div>
-              <div class="pls-right"><div class="pls-dur">5:01</div><div class="pls-rating">5.0 ★</div></div>
-            </div>
-            <div class="pl-song-row" onclick="navigate('song')">
-              <div class="pls-num">7</div>
-              <div class="pls-art" style="background-image:url('images/album-crystalcastles1.png')"></div>
-              <div class="pls-info"><div class="pls-title">Courtship Dating</div><div class="pls-artist">Crystal Castles</div></div>
-              <div class="pls-right"><div class="pls-dur">4:01</div><div class="pls-rating">4.7 ★</div></div>
-            </div>
-          </div>
-        </div>`
-      },
-      {
-        label: 'Genres', version: 'v1.4',
-        thumb: ['w80','w60','w80','accent','w70'],
-        html: `
-        <div class="app-screen s-playlists">
-          ${topNav('playlists')}
-          <div class="home-header" style="padding:10px 16px 8px">
-            <div class="home-logo" style="font-size:16px">My Library</div>
-          </div>
-          <div class="pl-exp-tabs">
-            <button class="pl-exp-tab" onclick="navigate('playlists')">My Lists</button>
-            <button class="pl-exp-tab" onclick="navigate('playlists')">Artists</button>
-            <button class="pl-exp-tab" onclick="navigate('playlists')">Albums</button>
-            <button class="pl-exp-tab" onclick="navigate('playlists')">Songs</button>
-            <button class="pl-exp-tab active">Genres</button>
-          </div>
-          <div style="flex:1;overflow-y:auto;padding:10px 16px 16px;scrollbar-width:none">
-            <div class="pl-genre-card" style="background:linear-gradient(135deg,#12103a,#2d1b69)" onclick="navigate('album')">
-              <div class="plg-name">Electronic</div>
-              <div class="plg-stats">12,441 reviews · avg 4.4 ★</div>
-              <div class="plg-tr-label">Trending Review</div>
-              <div class="plg-tr-text">"chaotic and beautiful. alice's vocals hit like static shock every single time"</div>
-              <div class="plg-tr-by">— echoplex on Crystal Castles</div>
-            </div>
-            <div class="pl-genre-card" style="background:linear-gradient(135deg,#071a0e,#134d22)" onclick="navigate('album')">
-              <div class="plg-name">Indie Folk</div>
-              <div class="plg-stats">8,892 reviews · avg 4.5 ★</div>
-              <div class="plg-tr-label">Trending Review</div>
-              <div class="plg-tr-text">"funeral is the most heartbreaking song ive heard in years. phoebe ruins you gently"</div>
-              <div class="plg-tr-by">— echoplex on Punisher</div>
-            </div>
-            <div class="pl-genre-card" style="background:linear-gradient(135deg,#1a0d00,#4a2000)" onclick="navigate('album')">
-              <div class="plg-name">Hip-Hop</div>
-              <div class="plg-stats">22,310 reviews · avg 4.3 ★</div>
-              <div class="plg-tr-label">Trending Review</div>
-              <div class="plg-tr-text">"every bar lands different depending on where you are in life. album of the decade"</div>
-              <div class="plg-tr-by">— velvetblast on To Pimp a Butterfly</div>
-            </div>
-            <div class="pl-genre-card" style="background:linear-gradient(135deg,#0a0a0a,#2a2a2a)" onclick="navigate('album')">
-              <div class="plg-name">Hyperpop</div>
-              <div class="plg-stats">5,014 reviews · avg 4.6 ★</div>
-              <div class="plg-tr-label">Trending Review</div>
-              <div class="plg-tr-text">"this album rewired my brain. nothing before or after sounds like it"</div>
-              <div class="plg-tr-by">— staticfog on 1000 gecs</div>
-            </div>
-          </div>
-        </div>`
-      }
+  // ── 12b. PLAYLIST PAGE (detail) ─────────────────────────────
+  {
+    id: 'playlist', name: 'Playlist Page', statusTheme: 'light',
+    variants: [
+      { label: 'Float·Dark',  version: 'v1', thumb: ['accent','w80','w60','w70','w50'], get html() { return playlistPageHtml(false); } },
+      { label: 'Float·Light', version: 'v1', thumb: ['accent','w80','w60','w70','w50'], get html() { return playlistPageHtml(true);  } },
     ]
   },
 
@@ -1779,6 +1513,191 @@ function wallHtml(light) {
         </div>
         ${nowBar()}
         ${bottomNav('wall')}
+      </div>`;
+}
+
+// Song playlists — the shared data for the Lists tab and the playlist page.
+// Each has ONE custom image (archive covers stand in for uploads), a free-form
+// title, a creator, a track count and a favorites count. favs > 25 → "Popular"
+// (--hl box + dog-ear, and the Popular category tab). Array order = chronological
+// (most recently updated first) — that's the load-in order of the Lists tab.
+// Custom playlists — memey user-typed titles (mixed case, stray symbols: they're
+// personal, not editorial), custom cover art (images/playlist-*.jpg — Eric's own
+// images, NOT album covers), and a last-edited stamp shown on the card by-line.
+function plLists() {
+  return [
+    { name: 'desert island picks ✧',        creator: 'you',         tracks: 24, favs: 87,  plays: 12400, edited: '2h ago', image: 'images/playlist-cyano-birds.jpg' },
+    { name: 'nite drives ~ no destination', creator: 'you',         tracks: 18, favs: 12,  plays: 2100,  edited: '1d ago', image: 'images/playlist-car-dash.jpg' },
+    { name: '3am and raining',              creator: 'staticfog',   tracks: 31, favs: 24,  plays: 8900,  edited: '3d ago', image: 'images/playlist-misty-lake.jpg', staff: true },
+    { name: 'gym but make it sad :(',       creator: 'echoplex',    tracks: 15, favs: 9,   plays: 1400,  edited: '4d ago', image: 'images/playlist-chrome-ooh.jpg' },
+    { name: 'HEAVY ROTATION™',              creator: 'velvetblast', tracks: 42, favs: 138, plays: 31000, edited: '1w ago', image: 'images/playlist-city-red.jpg' },
+    { name: 'sunday reset ✿',               creator: 'you',         tracks: 21, favs: 4,   plays: 800,   edited: '1w ago', image: 'images/playlist-wildflowers.jpg' },
+    { name: 'first date jitters ♡',         creator: 'moonwire',    tracks: 13, favs: 18,  plays: 3200,  edited: '2w ago', image: 'images/playlist-hibiscus.jpg' },
+    { name: 'crying in the club (derogatory)', creator: 'staticfog', tracks: 27, favs: 22, plays: 5600,  edited: '3w ago', image: 'images/playlist-statue-night.jpg' },
+    { name: 'headphones on, world off.',    creator: 'echoplex',    tracks: 36, favs: 19,  plays: 7300,  edited: '1mo ago', image: 'images/playlist-ink-alley.jpg', staff: true },
+    { name: 'songs my dad showed me',       creator: 'velvetblast', tracks: 17, favs: 21,  plays: 4100,  edited: '2mo ago', image: 'images/playlist-cyano-horse.jpg' },
+  ];
+}
+
+// Playlists / Library — adapted to the home shell like the wall. The old five
+// variants (My Lists / Artists / Albums / Songs / Genres) are now in-page pill
+// tabs (reusing the wall's .wall2-cat pills) switched client-side by plTab().
+// All content is generated fresh from ARCHIVE on each render (getter pattern).
+function playlistsHtml(light) {
+  const esc = s => String(s).replace(/'/g, '\\\'');
+
+  // Playlists only — data shared with the playlist page via plLists().
+  // All Playlists = chronological; Popularity = favs desc;
+  // Discover = other people's playlists from the community, most-loved first.
+  const lists = plLists();
+  const byFavs = lists.slice().sort((a, b) => b.favs - a.favs);
+  const community = byFavs.filter(l => l.creator !== 'you');
+  // Lower-right tag slot (geometry from PlaylistBox_NEW / PlaylistHLBox_NEW.svg):
+  // a screen-bg carve scoops the info panel's lower-right corner and Eric's
+  // rounded tag seats in it, recolored per type with a centered icon —
+  // yellow + crown = community favorite (favs > 25), blue + candle = staff pick.
+  const TAG_ICONS = {
+    fav:   '<path d="M3 17.5V8.2L8 12L12 5.2L16 12L21 8.2V17.5H3Z"/>',                                     // crown
+    staff: '<path d="M12 3.2C13.6 5.4 14.8 6.8 12 9C9.2 6.8 10.4 5.4 12 3.2Z"/><path d="M9.6 11H14.4V20.4A0.8 0.8 0 0 1 13.6 21.2H10.4A0.8 0.8 0 0 1 9.6 20.4V11Z"/>', // candle
+  };
+  const listCard = l => {
+    const tag = l.staff ? 'staff' : (l.favs > 25 ? 'fav' : '');   // staff pick wins the corner slot
+    const tagTitle = l.staff ? 'Staff pick' : 'Community favorite — 25+ favorites';
+    return `
+              <div class="pl2-list-card${tag ? ' pl2-list-card--hl' : ''}" onclick="openPlaylistPage('${esc(l.name)}')">
+                <div class="pl2-list-img" style="background-image:url('${l.image}')"></div>
+                <div class="pl2-list-body">
+                  <div class="pl2-list-name">${l.name}</div>
+                  <div class="pl2-list-by">by <b>${l.creator}</b>${l.edited ? ` · edited ${l.edited}` : ''}</div>
+                  <div class="pl2-list-meta">${l.tracks} songs · ♥ ${l.favs}</div>
+                  ${tag ? `
+                  <svg class="pl2-list-carve" viewBox="579.759 93.4336 106.904 63.2844" aria-hidden="true"><path fill="currentColor" d="M686.663 93.4336C686.663 98.6801 682.409 102.933 677.163 102.934H633.543C607.275 102.934 585.981 124.228 585.981 150.495C585.981 153.932 583.195 156.718 579.759 156.718H686.663V93.4336Z"/></svg>
+                  <svg class="pl2-list-tag2 pl2-list-tag2--${tag}" viewBox="601.196 116.923 85.466 39.795"><title>${tagTitle}</title><path fill="currentColor" d="M636.958 116.923H666.764C677.753 116.923 686.662 125.831 686.662 136.821C686.662 147.81 677.753 156.718 666.764 156.718H605.229C603.002 156.718 601.196 154.912 601.196 152.685C601.196 132.934 617.207 116.923 636.958 116.923Z"/><g class="pl2-tag-ico" transform="translate(650 137.5) scale(0.9) translate(-12 -12)">${TAG_ICONS[tag]}</g></svg>` : ''}
+                </div>
+              </div>`;
+  };
+
+  return `
+      <div class="app-screen s-home-v3 s-pl2${light ? ' s-home-v3--light' : ''}">
+        ${appHeader()}
+        <div class="v3-body">
+          <div class="pl2-scroll">
+            <div class="pl2-topbar">
+              <div class="wall2-bar pl2-bar">
+                <button class="wall2-cat active" onclick="event.stopPropagation(); plTab(this,'all')">All Playlists</button>
+                <button class="wall2-cat" onclick="event.stopPropagation(); plTab(this,'popularity')">Popularity</button>
+              </div>
+              <button class="pl2-discover" title="Discover community playlists" onclick="event.stopPropagation(); plTab(this,'discover')">Discover</button>
+              <button class="pl2-add" title="New playlist" aria-label="New playlist" onclick="event.stopPropagation()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+              </button>
+            </div>
+
+            <section class="pl2-sec" data-tab="all">
+              ${lists.map(listCard).join('')}
+            </section>
+
+            <section class="pl2-sec" data-tab="popularity" hidden>
+              ${byFavs.map(listCard).join('')}
+            </section>
+
+            <section class="pl2-sec" data-tab="discover" hidden>
+              ${community.map(listCard).join('')}
+            </section>
+          </div>
+        </div>
+        ${nowBar()}
+        ${bottomNav('playlists')}
+      </div>`;
+}
+
+// Playlist page — geometry from PlaylistPageBox.svg (688×303): image panel
+// (left, ~253×259) · info panel (right) with the Popular dog-ear notch top-right
+// and a concave swoop carved from its bottom-right where the CD (r=55) sits,
+// overflowing below the panel. The hero is an aspect-ratio box: the image panel
+// and CD are plain positioned divs; the info panel + dog-ear are Eric's exact
+// SVG paths (fill via CSS so both themes work). CD click → streaming platform
+// menu; heart button → togglePlFav.
+function playlistPageHtml(light) {
+  const arch = window.ARCHIVE || [];
+  const pl = window.activePlaylist || plLists()[0];
+  if (!pl) return '<div class="app-screen s-home-v3"></div>';
+  const hot = pl.favs > 25;
+  // Deterministic tracklist: seeded pick of archive albums, one generated song each
+  const rnd = seedRand(pl.name + '::pl');
+  const songs = Array.from({ length: pl.tracks }, () => {
+    const a = arch[Math.floor(rnd() * arch.length)] || arch[0];
+    const t = songsFor(a);
+    return { s: t[Math.floor(rnd() * t.length)], album: a };
+  });
+  // Ratings hover near 4.0 (±0.35), with 1–2 seeded outliers (a dud or a banger)
+  const outliers = new Set();
+  const oCount = Math.min(1 + Math.floor(rnd() * 2), songs.length);
+  while (outliers.size < oCount) outliers.add(Math.floor(rnd() * songs.length));
+  songs.forEach((row, i) => {
+    let r = 4.0 + (rnd() - 0.5) * 0.7;
+    if (outliers.has(i)) r = rnd() < 0.5 ? 2.4 + rnd() * 0.7 : 4.7 + rnd() * 0.25;
+    row.rating = (Math.round(r * 10) / 10).toFixed(1);
+  });
+  // Majority genres — counted across the tracklist's albums, top 3 by share
+  const gCount = new Map();
+  songs.forEach(row => { const g = row.album.genre; if (g) gCount.set(g, (gCount.get(g) || 0) + 1); });
+  const topGenres = [...gCount.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(e => e[0]);
+  return `
+      <div class="app-screen s-home-v3 s-plp${light ? ' s-home-v3--light' : ''}">
+        ${appHeader()}
+        <div class="v3-body">
+          <div class="plp-scroll">
+            <button class="plp-back-pill" onclick="navigate('playlists')" title="Back to Library">
+              <span class="v3-ring plp-ring"><span class="v3-ring-spin"><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i></span></span>
+            </button>
+            <div class="plp-hero${hot ? ' plp-hero--hl' : ''}">
+              <div class="plp-hero-img" style="background-image:url('${pl.image}')"></div>
+              <svg class="plp-hero-shape" viewBox="0 0 688 303" preserveAspectRatio="none" aria-hidden="true">
+                <path class="plp-shape-panel" d="M640.322 0.601501L686.662 48.7753V151.386C686.662 162.155 677.932 170.886 667.162 170.886H608.625C570.514 170.886 539.619 201.781 539.619 239.892C539.619 250.425 531.08 258.965 520.546 258.965H253.095V0.601501H640.322Z"/>
+                ${hot ? '<path class="plp-shape-tag" d="M672.162 0.601501C680.17 0.601501 686.662 7.09337 686.662 15.1015V48.791L640.405 0.601501H672.162Z"><title>Popular — 25+ favorites</title></path>' : ''}
+              </svg>
+              <div class="plp-info">
+                <div class="plp-name">${pl.name}</div>
+                <div class="plp-by">by <b>${pl.creator}</b></div>
+                <div class="plp-meta">${pl.tracks} songs${pl.edited ? ` · edited ${pl.edited}` : ''}</div>
+                ${topGenres.length ? `<div class="plp-genres">${topGenres.join(' · ')}</div>` : ''}
+                <button class="plp-fav${pl.faved ? ' on' : ''}" onclick="event.stopPropagation(); togglePlFav(this)" title="Favorite this playlist">
+                  <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                  <span class="plp-fav-n">${pl.favs}</span>
+                </button>
+              </div>
+              <div class="plp-cd" onclick="event.stopPropagation(); togglePlPlat(this)" style="background-image:url('${pl.image}')" title="Listen on your platform">
+                <div class="v3-cd-hole"></div>
+              </div>
+              <div class="wall2-menu plp-plat" hidden>
+                <button class="wall2-menu-item plp-plat-item" onclick="event.stopPropagation(); this.closest('.plp-plat').hidden = true">
+                  <span class="plp-plat-ico" style="background:#1DB954"><svg width="11" height="11" viewBox="0 0 24 24" fill="white"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.52 17.34c-.24.36-.66.48-1.02.24-2.82-1.74-6.36-2.1-10.56-1.14-.42.12-.78-.18-.9-.54-.12-.42.18-.78.54-.9 4.56-1.02 8.52-.6 11.64 1.32.42.18.48.66.3 1.02zm1.44-3.3c-.3.42-.84.6-1.26.3-3.24-1.98-8.16-2.58-11.94-1.38-.48.12-1.02-.12-1.14-.6-.12-.48.12-1.02.6-1.14 4.38-1.32 9.78-.72 13.5 1.56.36.24.54.84.24 1.26zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.3c-.6.18-1.2-.18-1.38-.72-.18-.6.18-1.2.72-1.38 4.26-1.26 11.28-1.02 15.72 1.62.54.3.72 1.02.42 1.56-.3.42-1.02.6-1.56.3z"/></svg></span>
+                  Spotify
+                </button>
+                <button class="wall2-menu-item plp-plat-item" onclick="event.stopPropagation(); this.closest('.plp-plat').hidden = true">
+                  <span class="plp-plat-ico" style="background:linear-gradient(135deg,#fc3c44,#fc6f32)"><svg width="9" height="11" viewBox="0 0 13 16" fill="white"><path d="M6.5 0L8 3.5 13 4.3l-3.5 3.4.8 4.8L6.5 10.5 2.2 12.5l.8-4.8L0 4.3l5-.8z"/></svg></span>
+                  Apple Music
+                </button>
+                <button class="wall2-menu-item plp-plat-item" onclick="event.stopPropagation(); this.closest('.plp-plat').hidden = true">
+                  <span class="plp-plat-ico" style="background:linear-gradient(135deg,#ff5500,#ff8800)"><svg width="12" height="8" viewBox="0 0 24 16" fill="white"><rect x="2" y="7" width="1.8" height="6" rx=".9"/><rect x="6" y="4" width="1.8" height="9" rx=".9"/><rect x="10" y="6" width="1.8" height="7" rx=".9"/><rect x="14" y="2" width="1.8" height="11" rx=".9"/><rect x="18" y="8" width="1.8" height="5" rx=".9"/></svg></span>
+                  SoundCloud
+                </button>
+              </div>
+            </div>
+            <div class="plp-songs">
+              ${songs.map((row, i) => `
+              <div class="plp-song" onclick="event.stopPropagation(); plSongTap(this)" data-image="${row.album.image}" data-title="${row.s.title}" data-sub="${row.album.album}">
+                <div class="plp-song-num">${i + 1}</div>
+                <div class="plp-song-line"><span class="plp-song-title">${row.s.title}</span><span class="plp-song-album">${row.album.album}</span> · <span class="plp-song-artist">${row.album.artist}</span></div>
+                <div class="plp-song-rate">${row.rating}</div>
+                <div class="plp-song-dur">${row.s.dur}</div>
+              </div>`).join('')}
+            </div>
+          </div>
+        </div>
+        ${nowBar()}
+        ${bottomNav('playlists')}
       </div>`;
 }
 

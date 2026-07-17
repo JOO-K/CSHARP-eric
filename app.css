@@ -3147,6 +3147,7 @@
   color: #e8e2d6;
 }
 .s-home-v3--light .v3-ring { color: #1a1208; }
+.v3-live-pill .v3-ring { top: 2px; }   /* dots sat a touch high in the pill */
 .v3-ring-spin {
   position: absolute; inset: 0;
   animation: none;   /* static idle — the reaction classes (swipe/foryou/cd) drive motion */
@@ -3206,6 +3207,15 @@
 .s-home-v3--left .v3-ring-dot:nth-child(4) { transform: translate(7px,  0); }
 .s-home-v3--left .v3-ring-dot:nth-child(5) { transform: translate(5px, -4px); }
 .s-home-v3--left .v3-ring-dot:nth-child(6) { transform: translate(5px,  4px); }
+/* Playlist-page back pill — arrow always points LEFT (back), regardless of hand
+   mode (these out-order the --left mirror). Sits before the reaction/smile
+   formations so those still win. */
+.plp-back-pill .v3-ring-dot:nth-child(1) { transform: translate(5px,  0);    --sx: 2.6px; }
+.plp-back-pill .v3-ring-dot:nth-child(2) { transform: translate(1px,  0);    --sx: 0.8px; }
+.plp-back-pill .v3-ring-dot:nth-child(3) { transform: translate(-3px, 0);    --sx: -0.8px; }
+.plp-back-pill .v3-ring-dot:nth-child(4) { transform: translate(-7px, 0);    --sx: -2.6px; }
+.plp-back-pill .v3-ring-dot:nth-child(5) { transform: translate(-5px, -4px); --sx: -1px; }
+.plp-back-pill .v3-ring-dot:nth-child(6) { transform: translate(-5px, 4px);  --sx: -1px; }
 /* ── Formation: SWIPE — the dots separate into a ring (hexagon) ── */
 .v3-ring--swipe .v3-ring-dot:nth-child(1) { transform: translate(0, -7px); }
 .v3-ring--swipe .v3-ring-dot:nth-child(2) { transform: translate(6px, -3.5px); }
@@ -3227,6 +3237,36 @@
 .v3-ring--cd .v3-ring-dot:nth-child(4) { transform: translate(3px, -4px); }
 .v3-ring--cd .v3-ring-dot:nth-child(5) { transform: translate(3px, 0); }
 .v3-ring--cd .v3-ring-dot:nth-child(6) { transform: translate(3px, 4px); }
+
+/* ── Formation: SMILEY — the mascot face. Two eyes + a four-dot smile arc.
+   Flashed on the playlist page's back pill when you favorite a playlist, and
+   intermittently on a timer (plRingSmile in app.js) for personality. ── */
+.v3-ring--smile .v3-ring-dot { animation: none; translate: 0 0; }
+.v3-ring--smile .v3-ring-dot:nth-child(1) { transform: translate(-3.5px, -4px); }  /* left eye */
+.v3-ring--smile .v3-ring-dot:nth-child(2) { transform: translate(3.5px, -4px); }   /* right eye */
+.v3-ring--smile .v3-ring-dot:nth-child(3) { transform: translate(-5.5px, 1.5px); } /* smile — left corner */
+.v3-ring--smile .v3-ring-dot:nth-child(4) { transform: translate(-2px, 4px); }
+.v3-ring--smile .v3-ring-dot:nth-child(5) { transform: translate(2px, 4px); }
+.v3-ring--smile .v3-ring-dot:nth-child(6) { transform: translate(5.5px, 1.5px); }  /* smile — right corner */
+
+/* ── Wink — the right eye squints shut and pops back open while the mouth
+   corners lift into a bigger grin. Layered on top of --smile (greetRing adds
+   it near the end of the home-load greeting, just before the arrow morph). ── */
+.v3-ring--wink .v3-ring-dot:nth-child(2) { animation: v3-wink 1s ease-in-out; }
+.v3-ring--wink .v3-ring-dot:nth-child(3) { animation: v3-wink-corner-l 1s ease-in-out; }
+.v3-ring--wink .v3-ring-dot:nth-child(6) { animation: v3-wink-corner-r 1s ease-in-out; }
+@keyframes v3-wink {
+  0%, 100% { transform: translate(3.5px, -4px) scale(1); }
+  35%, 65% { transform: translate(3.5px, -3.2px) scale(1.2, 0.2); }
+}
+@keyframes v3-wink-corner-l {
+  0%, 100% { transform: translate(-5.5px, 1.5px); }
+  35%, 65% { transform: translate(-5.8px, 0.6px); }
+}
+@keyframes v3-wink-corner-r {
+  0%, 100% { transform: translate(5.5px, 1.5px); }
+  35%, 65% { transform: translate(5.8px, 0.6px); }
+}
 
 /* Swipe rotation is driven live from the drag (see setupAlbumSwipe): partial turn while
    dragging, completing a full spin on commit — so it feels tactile. */
@@ -3672,7 +3712,7 @@
 .s-home-v3--review .v3-rev-hist { margin-top: 10px; }
 .v3-rev-songs-scroll { display: flex; flex-direction: column; }
 .v3-rev-songs--scroll .v3-rev-songs-scroll {
-  max-height: 255px;              /* ~8.5 rows → the 9th peeks through */
+  max-height: 296px;              /* ~8.5 rows (34.6px each) → the 9th peeks through */
   overflow-y: auto;
   scrollbar-width: none;
   -webkit-mask-image: linear-gradient(to bottom, #000 82%, transparent);
@@ -3682,8 +3722,9 @@
 .v3-song-row {
   position: relative;   /* anchor for the hanging track number */
   display: flex; align-items: center; gap: 10px;
-  width: 100%; height: 36px; box-sizing: border-box;
-  padding: 0 12px; text-align: left;   /* title starts at 12px → aligns with album name, artist & the CTA */
+  width: 100%; box-sizing: border-box;
+  /* vertical rhythm matches the playlist page's .plp-song (9px breathing) */
+  padding: 9px 12px; text-align: left;   /* title starts at 12px → aligns with album name, artist & the CTA */
   background: none; border: none; cursor: pointer;
   border-top: 1px solid rgba(232,226,214,0.06);
   color: #e8e2d6; font-family: var(--font-main); font-size: 12px;
@@ -3758,6 +3799,19 @@
 .v3-rev-list { display: flex; flex-direction: column; margin: 0 12px; }
 .v3-rev-card { padding: 9px 0; border-bottom: 1px solid rgba(232,226,214,0.08); }
 .v3-rev-card:last-child { border-bottom: none; }
+/* The review you tapped in the home feed, pinned atop the list */
+.v3-rev-card--pinned {
+  padding: 9px 10px;
+  margin-bottom: 4px;
+  border: 1px solid var(--star); border-radius: 10px;
+  background: rgba(232,168,60,0.06);
+}
+.v3-rev-pin-chip {
+  font-family: var(--font-mono); font-size: 7.5px; letter-spacing: 0.3px;
+  color: #16130d; background: var(--star);
+  padding: 2px 6px; border-radius: 999px;
+  flex-shrink: 0;
+}
 .v3-rev-card-top { display: flex; align-items: center; gap: 5px; margin-bottom: 3px; }
 .v3-rev-av {
   width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0;
@@ -4286,3 +4340,332 @@
 .s-home-v3--light .wall2-art {
   box-shadow: 0 6px 14px rgba(30,20,10,0.18), 0 2px 5px rgba(30,20,10,0.15);
 }
+
+/* ============================================================
+   PLAYLISTS / LIBRARY v2 — adapted to the home shell like the wall.
+   Pill tabs (reuses .wall2-bar/.wall2-cat) switch the .pl2-sec
+   sections client-side via plTab(); all data comes from ARCHIVE.
+   ============================================================ */
+.pl2-scroll {
+  padding: 4px 12px 96px;   /* .v3-body is the scroller; bottom clears the nowbar/nav overlay */
+}
+/* Top bar — category pills + the "+" (new playlist) button on the right.
+   No page title; the pills ARE the header. Pills scroll horizontally and
+   fade out at the right edge when there isn't enough room. */
+.pl2-topbar { display: flex; align-items: center; gap: 10px; padding: 2px 0 12px; }
+.pl2-bar {
+  flex: 1; min-width: 0;
+  overflow-x: auto; scrollbar-width: none;
+  padding-bottom: 0;
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 34px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 34px), transparent);
+}
+.pl2-bar::-webkit-scrollbar { display: none; }
+.pl2-bar .wall2-cat { font-size: 12px; padding: 7px 14px; }
+/* Discover — community playlists; embossed like the "+", acts as a tab */
+.pl2-discover {
+  flex-shrink: 0;
+  height: 34px; padding: 0 14px; border-radius: 999px;
+  background: #111116; border: none;
+  box-shadow: -4px -4px 8px 0 rgba(255,255,255,0.07), 4px 4px 6px -1px rgba(0,0,0,0.5);
+  color: rgba(232,226,214,0.85);
+  font-family: var(--font-main); font-size: 12px; font-weight: 600;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.pl2-discover:hover { background: #17171d; }
+.pl2-discover.active { background: var(--star); color: #16130d; box-shadow: 4px 4px 6px -1px rgba(0,0,0,0.5); }
+.s-home-v3--light .pl2-discover {
+  background: #f0ece3;
+  box-shadow: -4px -4px 8px 0 #d8d2c8, 4px 4px 6px -1px rgba(116,150,179,0.27);
+  color: rgba(26,18,8,0.6);
+}
+.s-home-v3--light .pl2-discover:hover { background: #f4f0e8; }
+.s-home-v3--light .pl2-discover.active { background: var(--star); color: #16130d; }
+/* "+" — same emboss as the home live pill (.v3-search-pill) */
+.pl2-add {
+  flex-shrink: 0;
+  width: 34px; height: 34px; border-radius: 999px;
+  background: #111116; border: none;
+  box-shadow: -4px -4px 8px 0 rgba(255,255,255,0.07), 4px 4px 6px -1px rgba(0,0,0,0.5);
+  display: inline-flex; align-items: center; justify-content: center;
+  color: rgba(232,226,214,0.85);
+  cursor: pointer;
+  transition: background .15s;
+}
+.pl2-add:hover { background: #17171d; }
+.pl2-add svg { width: 14px; height: 14px; }
+.s-home-v3--light .pl2-add {
+  background: #f0ece3;
+  box-shadow: -4px -4px 8px 0 #d8d2c8, 4px 4px 6px -1px rgba(116,150,179,0.27);
+  color: rgba(26,18,8,0.6);
+}
+.s-home-v3--light .pl2-add:hover { background: #f4f0e8; }
+.pl2-sec[hidden] { display: none; }
+
+/* — Lists — geometry from PlaylistBox.svg / PlaylistHLBox.svg (688×158,
+   scaled ~0.51): a split card — near-square image panel · thin gap · info
+   panel. The --hl variant clips the info panel's top-right corner on a
+   diagonal and seats a rounded dog-ear tag (Eric's exact SVG path) in the
+   notch; the notch itself is a screen-bg triangle (fillet-style negative
+   space). First use: Popular = 25+ favorites. */
+.pl2-list-card { display: flex; height: 80px; margin-bottom: 9px; }
+.pl2-list-img {
+  width: 78px; flex-shrink: 0;
+  border-radius: 5px 0 0 5px;
+  background-size: cover; background-position: center;
+  background-color: rgba(255,255,255,0.05);
+}
+.pl2-list-body {
+  position: relative; flex: 1; min-width: 0;
+  border-radius: 0 5px 5px 0;
+  background: rgba(255,255,255,0.05);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+  padding: 11px 13px 9px;
+  display: flex; flex-direction: column;
+}
+.pl2-list-name {
+  font-size: 15.5px; font-weight: 800; letter-spacing: -0.3px; color: #e8e2d6;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.pl2-list-by { font-size: 9.5px; color: rgba(232,226,214,0.42); margin-top: 2px; }
+.pl2-list-by b { font-weight: 700; color: rgba(232,226,214,0.7); }
+.pl2-list-meta { margin-top: auto; font-family: var(--font-mono); font-size: 9.5px; color: rgba(232,226,214,0.4); }
+/* Lower-right tag slot (PlaylistBox_NEW / PlaylistHLBox_NEW.svg @ ~0.51):
+   the carve is a screen-bg scoop out of the info panel's corner; the rounded
+   tag seats in it, recolored per type, icon centered inside. */
+.pl2-list-carve {
+  position: absolute; right: 0; bottom: 0; z-index: 1;
+  width: 54.4px; height: 32.2px;
+  color: #111116;                     /* screen bg — theme-specific */
+  pointer-events: none;
+}
+.pl2-list-tag2 {
+  position: absolute; right: 0; bottom: 0; z-index: 2;
+  width: 43.5px; height: 20.3px;
+}
+.pl2-list-tag2--fav   { color: var(--star); }   /* yellow + crown — community favorite */
+.pl2-list-tag2--staff { color: #6f9fe8; }       /* blue + candle — staff pick */
+.pl2-tag-ico { fill: #16130d; }
+.pl2-list-card--hl .pl2-list-meta { padding-right: 58px; }   /* clear the tag */
+
+/* — Artists — */
+.pl2-artist {
+  display: flex; align-items: center; gap: 11px;
+  padding: 9px 2px; cursor: pointer;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.pl2-artist-av {
+  width: 42px; height: 42px; border-radius: 50%;
+  background-size: cover; background-position: center;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.45);
+  flex-shrink: 0;
+}
+.pl2-artist-info { flex: 1; min-width: 0; }
+.pl2-artist-name { font-size: 12.5px; font-weight: 700; color: #e8e2d6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pl2-artist-genre { font-size: 9.5px; color: rgba(232,226,214,0.42); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pl2-artist-rating { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.pl2-score { font-family: var(--font-mono); font-size: 10px; font-weight: 700; color: rgba(232,226,214,0.55); }
+
+/* — Songs — */
+.pl2-song {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 2px; cursor: pointer;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.pl2-song-num { width: 14px; font-family: var(--font-mono); font-size: 10px; color: rgba(232,226,214,0.32); text-align: center; flex-shrink: 0; }
+.pl2-song-art { width: 36px; height: 36px; border-radius: 6px; background-size: cover; background-position: center; box-shadow: 0 2px 6px rgba(0,0,0,0.4); flex-shrink: 0; }
+.pl2-song-info { flex: 1; min-width: 0; }
+.pl2-song-title { font-size: 12px; font-weight: 600; color: #e8e2d6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pl2-song-sub { font-size: 9px; color: rgba(232,226,214,0.42); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pl2-song-album { font-weight: 400; }
+.pl2-song-artist { font-weight: 700; }
+.pl2-song-right { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex-shrink: 0; }
+.pl2-song-dur { font-family: var(--font-mono); font-size: 9px; color: rgba(232,226,214,0.38); }
+
+/* — Genres — */
+.pl2-genre {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px; margin-bottom: 9px; cursor: pointer;
+  background: rgba(255,255,255,0.05);
+  border-radius: 13px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+  transition: background .15s;
+}
+.pl2-genre:hover { background: rgba(255,255,255,0.09); }
+.pl2-genre-info { flex: 1; min-width: 0; }
+.pl2-genre-name { font-size: 14px; font-weight: 800; letter-spacing: -0.3px; color: #e8e2d6; }
+.pl2-genre-stats { font-family: var(--font-mono); font-size: 9px; color: rgba(232,226,214,0.4); margin-top: 3px; }
+.pl2-genre-covers { display: flex; flex-shrink: 0; }
+.pl2-genre-cover {
+  width: 38px; height: 38px; border-radius: 6px;
+  background-size: cover; background-position: center;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.5);
+  border: 1.5px solid #1d1d24;
+}
+.pl2-genre-cover + .pl2-genre-cover { margin-left: -14px; }
+
+/* Playlists — light theme */
+.s-home-v3--light .pl2-list-body,
+.s-home-v3--light .pl2-genre { background: rgba(26,18,8,0.05); box-shadow: inset 0 1px 0 rgba(255,255,255,0.5); }
+.s-home-v3--light .pl2-list-img { background-color: rgba(26,18,8,0.05); }
+.s-home-v3--light .pl2-list-carve { color: #f0ece3; }
+.s-home-v3--light .pl2-genre:hover { background: rgba(26,18,8,0.09); }
+.s-home-v3--light .pl2-list-name,
+.s-home-v3--light .pl2-artist-name,
+.s-home-v3--light .pl2-song-title,
+.s-home-v3--light .pl2-genre-name { color: #1a1208; }
+.s-home-v3--light .pl2-list-by { color: rgba(26,18,8,0.45); }
+.s-home-v3--light .pl2-list-by b { color: rgba(26,18,8,0.7); }
+.s-home-v3--light .pl2-list-meta,
+.s-home-v3--light .pl2-artist-genre,
+.s-home-v3--light .pl2-song-sub,
+.s-home-v3--light .pl2-genre-stats { color: rgba(26,18,8,0.45); }
+.s-home-v3--light .pl2-song-num,
+.s-home-v3--light .pl2-song-dur { color: rgba(26,18,8,0.4); }
+.s-home-v3--light .pl2-score { color: rgba(26,18,8,0.55); }
+.s-home-v3--light .pl2-artist,
+.s-home-v3--light .pl2-song { border-bottom-color: rgba(26,18,8,0.08); }
+.s-home-v3--light .pl2-genre-cover { border-color: #f0ece3; box-shadow: 0 3px 8px rgba(30,20,10,0.2); }
+.s-home-v3--light .pl2-artist-av,
+.s-home-v3--light .pl2-song-art { box-shadow: 0 2px 6px rgba(30,20,10,0.2); }
+
+/* ============================================================
+   PLAYLIST PAGE — geometry from PlaylistPageBox.svg (688×303).
+   The hero is an aspect-ratio box: image panel + CD are positioned
+   divs (percent coords straight from the SVG); the info panel and
+   Popular dog-ear are Eric's exact paths in an inline SVG, filled
+   via CSS so both themes work. The CD seats in the panel's carved
+   swoop and overflows below it, like the drawing.
+   ============================================================ */
+.plp-scroll { padding: 4px 12px 96px; }
+/* Back pill — same dot-ring as the home live pill; the arrow (idle formation)
+   points left = back. Morphs into the smiley face via .v3-ring--smile. */
+/* Same emboss as the home live pill (.v3-search-pill) — solid bg + neu shadow */
+.plp-back-pill {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 72px; height: 34px; margin-bottom: 10px;
+  border-radius: 999px;
+  background: #111116;
+  border: none;
+  box-shadow: -4px -4px 8px 0 rgba(255,255,255,0.07), 4px 4px 6px -1px rgba(0,0,0,0.5);
+  cursor: pointer;
+  transition: background .15s;
+}
+.plp-back-pill:hover { background: #17171d; }
+
+/* — hero — */
+.plp-hero { position: relative; aspect-ratio: 688 / 303; margin-bottom: 14px; }
+.plp-hero-img {
+  position: absolute; left: 0; top: 0;
+  width: 36.77%; height: 85.47%;          /* 253×259 of 688×303 */
+  border-radius: 5px 0 0 5px;
+  background-size: cover; background-position: center;
+  background-color: rgba(255,255,255,0.05);
+}
+.plp-hero-shape { position: absolute; inset: 0; width: 100%; height: 100%; }
+.plp-shape-panel { fill: rgba(255,255,255,0.05); }
+.plp-shape-tag   { fill: var(--star); }
+.plp-info {
+  position: absolute; left: 40.5%; top: 8%; right: 5.5%; height: 76%;
+  display: flex; flex-direction: column; align-items: flex-start;
+}
+.plp-name {
+  font-size: 16px; font-weight: 800; letter-spacing: -0.3px; color: #e8e2d6;
+  padding-right: 26px;                    /* clear the dog-ear */
+  overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+.plp-by { font-size: 10px; color: rgba(232,226,214,0.42); margin-top: 3px; }
+.plp-by b { font-weight: 700; color: rgba(232,226,214,0.7); }
+.plp-meta { font-family: var(--font-mono); font-size: 9.5px; color: rgba(232,226,214,0.4); margin-top: 6px; }
+/* Majority genres of the tracklist — light, airy letters */
+.plp-genres {
+  font-size: 9px; font-weight: 500; letter-spacing: 0.4px;
+  color: rgba(232,226,214,0.3);
+  margin-top: 3px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 100%;
+}
+.plp-fav {
+  margin-top: auto; margin-bottom: 10px;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(232,226,214,0.6);
+  font-family: var(--font-mono); font-size: 10.5px; font-weight: 700;
+  cursor: pointer; transition: background .15s, color .15s, border-color .15s;
+}
+.plp-fav svg { width: 13px; height: 13px; fill: none; }
+.plp-fav:hover { background: rgba(255,255,255,0.1); color: #e8e2d6; }
+.plp-fav.on { background: var(--star); border-color: var(--star); color: #16130d; }
+.plp-fav.on svg { fill: #16130d; }
+/* CD — center (613.66, 247.47) r 55 in SVG coords; spins like the home CD */
+.plp-cd {
+  position: absolute;
+  left: 81.2%; top: 63.52%; width: 15.99%; aspect-ratio: 1;
+  border-radius: 50%; overflow: hidden;
+  background-size: cover; background-position: center;
+  animation: v3spin 12s linear infinite;
+  cursor: pointer;
+  box-shadow:
+    0 4px 12px rgba(0,0,0,0.3),
+    0 1px 3px rgba(0,0,0,0.2),
+    0 0 0 1px rgba(255,255,255,0.06);
+}
+.plp-plat { position: absolute; right: 0; top: 100%; margin-top: -4px; z-index: 50; }
+.plp-plat-item { display: flex; align-items: center; gap: 8px; }
+.plp-plat-ico {
+  width: 18px; height: 18px; border-radius: 5px; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+
+/* — songs — one line per row: song name boldest · album mid · artist lightest.
+   Overflow fades out on the right (mask) instead of ellipsizing. */
+.plp-song {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 2px; cursor: pointer;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.plp-song-num { width: 16px; font-family: var(--font-mono); font-size: 10px; color: rgba(232,226,214,0.32); text-align: center; flex-shrink: 0; }
+.plp-song-line {
+  flex: 1; min-width: 0;
+  white-space: nowrap; overflow: hidden;
+  font-size: 11px;
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 26px), transparent);
+          mask-image: linear-gradient(90deg, #000 calc(100% - 26px), transparent);
+}
+.plp-song-title  { font-size: 12px; font-weight: 700; color: #e8e2d6; margin-right: 7px; }
+.plp-song-album  { font-weight: 500; color: rgba(232,226,214,0.5); }
+.plp-song-artist { font-weight: 400; color: rgba(232,226,214,0.32); }
+.plp-song-rate { font-family: var(--font-mono); font-size: 10px; font-weight: 700; color: rgba(232,226,214,0.6); flex-shrink: 0; }
+.plp-song-dur { font-family: var(--font-mono); font-size: 9px; color: rgba(232,226,214,0.38); flex-shrink: 0; width: 24px; text-align: right; }
+
+/* Playlist page — light theme */
+.s-home-v3--light .plp-back-pill {
+  background: #f0ece3;
+  box-shadow: -4px -4px 8px 0 #d8d2c8, 4px 4px 6px -1px rgba(116,150,179,0.27);
+}
+.s-home-v3--light .plp-back-pill:hover { background: #f4f0e8; }
+.s-home-v3--light .plp-hero-img { background-color: rgba(26,18,8,0.05); }
+.s-home-v3--light .plp-shape-panel { fill: rgba(26,18,8,0.05); }
+.s-home-v3--light .plp-name { color: #1a1208; }
+.s-home-v3--light .plp-by { color: rgba(26,18,8,0.45); }
+.s-home-v3--light .plp-by b { color: rgba(26,18,8,0.7); }
+.s-home-v3--light .plp-meta { color: rgba(26,18,8,0.45); }
+.s-home-v3--light .plp-genres { color: rgba(26,18,8,0.32); }
+.s-home-v3--light .plp-fav {
+  background: rgba(26,18,8,0.05);
+  border-color: rgba(26,18,8,0.12);
+  color: rgba(26,18,8,0.6);
+}
+.s-home-v3--light .plp-fav:hover { background: rgba(26,18,8,0.1); color: #1a1208; }
+.s-home-v3--light .plp-fav.on { background: var(--star); border-color: var(--star); color: #16130d; }
+.s-home-v3--light .plp-cd { box-shadow: 0 4px 12px rgba(30,20,10,0.25), 0 1px 3px rgba(30,20,10,0.15); }
+.s-home-v3--light .plp-song { border-bottom-color: rgba(26,18,8,0.08); }
+.s-home-v3--light .plp-song-title  { color: #1a1208; }
+.s-home-v3--light .plp-song-album  { color: rgba(26,18,8,0.55); }
+.s-home-v3--light .plp-song-artist { color: rgba(26,18,8,0.35); }
+.s-home-v3--light .plp-song-num,
+.s-home-v3--light .plp-song-dur { color: rgba(26,18,8,0.4); }
+.s-home-v3--light .plp-song-rate { color: rgba(26,18,8,0.6); }
