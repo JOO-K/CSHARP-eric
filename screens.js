@@ -7,69 +7,19 @@ const SCREENS = [
   // ── 1. AUTH ─────────────────────────────────────────────────
   {
     id: 'auth', name: 'Auth / Login', statusTheme: 'light',
-    variants: [{
-      label: 'v1',
-      thumb: ['w50','w80','accent','w80','accent'],
-      html: `
-      <div class="app-screen s-auth">
-        <div class="auth-hero">
-          <div class="auth-logo-circle" style="background:linear-gradient(135deg,#2a2820,#4a4640)">
-            <svg viewBox="0 0 48 48" width="36" height="36" fill="none" stroke="white" stroke-width="2">
-              <circle cx="24" cy="24" r="20"/><circle cx="24" cy="24" r="8"/>
-              <circle cx="24" cy="24" r="3" fill="white" stroke="none"/>
-            </svg>
-          </div>
-          <div class="auth-appname">Spindeck</div>
-        </div>
-        <div class="auth-body">
-          <div class="field-group">
-            <div class="field"><label>Email</label><input type="email" placeholder="you@example.com"></div>
-            <div class="field"><label>Password</label><input type="password" placeholder="••••••••"></div>
-          </div>
-          <button class="btn-primary" style="margin-top:8px" onclick="navigate('onboarding')">Sign In</button>
-          <div class="divider" style="margin:16px 0">or</div>
-          <button class="btn-outline" onclick="navigate('onboarding')">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="flex-shrink:0"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-            Continue with Google
-          </button>
-          <button class="link-btn" style="margin-top:20px" onclick="navigate('onboarding')">Don't have an account? <span style="color:var(--accent)">Sign Up</span></button>
-        </div>
-      </div>`
-    }]
+    variants: [
+      { label: 'Float·Dark',  thumb: ['w50','w80','accent','w80','accent'], get html() { return authHtml(false); } },
+      { label: 'Float·Light', thumb: ['w50','w80','accent','w80','accent'], get html() { return authHtml(true);  } },
+    ]
   },
 
   // ── 2. ONBOARDING ───────────────────────────────────────────
   {
     id: 'onboarding', name: 'Onboarding', statusTheme: 'light',
-    variants: [{
-      label: 'v1',
-      thumb: ['w70','accent','w80','w60','w70'],
-      html: `
-      <div class="app-screen s-onboarding">
-        <div class="ob-header">
-          <div class="ob-progress"><div class="ob-prog-bar" style="width:33%"></div></div>
-          <div class="ob-step">Step 1 of 3</div>
-          <div class="ob-title">What do you listen to?</div>
-          <div class="ob-sub">Pick all that apply — we'll personalise your feed.</div>
-        </div>
-        <div class="ob-body">
-          <div class="genre-chips">
-            <button class="chip selected">Electronic</button><button class="chip">Indie</button>
-            <button class="chip selected">Hip-Hop</button><button class="chip">Jazz</button>
-            <button class="chip">R&amp;B / Soul</button><button class="chip selected">Alternative</button>
-            <button class="chip">Classical</button><button class="chip">Pop</button>
-            <button class="chip">Metal</button><button class="chip">Folk</button>
-            <button class="chip">Ambient</button><button class="chip">Latin</button>
-            <button class="chip">Country</button><button class="chip selected">Punk</button>
-            <button class="chip">Funk</button><button class="chip">Blues</button>
-          </div>
-        </div>
-        <div class="ob-footer">
-          <button class="btn-primary" onclick="navigate('home')">Next →</button>
-          <button class="link-btn" onclick="navigate('home')">Skip for now</button>
-        </div>
-      </div>`
-    }]
+    variants: [
+      { label: 'Float·Dark',  thumb: ['w70','accent','w80','w60','w70'], get html() { return onboardingHtml(false); } },
+      { label: 'Float·Light', thumb: ['w70','accent','w80','w60','w70'], get html() { return onboardingHtml(true);  } },
+    ]
   },
 
   // ── 3. HOME ──────────────────────────────────────────────────
@@ -77,491 +27,9 @@ const SCREENS = [
     id: 'home', name: 'Home', statusTheme: 'light',
     variants: [
 
-      // ── 3a. Bento (Charcoal look) ───────────────────────────
-      {
-        label: 'Bento', version: 'v1.0',
-        thumb: ['w70','accent','w80','accent','w80'],
-        html: `
-        <div class="app-screen s-home-bento">
-          ${topNav('home')}
-
-          <div class="home-bento-bar">
-            <div class="hbb-logo">Spindeck</div>
-            <div class="hbb-icons">
-              <button class="icon-btn" onclick="navigate('search')">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
-              </button>
-              <button class="icon-btn" onclick="navigate('profile')">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              </button>
-            </div>
-          </div>
-
-          <div class="bento-wrap">
-          <div class="bento-grid">
-
-            <div class="bento-card bc-hero" style="grid-row:span 2" onclick="navigate('album')">
-              <div class="bc-hero-art" style="background-image:url('images/album-crystalcastles1.png')"></div>
-              <div class="bc-hero-body">
-                <div class="bc-hero-who">
-                  <div class="bc-hero-av" style="background:linear-gradient(135deg,#1c1c3e,#3b1fa8)">E</div>
-                  <span class="bc-hero-name">echoplex</span>
-                  <span class="bc-hero-verb">reviewed</span>
-                </div>
-                <div class="bc-hero-album">Crystal Castles</div>
-                <div style="margin-bottom:3px">${halfStars(4, 12)}</div>
-                <div class="bc-hero-quote">"chaotic and beautiful. alice's vocals hit like static shock"</div>
-              </div>
-            </div>
-
-            <div class="bento-card bc-mini" onclick="navigate('album')">
-              <div class="bc-mini-art" style="background-image:url('images/album-punisher.png')"></div>
-              <div class="bc-mini-body">
-                <div class="bc-mini-user">staticfog</div>
-                <div class="bc-mini-title">Punisher</div>
-                <div>${halfStars(5, 10)}</div>
-              </div>
-            </div>
-
-            <div class="bento-card bc-stat">
-              <div class="bc-stat-num">3</div>
-              <div class="bc-stat-label">friends reviewed</div>
-              <div class="bc-stat-sub">this week</div>
-            </div>
-
-            <div class="bento-card bc-pymk span2">
-              <div class="pymk-hd">
-                <span class="pymk-title">People You May Know</span>
-                <span class="pymk-sub">from contacts</span>
-              </div>
-              <div class="pymk-row">
-                <div class="pymk-person"><div class="pymk-av" style="background:linear-gradient(135deg,#0c4a1e,#16a34a)">JK</div><div class="pymk-name">josekm</div><div class="pymk-count">24 reviews</div></div>
-                <div class="pymk-person"><div class="pymk-av" style="background:linear-gradient(135deg,#164e63,#0284c7)">SF</div><div class="pymk-name">staticfog</div><div class="pymk-count">89 reviews</div></div>
-                <div class="pymk-person"><div class="pymk-av" style="background:linear-gradient(135deg,#450a0a,#dc2626)">VB</div><div class="pymk-name">velvetblast</div><div class="pymk-count">212 reviews</div></div>
-                <div class="pymk-person"><div class="pymk-av" style="background:linear-gradient(135deg,#3b0764,#9333ea)">KM</div><div class="pymk-name">kira_m</div><div class="pymk-count">41 reviews</div></div>
-                <div class="pymk-person"><div class="pymk-add-btn">+</div><div class="pymk-name">find more</div><div class="pymk-count">&nbsp;</div></div>
-              </div>
-            </div>
-
-            <div class="bento-card bc-trend span2" onclick="navigate('album')">
-              <div class="bc-tr-label">Trending Review</div>
-              <div class="bc-tr-quote">"this album rewired my brain. nothing before or after sounds like it"</div>
-              <div class="bc-tr-by">
-                <span>staticfog on <strong style="color:var(--text)">1000 gecs</strong></span>
-                <span>${halfStars(5, 11)}</span>
-              </div>
-              <div class="bc-tr-ghost-art" style="background:linear-gradient(135deg,#042a10,#6aff3a 120%)"></div>
-            </div>
-
-            <div class="bento-card bc-disc span2" onclick="navigate('wall')">
-              <div class="bc-disc-thumbs">
-                <div class="bc-disc-thumb" style="background-image:url('images/album-punisher.png')"></div>
-                <div class="bc-disc-thumb" style="background-image:url('images/album-crystalcastles1.png')"></div>
-                <div class="bc-disc-thumb" style="background:linear-gradient(135deg,#052e16,#86efac)"></div>
-                <div class="bc-disc-thumb" style="background:linear-gradient(135deg,#1a0533,#7e22ce)"></div>
-              </div>
-              <div class="bc-disc-text">
-                <div class="bc-disc-label">Popular Albums</div>
-                <div class="bc-disc-sub">89k logged this month</div>
-              </div>
-              <div class="bc-disc-arr">›</div>
-            </div>
-
-          </div>
-          </div>
-        </div>`
-      },
-
-      // ── 3b. TikTok Swipe (Editorial look) ──────────────────
-      {
-        label: 'TikTok', version: 'v1.1',
-        thumb: ['accent','w80','accent','w60','w80'],
-        html: `
-        <div class="app-screen s-home-tiktok">
-          ${topNav('home')}
-
-          <div class="htok-scroll">
-
-            <div class="htok-card">
-              <div class="htok-bg" style="background-image:url('images/album-punisher.png')"></div>
-              <div class="htok-overlay"></div>
-              <div class="htok-content">
-                <div class="htok-who">
-                  <div class="htok-av" style="background:linear-gradient(135deg,#1c1c3e,#3b1fa8)">E</div>
-                  <span class="htok-name">echoplex</span>
-                  <span class="htok-verb">just reviewed</span>
-                </div>
-                <div class="htok-art-wrap">
-                  <div class="htok-art" style="background-image:url('images/album-punisher.png')"></div>
-                </div>
-                <div class="htok-info">
-                  <div class="htok-album">Punisher</div>
-                  <div class="htok-artist">PHOEBE BRIDGERS · 2020</div>
-                  <div style="margin-bottom:6px">${halfStars(5, 15)}</div>
-                  <div class="htok-quote">"funeral is the most heartbreaking song ive heard in years. she ruins you gently"</div>
-                </div>
-                <div class="htok-actions">
-                  <button class="htok-skip" onclick="navigate('home')">Skip</button>
-                  <button class="htok-log" onclick="navigate('review')">Log This Too ↗</button>
-                </div>
-                <div class="htok-hint">↑ · next friend's pick</div>
-              </div>
-            </div>
-
-            <div class="htok-card">
-              <div class="htok-bg" style="background-image:url('images/album-crystalcastles1.png')"></div>
-              <div class="htok-overlay"></div>
-              <div class="htok-content">
-                <div class="htok-who">
-                  <div class="htok-av" style="background:linear-gradient(135deg,#164e63,#0284c7)">SF</div>
-                  <span class="htok-name">staticfog</span>
-                  <span class="htok-verb">just reviewed</span>
-                </div>
-                <div class="htok-art-wrap">
-                  <div class="htok-art" style="background-image:url('images/album-crystalcastles1.png')"></div>
-                </div>
-                <div class="htok-info">
-                  <div class="htok-album">Crystal Castles</div>
-                  <div class="htok-artist">CRYSTAL CASTLES · 2008</div>
-                  <div style="margin-bottom:6px">${halfStars(4.5, 15)}</div>
-                  <div class="htok-quote">"chaotic and beautiful. alice's vocals hit like static shock every single time"</div>
-                </div>
-                <div class="htok-actions">
-                  <button class="htok-skip" onclick="navigate('home')">Skip</button>
-                  <button class="htok-log" onclick="navigate('review')">Log This Too ↗</button>
-                </div>
-                <div class="htok-hint">↑ · next friend's pick</div>
-              </div>
-            </div>
-
-            <div class="htok-card">
-              <div class="htok-bg" style="background:linear-gradient(135deg,#021a0b,#0f4a1a)"></div>
-              <div class="htok-overlay"></div>
-              <div class="htok-content">
-                <div class="htok-who">
-                  <div class="htok-av" style="background:linear-gradient(135deg,#3b0764,#9333ea)">KM</div>
-                  <span class="htok-name">kira_m</span>
-                  <span class="htok-verb">just reviewed</span>
-                </div>
-                <div class="htok-art-wrap">
-                  <div class="htok-art" style="background:linear-gradient(135deg,#042a10,#6aff3a 130%);display:flex;align-items:center;justify-content:center">
-                    <span style="font-size:40px;font-weight:800;color:#000;letter-spacing:-3px;opacity:0.8;font-family:var(--font-main)">gecs</span>
-                  </div>
-                </div>
-                <div class="htok-info">
-                  <div class="htok-album">1000 gecs</div>
-                  <div class="htok-artist">100 GECS · 2019</div>
-                  <div style="margin-bottom:6px">${halfStars(5, 15)}</div>
-                  <div class="htok-quote">"this album rewired my brain. nothing before or after sounds like it"</div>
-                </div>
-                <div class="htok-actions">
-                  <button class="htok-skip" onclick="navigate('home')">Skip</button>
-                  <button class="htok-log" style="background:#5adf1a;color:#000" onclick="navigate('review')">Log This Too ↗</button>
-                </div>
-                <div class="htok-hint">&nbsp;</div>
-              </div>
-            </div>
-
-          </div>
-        </div>`
-      },
-
-      // ── 3c. Dorfic / Frutiger Aero Orange (Dorfic look) ────
-      {
-        label: 'Dorfic', version: 'v1.2',
-        thumb: ['accent','accent','w70','accent','w60'],
-        html: `
-        <div class="app-screen s-home-dorf">
-
-          <div class="dorf-topbar">
-            <div class="dorf-wordmark">Spindeck</div>
-            <div style="display:flex;gap:6px">
-              <button class="icon-btn" onclick="navigate('search')" style="background:var(--surface);border:1px solid var(--border)">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
-              </button>
-              <button class="icon-btn" onclick="navigate('profile')" style="background:var(--surface);border:1px solid var(--border)">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              </button>
-            </div>
-          </div>
-
-          <div class="dorf-scroll">
-
-            <!-- BIG GLOWING PLAYER HERO -->
-            <div class="dorf-player" onclick="navigate('album')">
-              <div class="dorf-player-aura"></div>
-              <div class="dorf-player-art" style="background-image:url('images/album-punisher.png')"></div>
-              <div class="dorf-player-label">Rec. of the Day</div>
-              <div class="dorf-player-title">Punisher</div>
-              <div class="dorf-player-artist">PHOEBE BRIDGERS · 2020</div>
-              <div class="dorf-player-stars">${halfStars(4.5, 14)}</div>
-              <button class="dorf-player-btn" onclick="event.stopPropagation();navigate('review')">Log It</button>
-            </div>
-
-            <!-- PILL TABS -->
-            <div class="dorf-tabs">
-              <button class="dorf-tab active">For You</button>
-              <button class="dorf-tab">Friends</button>
-              <button class="dorf-tab">New Releases</button>
-            </div>
-
-            <!-- HORIZONTAL BUBBLE CAROUSEL -->
-            <div class="dorf-carousel-row">
-              <div class="dorf-bubble" onclick="navigate('album')">
-                <div class="dorf-bubble-art" style="background-image:url('images/album-crystalcastles1.png')"></div>
-                <div class="dorf-bubble-body"><div class="dorf-bubble-title">CC I</div><div class="dorf-bubble-meta">★ 4.4 · 19k</div></div>
-              </div>
-              <div class="dorf-bubble" onclick="navigate('album')">
-                <div class="dorf-bubble-art" style="background:linear-gradient(135deg,#042a10,#6aff3a 130%)"></div>
-                <div class="dorf-bubble-body"><div class="dorf-bubble-title">1000 gecs</div><div class="dorf-bubble-meta">★ 4.6 · 50k</div></div>
-              </div>
-              <div class="dorf-bubble" onclick="navigate('album')">
-                <div class="dorf-bubble-art" style="background:linear-gradient(135deg,#2a0044,#ff1a6e 200%)"></div>
-                <div class="dorf-bubble-body"><div class="dorf-bubble-title">Leather Teeth</div><div class="dorf-bubble-meta">★ 4.5 · 9.8k</div></div>
-              </div>
-              <div class="dorf-bubble" onclick="navigate('album')">
-                <div class="dorf-bubble-art" style="background:linear-gradient(135deg,#1a1a3e,#4c1d95)"></div>
-                <div class="dorf-bubble-body"><div class="dorf-bubble-title">Untrue</div><div class="dorf-bubble-meta">★ 4.8 · 32k</div></div>
-              </div>
-              <div class="dorf-bubble" onclick="navigate('album')">
-                <div class="dorf-bubble-art" style="background:linear-gradient(135deg,#3a0000,#cc0000)"></div>
-                <div class="dorf-bubble-body"><div class="dorf-bubble-title">Merriweather</div><div class="dorf-bubble-meta">★ 4.7 · 41k</div></div>
-              </div>
-            </div>
-
-            <!-- FRIEND ACTIVITY — notification pills -->
-            <div class="dorf-act-hd">
-              <span class="dorf-act-label">Friend Activity</span>
-              <button class="dorf-act-seeall" onclick="navigate('wall')">See all ›</button>
-            </div>
-            <div class="dorf-act-list">
-              <div class="dorf-act-pill" onclick="navigate('album')">
-                <div class="dorf-act-av" style="background:linear-gradient(135deg,#1c1c3e,#3b1fa8)">E</div>
-                <div class="dorf-act-text">
-                  <div class="dorf-act-who">echoplex</div>
-                  <span class="dorf-act-album">Crystal Castles</span>
-                </div>
-                <div class="dorf-act-rating">★★★★½</div>
-              </div>
-              <div class="dorf-act-pill" onclick="navigate('album')">
-                <div class="dorf-act-av" style="background:linear-gradient(135deg,#164e63,#0284c7)">SF</div>
-                <div class="dorf-act-text">
-                  <div class="dorf-act-who">staticfog</div>
-                  <span class="dorf-act-album">1000 gecs</span>
-                </div>
-                <div class="dorf-act-rating">★★★★★</div>
-              </div>
-              <div class="dorf-act-pill" onclick="navigate('album')">
-                <div class="dorf-act-av" style="background:linear-gradient(135deg,#3b0764,#9333ea)">KM</div>
-                <div class="dorf-act-text">
-                  <div class="dorf-act-who">kira_m</div>
-                  <span class="dorf-act-album">Leather Teeth</span>
-                </div>
-                <div class="dorf-act-rating">★★★★</div>
-              </div>
-              <div class="dorf-act-pill" onclick="navigate('album')">
-                <div class="dorf-act-av" style="background:linear-gradient(135deg,#0c4a1e,#16a34a)">JK</div>
-                <div class="dorf-act-text">
-                  <div class="dorf-act-who">josekm</div>
-                  <span class="dorf-act-album">Punisher</span>
-                </div>
-                <div class="dorf-act-rating">★★★★½</div>
-              </div>
-            </div>
-
-          </div>
-        </div>`
-      },
-
-      // ── 3d. Float·Light (version2 light theme) ─────────────
-      {
-        label: 'Float·Light', version: 'v2.0',
-        thumb: ['w80','w80','w80','w80','w80'],
-        html: `
-        <div class="app-screen s-home-v2 s-home-v2--light">
-
-          <div class="v2-topbar">
-            <div class="v2-wordmark">Spindeck</div>
-            <div class="v2-icons">
-              <button class="v2-icon-btn" onclick="navigate('search')">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
-              </button>
-              <button class="v2-icon-btn" onclick="navigate('profile')">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              </button>
-            </div>
-          </div>
-
-          <div class="v2-scroll">
-            <div class="v2-grid">
-
-              <div class="v2-card v2-hero" onclick="navigate('album')">
-                <div class="v2-hero-art" style="background-image:url('images/album-crystalcastles1.png')"></div>
-                <div class="v2-hero-body">
-                  <div class="v2-who">
-                    <div class="v2-av">E</div>
-                    <span>echoplex</span>
-                    <span style="opacity:.6">reviewed</span>
-                  </div>
-                  <div class="v2-hero-album">Crystal Castles</div>
-                  <div style="margin-bottom:3px">${halfStars(4, 11)}</div>
-                  <div class="v2-hero-quote">"chaotic and beautiful. alice's vocals hit like static shock"</div>
-                </div>
-              </div>
-
-              <div class="v2-card v2-mini" onclick="navigate('album')">
-                <div class="v2-mini-art" style="background-image:url('images/album-punisher.png')"></div>
-                <div class="v2-mini-body">
-                  <div class="v2-mini-user">staticfog</div>
-                  <div class="v2-mini-title">Punisher</div>
-                  <div style="margin-top:3px">${halfStars(5, 10)}</div>
-                </div>
-              </div>
-
-              <div class="v2-card v2-stat">
-                <div class="v2-stat-num">3</div>
-                <div class="v2-stat-label">friends reviewed</div>
-                <div class="v2-stat-sub">this week</div>
-              </div>
-
-              <div class="v2-card v2-pymk v2-span2">
-                <div class="v2-pymk-hd">
-                  <span class="v2-pymk-title">People You May Know</span>
-                  <span class="v2-pymk-sub">from contacts</span>
-                </div>
-                <div class="v2-pymk-row">
-                  <div class="v2-person"><div class="v2-person-av" style="background:linear-gradient(135deg,#0c4a1e,#16a34a)">JK</div><div class="v2-person-name">josekm</div><div class="v2-person-count">24 rev.</div></div>
-                  <div class="v2-person"><div class="v2-person-av" style="background:linear-gradient(135deg,#164e63,#0284c7)">SF</div><div class="v2-person-name">staticfog</div><div class="v2-person-count">89 rev.</div></div>
-                  <div class="v2-person"><div class="v2-person-av" style="background:linear-gradient(135deg,#450a0a,#dc2626)">VB</div><div class="v2-person-name">velvetblast</div><div class="v2-person-count">212 rev.</div></div>
-                  <div class="v2-person"><div class="v2-person-av" style="background:linear-gradient(135deg,#3b0764,#9333ea)">KM</div><div class="v2-person-name">kira_m</div><div class="v2-person-count">41 rev.</div></div>
-                </div>
-              </div>
-
-              <div class="v2-card v2-trend v2-span2" onclick="navigate('album')">
-                <div class="v2-trend-ghost"></div>
-                <div class="v2-trend-label">Trending Review</div>
-                <div class="v2-trend-quote">"this album rewired my brain. nothing before or after sounds like it"</div>
-                <div class="v2-trend-by">
-                  <span>staticfog on <strong>1000 gecs</strong></span>
-                  <span>${halfStars(5, 11)}</span>
-                </div>
-              </div>
-
-              <div class="v2-card v2-disc v2-span2" onclick="navigate('wall')">
-                <div class="v2-disc-thumbs">
-                  <div class="v2-disc-thumb" style="background-image:url('images/album-punisher.png')"></div>
-                  <div class="v2-disc-thumb" style="background-image:url('images/album-crystalcastles1.png')"></div>
-                  <div class="v2-disc-thumb" style="background:linear-gradient(135deg,#052e16,#86efac)"></div>
-                  <div class="v2-disc-thumb" style="background:linear-gradient(135deg,#1a0533,#7e22ce)"></div>
-                </div>
-                <div class="v2-disc-text">
-                  <div class="v2-disc-label">Popular Albums</div>
-                  <div class="v2-disc-sub">89k logged this month</div>
-                </div>
-                <div class="v2-disc-arr">›</div>
-              </div>
-
-            </div>
-          </div>
-        </div>`
-      },
-
-      // ── 3e. Float·Dark (version2 dark theme) ───────────────
-      {
-        label: 'Float·Dark', version: 'v2.1',
-        thumb: ['w50','w50','w60','w50','w50'],
-        html: `
-        <div class="app-screen s-home-v2 s-home-v2--dark">
-
-          <div class="v2-topbar">
-            <div class="v2-wordmark">Spindeck</div>
-            <div class="v2-icons">
-              <button class="v2-icon-btn" onclick="navigate('search')">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
-              </button>
-              <button class="v2-icon-btn" onclick="navigate('profile')">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              </button>
-            </div>
-          </div>
-
-          <div class="v2-scroll">
-            <div class="v2-grid">
-
-              <div class="v2-card v2-hero" onclick="navigate('album')">
-                <div class="v2-hero-art" style="background-image:url('images/album-crystalcastles1.png')"></div>
-                <div class="v2-hero-body">
-                  <div class="v2-who">
-                    <div class="v2-av">E</div>
-                    <span>echoplex</span>
-                    <span style="opacity:.5">reviewed</span>
-                  </div>
-                  <div class="v2-hero-album">Crystal Castles</div>
-                  <div style="margin-bottom:3px">${halfStars(4, 11)}</div>
-                  <div class="v2-hero-quote">"chaotic and beautiful. alice's vocals hit like static shock"</div>
-                </div>
-              </div>
-
-              <div class="v2-card v2-mini" onclick="navigate('album')">
-                <div class="v2-mini-art" style="background-image:url('images/album-punisher.png')"></div>
-                <div class="v2-mini-body">
-                  <div class="v2-mini-user">staticfog</div>
-                  <div class="v2-mini-title">Punisher</div>
-                  <div style="margin-top:3px">${halfStars(5, 10)}</div>
-                </div>
-              </div>
-
-              <div class="v2-card v2-stat">
-                <div class="v2-stat-num">3</div>
-                <div class="v2-stat-label">friends reviewed</div>
-                <div class="v2-stat-sub">this week</div>
-              </div>
-
-              <div class="v2-card v2-pymk v2-span2">
-                <div class="v2-pymk-hd">
-                  <span class="v2-pymk-title">People You May Know</span>
-                  <span class="v2-pymk-sub">from contacts</span>
-                </div>
-                <div class="v2-pymk-row">
-                  <div class="v2-person"><div class="v2-person-av" style="background:linear-gradient(135deg,#0c4a1e,#16a34a)">JK</div><div class="v2-person-name">josekm</div><div class="v2-person-count">24 rev.</div></div>
-                  <div class="v2-person"><div class="v2-person-av" style="background:linear-gradient(135deg,#164e63,#0284c7)">SF</div><div class="v2-person-name">staticfog</div><div class="v2-person-count">89 rev.</div></div>
-                  <div class="v2-person"><div class="v2-person-av" style="background:linear-gradient(135deg,#450a0a,#dc2626)">VB</div><div class="v2-person-name">velvetblast</div><div class="v2-person-count">212 rev.</div></div>
-                  <div class="v2-person"><div class="v2-person-av" style="background:linear-gradient(135deg,#3b0764,#9333ea)">KM</div><div class="v2-person-name">kira_m</div><div class="v2-person-count">41 rev.</div></div>
-                </div>
-              </div>
-
-              <div class="v2-card v2-trend v2-span2" onclick="navigate('album')">
-                <div class="v2-trend-ghost"></div>
-                <div class="v2-trend-label">Trending Review</div>
-                <div class="v2-trend-quote">"this album rewired my brain. nothing before or after sounds like it"</div>
-                <div class="v2-trend-by">
-                  <span>staticfog on <strong>1000 gecs</strong></span>
-                  <span>${halfStars(5, 11)}</span>
-                </div>
-              </div>
-
-              <div class="v2-card v2-disc v2-span2" onclick="navigate('wall')">
-                <div class="v2-disc-thumbs">
-                  <div class="v2-disc-thumb" style="background-image:url('images/album-punisher.png')"></div>
-                  <div class="v2-disc-thumb" style="background-image:url('images/album-crystalcastles1.png')"></div>
-                  <div class="v2-disc-thumb" style="background:linear-gradient(135deg,#052e16,#86efac)"></div>
-                  <div class="v2-disc-thumb" style="background:linear-gradient(135deg,#1a0533,#7e22ce)"></div>
-                </div>
-                <div class="v2-disc-text">
-                  <div class="v2-disc-label">Popular Albums</div>
-                  <div class="v2-disc-sub">89k logged this month</div>
-                </div>
-                <div class="v2-disc-arr">›</div>
-              </div>
-
-            </div>
-          </div>
-        </div>`
-      },
-
       // ── 3f. Bento Hero v3.0 ─────────────────────────────────
       {
-        label: 'Bento Hero', version: 'v3.0',
+        label: 'Float·Dark', version: 'v3.0',
         thumb: ['accent','w60','w80','w60','w80'],
         html: `
         <div class="app-screen s-home-v3">
@@ -586,7 +54,7 @@ const SCREENS = [
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
               </button>
               <!-- Search (outer/rightmost) -->
-              <button class="v3-bubble v3-bubble--search" title="Search" aria-label="Search" onclick="navigate('search')">
+              <button class="v3-bubble v3-bubble--search" title="Search" aria-label="Search" onclick="openSearch(this)">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
               </button>
             </div>
@@ -644,6 +112,27 @@ const SCREENS = [
                  title="Play / pause preview"
                  onclick="onCdTap(this, event)">
               <div class="v3-cd-hole"></div>
+            </div>
+            <!-- Compact CD popup — preview + streaming platforms (mirrors the playlist plat menu) -->
+            <div class="wall2-menu v3-cd-menu" hidden>
+              <button class="v3-stream-preview v3-cd-prev" onclick="event.stopPropagation(); playPreview(this, event)">
+                <span class="v3-stream-preview-ico"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
+                <span class="v3-stream-preview-txt">Listen to preview</span>
+                <span class="v3-stream-preview-dur">0:30</span>
+              </button>
+              <div class="v3-cd-menu-sep"></div>
+              <button class="wall2-menu-item plp-plat-item" onclick="event.stopPropagation(); this.closest('.v3-cd-menu').hidden = true">
+                <span class="plp-plat-ico" style="background:#1DB954"><svg width="11" height="11" viewBox="0 0 24 24" fill="white"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.52 17.34c-.24.36-.66.48-1.02.24-2.82-1.74-6.36-2.1-10.56-1.14-.42.12-.78-.18-.9-.54-.12-.42.18-.78.54-.9 4.56-1.02 8.52-.6 11.64 1.32.42.18.48.66.3 1.02zm1.44-3.3c-.3.42-.84.6-1.26.3-3.24-1.98-8.16-2.58-11.94-1.38-.48.12-1.02-.12-1.14-.6-.12-.48.12-1.02.6-1.14 4.38-1.32 9.78-.72 13.5 1.56.36.24.54.84.24 1.26zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.3c-.6.18-1.2-.18-1.38-.72-.18-.6.18-1.2.72-1.38 4.26-1.26 11.28-1.02 15.72 1.62.54.3.72 1.02.42 1.56-.3.42-1.02.6-1.56.3z"/></svg></span>
+                Spotify
+              </button>
+              <button class="wall2-menu-item plp-plat-item" onclick="event.stopPropagation(); this.closest('.v3-cd-menu').hidden = true">
+                <span class="plp-plat-ico" style="background:linear-gradient(135deg,#fc3c44,#fc6f32)"><svg width="9" height="11" viewBox="0 0 13 16" fill="white"><path d="M6.5 0L8 3.5 13 4.3l-3.5 3.4.8 4.8L6.5 10.5 2.2 12.5l.8-4.8L0 4.3l5-.8z"/></svg></span>
+                Apple Music
+              </button>
+              <button class="wall2-menu-item plp-plat-item" onclick="event.stopPropagation(); this.closest('.v3-cd-menu').hidden = true">
+                <span class="plp-plat-ico" style="background:linear-gradient(135deg,#ff5500,#ff8800)"><svg width="12" height="8" viewBox="0 0 24 16" fill="white"><rect x="2" y="7" width="1.8" height="6" rx=".9"/><rect x="6" y="4" width="1.8" height="9" rx=".9"/><rect x="10" y="6" width="1.8" height="7" rx=".9"/><rect x="14" y="2" width="1.8" height="11" rx=".9"/><rect x="18" y="8" width="1.8" height="5" rx=".9"/></svg></span>
+                SoundCloud
+              </button>
             </div>
 
             <!-- Preview autoplay toggle — muted by default; tap to enable autoplay previews -->
@@ -817,7 +306,7 @@ const SCREENS = [
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
               </button>
               <!-- Search (outer/rightmost) -->
-              <button class="v3-bubble v3-bubble--search" title="Search" aria-label="Search" onclick="navigate('search')">
+              <button class="v3-bubble v3-bubble--search" title="Search" aria-label="Search" onclick="openSearch(this)">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
               </button>
             </div>
@@ -875,6 +364,27 @@ const SCREENS = [
                  title="Play / pause preview"
                  onclick="onCdTap(this, event)">
               <div class="v3-cd-hole"></div>
+            </div>
+            <!-- Compact CD popup — preview + streaming platforms (mirrors the playlist plat menu) -->
+            <div class="wall2-menu v3-cd-menu" hidden>
+              <button class="v3-stream-preview v3-cd-prev" onclick="event.stopPropagation(); playPreview(this, event)">
+                <span class="v3-stream-preview-ico"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
+                <span class="v3-stream-preview-txt">Listen to preview</span>
+                <span class="v3-stream-preview-dur">0:30</span>
+              </button>
+              <div class="v3-cd-menu-sep"></div>
+              <button class="wall2-menu-item plp-plat-item" onclick="event.stopPropagation(); this.closest('.v3-cd-menu').hidden = true">
+                <span class="plp-plat-ico" style="background:#1DB954"><svg width="11" height="11" viewBox="0 0 24 24" fill="white"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.52 17.34c-.24.36-.66.48-1.02.24-2.82-1.74-6.36-2.1-10.56-1.14-.42.12-.78-.18-.9-.54-.12-.42.18-.78.54-.9 4.56-1.02 8.52-.6 11.64 1.32.42.18.48.66.3 1.02zm1.44-3.3c-.3.42-.84.6-1.26.3-3.24-1.98-8.16-2.58-11.94-1.38-.48.12-1.02-.12-1.14-.6-.12-.48.12-1.02.6-1.14 4.38-1.32 9.78-.72 13.5 1.56.36.24.54.84.24 1.26zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.3c-.6.18-1.2-.18-1.38-.72-.18-.6.18-1.2.72-1.38 4.26-1.26 11.28-1.02 15.72 1.62.54.3.72 1.02.42 1.56-.3.42-1.02.6-1.56.3z"/></svg></span>
+                Spotify
+              </button>
+              <button class="wall2-menu-item plp-plat-item" onclick="event.stopPropagation(); this.closest('.v3-cd-menu').hidden = true">
+                <span class="plp-plat-ico" style="background:linear-gradient(135deg,#fc3c44,#fc6f32)"><svg width="9" height="11" viewBox="0 0 13 16" fill="white"><path d="M6.5 0L8 3.5 13 4.3l-3.5 3.4.8 4.8L6.5 10.5 2.2 12.5l.8-4.8L0 4.3l5-.8z"/></svg></span>
+                Apple Music
+              </button>
+              <button class="wall2-menu-item plp-plat-item" onclick="event.stopPropagation(); this.closest('.v3-cd-menu').hidden = true">
+                <span class="plp-plat-ico" style="background:linear-gradient(135deg,#ff5500,#ff8800)"><svg width="12" height="8" viewBox="0 0 24 16" fill="white"><rect x="2" y="7" width="1.8" height="6" rx=".9"/><rect x="6" y="4" width="1.8" height="9" rx=".9"/><rect x="10" y="6" width="1.8" height="7" rx=".9"/><rect x="14" y="2" width="1.8" height="11" rx=".9"/><rect x="18" y="8" width="1.8" height="5" rx=".9"/></svg></span>
+                SoundCloud
+              </button>
             </div>
 
             <!-- Preview autoplay toggle — muted by default; tap to enable autoplay previews -->
@@ -1029,349 +539,22 @@ const SCREENS = [
     ]
   },
 
-  // ── 6. SEARCH ───────────────────────────────────────────────
-  {
-    id: 'search', name: 'Search', statusTheme: 'light',
-    variants: [{
-      label: 'v1',
-      thumb: ['accent','w80','w50','w70','w40'],
-      html: `
-      <div class="app-screen s-search">
-        <div class="search-bar-wrap">
-          <div class="search-bar">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
-            <input type="text" placeholder="Albums, artists, songs, reviews…">
-          </div>
-        </div>
-        <div class="search-body">
-          <div class="section-title">Browse Genres</div>
-          <div class="genre-grid">
-            <div class="genre-card" style="background:linear-gradient(135deg,#1a1a3e,#4c1d95)">Electronic</div>
-            <div class="genre-card" style="background:linear-gradient(135deg,#1b2e05,#15803d)">Indie</div>
-            <div class="genre-card" style="background:linear-gradient(135deg,#3b0000,#991b1b)">Rock</div>
-            <div class="genre-card" style="background:linear-gradient(135deg,#0a1f3e,#1d4ed8)">Jazz</div>
-            <div class="genre-card" style="background:linear-gradient(135deg,#2d0a2e,#9d174d)">R&amp;B / Soul</div>
-            <div class="genre-card" style="background:linear-gradient(135deg,#1c1917,#78350f)">Hip-Hop</div>
-          </div>
-          <div class="section-title">Trending This Week</div>
-          <div class="trending-list">
-            <div class="trending-item" onclick="navigate('album')">
-              <div class="trending-num">1</div>
-              <div class="album-art trending-art" style="background-image:url('images/album-punisher.png');background-size:cover;background-position:center"></div>
-              <div class="trending-info"><div class="trending-album">Punisher</div><div class="trending-artist">Phoebe Bridgers</div></div>
-              <span style="font-size:11px;color:var(--text2);font-family:var(--font-mono)">4.7 ★</span>
-            </div>
-            <div class="trending-item" onclick="navigate('album')">
-              <div class="trending-num">2</div>
-              <div class="album-art trending-art" style="background-image:url('images/album-crystalcastles1.png');background-size:cover;background-position:center"></div>
-              <div class="trending-info"><div class="trending-album">Crystal Castles</div><div class="trending-artist">Crystal Castles</div></div>
-              <span style="font-size:11px;color:var(--text2);font-family:var(--font-mono)">4.4 ★</span>
-            </div>
-            <div class="trending-item" onclick="navigate('album')">
-              <div class="trending-num">3</div>
-              <div class="album-art trending-art" style="background:linear-gradient(135deg,#042a10,#6aff3a 130%)"></div>
-              <div class="trending-info"><div class="trending-album">1000 gecs</div><div class="trending-artist">100 gecs</div></div>
-              <span style="font-size:11px;color:var(--text2);font-family:var(--font-mono)">4.6 ★</span>
-            </div>
-          </div>
-        </div>
-      </div>`
-    }]
-  },
-
-  // ── 7. ALBUM PAGE ───────────────────────────────────────────
-  {
-    id: 'album', name: 'Album Page', statusTheme: 'light',
-    variants: [{
-      label: 'v1',
-      thumb: ['accent','w80','w60','w80','w80'],
-      get html() {
-        const a = window.activeAlbum || (window.ARCHIVE && window.ARCHIVE[0]) || {
-          artist:'Phoebe Bridgers', album:'Punisher', year:2020, genre:'Indie Folk', tracks:10,
-          image:'images/album-phoebebridgers-punisher.png', rating:4.7, reviewCount:31000,
-          artistBio:'Phoebe Bridgers is an American singer-songwriter from Los Angeles.',
-          reviews:[
-            {init:'EP',grad:'linear-gradient(135deg,#1c1c3e,#3b1fa8)',name:'echoplex',rating:5,text:'funeral is the most heartbreaking song i\'ve heard in years.'},
-            {init:'SF',grad:'linear-gradient(135deg,#164e63,#0284c7)',name:'staticfog',rating:5,text:'garden song alone deserves a 5/5. the whole album feels like a lucid dream'},
-            {init:'VB',grad:'linear-gradient(135deg,#450a0a,#dc2626)',name:'velvetblast',rating:4,text:'savior complex on repeat for an hour. not sorry about it'},
-          ]
-        };
-        const logged = window.fmtRc ? window.fmtRc(Math.round(a.reviewCount * 2.8)) : '—';
-        const rc     = window.fmtRc ? window.fmtRc(a.reviewCount) : a.reviewCount;
-        return `
-      <div class="app-screen s-album">
-        <div class="album-hero">
-          <div class="album-art album-cover-full" style="height:220px;border-radius:0;background-image:url('${a.image}');background-size:cover;background-position:center"></div>
-          <div class="album-hero-overlay"></div>
-          <button class="album-back-btn" onclick="navigate('home')">‹</button>
-        </div>
-        <div class="album-info">
-          <div class="album-title">${a.album}</div>
-          <div class="album-artist" style="color:var(--accent)" onclick="navigate('artist')">${a.artist}</div>
-          <div class="album-meta">${a.year} · ${a.genre}${a.tracks ? ' · ' + a.tracks + ' tracks' : ''}</div>
-        </div>
-        <div class="album-stats">
-          <div class="album-stat">
-            <div class="album-stat-val">${halfStars(a.rating, 13)}</div>
-            <div class="album-stat-lbl">avg ${a.rating.toFixed(1)}</div>
-          </div>
-          <div class="album-stat"><div class="album-stat-val">—</div><div class="album-stat-lbl">your rating</div></div>
-          <div class="album-stat"><div class="album-stat-val">${logged}</div><div class="album-stat-lbl">logged</div></div>
-          <div class="album-stat"><div class="album-stat-val">${rc}</div><div class="album-stat-lbl">reviews</div></div>
-        </div>
-        <div class="album-actions">
-          <button class="btn-primary" onclick="navigate('review')">Log / Review</button>
-          <button class="btn-small">+ List</button>
-          <button class="btn-small">♥</button>
-        </div>
-        ${a.artistBio ? `<div style="padding:4px 20px 0;font-size:11px;color:var(--text2);line-height:1.5">${a.artistBio}</div>` : ''}
-        <div class="reviews-section">
-          <div class="reviews-title">Popular Reviews</div>
-          ${(a.reviews || []).map(rv => `
-          <div class="mini-review">
-            <div class="mr-header">
-              <div class="avatar mr-avatar"><div class="avatar-placeholder" style="font-size:10px;background:${rv.grad}">${rv.init}</div></div>
-              <div class="mr-username">${rv.name}</div>
-              <div>${halfStars(rv.rating, 11)}</div>
-            </div>
-            <div class="mr-text">"${rv.text}"</div>
-          </div>`).join('')}
-        </div>
-      </div>`;
-      }
-    }]
-  },
-
-  // ── 8. ARTIST PAGE ──────────────────────────────────────────
-  {
-    id: 'artist', name: 'Artist Page', statusTheme: 'light',
-    variants: [{
-      label: 'v1',
-      thumb: ['accent','w70','w80','w50','w80'],
-      get html() {
-        const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-        // onclick-safe: survives HTML-decode then JS single-quote parse
-        const oc = s => String(s).replace(/\\/g,'\\\\').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,"\\'");
-        const artist = window.activeArtist ||
-                       (window.activeAlbum && window.activeAlbum.artist) || 'Phoebe Bridgers';
-        let albums = (window.ARCHIVE || []).filter(x => x.artist === artist);
-        if (!albums.length && window.activeAlbum) albums = [window.activeAlbum];
-        albums = albums.slice().sort((a,b) => (b.rating - a.rating) || (b.reviewCount - a.reviewCount));
-        const first = albums[0] || {};
-        const photo = (window.ARTIST_IMG && window.ARTIST_IMG[artist]) || first.image || 'images/artist-phoebe.jpg';
-        const genre = first.genre || '';
-        const desc  = first.artistDesc || '';
-        const totalRev = albums.reduce((s,a) => s + (a.reviewCount||0), 0);
-        const avg = totalRev ? (albums.reduce((s,a)=>s + a.rating*(a.reviewCount||0),0)/totalRev) : (first.rating||0);
-        const listeners = Math.round(totalRev * 6.2);
-        const fr = window.fmtRc || (n => String(n));
-        return `
-      <div class="app-screen s-artist">
-        <div class="artist-hero">
-          <div class="artist-hero-img" style="background-image:url('${photo}');background-size:cover;background-position:center top"></div>
-          <div class="artist-hero-overlay"></div>
-          <button class="album-back-btn" onclick="goBack()">‹</button>
-          <div class="artist-hero-name">${esc(artist)}</div>
-        </div>
-
-        <div class="artist-meta">${[genre && esc(genre), albums.length + ' album' + (albums.length===1?'':'s')].filter(Boolean).join(' · ')}</div>
-
-        <div class="artist-stats">
-          <div class="album-stat">
-            <div class="album-stat-val" style="display:flex;flex-direction:column;align-items:center;gap:3px">
-              <span style="font-size:18px;font-weight:800;letter-spacing:-0.5px">${fr(totalRev)}</span>
-              <div>${halfStars(Math.round(avg*2)/2, 12)}</div>
-            </div>
-            <div class="album-stat-lbl">Reviews</div>
-          </div>
-          <div class="album-stat">
-            <div class="album-stat-val" style="display:flex;flex-direction:column;align-items:center;gap:3px">
-              <span style="font-size:18px;font-weight:800;letter-spacing:-0.5px">${fr(listeners)}</span>
-            </div>
-            <div class="album-stat-lbl">Listeners</div>
-          </div>
-          <div class="album-stat">
-            <div class="album-stat-val" style="font-size:18px;font-weight:800;letter-spacing:-0.5px">${avg.toFixed(1)}</div>
-            <div class="album-stat-lbl">Avg Rating</div>
-          </div>
-        </div>
-
-        ${desc ? `<div style="padding:2px 20px 0;font-size:11px;color:var(--text2);line-height:1.5">${esc(first.artistBio || desc)}</div>` : ''}
-
-        <div style="padding:0 20px">
-          <div class="section-title" style="margin-top:16px;margin-bottom:12px">Top Albums</div>
-          <div class="artist-albums-grid">
-            ${albums.map(al => `
-            <div class="artist-album-item" onclick="openAlbumFor('${oc(al.artist)}','${oc(al.album)}')">
-              <div class="album-art" style="width:100%;aspect-ratio:1;border-radius:8px;background-image:url('${al.image}');background-size:cover;background-position:center"></div>
-              <div style="font-size:12px;font-weight:600;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(al.album)}</div>
-              <div style="display:flex;align-items:center;gap:4px;margin-top:2px">${halfStars(al.rating, 10)}<span style="font-size:9px;color:var(--text2);font-family:var(--font-mono)">(${fr(al.reviewCount)})</span></div>
-            </div>`).join('')}
-          </div>
-        </div>
-      </div>`;
-      }
-    }]
-  },
-
   // ── 9. SONG / TRACK ─────────────────────────────────────────
   {
     id: 'song', name: 'Song / Track', statusTheme: 'light',
-    variants: [{
-      label: 'v1',
-      thumb: ['w80','accent','w60','w80','w70'],
-      html: `
-      <div class="app-screen s-song">
-        <div class="app-nav">
-          <button class="app-nav-btn" onclick="navigate('album')"><span class="app-nav-back">‹</span></button>
-          <div class="app-nav-title">Track</div>
-          <div style="width:28px"></div>
-        </div>
-        <div class="song-header">
-          <div class="song-art" style="background-image:url('images/album-punisher.png');background-size:cover;background-position:center"></div>
-          <div class="song-info">
-            <div class="song-title">Garden Song</div>
-            <div class="song-album" onclick="navigate('album')">Punisher · 2020</div>
-            <div class="song-artist" onclick="navigate('artist')">Phoebe Bridgers</div>
-          </div>
-        </div>
-        <div class="song-stats">
-          <div class="album-stat">
-            <div class="album-stat-val">${halfStars(5, 13)}</div>
-            <div class="album-stat-lbl">avg 4.9</div>
-          </div>
-          <div class="album-stat"><div class="album-stat-val">—</div><div class="album-stat-lbl">yours</div></div>
-          <div class="album-stat"><div class="album-stat-val">48k</div><div class="album-stat-lbl">logged</div></div>
-        </div>
-        <div style="padding:0 20px 20px">
-          <div class="section-title" style="margin:16px 0 10px">Rate This Track</div>
-          <div class="star-picker">
-            <span class="star-pick filled">★</span><span class="star-pick filled">★</span>
-            <span class="star-pick filled">★</span><span class="star-pick filled">★</span>
-            <span class="star-pick">★</span>
-          </div>
-          <div style="font-size:12px;color:var(--text3);margin-top:6px">half stars supported · tap to rate</div>
-          <div class="section-title" style="margin:20px 0 10px">Popular Reviews</div>
-          <div class="mini-review">
-            <div class="mr-header">
-              <div class="avatar mr-avatar"><div class="avatar-placeholder" style="font-size:10px">EP</div></div>
-              <div class="mr-username">echoplex</div>
-              <div>${halfStars(5, 11)}</div>
-            </div>
-            <div class="mr-text">"grew the garden where i lay. she is absolutely unwell and so am i now"</div>
-          </div>
-          <div class="mini-review">
-            <div class="mr-header">
-              <div class="avatar mr-avatar"><div class="avatar-placeholder" style="font-size:10px;background:linear-gradient(135deg,#164e63,#0284c7)">SF</div></div>
-              <div class="mr-username">staticfog</div>
-              <div>${halfStars(5, 11)}</div>
-            </div>
-            <div class="mr-text">"the opening track that sets the whole album's tone. devastating"</div>
-          </div>
-        </div>
-      </div>`
-    }]
-  },
-
-  // ── 10. REVIEW PAGE ─────────────────────────────────────────
-  {
-    id: 'review', name: 'Review Page', statusTheme: 'light',
-    variants: [{
-      label: 'v1',
-      thumb: ['w70','accent','w80','w60','accent'],
-      html: `
-      <div class="app-screen s-write">
-        <div class="app-nav">
-          <button class="app-nav-btn" onclick="navigate('album')"><span class="app-nav-back">✕</span></button>
-          <div class="app-nav-title">Log This Album</div>
-          <button class="app-nav-btn" style="color:var(--text2);font-size:14px">Post</button>
-        </div>
-        <div class="write-album-strip">
-          <div class="album-art was-art" style="background-image:url('images/album-punisher.png');background-size:cover;background-position:center"></div>
-          <div>
-            <div class="was-name">Punisher</div>
-            <div class="was-artist">Phoebe Bridgers · 2020</div>
-          </div>
-        </div>
-        <div class="write-body">
-          <div>
-            <div class="write-section-label">YOUR RATING</div>
-            <div class="star-picker">
-              <span class="star-pick filled">★</span><span class="star-pick filled">★</span>
-              <span class="star-pick filled">★</span><span class="star-pick">★</span>
-              <span class="star-pick">★</span>
-            </div>
-            <div style="font-size:11px;color:var(--text3);margin-top:5px">half stars supported</div>
-          </div>
-          <div>
-            <div class="write-section-label">WRITE A REVIEW <span style="font-weight:400;text-transform:none">(optional)</span></div>
-            <div class="field">
-              <textarea placeholder="Share your thoughts…" rows="5"></textarea>
-              <div class="char-count">0 / 2000</div>
-            </div>
-          </div>
-          <div>
-            <div class="write-section-label">LISTENING CONTEXT</div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap">
-              <button class="btn-small" style="border-radius:99px">First Listen</button>
-              <button class="btn-small" style="border-radius:99px;border-color:var(--accent);color:var(--accent)">Deep Listen</button>
-              <button class="btn-small" style="border-radius:99px">Revisit</button>
-            </div>
-          </div>
-        </div>
-        <div class="write-footer">
-          <button class="btn-primary" onclick="navigate('album')">Log This Album</button>
-        </div>
-      </div>`
-    }]
+    variants: [
+      { label: 'Float·Dark',  thumb: ['w80','accent','w60','w80','w70'], get html() { return songHtml(false); } },
+      { label: 'Float·Light', thumb: ['w80','accent','w60','w80','w70'], get html() { return songHtml(true);  } },
+    ]
   },
 
   // ── 11. PROFILE ─────────────────────────────────────────────
   {
     id: 'profile', name: 'Profile', statusTheme: 'light',
-    variants: [{
-      label: 'v1',
-      thumb: ['accent','w50','w80','w80','w70'],
-      html: `
-      <div class="app-screen s-profile">
-        <div class="app-nav">
-          <button class="app-nav-btn" onclick="navigate('home')"><span class="app-nav-back">‹</span></button>
-          <div class="app-nav-title">Profile</div>
-          <button class="app-nav-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></button>
-        </div>
-        <div class="profile-header">
-          <div class="avatar profile-avatar"><div class="avatar-placeholder" style="font-size:26px;font-weight:700">E</div></div>
-          <div class="profile-meta">
-            <div class="profile-username">ericd</div>
-            <div class="profile-handle">@ericd</div>
-            <div class="profile-bio">Every album tells a story.</div>
-          </div>
-        </div>
-        <div class="profile-stats">
-          <div class="pstat"><div class="pstat-val">284</div><div class="pstat-lbl">Reviews</div></div>
-          <div class="pstat"><div class="pstat-val">1.2K</div><div class="pstat-lbl">Following</div></div>
-          <div class="pstat"><div class="pstat-val">892</div><div class="pstat-lbl">Followers</div></div>
-        </div>
-        <div class="profile-tabs">
-          <button class="ptab active">Reviews</button>
-          <button class="ptab">Lists</button>
-          <button class="ptab">Likes</button>
-          <button class="ptab">Activity</button>
-        </div>
-        <div class="reviews-grid">
-          <div class="rg-row">
-            <div class="rg-item" onclick="navigate('album')"><div class="album-art rg-art" style="background-image:url('images/album-punisher.png');background-size:cover;background-position:center"></div><div class="rg-title">Punisher</div><div class="rg-rating">${halfStars(5, 10)}</div></div>
-            <div class="rg-item" onclick="navigate('album')"><div class="album-art rg-art" style="background-image:url('images/album-crystalcastles1.png');background-size:cover;background-position:center"></div><div class="rg-title">CC I</div><div class="rg-rating">${halfStars(4, 10)}</div></div>
-            <div class="rg-item" onclick="navigate('album')"><div class="album-art rg-art" style="background:linear-gradient(135deg,#042a10,#6aff3a 130%)"></div><div class="rg-title">1000 gecs</div><div class="rg-rating">${halfStars(5, 10)}</div></div>
-          </div>
-          <div class="rg-row">
-            <div class="rg-item" onclick="navigate('album')"><div class="album-art rg-art" style="background:linear-gradient(135deg,#2a0044,#ff1a6e 200%)"></div><div class="rg-title">Leather Teeth</div><div class="rg-rating">${halfStars(5, 10)}</div></div>
-            <div class="rg-item" onclick="navigate('album')"><div class="album-art rg-art" style="background:linear-gradient(135deg,#1e3a5f,#374151)"></div><div class="rg-title">Str. Alps</div><div class="rg-rating">${halfStars(4.5, 10)}</div></div>
-            <div class="rg-item" onclick="navigate('album')"><div class="album-art rg-art" style="background:linear-gradient(135deg,#1c1c3e,#3b1fa8)"></div><div class="rg-title">CC II</div><div class="rg-rating">${halfStars(4, 10)}</div></div>
-          </div>
-        </div>
-      </div>`
-    }]
+    variants: [
+      { label: 'Funky·Dark',  thumb: ['accent','w50','w80','w80','w70'], get html() { return profileHtml(false); } },
+      { label: 'Funky·Light', thumb: ['accent','w50','w80','w80','w70'], get html() { return profileHtml(true);  } },
+    ]
   },
 
   // ── 12. PLAYLISTS (Expanded, multi-variant) ─────────────────
@@ -1452,7 +635,7 @@ function appHeader() {
               <button class="v3-bubble v3-bubble--settings" title="Settings" aria-label="Settings">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
               </button>
-              <button class="v3-bubble v3-bubble--search" title="Search" aria-label="Search" onclick="navigate('search')">
+              <button class="v3-bubble v3-bubble--search" title="Search" aria-label="Search" onclick="openSearch(this)">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
               </button>
             </div>
@@ -1465,6 +648,320 @@ function nowBar() {
             <div class="v3-now-text"></div>
             <div class="v3-now-wave" aria-hidden="true"></div>
           </div>`;
+}
+
+// ── Standalone entry/detail screens, themed as dark + light pairs ──
+// They share the older .app-screen component CSS; the sd-theme-* scope class
+// re-points --bg/--surface/--text/etc. to the current Spindeck palette.
+function sdTheme(light) { return light ? 'sd-theme-light' : 'sd-theme-dark'; }
+
+function authHtml(light) {
+  return `
+      <div class="app-screen s-auth ${sdTheme(light)}">
+        <div class="auth-hero">
+          <div class="auth-logo-circle" style="background:linear-gradient(135deg,#2a2820,#4a4640)">
+            <svg viewBox="0 0 48 48" width="36" height="36" fill="none" stroke="white" stroke-width="2">
+              <circle cx="24" cy="24" r="20"/><circle cx="24" cy="24" r="8"/>
+              <circle cx="24" cy="24" r="3" fill="white" stroke="none"/>
+            </svg>
+          </div>
+          <div class="auth-appname">Spindeck</div>
+        </div>
+        <div class="auth-body">
+          <div class="field-group">
+            <div class="field"><label>Email</label><input type="email" placeholder="you@example.com"></div>
+            <div class="field"><label>Password</label><input type="password" placeholder="••••••••"></div>
+          </div>
+          <button class="btn-primary" style="margin-top:8px" onclick="obStart()">Sign In</button>
+          <div class="divider" style="margin:16px 0">or</div>
+          <button class="btn-outline" onclick="obStart()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="flex-shrink:0"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+            Continue with Google
+          </button>
+          <button class="link-btn" style="margin-top:20px" onclick="obStart()">Don't have an account? <span style="color:var(--accent)">Sign Up</span></button>
+        </div>
+      </div>`;
+}
+
+// Service brand marks (reused from the streaming sheets).
+const OB_SVC_ICONS = {
+  spotify:    `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.52 17.34c-.24.36-.66.48-1.02.24-2.82-1.74-6.36-2.1-10.56-1.14-.42.12-.78-.18-.9-.54-.12-.42.18-.78.54-.9 4.56-1.02 8.52-.6 11.64 1.32.42.18.48.66.3 1.02zm1.44-3.3c-.3.42-.84.6-1.26.3-3.24-1.98-8.16-2.58-11.94-1.38-.48.12-1.02-.12-1.14-.6-.12-.48.12-1.02.6-1.14 4.38-1.32 9.78-.72 13.5 1.56.36.24.54.84.24 1.26zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.3c-.6.18-1.2-.18-1.38-.72-.18-.6.18-1.2.72-1.38 4.26-1.26 11.28-1.02 15.72 1.62.54.3.72 1.02.42 1.56-.3.42-1.02.6-1.56.3z"/></svg>`,
+  apple:      `<svg viewBox="0 0 13 16" fill="currentColor"><path d="M6.5 0L8 3.5 13 4.3l-3.5 3.4.8 4.8L6.5 10.5 2.2 12.5l.8-4.8L0 4.3l5-.8z"/></svg>`,
+  soundcloud: `<svg viewBox="0 0 24 16" fill="currentColor"><rect x="2" y="7" width="1.8" height="6" rx=".9"/><rect x="6" y="4" width="1.8" height="9" rx=".9"/><rect x="10" y="6" width="1.8" height="7" rx=".9"/><rect x="14" y="2" width="1.8" height="11" rx=".9"/><rect x="18" y="8" width="1.8" height="5" rx=".9"/></svg>`,
+};
+function obServiceBtn(id, name, brand) {
+  return `<button class="ob-svc" data-svc="${id}" onclick="obConnect('${id}')">
+    <span class="ob-svc-ico" style="background:${brand}">${OB_SVC_ICONS[id]}</span>
+    <span class="ob-svc-name">${name}</span>
+    <span class="ob-svc-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+    <span class="ob-svc-cta">Connect</span>
+  </button>`;
+}
+
+function onboardingHtml(light) {
+  const genres = ['Electronic','Indie','Hip-Hop','Jazz','R&amp;B / Soul','Alternative',
+    'Classical','Pop','Metal','Folk','Ambient','Latin','Country','Punk','Funk','Blues',
+    'Shoegaze','Soul','Trip-hop','Dream Pop'];
+  return `
+      <div class="app-screen s-onboarding ${sdTheme(light)}">
+        <div class="ob-top">
+          <button class="ob-back" onclick="obBack()" aria-label="Back">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <div class="ob-progress"><div class="ob-prog-bar"></div></div>
+          <div class="ob-stepcount"><span class="ob-step-n">1</span>/<span class="ob-step-t">8</span></div>
+        </div>
+
+        <div class="ob-stage">
+
+          <!-- 0 · USERNAME -->
+          <section class="ob-panel" data-step="0">
+            <div class="ob-h">
+              <div class="ob-title">Claim your handle</div>
+              <div class="ob-sub">This is how friends find you on Spindeck.</div>
+            </div>
+            <div class="ob-userwrap">
+              <span class="ob-at">@</span>
+              <input class="ob-user-input" type="text" placeholder="username" maxlength="20"
+                     autocomplete="off" spellcheck="false" oninput="obSetUsername(this.value)">
+            </div>
+            <div class="ob-user-hint">3–20 characters · letters, numbers, underscores</div>
+          </section>
+
+          <!-- 1 · CONNECT -->
+          <section class="ob-panel" data-step="1">
+            <div class="ob-h">
+              <div class="ob-title">Bring your music</div>
+              <div class="ob-sub">Connect a service so your library and listening come with you.</div>
+            </div>
+            <div class="ob-services">
+              ${obServiceBtn('spotify','Spotify','#1DB954')}
+              ${obServiceBtn('apple','Apple Music','linear-gradient(135deg,#fc3c44,#fc6f32)')}
+              ${obServiceBtn('soundcloud','SoundCloud','linear-gradient(135deg,#ff5500,#ff8800)')}
+            </div>
+            <div class="ob-note">Optional — you can connect later in settings.</div>
+          </section>
+
+          <!-- 2 · TRACKING (only shown when a service is connected) -->
+          <section class="ob-panel" data-step="2">
+            <div class="ob-h">
+              <div class="ob-title">Share your listening?</div>
+              <div class="ob-sub">Let friends see what you're playing — like a live scrobble on your profile.</div>
+            </div>
+            <div class="ob-track-card">
+              <div class="ob-track-wave"><i></i><i></i><i></i><i></i><i></i></div>
+              <div class="ob-track-txt">
+                <div class="ob-track-now">Now playing</div>
+                <div class="ob-track-song">friends can see this on your profile</div>
+              </div>
+            </div>
+            <div class="ob-track-opts">
+              <button class="ob-track-opt" data-track="1" onclick="obSetTracking(true)">Allow · share my activity</button>
+              <button class="ob-track-opt" data-track="0" onclick="obSetTracking(false)">Keep it private</button>
+            </div>
+          </section>
+
+          <!-- 3 · GENRES -->
+          <section class="ob-panel" data-step="3">
+            <div class="ob-h">
+              <div class="ob-title">What do you listen to?</div>
+              <div class="ob-sub">Pick a few — we'll personalise your feed.</div>
+            </div>
+            <div class="ob-body">
+              <div class="genre-chips">
+                ${genres.map(g => `<button class="chip" onclick="obToggleGenre(this,'${g.replace(/&amp;/g,'&').replace(/'/g,"\\'")}')">${g}</button>`).join('')}
+              </div>
+            </div>
+          </section>
+
+          <!-- 4 · ARTISTS -->
+          <section class="ob-panel" data-step="4">
+            <div class="ob-h">
+              <div class="ob-title">Follow some artists</div>
+              <div class="ob-sub">Search or tap to follow. <b>3+</b> makes your feed way better.</div>
+            </div>
+            <div class="ob-searchbar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+              <input type="text" placeholder="Search artists" autocomplete="off" spellcheck="false" oninput="obSearch('artists', this.value)">
+            </div>
+            <div class="ob-pinned" data-pinned="artists"></div>
+            <div class="ob-wall" data-wall="artists"></div>
+          </section>
+
+          <!-- 5 · ALBUMS -->
+          <section class="ob-panel" data-step="5">
+            <div class="ob-h">
+              <div class="ob-title">Any favourite albums?</div>
+              <div class="ob-sub">The records that made you. <b>3+</b> recommended.</div>
+            </div>
+            <div class="ob-searchbar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+              <input type="text" placeholder="Search albums" autocomplete="off" spellcheck="false" oninput="obSearch('albums', this.value)">
+            </div>
+            <div class="ob-pinned" data-pinned="albums"></div>
+            <div class="ob-wall ob-wall--albums" data-wall="albums"></div>
+          </section>
+
+          <!-- 6 · PEOPLE YOU MAY KNOW -->
+          <section class="ob-panel" data-step="6">
+            <div class="ob-h">
+              <div class="ob-title">People you may know</div>
+              <div class="ob-sub">From your contacts and services. Follow a few to start.</div>
+            </div>
+            <div class="ob-people" data-people="1"></div>
+          </section>
+
+          <!-- 7 · PROFILE (payoff) -->
+          <section class="ob-panel ob-panel--profile" data-step="7">
+            <div class="ob-profile" data-profile="1"></div>
+          </section>
+
+        </div>
+
+        <div class="ob-footer">
+          <button class="ob-skip" onclick="obNext(true)">Skip</button>
+          <button class="ob-next btn-primary" onclick="obNext()">Continue</button>
+        </div>
+      </div>`;
+}
+
+function songHtml(light) {
+  return `
+      <div class="app-screen s-song ${sdTheme(light)}">
+        <div class="app-nav">
+          <button class="app-nav-btn" onclick="navigate('album')"><span class="app-nav-back">‹</span></button>
+          <div class="app-nav-title">Track</div>
+          <div style="width:28px"></div>
+        </div>
+        <div class="song-header">
+          <div class="song-art" style="background-image:url('images/album-punisher.png');background-size:cover;background-position:center"></div>
+          <div class="song-info">
+            <div class="song-title">Garden Song</div>
+            <div class="song-album" onclick="navigate('album')">Punisher · 2020</div>
+            <div class="song-artist" onclick="navigate('artist')">Phoebe Bridgers</div>
+          </div>
+        </div>
+        <div class="song-stats">
+          <div class="album-stat">
+            <div class="album-stat-val">${halfStars(5, 13)}</div>
+            <div class="album-stat-lbl">avg 4.9</div>
+          </div>
+          <div class="album-stat"><div class="album-stat-val">—</div><div class="album-stat-lbl">yours</div></div>
+          <div class="album-stat"><div class="album-stat-val">48k</div><div class="album-stat-lbl">logged</div></div>
+        </div>
+        <div style="padding:0 20px 20px">
+          <div class="section-title" style="margin:16px 0 10px">Rate This Track</div>
+          <div class="star-picker">
+            <span class="star-pick filled">★</span><span class="star-pick filled">★</span>
+            <span class="star-pick filled">★</span><span class="star-pick filled">★</span>
+            <span class="star-pick">★</span>
+          </div>
+          <div style="font-size:12px;color:var(--text3);margin-top:6px">half stars supported · tap to rate</div>
+          <div class="section-title" style="margin:20px 0 10px">Popular Reviews</div>
+          <div class="mini-review">
+            <div class="mr-header">
+              <div class="avatar mr-avatar"><div class="avatar-placeholder" style="font-size:10px">EP</div></div>
+              <div class="mr-username">echoplex</div>
+              <div>${halfStars(5, 11)}</div>
+            </div>
+            <div class="mr-text">"grew the garden where i lay. she is absolutely unwell and so am i now"</div>
+          </div>
+          <div class="mini-review">
+            <div class="mr-header">
+              <div class="avatar mr-avatar"><div class="avatar-placeholder" style="font-size:10px;background:linear-gradient(135deg,#164e63,#0284c7)">SF</div></div>
+              <div class="mr-username">staticfog</div>
+              <div>${halfStars(5, 11)}</div>
+            </div>
+            <div class="mr-text">"the opening track that sets the whole album's tone. devastating"</div>
+          </div>
+        </div>
+      </div>`;
+}
+
+// Profile — "Funky" theme 01. The emboss base (main outline + info blob + social
+// tab) + the profile picture and 5 favourite-album wells, in the 744×889 layout
+// traced from Profile_Theme_01.svg. Eric's textured skin PNG
+// (images/profile-skin-01.png) is laid OVER the base part (scaled+offset so its
+// holes register on the pic/CD positions — see .prof-skin in app.css) for the
+// grungy old-school look; it's pointer-events:none so the holes stay clickable.
+// Home shell (header · v3-body · nowBar · bottomNav); username in the top gap;
+// info blob carries the bio; social tab opens the social menu.
+function profileHtml(light) {
+  const P = window.PROFILE || {};
+  const findAlb = name => (window.ARCHIVE || []).find(a => a.album === name);
+  // Album-circle centres (r=55) as % of the 744×889 base canvas → bbox left/top.
+  // The skin PNG is laid over this base, scaled+offset so its holes register on
+  // these exact positions (see .prof-skin transform in app.css).
+  const slots = [
+    { l: 57.03, t: 64.54 }, { l: 70.23, t: 55.89 }, { l: 78.90, t: 44.03 },
+    { l: 81.99, t: 30.58 }, { l: 79.30, t: 17.01 },
+  ];
+  const slotHtml = slots.map((s, i) => {
+    const a = findAlb((P.favs || [])[i]);
+    return `<button class="prof-alb${a ? '' : ' prof-alb--empty'}" style="left:${s.l}%;top:${s.t}%" onclick="openProfPicker(${i}, this)" title="Favourite ${i + 1}">
+      ${a ? `<span class="prof-alb-img" style="background-image:url('${a.image}')"></span>` : `<span class="prof-alb-add">+</span>`}
+    </button>`;
+  }).join('');
+
+  const socialRow = (id, label, brand, ico) =>
+    `<button class="prof-soc-item" onclick="openSocial('${id}')">
+      <span class="prof-soc-ico" style="background:${brand}">${ico}</span>${label}
+      <span class="prof-soc-go">↗</span>
+    </button>`;
+  const igIco = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.5" cy="6.5" r="1" fill="#fff" stroke="none"/></svg>`;
+  const xIco  = `<svg width="11" height="11" viewBox="0 0 24 24" fill="#fff"><path d="M18.9 2H22l-7.6 8.7L23.3 22h-6.9l-5.4-7-6.2 7H1.7l8.1-9.3L1 2h7l4.9 6.5L18.9 2Zm-2.4 18h1.9L7.6 3.9H5.6L16.5 20Z"/></svg>`;
+  const scIco = `<svg width="13" height="9" viewBox="0 0 24 16" fill="#fff"><rect x="2" y="7" width="1.8" height="6" rx=".9"/><rect x="6" y="4" width="1.8" height="9" rx=".9"/><rect x="10" y="6" width="1.8" height="7" rx=".9"/><rect x="14" y="2" width="1.8" height="11" rx=".9"/><rect x="18" y="8" width="1.8" height="5" rx=".9"/></svg>`;
+
+  return `
+      <div class="app-screen s-home-v3 s-prof2${light ? ' s-home-v3--light' : ''}">
+        ${appHeader()}
+        <div class="v3-body">
+          <div class="prof2-scroll">
+            <div class="prof2-userbar">
+              <div class="prof2-id">
+                <span class="prof2-name">${P.name || 'Your name'}</span>
+                <span class="prof2-handle">@${P.handle || 'handle'}</span>
+              </div>
+              <button class="prof2-editbtn" title="Edit profile" onclick="event.stopPropagation()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+              </button>
+            </div>
+
+            <div class="prof-canvas">
+              <!-- Emboss base panel (main outline + info blob + social tab) -->
+              <svg class="prof-base" viewBox="0 0 744 889" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+                <path d="M321 1.89282C448.526 1.89282 529.085 64.0207 567.481 112.844C580.295 129.138 602.061 137.867 621.409 130.732L622.328 130.38C654.33 117.69 691.63 128.852 706.925 159.694C731.258 208.759 743.727 259.317 743.727 322.893C743.727 494.15 641.241 644.691 517.824 706.877L516.84 707.365C475.469 727.531 428.178 708.031 400.693 670.918L400.043 670.031L382.222 645.506C371.109 630.213 352.274 622.794 333.436 624.372L331.101 624.56C132.87 639.921 0 491.01 0 322.893C0 145.609 143.717 1.89282 321 1.89282Z"/>
+                <path d="M238.113 654.795C174.226 644.916 105.541 608.331 55.4474 558.286C41.0139 543.867 10.0794 553.733 10.0794 574.135V853.121C10.0794 872.451 25.7495 888.121 45.0794 888.121H390.908C407.461 888.121 421.751 876.525 425.159 860.326L439.579 791.767C442.053 780.007 439.108 767.758 431.559 758.407L364.784 675.693C356.103 664.939 342.49 659.576 328.681 660.152C299.511 661.37 265.762 659.071 238.113 654.795Z"/>
+                <path d="M585.432 94.5524C562.377 66.0677 521.265 37.0414 492.888 17.8749C484.843 12.441 488.519 0.5 498.227 0.5H680.269C690.232 0.5 698.675 7.83187 700.072 17.6957L710.861 93.887C712.049 102.276 702.311 109.271 694.096 107.197C669.812 101.067 637.104 101.507 615.199 105.324C604.477 107.192 592.278 103.012 585.432 94.5524Z"/>
+              </svg>
+
+              <!-- Pic + CD covers sit under the skin; its holes reveal them -->
+              <div class="prof-pic" style="background-image:url('${P.pic || ''}')"></div>
+              ${slotHtml}
+
+              <!-- Textured skin laid over the base, aligned to the holes -->
+              <img class="prof-skin" src="images/profile-skin-01.png?v=1" alt="" aria-hidden="true" draggable="false">
+
+              <div class="prof-fav-tag">favs</div>
+
+              <button class="prof-social" onclick="toggleProfSocial(this)" aria-label="Social links">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+              </button>
+              <div class="wall2-menu prof-soc-menu" hidden>
+                ${socialRow('instagram','Instagram','linear-gradient(135deg,#f9ce34,#ee2a7b,#6228d7)', igIco)}
+                ${socialRow('x','X · Twitter','#111', xIco)}
+                ${socialRow('soundcloud','SoundCloud','linear-gradient(135deg,#ff5500,#ff8800)', scIco)}
+              </div>
+
+              <div class="prof-info">
+                <div class="prof-bio">${P.bio || 'Tell people what you are into.'}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        ${nowBar()}
+        ${bottomNav('profile')}
+      </div>`;
 }
 
 // Album wall (Trending) — themed so it can render as a dark + light pair.

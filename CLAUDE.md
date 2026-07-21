@@ -21,7 +21,7 @@
 | `style.css` | Desktop viewer chrome (toolbar, phone frame, variant tray) |
 | `flowchart.html` | Page map / user flow diagram |
 | `archive.csv` | Source of truth for artist/album metadata |
-| `images/` | Album art — ~54 images, naming: `album-artistslug-albumslug.ext` |
+| `images/` | Album art (~146 albums, `album-artistslug-albumslug.ext`), playlist covers (`playlist-*.jpg`), and `profile-skin-01.png` (profile theme 01 skin) |
 | `images/topbox.png` | Fillet PNG — black arc at bottom-left, white bg. Used for `v3-fillet-bl` |
 | `images/bottombox.png` | Fillet PNG — black arc at top-left, white bg. Used for `v3-fillet-tl` |
 
@@ -31,24 +31,39 @@
 
 ## Screens (in order)
 
+The `SCREENS` array holds only the **current** designs — every retired mockup
+(the v1/v2 home variants, and the old standalone `search`/`album`/`artist`/`review`
+screens) has been deleted. Album / Artist / Review / Search are **no longer
+standalone screens**; they're live sub-states of the home shell (see below).
+
 | ID | Name | Variants |
 |----|------|----------|
-| `auth` | Auth / Login | 1 |
-| `onboarding` | Onboarding | 1 |
+| `auth` | Auth / Login | Float·Dark, Float·Light |
+| `onboarding` | Onboarding | Float·Dark, Float·Light |
 | `home` | Home | v3.0 Float·Dark, v3.1 Float·Light |
-| `feed` | Live Feed | Albums v1.0, Songs v1.1 |
-| `wall` | Album Wall | 1 |
-| `search` | Search | 1 |
-| `album` | Album Page | 1 |
-| `artist` | Artist Page | 1 |
-| `song` | Song / Track | 1 |
-| `review` | Review Page | 1 |
-| `profile` | Profile | 1 |
+| `wall` | Album Wall | Float·Dark, Float·Light |
+| `song` | Song / Track | Float·Dark, Float·Light |
+| `profile` | Profile | Funky·Dark, Funky·Light (theme 01) |
 | `playlists` | Playlists | Float·Dark, Float·Light |
 | `playlist` | Playlist Page (detail) | Float·Dark, Float·Light |
-| `swipe` | Swipe Review | 1 |
 
-Navigate between screens with `navigate('screen-id')` — called from `onclick` handlers in screen HTML.
+`auth`/`onboarding`/`song` use the older `.app-screen` component CSS re-skinned to
+the current palette via the **`sd-theme-dark` / `sd-theme-light`** scope classes
+(defined in `app.css`, built by `sdTheme(light)` in `screens.js`). They render via
+`authHtml(light)` / `onboardingHtml(light)` / `songHtml(light)`.
+
+Navigate between screens with `navigate('screen-id')` — called from `onclick`
+handlers in screen HTML. `navigate('search'|'album'|'artist'|'review')` is
+intercepted and routed to the live in-app flow (`openSearch` / `openAlbumPage` /
+`openArtistPageFor` / `enterReview`) rather than a standalone screen.
+
+### Left page nav (desktop viewer)
+`NAV_PAGES` (in `app.js`) drives the floating left rail — **decoupled from
+`SCREENS`**. Real screens open via `goToScreen`; `flow:true` entries (Search,
+Album Page, Artist Page, Review) launch the live in-app interaction through
+`navPage(id)` and are flagged with a `↗` in the rail. `activeNavId` tracks the
+highlighted entry. The rail is `position:absolute` over `#stage` so the phone
+centers in the true middle of the viewport (`#phone-container` fills full width).
 
 ---
 
@@ -307,6 +322,77 @@ The detail page for one song playlist. Geometry from Eric's `PlaylistPageBox.svg
 
 ---
 
+## Profile — "Funky" theme 01 (`profileHtml` + `PROFILE` in `app.js`)
+
+744×889 layout traced from `Profile_Theme_01.svg`, with Eric's **textured skin
+PNG** (`images/profile-skin-01.png`, 800×800) laid **over the base part** for the
+old-school/Winamp look. Layers (low→high z):
+1. **Emboss base panel** (`.prof-base`, z1) — main outline + info blob + social
+   tab, filled `--pf-base` and embossed OUT (dual `drop-shadow`).
+2. **Profile picture + 5 favourite-album wells** (z2) — embossed IN (inset
+   shadows), positioned in the 744×889 coords.
+3. **The skin** (`.prof-skin`, z3, `pointer-events:none`) — scaled/offset
+   (`left:-3.79%; top:-4.65%; width:107.74%`) so the PNG's holes register exactly
+   on the pic + CD circles. Its edges frame them; clicks pass through to the
+   wells. **If the skin art changes, re-derive that transform** (align the big
+   pic-hole to the base pic circle; every CD then lines up).
+4. **Labels/controls on top** (z4-6) — `.prof-fav-tag`, `.prof-social` (+
+   `.prof-soc-menu`), `.prof-info` bio. Elements over the brown skin use fixed
+   light ink; the bio sits below the skin's lobe on the emboss panel.
+
+Wrapped in the **home shell**: `.s-home-v3 .s-prof2` + `appHeader()` +
+`.v3-body > .prof2-scroll` + `nowBar()` + `bottomNav('profile')`. **Username in the
+top gap** (`.prof2-userbar`). Rendered **Funky·Dark / Funky·Light**; tokens
+(`--pf-base/-lt/-dk/-ink/-well-*/-fg/-surface/...`) scoped to `.s-prof2` and
+`.s-prof2.s-home-v3--light`. (An angular theme 02 is planned.)
+
+- **State** in `window.PROFILE` (`name`, `handle`, `bio`, `pic`, `favs` = 5 album
+  names, `socials`). Pic currently borrows `images/playlist-statue-night.jpg`.
+- **Favourite albums:** each `.prof-alb` (under a CD hole) → `openProfPicker(slot,
+  btn)` opens a bottom-sheet album picker (`#prof-picker`); `profPick(name)`
+  writes `PROFILE.favs[slot]` and `renderViewer()`s.
+- **Social:** `.prof-social` tab → `toggleProfSocial` opens `.prof-soc-menu`;
+  `openSocial(id)` deep-links to instagram/x/soundcloud + the stored handle.
+- The pencil in the userbar is a placeholder edit affordance (no handler yet).
+- Being an `.s-home-v3`, `populateHomeData` runs on it (now-playing bar) — the
+  bento-only calls no-op just like on wall/playlists.
+- **Deploy note:** `images/profile-skin-01.png` is a new asset — `git add` it.
+
+---
+
+## Onboarding Wizard (`onboardingHtml` + `OB` state in `app.js`)
+
+An 8-step signup flow, entered from the Auth screen's buttons (`obStart()` resets
+state then `navigate('onboarding')`). All panels live in one `.s-onboarding` DOM;
+JS shows one at a time.
+
+**Steps:** `0` username · `1` connect service (Spotify/Apple/SoundCloud) · `2`
+allow listening-tracking (**only shown if a service was connected** —
+`obActiveSteps()` drops it otherwise) · `3` genres · `4` artists · `5` albums ·
+`6` people you may know · `7` minimal profile (the payoff → `Start exploring` →
+`navigate('home')`).
+
+- **State** lives in the module-global `OB` object (username, service, tracking,
+  and `Set`s for genres/artists/albums/following, plus per-wall search query).
+  It persists across re-renders; `obStart()` resets it.
+- **Multi-instance:** the viewer shows the dark + light variant side by side, so
+  every action mutates `OB` then `obSync()` re-applies state to **all**
+  `.s-onboarding` instances. `obInit(root)` is called per instance after each
+  render (wired into `renderViewer`'s rAF + the mobile paths).
+- **Artists/Albums walls** (`obRenderWall`): data derived from `ARCHIVE`
+  (`obArtistList()` = unique artists w/ album-art avatar; albums = the archive).
+  Search filters the wall; tapping a card toggles selection — selected items get
+  a checkmark overlay **and** are pinned as chips in the `.ob-pinned` row above
+  the wall. Skippable, but 3+ is encouraged (copy only; no hard gate).
+- **People you may know** (`obPeopleList`): `FRIEND_ACTIVITY` handles + a few
+  extras, each with a fake mutual count and a Follow toggle.
+- **Footer** is contextual (`obSyncFooter`): Continue is disabled until a valid
+  username (step 0); Skip shows only on the optional steps (1,2,4,5,6); Continue
+  shows a live selection count on the pick steps.
+- Onclick args are escaped with `obOc()` (HTML-attr + JS-quote safe) / `obEsc()`.
+
+---
+
 ## How Screens Work
 
 `screens.js` exports a `SCREENS` array. Two helper functions:
@@ -338,7 +424,7 @@ halfStars(rating, size)  // halfStars(4.4, 16) → star span HTML
 
 ## Variant System
 
-Desktop viewer shows all variants side by side. Only `v3.x` variants are shown for the home screen (v1/v2 filtered in `app.js → init()`). `variantState` defaults to `{ home: 0 }` (Float·Dark).
+Desktop viewer shows a screen's variants side by side (single view is a Dark+Light 2-up, centered — see the floating left nav note). The retired v1/v2 home mockups and the old standalone search/album/artist/review screens were **deleted** from `SCREENS`; the `init()` v3-filter is now a harmless no-op. `variantState` defaults to `{ home: 0 }` (Float·Dark).
 
 ---
 
@@ -371,3 +457,13 @@ git add app.css app.js screens.js style.css index.html
 git commit -m "description"
 git push
 ```
+When a change adds an asset (e.g. `images/profile-skin-01.png`), `git add` it too.
+
+> **Last deploy (2026-07-21):** the left-nav relink + centered mockups, dark/light
+> for auth/onboarding/song, the 8-step onboarding wizard, and the Funky profile
+> (theme 01 + skin PNG) are live. Assets at `app.css?v=165 · screens.js?v=158 ·
+> app.js?v=158 · style.css?v=141 · data.js?v=143`.
+>
+> Open threads: light-theme bento boxes are still `#999` placeholders · profile
+> theme 02 (angular) not started · `PREVIEWS_ENABLED = false` · ~38 inline `★`
+> glyphs still bypass the vinyl `halfStars` treatment.

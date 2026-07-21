@@ -116,6 +116,7 @@ function renderViewer() {
     document.querySelectorAll('.s-home-v3').forEach(el => {
       populateHomeData(el);
     });
+    document.querySelectorAll('.s-onboarding').forEach(obInit);
     applyFilletMasks();
   });
 }
@@ -530,6 +531,28 @@ function greetRing() {
   setTimeout(() => rings.forEach(r => r.classList.add('v3-ring--wink')), 3700);
   setTimeout(() => rings.forEach(r => r.classList.remove('v3-ring--wink', 'v3-ring--smile')), 5000);
 }
+
+// Home live-pill personality: every ~10s the arrow reforms into the smiley,
+// holds ~5s, winks (1s), then morphs back into the arrow. Skips the pill when
+// the home shell is in a fullscreen state (review/album/artist), and no-ops on
+// other screens (the live pill isn't in the DOM there).
+function homeRingPeek() {
+  const rings = [...document.querySelectorAll('.v3-live-pill .v3-ring')].filter(r => {
+    const shell = r.closest('.s-home-v3');
+    return shell
+      && !shell.classList.contains('s-home-v3--review')
+      && !shell.classList.contains('s-home-v3--album')
+      && !shell.classList.contains('s-home-v3--artist');
+  });
+  if (!rings.length) return;
+  rings.forEach(r => {
+    clearTimeout(r._peekWinkT); clearTimeout(r._peekEndT);
+    r.classList.add('v3-ring--smile');
+    r._peekWinkT = setTimeout(() => r.classList.add('v3-ring--wink'), 5000);         // stays 5s, then winks
+    r._peekEndT  = setTimeout(() => r.classList.remove('v3-ring--wink', 'v3-ring--smile'), 6100); // wink (1s) done → back to arrow
+  });
+}
+setInterval(homeRingPeek, 10000);
 // CD tap → pick a streaming platform to open this playlist on (prototype menu).
 window.togglePlPlat = function (cd) {
   const hero = cd.closest('.plp-hero');
@@ -606,14 +629,15 @@ function reactRing(screenEl, type) {
 }
 window.reactRing = reactRing;
 
-// CD tap — react the ring and open the streaming sheet (streaming now lives behind the CD).
+// CD tap — react the ring and toggle the compact CD popup (preview + streaming
+// platforms), anchored above the CD like the playlist page's plat menu.
 window.onCdTap = function (el, e) {
   if (e) e.stopPropagation();
   const scr = el.closest('.s-home-v3');
   if (!scr) return;
   reactRing(scr, 'cd');
-  const ov = scr.querySelector('.v3-stream-overlay');
-  if (ov) ov.style.display = 'flex';
+  const menu = scr.querySelector('.v3-cd-menu');
+  if (menu) menu.hidden = !menu.hidden;
 };
 
 // Play a 30s preview from the stream sheet — toggles play/pause on the button itself.
@@ -1851,15 +1875,68 @@ function renderThumbs() {
   renderVariantBar();
 }
 
+// The demo nav is decoupled from SCREENS: some entries are real screens, others
+// (search / album / artist / review) launch the live in-app flow they now live
+// in (they're no longer standalone screens). `flow:true` marks the latter.
+const NAV_PAGES = [
+  { id: 'auth',       label: 'Auth / Login'  },
+  { id: 'onboarding', label: 'Onboarding'    },
+  { id: 'home',       label: 'Home'          },
+  { id: 'wall',       label: 'Album Wall'    },
+  { id: 'search',     label: 'Search',        flow: true },
+  { id: 'album',      label: 'Album Page',    flow: true },
+  { id: 'artist',     label: 'Artist Page',   flow: true },
+  { id: 'song',       label: 'Song / Track'  },
+  { id: 'review',     label: 'Review',        flow: true },
+  { id: 'profile',    label: 'Profile'       },
+  { id: 'playlists',  label: 'Playlists'     },
+  { id: 'playlist',   label: 'Playlist Page' },
+];
+let activeNavId = 'home';
+
 function renderPageNav() {
   const nav = document.getElementById('page-nav');
   if (!nav) return;
-  nav.innerHTML = SCREENS.map((s, i) =>
-    `<button class="pnav-btn ${i === currentIdx ? 'active' : ''}" onclick="goToScreen(${i})">${s.name}</button>`
+  nav.innerHTML = NAV_PAGES.map(p =>
+    `<button class="pnav-btn ${p.id === activeNavId ? 'active' : ''}${p.flow ? ' pnav-flow' : ''}" onclick="navPage('${p.id}')">${p.label}</button>`
   ).join('') + `
     <div class="pnav-divider"></div>
     <button class="pnav-btn pnav-multi ${viewMode === 'multi' ? 'multi-active' : ''}" onclick="toggleMulti()">⊞ Multi</button>
   `;
+}
+
+// Left-nav click: open a real screen, or fire the live flow for the pages that
+// are now sub-states of the home shell.
+window.navPage = function (id) {
+  activeNavId = id;
+  const goScreen = sid => { const i = SCREENS.findIndex(s => s.id === sid); if (i !== -1) goToScreen(i); };
+  const arc = window.ARCHIVE || [];
+  const feat = window.featuredAlbum || arc[0];
+  switch (id) {
+    case 'search':
+      goScreen('home');
+      requestAnimationFrame(() => window.openSearch(document.querySelector('#phone-container .app-screen')));
+      break;
+    case 'album':
+      if (feat) window.openAlbumPage(feat);
+      break;
+    case 'artist':
+      if (feat) window.openArtistPageFor(feat.artist);
+      break;
+    case 'review':
+      goHomeThenShells(scr => window.enterReview(scr));
+      break;
+    default:
+      goScreen(id);
+  }
+  renderPageNav();   // reflect the active state now (live flows re-render async)
+};
+
+// Ensure the home shell is showing, then run fn on each home-shell instance.
+function goHomeThenShells(fn) {
+  if (currentScreen().id === 'home' && homeShells().length) { homeShells().forEach(fn); return; }
+  navigate('home');
+  requestAnimationFrame(() => requestAnimationFrame(() => homeShells().forEach(fn)));
 }
 
 function updateToolbar() {
@@ -1888,12 +1965,13 @@ window.setVariant = function(screenId, idx) {
 };
 
 // ── Navigation ───────────────────────────────────────────────
-function navigatePrev() { if (currentIdx > 0) { currentIdx--; renderViewer(); } }
-function navigateNext() { if (currentIdx < SCREENS.length - 1) { currentIdx++; renderViewer(); } }
+function navigatePrev() { if (currentIdx > 0) { currentIdx--; activeNavId = currentScreen().id; renderViewer(); } }
+function navigateNext() { if (currentIdx < SCREENS.length - 1) { currentIdx++; activeNavId = currentScreen().id; renderViewer(); } }
 
 function goToScreen(idx) {
   if (viewMode === 'multi') viewMode = 'single';
   currentIdx = idx;
+  activeNavId = SCREENS[idx] ? SCREENS[idx].id : activeNavId;
   renderViewer();
 }
 
@@ -2041,6 +2119,7 @@ function renderMobileSingle() {
   requestAnimationFrame(() => {
     scaleMobilePhone();
     center.querySelectorAll('.s-home-v3').forEach(el => populateHomeData(el));
+    center.querySelectorAll('.s-onboarding').forEach(obInit);
     applyFilletMasks();
   });
 }
@@ -2080,6 +2159,7 @@ function renderMobileLive(idx) {
   currentIdx = idx;
   requestAnimationFrame(() => {
     content.querySelectorAll('.s-home-v3').forEach(el => populateHomeData(el));
+    content.querySelectorAll('.s-onboarding').forEach(obInit);
     applyFilletMasks();
   });
 }
@@ -2091,8 +2171,23 @@ window.goToMobileScreen = function(idx) {
 
 // ── navigate() — called from screen HTML onclick ─────────────
 window.navigate = function(targetId, direction) {
+  // search / album / artist / review are no longer standalone screens — any
+  // onclick that still asks for them routes to the live in-app flow instead.
+  if (targetId === 'search' || targetId === 'album' || targetId === 'artist' || targetId === 'review') {
+    const arc = window.ARCHIVE || [];
+    const a = window.activeAlbum || window.featuredAlbum || arc[0];
+    activeNavId = targetId;
+    if (targetId === 'search') window.openSearch();
+    else if (targetId === 'album'  && a) window.openAlbumPage(a);
+    else if (targetId === 'artist' && a) window.openArtistPageFor(a.artist);
+    else if (targetId === 'review') goHomeThenShells(scr => window.enterReview(scr));
+    renderPageNav();
+    return;
+  }
+
   const idx = SCREENS.findIndex(s => s.id === targetId);
   if (idx === -1) return;
+  activeNavId = targetId;
 
   if (isMobile) {
     if (mobileViewMode !== 'live') {
@@ -2344,5 +2439,544 @@ function toggleLogOpt(k, btn) {
   SDLOG[k] = !SDLOG[k];
   btn.classList.toggle('on', SDLOG[k]);
 }
+
+/* ============================================================
+   SEARCH — fullscreen overlay over the current phone screen.
+   TikTok-style: a search field, live autocomplete suggestions on
+   top (top 5, per keystroke), then Artists / Albums / Songs result
+   sections. Tabs below the field funnel results into one category.
+   All data comes from the local catalogue (ARCHIVE + songsFor).
+   ============================================================ */
+function buildSearchIndex() {
+  if (window.SEARCH_INDEX) return window.SEARCH_INDEX;
+  const arch = window.ARCHIVE || [];
+  const artistMap = new Map();
+  const albums = [], songs = [];
+  arch.forEach(a => {
+    albums.push({ album: a.album, artist: a.artist, image: a.image, genre: a.genre, year: a.year, rating: a.rating, ref: a });
+    if (!artistMap.has(a.artist)) {
+      artistMap.set(a.artist, { name: a.artist, image: (window.ARTIST_IMG && ARTIST_IMG[a.artist]) || a.image, genre: a.genre, count: 0 });
+    }
+    artistMap.get(a.artist).count++;
+    songsFor(a).forEach(s => songs.push({ title: s.title, album: a.album, artist: a.artist, image: a.image, dur: s.dur, rating: s.rating, ref: a }));
+  });
+  window.SEARCH_INDEX = { artists: [...artistMap.values()], albums, songs };
+  return window.SEARCH_INDEX;
+}
+// Match rank: prefix (0) beats word-start (1) beats anywhere (2); -1 = no match.
+function _sdsRank(text, q) {
+  const t = String(text).toLowerCase();
+  const i = t.indexOf(q);
+  if (i < 0) return -1;
+  if (i === 0) return 0;
+  if (t[i - 1] === ' ') return 1;
+  return 2;
+}
+function _sdsEsc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+// Bold the matched substring within a result/suggestion label.
+function _sdsHi(text, q) {
+  const lo = String(text).toLowerCase(), i = lo.indexOf(q);
+  if (i < 0) return _sdsEsc(text);
+  return _sdsEsc(text.slice(0, i)) + '<b>' + _sdsEsc(text.slice(i, i + q.length)) + '</b>' + _sdsEsc(text.slice(i + q.length));
+}
+
+function runSearch() {
+  const ov = document.getElementById('sd-search');
+  if (!ov) return;
+  const q = ov.querySelector('.sds-input').value.trim().toLowerCase();
+  const cat = ov._cat || 'all';
+  const idx = buildSearchIndex();
+  const sugEl = ov.querySelector('.sds-suggest');
+  const resEl = ov.querySelector('.sds-results');
+  ov.querySelector('.sds-clear').classList.toggle('show', !!q);
+
+  if (!q) {
+    sugEl.innerHTML = '';
+    resEl.innerHTML = `<div class="sds-empty">Search artists, albums and songs across the catalogue.</div>`;
+    ov._last = { artists: [], albums: [], songs: [] };
+    return;
+  }
+
+  const rank = (arr, key) => arr
+    .map(o => ({ o, r: _sdsRank(o[key], q) }))
+    .filter(x => x.r >= 0)
+    .sort((a, b) => a.r - b.r || String(a.o[key]).length - String(b.o[key]).length)
+    .map(x => x.o);
+  const artists = rank(idx.artists, 'name');
+  const albums  = rank(idx.albums, 'album');
+  const songs   = rank(idx.songs, 'title');
+  ov._last = { artists, albums, songs };
+
+  // ── Autocomplete suggestions (top 5) — only on the All tab ──
+  if (cat === 'all') {
+    const seen = new Set(), sug = [];
+    [...artists.map(a => a.name), ...albums.map(a => a.album), ...songs.map(s => s.title)].forEach(n => {
+      const r = _sdsRank(n, q); if (r < 0) return;
+      const k = n.toLowerCase(); if (seen.has(k)) return; seen.add(k);
+      sug.push({ n, r });
+    });
+    sug.sort((a, b) => a.r - b.r || a.n.length - b.n.length);
+    sugEl.innerHTML = sug.slice(0, 5).map(s => `
+      <button class="sds-sug" data-pick="${_sdsEsc(s.n).replace(/"/g, '&quot;')}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <span class="sds-sug-t">${_sdsHi(s.n, q)}</span>
+        <svg class="sds-sug-go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg>
+      </button>`).join('');
+  } else {
+    sugEl.innerHTML = '';
+  }
+
+  // ── Result rows ──
+  const artHtml = (a, i) => `
+    <button class="sds-row" data-type="artist" data-i="${i}">
+      <span class="sds-thumb sds-thumb--round" style="background-image:url('${a.image}')"></span>
+      <span class="sds-row-main"><span class="sds-row-t">${_sdsHi(a.name, q)}</span><span class="sds-row-s">Artist · ${a.count} album${a.count > 1 ? 's' : ''}</span></span>
+    </button>`;
+  const albHtml = (a, i) => `
+    <button class="sds-row" data-type="album" data-i="${i}">
+      <span class="sds-thumb" style="background-image:url('${a.image}')"></span>
+      <span class="sds-row-main"><span class="sds-row-t">${_sdsHi(a.album, q)}</span><span class="sds-row-s">Album · <b>${_sdsEsc(a.artist)}</b>${a.year ? ' · ' + a.year : ''}</span></span>
+    </button>`;
+  const sngHtml = (s, i) => `
+    <button class="sds-row" data-type="song" data-i="${i}">
+      <span class="sds-thumb" style="background-image:url('${s.image}')"></span>
+      <span class="sds-row-main"><span class="sds-row-t">${_sdsHi(s.title, q)}</span><span class="sds-row-s">Song · ${_sdsEsc(s.album)} · <b>${_sdsEsc(s.artist)}</b></span></span>
+      <span class="sds-row-dur">${s.dur}</span>
+    </button>`;
+  // All tab shows a compact top-3 per category; typing narrows it and the
+  // tabs above open the full per-category list. No "see all" rows.
+  const section = (title, items, render) => {
+    if (!items.length) return '';
+    return `<div class="sds-sec"><div class="sds-sec-hd">${title}</div>${items.slice(0, 3).map(render).join('')}</div>`;
+  };
+
+  let html = '';
+  if (cat === 'all') {
+    html += section('Artists', artists, artHtml);
+    html += section('Albums', albums, albHtml);
+    html += section('Songs', songs, sngHtml);
+  } else if (cat === 'artists') { html = artists.map(artHtml).join(''); }
+  else if (cat === 'albums')   { html = albums.map(albHtml).join(''); }
+  else if (cat === 'songs')    { html = songs.map(sngHtml).join(''); }
+  if (!html.trim()) html = `<div class="sds-empty">No matches for &ldquo;${_sdsEsc(q)}&rdquo;.</div>`;
+  resEl.innerHTML = html;
+}
+
+// Result tap → browse to it (artist / album page), then close the overlay.
+function sdsOpenResult(type, i) {
+  const ov = document.getElementById('sd-search');
+  const last = (ov && ov._last) || {};
+  closeSearch();
+  if (type === 'artist') { const a = (last.artists || [])[i]; if (a) window.openArtistPageFor(a.name); }
+  else if (type === 'album') { const a = (last.albums || [])[i]; if (a && a.ref) window.openAlbumPage(a.ref); }
+  else if (type === 'song') { const s = (last.songs || [])[i]; if (s && s.ref) window.openAlbumPage(s.ref); }
+}
+
+function ensureSearchOverlay() {
+  let ov = document.getElementById('sd-search');
+  if (ov) return ov;
+  ov = document.createElement('div');
+  ov.id = 'sd-search';
+  ov.className = 'sds-overlay';
+  ov.innerHTML = `
+    <div class="sds-panel" role="dialog" aria-modal="true" aria-label="Search">
+      <div class="sds-top">
+        <button class="sds-back" aria-label="Close search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <div class="sds-inputwrap">
+          <svg class="sds-input-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <input class="sds-input" type="text" placeholder="Artists, albums, songs" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
+          <button class="sds-clear" aria-label="Clear search">✕</button>
+        </div>
+      </div>
+      <div class="sds-tabs">
+        <button class="sds-tab active" data-cat="all">All</button>
+        <button class="sds-tab" data-cat="artists">Artists</button>
+        <button class="sds-tab" data-cat="albums">Albums</button>
+        <button class="sds-tab" data-cat="songs">Songs</button>
+      </div>
+      <div class="sds-body">
+        <div class="sds-suggest"></div>
+        <div class="sds-results"></div>
+      </div>
+    </div>`;
+
+  ov.querySelector('.sds-back').addEventListener('click', closeSearch);
+  const inp = ov.querySelector('.sds-input');
+  inp.addEventListener('input', runSearch);
+  inp.addEventListener('keydown', e => { if (e.key === 'Escape') closeSearch(); });
+  ov.querySelector('.sds-clear').addEventListener('click', () => { inp.value = ''; inp.focus(); runSearch(); });
+  ov.querySelectorAll('.sds-tab').forEach(t => t.addEventListener('click', () => {
+    ov._cat = t.dataset.cat;
+    ov.querySelectorAll('.sds-tab').forEach(x => x.classList.toggle('active', x === t));
+    ov.querySelector('.sds-body').scrollTop = 0;
+    runSearch();
+  }));
+  // Delegated taps: suggestion → fill field; "see all" → switch tab; row → open.
+  ov.addEventListener('click', e => {
+    const sug = e.target.closest('.sds-sug');
+    if (sug) { inp.value = sug.dataset.pick; inp.focus(); runSearch(); return; }
+    const row = e.target.closest('.sds-row');
+    if (row) sdsOpenResult(row.dataset.type, +row.dataset.i);
+  });
+  return ov;
+}
+
+window.openSearch = function (triggerEl) {
+  const host = (triggerEl && triggerEl.closest && triggerEl.closest('.app-screen'))
+             || document.querySelector('.app-screen') || document.body;
+  const ov = ensureSearchOverlay();
+  ov.classList.toggle('sds-overlay--light', !!host.querySelector('.s-home-v3--light'));
+  host.appendChild(ov);   // mount into the current phone screen so it stays in-frame
+  ov._cat = 'all';
+  ov.querySelectorAll('.sds-tab').forEach(x => x.classList.toggle('active', x.dataset.cat === 'all'));
+  const inp = ov.querySelector('.sds-input');
+  inp.value = '';
+  ov.querySelector('.sds-body').scrollTop = 0;
+  runSearch();
+  requestAnimationFrame(() => { ov.classList.add('open'); setTimeout(() => inp.focus(), 80); });
+};
+
+window.closeSearch = function () {
+  const ov = document.getElementById('sd-search');
+  if (!ov) return;
+  ov.classList.remove('open');
+  const inp = ov.querySelector('.sds-input'); if (inp) inp.blur();
+};
+
+// ══════════════════════════════════════════════════════════════
+//  ONBOARDING WIZARD
+//  8 steps: username · connect · tracking · genres · artists ·
+//  albums · people you may know · profile. State lives in OB and is
+//  synced onto every rendered .s-onboarding instance (the viewer shows
+//  the dark + light variants side by side).
+// ══════════════════════════════════════════════════════════════
+const OB = {
+  step: 0,
+  username: '',
+  service: null,        // 'spotify' | 'apple' | 'soundcloud'
+  tracking: null,       // null = undecided, then true/false
+  genres:   new Set(),
+  artists:  new Set(),  // artist names
+  albums:   new Set(),  // "artist – album" keys
+  following:new Set(),  // handles
+  q: { artists: '', albums: '' },
+};
+
+// The tracking step only appears once a service is connected.
+function obActiveSteps() { return OB.service ? [0,1,2,3,4,5,6,7] : [0,1,3,4,5,6,7]; }
+
+const obEsc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+// onclick-safe: survives HTML-decode then JS single-quote parse.
+const obOc  = s => String(s).replace(/\\/g,'\\\\').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,"\\'");
+const obUserValid = () => /^[a-zA-Z0-9_]{3,20}$/.test(OB.username);
+// (albumKey() — "artist – album" — is defined above, reused here for album selection.)
+
+// Kick off a fresh signup (from the auth screen).
+window.obStart = function () {
+  OB.step = 0; OB.username = ''; OB.service = null; OB.tracking = null;
+  OB.genres.clear(); OB.artists.clear(); OB.albums.clear(); OB.following.clear();
+  OB.q.artists = ''; OB.q.albums = '';
+  navigate('onboarding');
+};
+
+// ── Derived data ──────────────────────────────────────────────
+let _obArtists = null;
+function obArtistList() {
+  if (_obArtists) return _obArtists;
+  const seen = new Map();
+  (window.ARCHIVE || []).forEach(a => {
+    if (!seen.has(a.artist)) seen.set(a.artist, { name: a.artist, image: a.image, genre: a.genre });
+  });
+  _obArtists = [...seen.values()];
+  return _obArtists;
+}
+function obAlbumList() { return (window.ARCHIVE || []); }
+
+let _obPeople = null;
+function obPeopleList() {
+  if (_obPeople) return _obPeople;
+  const base = (window.FRIEND_ACTIVITY || []).map(f => ({ user: f.user, init: f.init, grad: f.grad }));
+  const extra = [
+    { user:'lena.fm',  init:'LF', grad:'linear-gradient(135deg,#334155,#0ea5e9)' },
+    { user:'toshi_x',  init:'TX', grad:'linear-gradient(135deg,#3f2d1a,#d97706)' },
+    { user:'rrrei',    init:'R',  grad:'linear-gradient(135deg,#3b0764,#a21caf)' },
+    { user:'mono.no',  init:'MN', grad:'linear-gradient(135deg,#052e2b,#14b8a6)' },
+  ];
+  _obPeople = [...base, ...extra].map((p, i) => ({ ...p, mutual: (i * 7 + 3) % 11 + 1 }));
+  return _obPeople;
+}
+
+// ── Init / sync ───────────────────────────────────────────────
+function obInit(root) {
+  if (typeof OB.step !== 'number') OB.step = 0;
+  obSyncOne(root);
+}
+function obSync() { document.querySelectorAll('.s-onboarding').forEach(obSyncOne); }
+
+function obSyncOne(root) {
+  const active = obActiveSteps();
+  const idx = Math.max(0, active.indexOf(OB.step));
+  const num = idx + 1, total = active.length;
+
+  const bar = root.querySelector('.ob-prog-bar'); if (bar) bar.style.width = (num / total * 100) + '%';
+  const nEl = root.querySelector('.ob-step-n');   if (nEl) nEl.textContent = num;
+  const tEl = root.querySelector('.ob-step-t');   if (tEl) tEl.textContent = total;
+
+  root.querySelectorAll('.ob-panel').forEach(p => p.classList.toggle('ob-panel--on', +p.dataset.step === OB.step));
+
+  const back = root.querySelector('.ob-back'); if (back) back.style.visibility = num <= 1 ? 'hidden' : 'visible';
+
+  const ui = root.querySelector('.ob-user-input');
+  if (ui && document.activeElement !== ui && ui.value !== OB.username) ui.value = OB.username;
+  obUserHint(root);
+
+  root.querySelectorAll('.ob-svc').forEach(b => b.classList.toggle('ob-svc--on', b.dataset.svc === OB.service));
+  root.querySelectorAll('.ob-track-opt').forEach(b =>
+    b.classList.toggle('ob-track-opt--on', OB.tracking !== null && ((+b.dataset.track === 1) === OB.tracking)));
+  root.querySelectorAll('.ob-panel[data-step="3"] .chip').forEach(c =>
+    c.classList.toggle('selected', OB.genres.has(c.textContent)));
+
+  obRenderWall(root, 'artists');
+  obRenderWall(root, 'albums');
+  obRenderPeople(root);
+  obRenderProfile(root);
+  obSyncFooter(root);
+}
+
+function obUserHint(root) {
+  const uh = root.querySelector('.ob-user-hint'); if (!uh) return;
+  const ok = obUserValid();
+  uh.classList.toggle('ob-user-hint--ok', ok);
+  uh.textContent = ok ? '@' + OB.username + ' is available' : '3–20 characters · letters, numbers, underscores';
+}
+
+function obSyncFooter(root) {
+  const skip = root.querySelector('.ob-skip');
+  const next = root.querySelector('.ob-next');
+  const step = OB.step;
+  if (skip) skip.style.visibility = [1,2,4,5,6].includes(step) ? 'visible' : 'hidden';
+  if (!next) return;
+  if (step === 7)      { next.textContent = 'Start exploring';                       next.disabled = false; }
+  else if (step === 0) { next.textContent = 'Continue';                              next.disabled = !obUserValid(); }
+  else if (step === 4) { next.textContent = OB.artists.size   ? `Continue · ${OB.artists.size}`   : 'Continue'; next.disabled = false; }
+  else if (step === 5) { next.textContent = OB.albums.size    ? `Continue · ${OB.albums.size}`    : 'Continue'; next.disabled = false; }
+  else if (step === 6) { next.textContent = OB.following.size ? `Continue · ${OB.following.size}` : 'Continue'; next.disabled = false; }
+  else                 { next.textContent = 'Continue';                              next.disabled = false; }
+}
+
+// ── Walls (artists / albums) ──────────────────────────────────
+function obCard(type, key, image, sub, on, title) {
+  const fn    = type === 'artist' ? 'obToggleArtist' : 'obToggleAlbum';
+  const label = type === 'artist' ? key : title;
+  const round = type === 'artist' ? ' ob-card-img--round' : '';
+  return `<button class="ob-card${on ? ' ob-card--on' : ''}" onclick="${fn}('${obOc(key)}')">
+    <span class="ob-card-img${round}" style="background-image:url('${image}')">
+      <span class="ob-card-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+    </span>
+    <span class="ob-card-t">${obEsc(label)}</span>
+    <span class="ob-card-s">${obEsc(sub)}</span>
+  </button>`;
+}
+function obChip(type, key, image, label) {
+  const fn    = type === 'artist' ? 'obToggleArtist' : 'obToggleAlbum';
+  const round = type === 'artist' ? ' ob-chip-img--round' : '';
+  return `<button class="ob-chip" onclick="${fn}('${obOc(key)}')">
+    <span class="ob-chip-img${round}" style="background-image:url('${image}')"></span>
+    <span class="ob-chip-t">${obEsc(label)}</span>
+    <span class="ob-chip-x">×</span>
+  </button>`;
+}
+function obRenderWall(root, kind) {
+  const wall   = root.querySelector(`.ob-wall[data-wall="${kind}"]`);
+  const pinned = root.querySelector(`.ob-pinned[data-pinned="${kind}"]`);
+  if (!wall) return;
+  const q = OB.q[kind];
+  if (kind === 'artists') {
+    const sel = OB.artists, list = obArtistList();
+    const match  = list.filter(a => !q || a.name.toLowerCase().includes(q));
+    const chosen = list.filter(a => sel.has(a.name));
+    if (pinned) pinned.innerHTML = chosen.map(a => obChip('artist', a.name, a.image, a.name)).join('');
+    wall.innerHTML = match.map(a => obCard('artist', a.name, a.image, a.genre, sel.has(a.name))).join('')
+      || `<div class="ob-empty">No artists match “${obEsc(q)}”.</div>`;
+  } else {
+    const sel = OB.albums, list = obAlbumList();
+    const match  = list.filter(a => !q || a.album.toLowerCase().includes(q) || a.artist.toLowerCase().includes(q));
+    const chosen = list.filter(a => sel.has(albumKey(a)));
+    if (pinned) pinned.innerHTML = chosen.map(a => obChip('album', albumKey(a), a.image, a.album)).join('');
+    wall.innerHTML = match.slice(0, 60).map(a => obCard('album', albumKey(a), a.image, a.artist, sel.has(albumKey(a)), a.album)).join('')
+      || `<div class="ob-empty">No albums match “${obEsc(q)}”.</div>`;
+  }
+}
+
+function obRenderPeople(root) {
+  const box = root.querySelector('.ob-people'); if (!box) return;
+  box.innerHTML = obPeopleList().map(p => {
+    const on = OB.following.has(p.user);
+    return `<div class="ob-person">
+      <span class="ob-person-av" style="background:${p.grad}">${obEsc(p.init)}</span>
+      <span class="ob-person-main">
+        <span class="ob-person-user">@${obEsc(p.user)}</span>
+        <span class="ob-person-mutual">${p.mutual} mutual${p.mutual > 1 ? 's' : ''}</span>
+      </span>
+      <button class="ob-follow${on ? ' ob-follow--on' : ''}" onclick="obToggleFollow('${obOc(p.user)}')">${on ? 'Following' : 'Follow'}</button>
+    </div>`;
+  }).join('');
+}
+
+function obRenderProfile(root) {
+  const box = root.querySelector('.ob-profile'); if (!box) return;
+  const u = OB.username || 'you';
+  const init = (u[0] || '?').toUpperCase();
+  const svc = OB.service ? OB.service[0].toUpperCase() + OB.service.slice(1) : null;
+  const stat = (n, l) => `<div class="ob-stat"><div class="ob-stat-n">${n}</div><div class="ob-stat-l">${l}</div></div>`;
+  box.innerHTML = `
+    <div class="ob-pf-hero">
+      <div class="ob-pf-av">${obEsc(init)}</div>
+      <div class="ob-pf-name">@${obEsc(u)}</div>
+      <div class="ob-pf-tagline">fresh on Spindeck</div>
+      ${svc ? `<div class="ob-pf-badge"><span class="ob-pf-badge-dot"></span>${obEsc(svc)} connected${OB.tracking ? ' · sharing' : ''}</div>` : ''}
+    </div>
+    <div class="ob-pf-stats">
+      ${stat(OB.genres.size, 'genres')}
+      ${stat(OB.artists.size, 'artists')}
+      ${stat(OB.albums.size, 'albums')}
+      ${stat(OB.following.size, 'following')}
+    </div>
+    <div class="ob-pf-note">You can refine all of this any time from your profile.</div>`;
+}
+
+// ── Actions ───────────────────────────────────────────────────
+window.obSetUsername = function (v) {
+  OB.username = String(v).replace(/[^a-zA-Z0-9_]/g, '').slice(0, 20);
+  document.querySelectorAll('.s-onboarding').forEach(r => {
+    const ui = r.querySelector('.ob-user-input');
+    if (ui && ui.value !== OB.username) ui.value = OB.username;   // echo the sanitized value
+    obUserHint(r);
+    obSyncFooter(r);
+  });
+};
+window.obConnect      = function (id)  { OB.service = OB.service === id ? null : id; obSync(); };
+window.obSetTracking  = function (v)   { OB.tracking = v; obSync(); setTimeout(() => obNext(), 240); };
+window.obToggleGenre  = function (el, name) { OB.genres.has(name) ? OB.genres.delete(name) : OB.genres.add(name); obSync(); };
+window.obToggleArtist = function (name){ OB.artists.has(name) ? OB.artists.delete(name) : OB.artists.add(name); obSync(); };
+window.obToggleAlbum  = function (key) { OB.albums.has(key) ? OB.albums.delete(key) : OB.albums.add(key); obSync(); };
+window.obToggleFollow = function (user){ OB.following.has(user) ? OB.following.delete(user) : OB.following.add(user); obSync(); };
+window.obSearch       = function (kind, v) { OB.q[kind] = String(v).toLowerCase(); document.querySelectorAll('.s-onboarding').forEach(r => obRenderWall(r, kind)); };
+
+window.obNext = function () {
+  if (OB.step === 0 && !obUserValid()) return;   // username required
+  const active = obActiveSteps();
+  const i = active.indexOf(OB.step);
+  if (i >= active.length - 1) { obFinish(); return; }
+  OB.step = active[i + 1];
+  obSync();
+  obScrollTop();
+};
+window.obBack = function () {
+  const active = obActiveSteps();
+  const i = active.indexOf(OB.step);
+  if (i <= 0) { navigate('auth'); return; }
+  OB.step = active[i - 1];
+  obSync();
+  obScrollTop();
+};
+function obScrollTop() { document.querySelectorAll('.s-onboarding .ob-stage').forEach(s => s.scrollTop = 0); }
+window.obFinish = function () { navigate('home'); };
+
+// ══════════════════════════════════════════════════════════════
+//  PROFILE — "Funky" theme 01 (5 favourite albums · social · info)
+// ══════════════════════════════════════════════════════════════
+window.PROFILE = {
+  name:   'Eric',
+  handle: 'ericd',
+  bio:    'Shoegaze apologist. I will make you a playlist whether you asked for one or not.',
+  pic:    'images/playlist-statue-night.jpg',
+  favs:   ['Punisher', 'Loveless', 'Blonde', 'Currents', 'To Pimp a Butterfly'],
+  socials:{ instagram: 'ericd', x: 'ericd', soundcloud: 'ericd' },
+};
+let _profSlot = 0;
+
+// ── Favourite-album picker (bottom sheet mounted in the tapped profile) ──
+window.openProfPicker = function (slot, btn) {
+  _profSlot = slot;
+  const host = (btn && btn.closest && btn.closest('.app-screen'))
+             || document.querySelector('.app-screen.s-prof2') || document.querySelector('.app-screen') || document.body;
+  const ov = ensureProfPicker();
+  host.appendChild(ov);   // inherits the panel/home palette vars from .s-prof2
+  const inp = ov.querySelector('.pp-input'); if (inp) inp.value = '';
+  profPickerRender('');
+  requestAnimationFrame(() => { ov.classList.add('open'); setTimeout(() => inp && inp.focus(), 80); });
+};
+function ensureProfPicker() {
+  let ov = document.getElementById('prof-picker');
+  if (ov) return ov;
+  ov = document.createElement('div');
+  ov.id = 'prof-picker';
+  ov.className = 'prof-picker';
+  ov.innerHTML = `
+    <div class="pp-sheet">
+      <div class="pp-handle-bar"></div>
+      <div class="pp-top">
+        <div class="pp-title">Choose a favourite</div>
+        <button class="pp-close" onclick="closeProfPicker()" aria-label="Close">×</button>
+      </div>
+      <div class="pp-searchbar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+        <input class="pp-input" type="text" placeholder="Search albums" autocomplete="off" spellcheck="false" oninput="profPickerRender(this.value)">
+      </div>
+      <div class="pp-grid"></div>
+    </div>`;
+  ov.addEventListener('click', e => { if (e.target === ov) closeProfPicker(); });
+  return ov;
+}
+function profPickerRender(q) {
+  const ov = document.getElementById('prof-picker'); if (!ov) return;
+  q = String(q || '').toLowerCase();
+  const cur = (window.PROFILE.favs || [])[_profSlot];
+  const list = (window.ARCHIVE || []).filter(a => !q || a.album.toLowerCase().includes(q) || a.artist.toLowerCase().includes(q));
+  ov.querySelector('.pp-grid').innerHTML = list.slice(0, 60).map(a => `
+    <button class="pp-item${a.album === cur ? ' pp-item--on' : ''}" onclick="profPick('${obOc(a.album)}')">
+      <span class="pp-img" style="background-image:url('${a.image}')"></span>
+      <span class="pp-t">${obEsc(a.album)}</span>
+      <span class="pp-s">${obEsc(a.artist)}</span>
+    </button>`).join('') || `<div class="pp-empty">No albums match “${obEsc(q)}”.</div>`;
+}
+window.profPick = function (name) {
+  if (!window.PROFILE.favs) window.PROFILE.favs = [];
+  window.PROFILE.favs[_profSlot] = name;
+  closeProfPicker();
+  renderViewer();
+};
+window.closeProfPicker = function () {
+  const ov = document.getElementById('prof-picker'); if (!ov) return;
+  ov.classList.remove('open');
+  setTimeout(() => { if (ov.parentElement) ov.parentElement.removeChild(ov); }, 220);
+};
+
+// ── Social links ──────────────────────────────────────────────
+window.toggleProfSocial = function (btn) {
+  const menu = btn.parentElement.querySelector('.prof-soc-menu');
+  if (!menu) return;
+  const willOpen = menu.hidden;
+  document.querySelectorAll('.prof-soc-menu').forEach(m => m.hidden = true);
+  menu.hidden = !willOpen;
+  if (willOpen) {
+    const close = e => {
+      if (!menu.contains(e.target) && !btn.contains(e.target)) {
+        menu.hidden = true;
+        document.removeEventListener('click', close, true);
+      }
+    };
+    setTimeout(() => document.addEventListener('click', close, true), 0);
+  }
+};
+window.openSocial = function (id) {
+  document.querySelectorAll('.prof-soc-menu').forEach(m => m.hidden = true);
+  const handle = (window.PROFILE.socials || {})[id] || '';
+  const base = { instagram: 'https://instagram.com/', x: 'https://x.com/', soundcloud: 'https://soundcloud.com/' }[id];
+  if (base) window.open(base + handle, '_blank', 'noopener');
+};
 
 document.addEventListener('DOMContentLoaded', init);

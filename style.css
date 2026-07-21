@@ -189,21 +189,29 @@ body {
    ============================================================ */
 #stage {
   flex: 1;
-  overflow: auto;
+  overflow: hidden;
   display: flex;
   flex-direction: row;
   align-items: stretch;
+  position: relative;   /* anchor for the floating page-nav */
 }
 
-/* ── Left page nav ── */
+/* ── Left page nav — floats over the stage so the phone centers in the
+   true middle of the viewport rather than being pushed right by the rail ── */
 #page-nav {
-  flex-shrink: 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 5;
   width: var(--nav-w);
   display: flex;
   flex-direction: column;
   gap: 1px;
   padding: 10px 8px;
-  background: var(--vsurface);
+  background: color-mix(in srgb, var(--vsurface) 82%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border-right: 1px solid var(--vborder);
   overflow-y: auto;
   overflow-x: hidden;
@@ -230,6 +238,16 @@ body {
 }
 .pnav-btn:hover:not(.active) { color: #aaa; background: rgba(255,255,255,0.04); }
 .pnav-btn.active { color: var(--vtext); background: rgba(255,255,255,0.08); }
+
+/* Live-flow entries (search / album / artist / review) launch the real in-app
+   interaction rather than a standalone screen — flagged with a small arrow. */
+.pnav-flow::after {
+  content: '↗';
+  float: right;
+  opacity: 0.4;
+  font-size: 10px;
+  margin-left: 6px;
+}
 
 .pnav-divider { height: 1px; background: var(--vborder); margin: 6px 2px; flex-shrink: 0; }
 
@@ -447,7 +465,7 @@ body {
   gap: 20px;
   padding: 16px 20px 24px;
   overflow-x: auto;
-  justify-content: flex-start;
+  justify-content: safe center;   /* center the dark+light pair; fall back to start if it ever overflows */
   cursor: grab;
 }
 #phone-container.multi-variant.is-grabbing { cursor: grabbing; }
