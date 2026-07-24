@@ -893,6 +893,44 @@ function revMeta(r, i) {
   };
 }
 
+// ── Review upvotes ────────────────────────────────────────────
+// Counts are seeded per review so they're stable across re-renders and filter
+// switches. Most reviews sit in the ordinary 5–50 band; a thin tail gets the
+// "this one blew up" treatment.
+function revUpvotes(r, i) {
+  const rnd = seedRand('up::' + (r.name || '') + '::' + (r.text || '').slice(0, 24) + '::' + i);
+  const roll = rnd();
+  if (roll > 0.985) return 8000 + Math.floor(rnd() * 4500);   // ~1.5% — viral
+  if (roll > 0.94)  return 700 + Math.floor(rnd() * 900);     // ~4.5% — big hit
+  return 5 + Math.floor(rnd() * 46);                          // the usual 5–50
+}
+
+// Your own votes, keyed per review so a re-render (or a filter switch) keeps them.
+const REV_VOTES = Object.create(null);
+function _revAttr(s) { return _sdsEsc(s).replace(/"/g, '&quot;'); }
+
+const THUMB_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 22V11m0 0 4.2-8.4a2 2 0 0 1 2.9 2.5L12.8 9H19a2 2 0 0 1 2 2.4l-1.6 8A2 2 0 0 1 17.4 21H7"/><path d="M3 22h4V11H3z"/></svg>`;
+
+// One upvote pill. `key` must be stable for the same review across renders.
+function upvoteHtml(key, base, extraClass = '') {
+  const on = !!REV_VOTES[key];
+  return `<button class="v3-up${extraClass ? ' ' + extraClass : ''}${on ? ' is-on' : ''}"
+    data-k="${_revAttr(key)}" data-n="${base}"
+    aria-pressed="${on}" aria-label="Upvote review"
+    onclick="event.stopPropagation(); toggleRevUp(this)">${THUMB_SVG}<span class="v3-up-n">${window.fmtRc(base + (on ? 1 : 0))}</span></button>`;
+}
+
+window.toggleRevUp = function (btn) {
+  const k = btn.dataset.k;
+  const base = +btn.dataset.n || 0;
+  const on = !REV_VOTES[k];
+  if (on) REV_VOTES[k] = true; else delete REV_VOTES[k];
+  btn.classList.toggle('is-on', on);
+  btn.setAttribute('aria-pressed', String(on));
+  const n = btn.querySelector('.v3-up-n');
+  if (n) n.textContent = window.fmtRc(base + (on ? 1 : 0));
+};
+
 function populateReviewList(scr, filter) {
   const a = scr._album || window.featuredAlbum;
   const list = scr && scr.querySelector('.v3-rev-list');
@@ -914,12 +952,17 @@ function populateReviewList(scr, filter) {
       </div>
       <div class="v3-rev-meta">
         ${halfStars(pin.rating || 4, 10)}
-        <span class="v3-rev-likes">♥ ${pin.likes || 0}</span>
+        ${upvoteHtml('pin::' + a.album + '::' + (pin.name || ''), pin.likes || revUpvotes(pin, 0))}
         <span class="v3-rev-likes">💬 ${pin.comments || 0}</span>
       </div>
       <div class="v3-rev-text">${pin.text || ''}</div>
     </div>` : '';
-  list.innerHTML = pinHtml + revs.map((r, i) => {
+  // Identify each review by its position in the album's OWN list, not its
+  // position in the filtered array — otherwise switching filter reshuffles the
+  // seeded timestamps/counts and orphans your upvotes.
+  const order = a.reviews || [];
+  list.innerHTML = pinHtml + revs.map((r) => {
+    const i = Math.max(0, order.indexOf(r));
     const m = revMeta(r, i);
     return `
     <div class="v3-rev-card">
@@ -930,7 +973,7 @@ function populateReviewList(scr, filter) {
       </div>
       <div class="v3-rev-meta">
         ${halfStars(r.rating || 4, 10)}
-        <span class="v3-rev-likes">♥ ${m.likes}</span>
+        ${upvoteHtml(a.album + '::' + (r.name || '') + '::' + i, revUpvotes(r, i))}
         <span class="v3-rev-likes">💬 ${m.comments}</span>
       </div>
       <div class="v3-rev-text">${r.text || ''}</div>
@@ -995,7 +1038,7 @@ function renderFriendFeed(screenEl) {
         </div>
         <div class="v3-friend-row">
           ${halfStars(f.rating, 10)}
-          <span class="v3-friend-likes">♥ ${f.likes}</span>
+          ${upvoteHtml('feed::' + f.user + '::' + f.album, f.likes || 0, 'v3-up--sm')}
           <span class="v3-friend-likes">💬 ${f.comments}</span>
         </div>
         <div class="v3-friend-quote">${f.quote}</div>
@@ -1003,6 +1046,72 @@ function renderFriendFeed(screenEl) {
     </div>`;
   }).join('');
 }
+
+// ── "You may know" rails ──────────────────────────────────────
+// Two horizontal strips between the bento and the friend feed. Picks are
+// day-seeded so they rotate daily but hold still within a session. Taps route
+// through window._KNOW indices rather than inlined names — same escaping-free
+// idiom as the friend feed.
+const KNOW_N = 12;
+
+function knowPicks() {
+  if (window._KNOW) return window._KNOW;
+  const arch = window.ARCHIVE || [];
+  const rnd = seedRand('know::' + Math.floor(Date.now() / 86400000));
+
+  // Unique artists, with their album count and best available photo
+  const byArtist = new Map();
+  arch.forEach(a => {
+    if (!byArtist.has(a.artist)) {
+      byArtist.set(a.artist, {
+        name: a.artist,
+        image: (window.ARTIST_IMG && window.ARTIST_IMG[a.artist]) || a.image,
+        count: 0,
+      });
+    }
+    byArtist.get(a.artist).count++;
+  });
+
+  const shuffle = arr => arr.map(v => ({ v, k: rnd() })).sort((x, y) => x.k - y.k).map(x => x.v);
+  window._KNOW = {
+    artists: shuffle([...byArtist.values()]).slice(0, KNOW_N),
+    albums: shuffle(arch.slice()).slice(0, KNOW_N),
+  };
+  return window._KNOW;
+}
+
+function renderKnowRails(screenEl) {
+  const aRail = screenEl.querySelector('.v3-rail--artists');
+  const bRail = screenEl.querySelector('.v3-rail--albums');
+  if (!aRail && !bRail) return;
+  const picks = knowPicks();
+
+  if (aRail) {
+    aRail.innerHTML = picks.artists.map((a, i) => `
+      <button class="v3-kcard v3-kcard--artist" onclick="event.stopPropagation(); knowOpenArtist(${i})">
+        <span class="v3-kart v3-kart--round" style="background-image:url('${a.image}')"></span>
+        <span class="v3-kname">${a.name}</span>
+        <span class="v3-ksub">${a.count} album${a.count > 1 ? 's' : ''}</span>
+      </button>`).join('');
+  }
+  if (bRail) {
+    bRail.innerHTML = picks.albums.map((a, i) => `
+      <button class="v3-kcard" onclick="event.stopPropagation(); knowOpenAlbum(${i})">
+        <span class="v3-kart" style="background-image:url('${a.image}')"></span>
+        <span class="v3-kname">${a.album}</span>
+        <span class="v3-ksub">${a.artist}</span>
+      </button>`).join('');
+  }
+}
+
+window.knowOpenArtist = function (i) {
+  const a = knowPicks().artists[i];
+  if (a && window.openArtistPageFor) window.openArtistPageFor(a.name);
+};
+window.knowOpenAlbum = function (i) {
+  const a = knowPicks().albums[i];
+  if (a && window.openAlbumPage) window.openAlbumPage(a);
+};
 
 // ── Now-playing ticker: what friends are listening to right now ──
 const NOW_WAVE_BARS = 5;
@@ -1147,6 +1256,7 @@ function populateHomeData(screenEl) {
   screenEl._albumIdx = idx;
 
   setMainAlbum(screenEl, seq[idx], false);
+  renderKnowRails(screenEl);
   renderFriendFeed(screenEl);
   renderNowBar(screenEl);
 
@@ -2480,6 +2590,81 @@ function _sdsHi(text, q) {
   return _sdsEsc(text.slice(0, i)) + '<b>' + _sdsEsc(text.slice(i, i + q.length)) + '</b>' + _sdsEsc(text.slice(i + q.length));
 }
 
+// ── Search zero state ─────────────────────────────────────────
+// Trending searches + a rail of trending covers, shown whenever the field is
+// empty. Typing replaces it (runSearch rebuilds .sds-results every keystroke),
+// clearing the field brings it back.
+
+// A blend of archive artists and albums, ranked by a day-seeded "heat" so the
+// chart rotates daily like featuredAlbum but stays put within a session.
+function sdsTrendingSearches(n = 8) {
+  const idx = buildSearchIndex();
+  const rnd = seedRand('trend::' + Math.floor(Date.now() / 86400000));
+  const pool = [
+    ...idx.artists.map(a => ({ term: a.name, kind: 'Artist' })),
+    ...idx.albums.map(a => ({ term: a.album, kind: 'Album', sub: a.artist })),
+  ];
+  pool.forEach(p => { p.heat = rnd(); });
+  pool.sort((a, b) => b.heat - a.heat);
+
+  const seen = new Set(), out = [];
+  for (const p of pool) {
+    const k = p.term.toLowerCase();
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(p);
+    if (out.length >= n) break;
+  }
+  // Fictional search volume. The jitter band (±800) stays under the step
+  // (3200) so the chart is always strictly descending.
+  out.forEach((p, i) => {
+    p.count = Math.max(900, Math.round(34000 - i * 3200 + (p.heat - 0.5) * 1600));
+  });
+  return out;
+}
+
+const SDS_RAIL_N = 10;   // covers in the "Trending now" rail
+
+function sdsZeroHtml(ov) {
+  // trendingAlbums is the whole rotated archive, not a short list — take the
+  // head of it, and fall back to the most-reviewed albums if it's ever empty.
+  const source = (window.trendingAlbums || []).length
+    ? window.trendingAlbums
+    : (window.ARCHIVE || []).slice().sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0));
+  const cards = source.slice(0, SDS_RAIL_N);
+
+  // sdsOpenResult resolves taps through ov._last.albums[i].ref — index the
+  // rail the same way so the existing open path works unchanged.
+  ov._last = { artists: [], albums: cards.map(a => ({ ref: a })), songs: [] };
+
+  const rows = sdsTrendingSearches(8).map((t, i) => `
+    <button class="sds-trend${i < 3 ? ' sds-trend--top' : ''}" data-pick="${_sdsEsc(t.term).replace(/"/g, '&quot;')}">
+      <span class="sds-trend-n">${i + 1}</span>
+      <span class="sds-row-main">
+        <span class="sds-row-t">${_sdsEsc(t.term)}</span>
+        <span class="sds-row-s">${t.kind}${t.sub ? ' · <b>' + _sdsEsc(t.sub) + '</b>' : ''}</span>
+      </span>
+      <span class="sds-trend-ct">${window.fmtRc(t.count)}</span>
+    </button>`).join('');
+
+  const railCards = cards.map((a, i) => `
+    <button class="sds-tcard" data-type="album" data-i="${i}">
+      <span class="sds-tcard-art" style="background-image:url('${a.image}')"></span>
+      <span class="sds-tcard-t">${_sdsEsc(a.album)}</span>
+      <span class="sds-tcard-s">${_sdsEsc(a.artist)}</span>
+    </button>`).join('');
+
+  return `
+    <div class="sds-sec">
+      <div class="sds-sec-hd">Trending searches</div>
+      ${rows}
+    </div>
+    <div class="sds-sec">
+      <div class="sds-sec-hd">Trending now</div>
+      <div class="sds-rail">${railCards}</div>
+    </div>`;
+}
+
 function runSearch() {
   const ov = document.getElementById('sd-search');
   if (!ov) return;
@@ -2492,8 +2677,7 @@ function runSearch() {
 
   if (!q) {
     sugEl.innerHTML = '';
-    resEl.innerHTML = `<div class="sds-empty">Search artists, albums and songs across the catalogue.</div>`;
-    ov._last = { artists: [], albums: [], songs: [] };
+    resEl.innerHTML = sdsZeroHtml(ov);   // sets ov._last for the rail
     return;
   }
 
@@ -2613,11 +2797,13 @@ function ensureSearchOverlay() {
     ov.querySelector('.sds-body').scrollTop = 0;
     runSearch();
   }));
-  // Delegated taps: suggestion → fill field; "see all" → switch tab; row → open.
+  // Delegated taps, matched on data attributes rather than class so the zero
+  // state's trending rows (.sds-trend) and cover rail (.sds-tcard) ride the
+  // same two paths as .sds-sug / .sds-row.
   ov.addEventListener('click', e => {
-    const sug = e.target.closest('.sds-sug');
-    if (sug) { inp.value = sug.dataset.pick; inp.focus(); runSearch(); return; }
-    const row = e.target.closest('.sds-row');
+    const pick = e.target.closest('[data-pick]');       // fill the field + search
+    if (pick) { inp.value = pick.dataset.pick; inp.focus(); runSearch(); return; }
+    const row = e.target.closest('[data-type][data-i]'); // browse to the result
     if (row) sdsOpenResult(row.dataset.type, +row.dataset.i);
   });
   return ov;

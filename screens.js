@@ -47,7 +47,7 @@ const SCREENS = [
                 <span class="v3-bubble-count">+5</span>
               </button>
             </div>
-            <div class="v3-header-logo">spindeck</div>
+            <div class="v3-header-logo" role="img" aria-label="Spindeck"></div>
             <div class="v3-header-right">
               <!-- Settings (inner) -->
               <button class="v3-bubble v3-bubble--settings" title="Settings" aria-label="Settings">
@@ -152,8 +152,18 @@ const SCREENS = [
 
           </div>
 
-          <!-- SCROLL: app name + friends feed -->
+          <!-- SCROLL: discovery rails + friends feed -->
           <div class="v3-scroll-area">
+
+            <!-- Filled by renderKnowRails() — horizontal, axis-locked -->
+            <div class="v3-rail-sec">
+              <div class="v3-rail-hd">Artists you may know</div>
+              <div class="v3-rail v3-rail--artists"></div>
+            </div>
+            <div class="v3-rail-sec">
+              <div class="v3-rail-hd">Albums you may know</div>
+              <div class="v3-rail v3-rail--albums"></div>
+            </div>
 
             <div class="v3-feed-items"></div>
 
@@ -299,7 +309,7 @@ const SCREENS = [
                 <span class="v3-bubble-count">+5</span>
               </button>
             </div>
-            <div class="v3-header-logo">spindeck</div>
+            <div class="v3-header-logo" role="img" aria-label="Spindeck"></div>
             <div class="v3-header-right">
               <!-- Settings (inner) -->
               <button class="v3-bubble v3-bubble--settings" title="Settings" aria-label="Settings">
@@ -404,8 +414,18 @@ const SCREENS = [
 
           </div>
 
-          <!-- SCROLL: app name + friends feed -->
+          <!-- SCROLL: discovery rails + friends feed -->
           <div class="v3-scroll-area">
+
+            <!-- Filled by renderKnowRails() — horizontal, axis-locked -->
+            <div class="v3-rail-sec">
+              <div class="v3-rail-hd">Artists you may know</div>
+              <div class="v3-rail v3-rail--artists"></div>
+            </div>
+            <div class="v3-rail-sec">
+              <div class="v3-rail-hd">Albums you may know</div>
+              <div class="v3-rail v3-rail--albums"></div>
+            </div>
 
             <div class="v3-feed-items"></div>
 
@@ -630,7 +650,7 @@ function appHeader() {
                 <span class="v3-bubble-count">+5</span>
               </button>
             </div>
-            <div class="v3-header-logo">spindeck</div>
+            <div class="v3-header-logo" role="img" aria-label="Spindeck"></div>
             <div class="v3-header-right">
               <button class="v3-bubble v3-bubble--settings" title="Settings" aria-label="Settings">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -659,13 +679,10 @@ function authHtml(light) {
   return `
       <div class="app-screen s-auth ${sdTheme(light)}">
         <div class="auth-hero">
-          <div class="auth-logo-circle" style="background:linear-gradient(135deg,#2a2820,#4a4640)">
-            <svg viewBox="0 0 48 48" width="36" height="36" fill="none" stroke="white" stroke-width="2">
-              <circle cx="24" cy="24" r="20"/><circle cx="24" cy="24" r="8"/>
-              <circle cx="24" cy="24" r="3" fill="white" stroke="none"/>
-            </svg>
-          </div>
-          <div class="auth-appname">Spindeck</div>
+          <!-- The turntable icon is 2-tone (black body, light centre dot), so it
+               ships as real black/white PNGs rather than a themed CSS mask. -->
+          <img class="auth-logo-mark" src="images/spindeck-icon${light ? '' : '-white'}.png" alt="">
+          <div class="auth-appname" role="img" aria-label="Spindeck"></div>
         </div>
         <div class="auth-body">
           <div class="field-group">
@@ -1002,8 +1019,8 @@ function wallHtml(light) {
                 <div class="wall2-meta">
                   <span class="wall2-album">${a.album}</span>
                   <span class="wall2-artist">${a.artist}</span>
+                  <div class="wall2-rating">${halfStars(a.rating, 11)}<span class="wall2-score">${a.rating.toFixed(1)}</span></div>
                 </div>
-                <div class="wall2-rating">${halfStars(a.rating, 11)}<span class="wall2-score">${a.rating.toFixed(1)}</span></div>
               </div>`).join('')}
             </div>
           </div>

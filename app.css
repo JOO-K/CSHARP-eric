@@ -351,22 +351,20 @@
   gap: 10px;
 }
 
-.auth-logo-circle {
-  width: 72px;
-  height: 72px;
-  border-radius: 20px;
-  background: linear-gradient(135deg, var(--accent) 0%, #1a3a8f 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 8px 30px rgba(77, 127, 255, 0.35);
+/* Brand lockup: turntable icon over the wordmark. The icon sits on the screen
+   bg with no plate — the mark carries its own outlined silhouette. */
+.auth-logo-mark {
+  width: 84px;            /* asset is 484×426 (≈1.14:1) */
+  height: auto;
+  display: block;
 }
 
 .auth-appname {
-  font-size: 26px;
-  font-weight: 800;
-  letter-spacing: -1px;
-  font-family: var(--font-head);
+  width: 148px;
+  height: 22px;
+  background-color: var(--text);
+  -webkit-mask: url('images/spindeck-wordmark.png') center / contain no-repeat;
+  mask: url('images/spindeck-wordmark.png') center / contain no-repeat;
 }
 
 .auth-body {
@@ -2325,17 +2323,18 @@
   align-self: start;   /* pin bubbles into the top-right corner */
   margin-top: 10px;
 }
+/* Wordmark PNG painted through a mask so it picks up the theme ink colour from
+   one asset (the mark is single-tone, unlike the 2-tone turntable icon).
+   Asset is 1749×249 (≈7.02:1); `contain` in a 106×30 box lands it at ~106×15,
+   vertically centred on the bubble row. */
 .v3-header-logo {
-  font-family: var(--font-main);
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: -0.5px;
-  color: rgba(232,226,214,0.92);
   align-self: start;      /* sit in the same top band as the bubbles */
   margin-top: 10px;
-  height: 30px;           /* = bubble height, so text centers on bubble centers */
-  display: flex;
-  align-items: center;
+  width: 106px;
+  height: 30px;           /* = bubble height, so the mark centers on bubble centers */
+  background-color: rgba(232,226,214,0.92);
+  -webkit-mask: url('images/spindeck-wordmark.png') center / contain no-repeat;
+  mask: url('images/spindeck-wordmark.png') center / contain no-repeat;
 }
 .v3-bubble {
   width: 30px;
@@ -2384,7 +2383,7 @@
   border-color: rgba(255,255,255,0.2);
 }
 /* Light theme */
-.s-home-v3--light .v3-header-logo { color: rgba(26,18,8,0.9); }
+.s-home-v3--light .v3-header-logo { background-color: rgba(26,18,8,0.9); }
 .s-home-v3--light .v3-bubble {
   background: rgba(26,18,8,0.06);
   border: 1px solid rgba(26,18,8,0.18);
@@ -2533,6 +2532,78 @@
 .v3-scroll-area {
   padding: 30px 12px 88px;   /* bottom clears the nav/nowbar overlay so nothing is cut off */
 }
+
+/* ── "You may know" rails ──────────────────────────────────────
+   Two horizontal strips between the bento and the friend feed. */
+.v3-rail-sec { margin: 0 0 16px; }
+.v3-rail-hd {
+  padding: 0 2px 8px;
+  font-family: var(--font-mono);
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 0.8px; text-transform: uppercase;
+  color: rgba(232,226,214,0.4);
+}
+.v3-rail {
+  display: flex; gap: 10px;
+  overflow-x: auto; scrollbar-width: none;
+  /* Axis lock: pan-x hands horizontal drags to the rail and stops them bleeding
+     into the page's vertical scroll — the declarative twin of the album swipe's
+     touchAction='pan-y' + dominant-axis check in setupAlbumSwipe. */
+  touch-action: pan-x;
+  /* Bleed into .v3-scroll-area's 12px inset so cards scroll out under the fade
+     at the true screen edge, while the first card still lines up with the copy. */
+  margin: 0 -12px;
+  padding: 2px 12px 4px;
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 34px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 34px), transparent);
+}
+.v3-rail::-webkit-scrollbar { display: none; }
+.v3-kcard {
+  flex-shrink: 0; width: 84px;
+  display: flex; flex-direction: column; gap: 1px;
+  padding: 0; border: none; background: none; cursor: pointer; text-align: left;
+}
+.v3-kcard--artist { width: 68px; text-align: center; align-items: center; }
+.v3-kart {
+  width: 84px; height: 84px; border-radius: 8px; margin-bottom: 6px;
+  background: rgba(255,255,255,0.06) center/cover no-repeat;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.42);
+  transition: transform .16s;
+}
+.v3-kart--round { width: 64px; height: 64px; border-radius: 50%; }
+.v3-kcard:hover .v3-kart { transform: translateY(-2px); }
+/* album = regular, artist = bold — the app-wide album/artist convention */
+.v3-kname {
+  max-width: 100%;
+  font-size: 10.5px; font-weight: 400; color: #e8e2d6;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.v3-kcard--artist .v3-kname { font-weight: 700; }
+.v3-ksub {
+  max-width: 100%;
+  font-size: 9px; font-weight: 700; color: rgba(232,226,214,0.45);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.v3-kcard--artist .v3-ksub { font-weight: 400; font-family: var(--font-mono); font-size: 8.5px; }
+
+/* ── Review upvote pill (thumbs up + count) ───────────────────
+   Replaces the old static "♥ n" on review cards and friend-feed cards.
+   State lives in REV_VOTES (app.js) so it survives re-renders. */
+.v3-up {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 7px 2px 5px; border-radius: 999px;
+  border: none; background: rgba(255,255,255,0.06);
+  color: rgba(232,226,214,0.5);
+  font-family: var(--font-mono); font-size: 9.5px; font-weight: 700;
+  line-height: 1; cursor: pointer;
+  transition: background .14s, color .14s;
+}
+.v3-up svg { width: 11px; height: 11px; flex-shrink: 0; }
+.v3-up--sm { font-size: 9px; padding: 2px 6px 2px 4px; }
+.v3-up--sm svg { width: 10px; height: 10px; }
+.v3-up:hover { background: rgba(255,255,255,0.11); color: #e8e2d6; }
+.v3-up.is-on { background: rgba(232,168,60,0.16); color: var(--star); }
+.v3-up.is-on svg { fill: rgba(232,168,60,0.22); }
 .v3-brand-row {
   display: flex;
   align-items: baseline;
@@ -4006,6 +4077,15 @@
   --text3: rgba(26,18,8,0.15);
 }
 .s-home-v3--light .v3-topbar-wordmark { color: rgba(26,18,8,0.9); }
+/* "You may know" rails + upvote pill — light theme */
+.s-home-v3--light .v3-rail-hd { color: rgba(26,18,8,0.45); }
+.s-home-v3--light .v3-kart { background-color: rgba(26,18,8,0.06); box-shadow: 0 4px 12px rgba(30,20,10,0.16); }
+.s-home-v3--light .v3-kname { color: #1a1208; }
+.s-home-v3--light .v3-ksub { color: rgba(26,18,8,0.5); }
+.s-home-v3--light .v3-up { background: rgba(26,18,8,0.07); color: rgba(26,18,8,0.5); }
+.s-home-v3--light .v3-up:hover { background: rgba(26,18,8,0.12); color: #1a1208; }
+.s-home-v3--light .v3-up.is-on { background: rgba(176,106,42,0.15); color: #b06a2a; }
+.s-home-v3--light .v3-up.is-on svg { fill: rgba(176,106,42,0.2); }
 .s-home-v3--light .v3-brand-name { color: rgba(26,18,8,0.88); }
 .s-home-v3--light .v3-brand-sub { color: rgba(26,18,8,0.28); }
 .s-home-v3--light .v3-feed-title { color: rgba(26,18,8,0.32); }
@@ -4257,7 +4337,9 @@
    only the scroll content below is wall-specific.
    ============================================================ */
 .wall2-scroll {
-  padding: 4px 12px 96px;   /* .v3-body is the scroller; bottom clears the nowbar/nav overlay */
+  /* No side padding — the grid runs edge to edge (see .wall2-grid).
+     The bar re-adds its own inset; bottom clears the nowbar/nav overlay. */
+  padding: 4px 0 96px;
 }
 .wall2-hd {
   display: flex; align-items: baseline; gap: 8px;
@@ -4273,7 +4355,7 @@
 }
 .wall2-bar {
   display: flex; align-items: center; gap: 12px;
-  padding-bottom: 12px;
+  padding: 0 12px 12px;   /* the grid is edge-to-edge, so the bar carries the side inset */
 }
 .wall2-cat {
   flex-shrink: 0;
@@ -4329,6 +4411,9 @@
 .s-home-v3--light .wall2-menu-item { color: rgba(26,18,8,0.75); }
 .s-home-v3--light .wall2-menu-item:hover { background: rgba(26,18,8,0.07); color: #1a1208; }
 .s-home-v3--light .wall2-menu-item.active { color: #b06a2a; }
+/* NOTE: .wall2-grid / -cell / -art / -meta are shared — the artist page's
+   album grid (renderArtistPage in app.js) reuses them. Keep these generic;
+   the trending wall's seamless-mosaic treatment is scoped to .s-wall2 below. */
 .wall2-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -4386,6 +4471,40 @@
 .s-home-v3--light .wall2-art {
   box-shadow: 0 6px 14px rgba(30,20,10,0.18), 0 2px 5px rgba(30,20,10,0.15);
 }
+
+/* ── Trending wall: flush mosaic, captions underneath ────────────
+   Covers run edge to edge with no side inset and no column gutter, so each
+   row reads as one unbroken band of artwork. The caption sits BELOW its cover
+   (not overlaid on it — that got too busy), which means rows need a little
+   vertical air: column-gap stays 0, row-gap opens up for the text.
+   Scoped to .s-wall2 so the artist page's grid is unaffected. */
+.s-wall2 .wall2-grid { column-gap: 0; row-gap: 13px; }
+.s-wall2 .wall2-cell { position: relative; }
+.s-wall2 .wall2-art {
+  border-radius: 0;
+  box-shadow: none;
+  /* half-pixel bleed: fractional 1fr track widths otherwise leave hairline
+     seams of screen bg between tiles in a row */
+  margin-right: -0.5px;
+}
+/* Hover lifts the tile OVER its neighbours — a translate would just open a gap */
+.s-wall2 .wall2-cell:hover { z-index: 3; }
+.s-wall2 .wall2-cell:hover .wall2-art {
+  transform: scale(1.045);
+  box-shadow: 0 10px 26px rgba(0,0,0,0.5);
+}
+.s-home-v3--light.s-wall2 .wall2-cell:hover .wall2-art {
+  box-shadow: 0 10px 26px rgba(30,20,10,0.3);
+}
+/* Rank badge moves inside the tile — there's no padding left to hang off of */
+.s-wall2 .wall2-rank {
+  top: 5px; left: 5px; z-index: 2;
+  width: 18px; height: 18px; font-size: 10px;
+}
+/* The covers are flush to the frame, so the caption gets its own small inset
+   rather than sitting hard against the screen edge. */
+.s-wall2 .wall2-meta { margin-top: 5px; padding: 0 5px; gap: 1px; }
+.s-wall2 .wall2-rating { margin-top: 2px; }
 
 /* ============================================================
    PLAYLISTS / LIBRARY v2 — adapted to the home shell like the wall.
@@ -4828,6 +4947,57 @@
 .sds-row-dur { flex-shrink: 0; font-family: var(--font-mono); font-size: 10px; color: rgba(232,226,214,0.38); }
 .sds-empty { padding: 44px 34px; text-align: center; font-size: 12.5px; color: rgba(232,226,214,0.4); line-height: 1.6; }
 
+/* Zero state — trending searches chart + a rail of trending covers.
+   Rendered by sdsZeroHtml() whenever the field is empty; the moment there's
+   text, runSearch() overwrites .sds-results with matches instead. */
+.sds-trend {
+  width: 100%; display: flex; align-items: center; gap: 12px;
+  padding: 7px 16px; border: none; background: none; cursor: pointer; text-align: left;
+}
+.sds-trend:hover { background: rgba(255,255,255,0.04); }
+.sds-trend-n {
+  flex-shrink: 0; width: 18px; text-align: center;
+  font-family: var(--font-mono); font-size: 12px; font-weight: 700;
+  color: rgba(232,226,214,0.3);
+}
+.sds-trend--top .sds-trend-n { color: var(--star); }   /* top 3 = chart gold */
+.sds-trend-ct {
+  flex-shrink: 0;
+  font-family: var(--font-mono); font-size: 10px;
+  color: rgba(232,226,214,0.34);
+}
+/* Horizontal cover rail, fading out at the right edge to signal overflow
+   (same mask idiom as the playlists pill bar) */
+.sds-rail {
+  display: flex; gap: 10px;
+  overflow-x: auto; scrollbar-width: none;
+  padding: 4px 16px 6px;
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+}
+.sds-rail::-webkit-scrollbar { display: none; }
+.sds-tcard {
+  flex-shrink: 0; width: 96px;
+  display: flex; flex-direction: column; gap: 1px;
+  padding: 0; border: none; background: none; cursor: pointer; text-align: left;
+}
+.sds-tcard-art {
+  width: 96px; height: 96px; border-radius: 8px; margin-bottom: 5px;
+  background: rgba(255,255,255,0.06) center/cover no-repeat;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.45);
+  transition: transform .16s;
+}
+.sds-tcard:hover .sds-tcard-art { transform: translateY(-2px); }
+/* album = regular, artist = bold — the app-wide album/artist convention */
+.sds-tcard-t {
+  font-size: 11px; font-weight: 400; color: #e8e2d6;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sds-tcard-s {
+  font-size: 9px; font-weight: 700; color: rgba(232,226,214,0.45);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
 /* Search overlay — light theme */
 .sds-overlay--light { background: #f0ece3; }
 .sds-overlay--light .sds-back { color: rgba(26,18,8,0.75); }
@@ -4853,6 +5023,13 @@
 .sds-overlay--light .sds-row-s b { color: rgba(26,18,8,0.65); }
 .sds-overlay--light .sds-row-dur { color: rgba(26,18,8,0.4); }
 .sds-overlay--light .sds-empty { color: rgba(26,18,8,0.42); }
+.sds-overlay--light .sds-trend:hover { background: rgba(26,18,8,0.04); }
+.sds-overlay--light .sds-trend-n { color: rgba(26,18,8,0.3); }
+.sds-overlay--light .sds-trend--top .sds-trend-n { color: #b06a2a; }
+.sds-overlay--light .sds-trend-ct { color: rgba(26,18,8,0.38); }
+.sds-overlay--light .sds-tcard-art { background-color: rgba(26,18,8,0.06); box-shadow: 0 4px 12px rgba(30,20,10,0.16); }
+.sds-overlay--light .sds-tcard-t { color: #1a1208; }
+.sds-overlay--light .sds-tcard-s { color: rgba(26,18,8,0.5); }
 
 /* ============================================================
    HOME CD POPUP (.v3-cd-menu) — compact preview + streaming menu
