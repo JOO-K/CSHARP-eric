@@ -1002,12 +1002,14 @@ function profileHtml(light) {
   const myPls = (P.playlistNames && P.playlistNames.length)
     ? P.playlistNames.map(n => allPls.find(p => p.name === n)).filter(Boolean)
     : allPls.filter(p => p.creator === 'you').sort((a, b) => b.favs - a.favs).slice(0, 3);
-  const plsHtml = myPls.map(pl =>
-    `<button class="prof-pl" onclick="openPlaylistPage('${esc(pl.name)}')">
-      <span class="prof-pl-cover" style="background-image:url('${pl.image}')"></span>
+  const plsHtml = myPls.map((pl, i) => {
+    const cover = (P.playlistCovers && P.playlistCovers[i]) || pl.image;
+    return `<button class="prof-pl" onclick="openPlaylistPage('${esc(pl.name)}')">
+      <span class="prof-pl-cover" style="background-image:url('${cover}')"></span>
       <span class="prof-pl-nm">${pl.name}</span>
       <span class="prof-pl-meta">${pl.tracks} songs</span>
-    </button>`).join('');
+    </button>`;
+  }).join('');
 
   return `
       <div class="app-screen s-home-v3 s-prof2${light ? ' s-home-v3--light' : ''}">

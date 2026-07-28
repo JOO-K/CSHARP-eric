@@ -3128,6 +3128,22 @@ window.PROFILE = {
   ],
 };
 
+// Curated photo pool (lo-fi / Y2K / nature / surreal) used for random profile
+// pictures and playlist covers. 64 web-optimised crops from Eric's set, plus
+// the existing playlist photos.
+const PROFILE_PHOTOS = [
+  'images/rp-01.jpg', 'images/rp-02.jpg', 'images/rp-03.jpg', 'images/rp-04.jpg', 'images/rp-05.jpg', 'images/rp-06.jpg', 'images/rp-07.jpg', 'images/rp-08.jpg',
+  'images/rp-09.jpg', 'images/rp-10.jpg', 'images/rp-11.jpg', 'images/rp-12.jpg', 'images/rp-13.jpg', 'images/rp-14.jpg', 'images/rp-15.jpg', 'images/rp-16.jpg',
+  'images/rp-17.jpg', 'images/rp-18.jpg', 'images/rp-19.jpg', 'images/rp-20.jpg', 'images/rp-21.jpg', 'images/rp-22.jpg', 'images/rp-23.jpg', 'images/rp-24.jpg',
+  'images/rp-25.jpg', 'images/rp-26.jpg', 'images/rp-27.jpg', 'images/rp-28.jpg', 'images/rp-29.jpg', 'images/rp-30.jpg', 'images/rp-31.jpg', 'images/rp-32.jpg',
+  'images/rp-33.jpg', 'images/rp-34.jpg', 'images/rp-35.jpg', 'images/rp-36.jpg', 'images/rp-37.jpg', 'images/rp-38.jpg', 'images/rp-39.jpg', 'images/rp-40.jpg',
+  'images/rp-41.jpg', 'images/rp-42.jpg', 'images/rp-43.jpg', 'images/rp-44.jpg', 'images/rp-45.jpg', 'images/rp-46.jpg', 'images/rp-47.jpg', 'images/rp-48.jpg',
+  'images/rp-49.jpg', 'images/rp-50.jpg', 'images/rp-51.jpg', 'images/rp-52.jpg', 'images/rp-53.jpg', 'images/rp-54.jpg', 'images/rp-55.jpg', 'images/rp-56.jpg',
+  'images/rp-57.jpg', 'images/rp-58.jpg', 'images/rp-59.jpg', 'images/rp-60.jpg', 'images/rp-61.jpg', 'images/rp-62.jpg', 'images/rp-63.jpg', 'images/rp-64.jpg',
+  'images/playlist-cyano-birds.jpg', 'images/playlist-car-dash.jpg', 'images/playlist-misty-lake.jpg', 'images/playlist-chrome-ooh.jpg', 'images/playlist-city-red.jpg',
+  'images/playlist-wildflowers.jpg', 'images/playlist-hibiscus.jpg', 'images/playlist-statue-night.jpg', 'images/playlist-ink-alley.jpg', 'images/playlist-cyano-horse.jpg',
+];
+
 // ── Random persona: rolled once on load so every visit shows a new profile ──
 // (image · nickname/handle · bio · location · job · numbers · favourite albums ·
 //  artists · playlists · recently-rated). Edits (picker) still persist per visit.
@@ -3180,7 +3196,7 @@ function randomizeProfile() {
   ];
   const countries = ['South Korea', 'Japan', 'United States', 'United Kingdom', 'Germany', 'Brazil', 'Canada', 'France', 'Australia', 'Mexico', 'Sweden', 'Netherlands', 'Spain', 'Italy', 'Nigeria', 'Philippines', 'Poland', 'Portugal'];
   const jobs = ['Motion Designer', 'Barista', 'Software Engineer', 'Illustrator', 'Student', 'Music Teacher', 'Photographer', 'DJ', 'Producer', 'Bookseller', 'Architect', 'Nurse', 'Sound Engineer', 'Freelance Writer', 'Game Dev', 'Line Cook', 'Librarian', 'Tattoo Artist'];
-  const pics = ['playlist-cyano-birds.jpg', 'playlist-car-dash.jpg', 'playlist-misty-lake.jpg', 'playlist-chrome-ooh.jpg', 'playlist-city-red.jpg', 'playlist-wildflowers.jpg', 'playlist-hibiscus.jpg', 'playlist-statue-night.jpg', 'playlist-ink-alley.jpg', 'playlist-cyano-horse.jpg'].map(f => 'images/' + f);
+  const pics = PROFILE_PHOTOS;
 
   const nick = rnd(nicks);
   const handle = nick.toLowerCase() + rnd(sfx);
@@ -3202,6 +3218,7 @@ function randomizeProfile() {
   P.following = ri(20, 1400);
   P.socials = { instagram: handle, x: handle, soundcloud: handle };
   P.playlistNames = sample(pls, Math.min(3, pls.length)).map(p => p.name);
+  P.playlistCovers = sample(pics, 3);   // photo covers for the shown playlists
   P.recent = sample(A, 4).map(a => a.album);
 }
 randomizeProfile();
