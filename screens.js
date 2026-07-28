@@ -183,10 +183,6 @@ const SCREENS = [
                  Uses the bento's 78/22 split so it mirrors with the hand layout. -->
             <div class="v3-rev-top">
 
-              <!-- Media column — album photos flow vertically down the CD side, fading out.
-                   (Streaming icons removed — streaming now lives behind the CD tap.) -->
-              <div class="v3-rev-media"></div>
-
               <!-- Your rating + written review + submit — aligned to the stats text -->
               <div class="v3-rev-mine">
                 <button class="v3-rev-cta" onclick="event.stopPropagation(); openLogSheet(this);">
@@ -444,10 +440,6 @@ const SCREENS = [
             <!-- Top row: streaming links (centered under CD) + your review (aligned to stats text).
                  Uses the bento's 78/22 split so it mirrors with the hand layout. -->
             <div class="v3-rev-top">
-
-              <!-- Media column — album photos flow vertically down the CD side, fading out.
-                   (Streaming icons removed — streaming now lives behind the CD tap.) -->
-              <div class="v3-rev-media"></div>
 
               <!-- Your rating + written review + submit — aligned to the stats text -->
               <div class="v3-rev-mine">
@@ -899,13 +891,13 @@ function songHtml(light) {
       </div>`;
 }
 
-// Profile — "Main" theme. A single embossed card traced from
-// ProfileTheme_Main.svg (690×781): a rounded silhouette with a recessed inner
-// "display" face (.prof-face) up top holding the avatar / identity / bio / stats,
-// a raised lower strip for top-genre chips, the 5 favourite-album wells as a
-// vertical column of embossed-in circles down the right edge, and a rounded
-// social tab in the top-right notch. Below the card, a "Recently rated" feed.
-// Home shell (header · v3-body · nowBar · bottomNav). Funky·Dark / Funky·Light.
+// Profile — "Regular" theme. A short, wide embossed card traced from
+// ProfileTheme_Regular.svg (690×401): a left pane holding the profile picture,
+// a right pane with location/occupation + bio + the four stat numbers, and a
+// rounded Follow pill in the card's bottom-right notch. The 5 favourite-album
+// wells sit as a horizontal row of embossed-in circles below the card, and a
+// "Recently rated" feed follows. Home shell (header · v3-body · nowBar ·
+// bottomNav). Funky·Dark / Funky·Light.
 function profileHtml(light) {
   const P = window.PROFILE || {};
   const findAlb = name => (window.ARCHIVE || []).find(a => a.album === name);
@@ -919,19 +911,21 @@ function profileHtml(light) {
   const scPltIco = `<svg width="12" height="8" viewBox="0 0 24 16" fill="white"><rect x="2" y="7" width="1.8" height="6" rx=".9"/><rect x="6" y="4" width="1.8" height="9" rx=".9"/><rect x="10" y="6" width="1.8" height="7" rx=".9"/><rect x="14" y="2" width="1.8" height="11" rx=".9"/><rect x="18" y="8" width="1.8" height="5" rx=".9"/></svg>`;
   const penIco = `<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>`;
 
-  // Favourite-album CDs — vertical column down the card's right edge.
-  // Circle centres (r=55) from ProfileTheme_Main.svg (690×781) → bbox left/top %.
+  // Favourite-album CDs — horizontal row below the card.
+  // Circle centres (r=55) from ProfileTheme_Regular.svg (690×401) → bbox left/top %.
   // Filled CD → preview/platforms popup (like the homepage); empty → picker.
   const slots = [
-    { l: 82.54, t: 22.12 }, { l: 82.54, t: 38.02 }, { l: 82.54, t: 53.93 },
-    { l: 82.54, t: 69.83 }, { l: 82.54, t: 85.74 },
+    { l: 0.16, t: 76.16 }, { l: 21.01, t: 76.16 }, { l: 41.86, t: 76.16 },
+    { l: 62.84, t: 76.16 }, { l: 83.82, t: 76.16 },
   ];
   const slotHtml = slots.map((s, i) => {
     const a = findAlb((P.favs || [])[i]);
     if (!a) {
       return `<button class="prof-alb prof-alb--empty" style="left:${s.l}%;top:${s.t}%" onclick="openProfPicker(${i}, this)" title="Add favourite ${i + 1}"><span class="prof-alb-add">+</span></button>`;
     }
-    const menuPos = i <= 2 ? `top:${s.t}%` : `bottom:${(100 - s.t - 14.08).toFixed(2)}%`;
+    // Menu opens upward above the CD; anchor to canvas edges so it stays in frame.
+    const hpos = i <= 1 ? `left:${s.l}%` : i >= 3 ? `right:${(100 - s.l - 15.94).toFixed(2)}%` : `left:50%;transform:translateX(-50%)`;
+    const menuPos = `bottom:24.5%;${hpos}`;
     return `<button class="prof-alb" style="left:${s.l}%;top:${s.t}%" onclick="toggleProfCd(this, event)" title="${esc(a.album)}">
         <span class="prof-alb-img" style="background-image:url('${a.image}')"></span>
         <span class="prof-alb-hole"></span>
@@ -981,21 +975,23 @@ function profileHtml(light) {
   const editIco = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>`;
   // Base colour is derived from the profile image after render (applyProfColors).
 
-  // Favourite artists (4) — avatar borrowed from an album cover by that artist.
-  const artistImg = name => { const a = (window.ARCHIVE || []).find(x => x.artist === name); return a ? a.image : ''; };
-  const artistsHtml = (P.favArtists || []).slice(0, 4).map(name =>
-    `<button class="prof-art" onclick="openArtistPageFor('${esc(name)}')">
-      <span class="prof-art-av" style="background-image:url('${artistImg(name)}')"></span>
-      <span class="prof-art-nm">${name}</span>
-    </button>`).join('');
+  // Favourite songs (5) — artwork borrowed from the song's album cover.
+  const playIco = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
+  const favSongsHtml = (P.favSongs || []).slice(0, 5).map(s => {
+    const a = findAlb(s.album);
+    return `<button class="prof-song" onclick="openAlbumPage(ARCHIVE.find(x=>x.album==='${esc(s.album)}')||ARCHIVE[0])">
+      <span class="prof-song-art" style="background-image:url('${a ? a.image : ''}')"></span>
+      <span class="prof-song-meta">
+        <span class="prof-song-title">${s.title}</span>
+        <span class="prof-song-sub">${s.album} · ${s.artist}</span>
+      </span>
+      <span class="prof-song-play">${playIco}</span>
+    </button>`;
+  }).join('');
 
   // Optional location (country) + occupation, shown only when set.
   const pinIco  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`;
-  const caseIco = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`;
-  const metaHtml = [
-    P.location   ? `<span class="prof-meta-item">${pinIco}${P.location}</span>` : '',
-    P.occupation ? `<span class="prof-meta-item">${caseIco}${P.occupation}</span>` : '',
-  ].join('');
+  const metaHtml = P.location ? `<span class="prof-meta-item">${pinIco}${P.location}</span>` : '';
 
   // Playlists — the persona's 3 picks (falls back to the user's own, most-loved).
   const allPls = plLists();
@@ -1013,25 +1009,38 @@ function profileHtml(light) {
 
   return `
       <div class="app-screen s-home-v3 s-prof2${light ? ' s-home-v3--light' : ''}">
-        ${appHeader(`<span class="v3-hsub-nick">${P.name || 'Your name'}</span> <span class="v3-hsub-handle">@${P.handle || 'handle'}</span>`)}
+        ${appHeader()}
         <div class="v3-body">
           <div class="prof2-scroll">
 
             <div class="prof-canvas">
-              <!-- Embossed card silhouette (traced from ProfileTheme_Main.svg) -->
-              <svg class="prof-base" viewBox="0 0 690 781" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-                <path class="prof-base-main" d="M518.118 0.5H20.5C9.4543 0.5 0.5 9.45429 0.5 20.5V760.115C0.5 771.161 9.45432 780.115 20.5 780.115H534.949C545.995 780.115 554.949 771.161 554.949 760.115V719.367C554.949 699.593 565.301 681.262 582.234 671.049C587.762 667.715 588.364 659.93 583.414 655.785L576.432 649.94C562.816 638.54 554.949 621.694 554.949 603.935V597.654C554.949 579.213 563.43 561.797 577.946 550.424L583.75 545.876C588.771 541.943 588.876 534.377 583.965 530.306L576.656 524.247C562.906 512.848 554.949 495.916 554.949 478.056V473.482C554.949 453.75 564.651 435.279 580.897 424.081L583.26 422.452C588.525 418.823 589.078 411.252 584.396 406.897L574.082 397.302C561.881 385.951 554.949 370.037 554.949 353.372V347.663C554.949 327.573 565.072 308.835 581.874 297.822C587.577 294.083 587.903 285.84 582.512 281.663L578.202 278.324C563.534 266.959 554.949 249.449 554.949 230.894V224.471C554.949 188.573 584.051 159.471 619.95 159.471H629.828C649.501 159.471 667.924 169.116 679.134 185.282L685.123 193.919C686.24 195.53 688.766 194.739 688.766 192.779V147.147C688.766 136.102 679.812 127.147 668.766 127.147L558.118 127.147C547.073 127.147 538.118 118.193 538.118 107.147V70.0683V20.5C538.118 9.45431 529.164 0.5 518.118 0.5Z"/>
+              <!-- Embossed card silhouette (traced from ProfileTheme_Regular4.svg) -->
+              <svg class="prof-base" viewBox="0 0 690 466" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+                <path class="prof-base-main" d="M668.876 65.6968L0.609863 65.6967L0.609853 299.988L0.609853 307.953C0.609791 318.999 9.56414 327.953 20.6099 327.953L38.1656 327.953L50.497 327.953L624.855 328.367L669.006 328.082C680.001 328.01 688.876 319.077 688.876 308.082L688.876 299.988L688.876 85.6968C688.876 74.6511 679.922 65.6968 668.876 65.6968Z"/>
+                <path class="prof-divide" d="M262.306 328.059L262.306 65.6479L0.902954 65.6479L0.902944 308.059C0.902943 319.105 9.85724 328.059 20.9029 328.059L41.324 328.059L226.604 328.059L262.306 328.059Z"/>
+                <!-- Name banner — right edge is resized to the username by sizeProfName().
+                     Bottom edge runs a few units into the card so the fill hides the seam. -->
+                <path class="prof-name-tab" d="M0.500122 69H409.862H386.803C369.967 69 354.261 57.1754 345.016 43.105L328.872 18.5347C321.476 7.27835 308.911 0.5 295.443 0.5H35.5001C16.1702 0.5 0.500122 16.17 0.500122 35.5V69Z"/>
               </svg>
 
-              <!-- Profile image fills the inner box entirely -->
+              <!-- White username pill inside the banner — width grows with the banner -->
+              <div class="prof-name-pill" style="width:43.23%"></div>
+
+              <!-- Username, seated inside the white pill (black text) -->
+              <div class="prof-name-tab-lbl">
+                <span class="prof-name-nick">${P.name || 'Your name'}</span>
+                <span class="prof-name-at">@${P.handle || 'handle'}</span>
+              </div>
+
+              <!-- Profile image fills the left pane entirely -->
               <div class="prof-pic" style="background-image:url('${P.pic || ''}')"></div>
               <button class="prof-edit" title="Edit profile" onclick="event.stopPropagation()">${editIco}</button>
 
-              <!-- Info: location / occupation (bold) above the description -->
+              <!-- Info: description; location (bold) pinned to the pane's lower-left -->
               <div class="prof-info">
-                ${metaHtml ? `<div class="prof-meta">${metaHtml}</div>` : ''}
                 <div class="prof-desc">${P.bio || 'Tell people what you are into.'}</div>
               </div>
+              ${metaHtml ? `<div class="prof-meta">${metaHtml}</div>` : ''}
 
               <!-- Numbers at the bottom of the base -->
               <div class="prof-stats">
@@ -1057,9 +1066,10 @@ function profileHtml(light) {
               <div class="prof-pls">${plsHtml}</div>
             </div>
 
-            <!-- Favourite artists (no header) -->
+            <!-- Favourite songs -->
             <div class="prof-sec">
-              <div class="prof-artists">${artistsHtml}</div>
+              <div class="prof-sec-hd">Favourite songs</div>
+              <div class="prof-songs">${favSongsHtml}</div>
             </div>
 
             <!-- Reviews -->

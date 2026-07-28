@@ -3655,10 +3655,6 @@
   padding: 0 0 6px 12px;
   display: flex; flex-direction: column;
 }
-/* Left-hand: the action grid sits to mine's left, so add back the width lost when
-   the grid shrank (from the 22% column to a CD-width 58px) to re-align 'your review'
-   with the album stats text above it. Right-hand mode sits at the panel edge already. */
-.s-home-v3--left .v3-rev-mine { margin-left: 12px; }
 /* Long album titles wrap to two lines in review mode — drop the CTA (and everything
    below it, which follows in flow) down an extra line to clear the taller title. */
 .v3-rev-title-2line .v3-rev-mine { margin-top: 48px; }
@@ -3761,23 +3757,11 @@
 
 /* Tracklist — full-width, rate individual songs. Scrolls after ~8 rows. */
 .v3-rev-songs { width: 100%; box-sizing: border-box; margin: 10px 0 2px; }
-/* Shift the tracklist into the stats/CTA column so song titles line up with the album
-   name, artist and the "Review, rate, log" button (mirrors with hand layout).
-   Left-hand: action grid (10 + 58) + mine (12 margin) sits to the left; songs already
-   add 12 via the row → 80 total lands the title on the CTA/album line. */
-.s-home-v3--left .v3-rev-songs { padding-left: 80px; }
-/* Right-hand (CD on the right): mirror the shift so the tracklist lines up with the
-   stats/CTA column on the left instead of running full width into the CD side. */
-.s-home-v3:not(.s-home-v3--left) .v3-rev-songs { padding-right: 80px; }
 
 /* Review-spread histogram — 10 buckets (½★ … 5★), between the CTA and the tracklist */
 /* Negative top pulls the histogram (and the tracklist below it) up beside the taller
    streaming-icon column, so "the review" sits ~10px under the Review/rate/log button. */
 .v3-rev-hist { box-sizing: border-box; padding-left: 12px; padding-right: 12px; margin: -36px 0 4px; }
-.s-home-v3--left .v3-rev-hist { padding-left: 92px; }
-/* Right-hand (CD on the right): mirror the shift so the bars clear the CD column instead of
-   running full width into it — matches the tracklist's right-hand padding above. */
-.s-home-v3:not(.s-home-v3--left) .v3-rev-hist { padding-right: 92px; }
 .v3-rev-hist-hd {
   display: flex; align-items: baseline; gap: 8px; margin-bottom: 7px;
   font-size: 8px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase;
@@ -3821,10 +3805,6 @@
 .s-home-v3--review:not(.s-home-v3--left) .v3-rev-media { right: 25px; left: auto; }
 /* Album view: icons ride up with the raised CD (and the pulled-up panel). */
 .s-home-v3--review.s-home-v3--album .v3-rev-actions { top: 3px; }
-/* Push the CTA content column clear of the absolute icon column (so a friend pill
-   dropping the CTA can't slide it under the icons). Matches the pill's own inset. */
-.s-home-v3--review.s-home-v3--left    .v3-rev-mine { margin-left: 81px; }
-.s-home-v3--review:not(.s-home-v3--left) .v3-rev-mine { margin-right: 81px; }
 /* Reviews sit exactly 10px below the CTA button (icon column no longer in the way). */
 .s-home-v3--review .v3-rev-mine { padding-bottom: 0; }
 .s-home-v3--review .v3-rev-hist { margin-top: 10px; }
@@ -5304,6 +5284,9 @@
   --pf-border: rgba(232,226,214,0.12);
   --pf-edge:   rgba(0,0,0,0.4);               /* silhouette hairline */
   --pf-face:   #303139;                       /* recessed inner display face */
+  --pf-slot:   #111116;                       /* username pill = screen bg */
+  --pf-slot-ink:  #ffffff;                    /* username text (white on dark) */
+  --pf-slot-ink2: rgba(255,255,255,0.55);
 }
 .s-prof2.s-home-v3--light {
   --pf-base:   #e0d8c6;
@@ -5319,66 +5302,94 @@
   --pf-border: rgba(26,18,8,0.14);
   --pf-edge:   rgba(120,102,72,0.35);
   --pf-face:   #d6cdb8;
+  --pf-slot:   #f0ece3;                       /* username pill = screen bg */
+  --pf-slot-ink:  #111114;                    /* username text (black on light) */
+  --pf-slot-ink2: rgba(0,0,0,0.5);
 }
 
 /* Scroll area inside v3-body — matches the homepage bento's ~10px side margins */
 .prof2-scroll { padding: 6px 12px 96px; }
 
 
-/* ── Profile card — traced from ProfileTheme_Main.svg (690×781) ── */
-.prof-canvas { position: relative; width: 100%; margin: 2px auto 0; aspect-ratio: 690 / 781; }
+/* ── Profile card — traced from ProfileTheme_Regular4.svg (690×466) ──
+   A short, wide card topped by a name-banner tab that holds a white username
+   pill: left pane = profile picture, right pane = bio / meta / stats + a follow
+   pill in the bottom-right notch, and the 5 favourite-album CDs in a row below. */
+.prof-canvas { position: relative; width: 100%; margin: 2px auto 0; aspect-ratio: 690 / 466; }
 .prof-base {
   position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1;
   pointer-events: none; overflow: visible;
   filter: drop-shadow(-5px -5px 9px var(--pf-lt)) drop-shadow(6px 7px 12px var(--pf-dk));
 }
 .prof-base-main { fill: var(--pf-base); stroke: var(--pf-edge); stroke-width: 0.5; }
+/* Hairline splitting the picture pane from the info pane */
+.prof-divide { fill: none; stroke: var(--pf-edge); stroke-width: 0.5; }
+/* Name-banner tab — same raised panel colour, merges with the card silhouette.
+   No stroke: its bottom edge runs into the card so the fill covers the card /
+   divider top strokes, leaving no seam. The parent SVG's emboss shadow shapes it. */
+.prof-name-tab { fill: var(--pf-base); stroke: none; }
 
-/* Profile image — fills the SVG's inner box exactly (flush top/left, no gaps).
-   Box is ~square, so a % radius scales to the base's ~20px corners at any size.
-   Bottom-left corner is squared (matches the card's stepped lower-left). */
+/* White username pill nested in the banner. Left/top/height fixed; width is set
+   by sizeProfName() so it grows with the banner. Inset shadow seats it in. */
+.prof-name-pill {
+  position: absolute; z-index: 2; left: 2.32%; top: 3.11%; height: 8.09%;
+  border-radius: 999px; background: var(--pf-slot); pointer-events: none;
+  box-shadow: inset 0 2px 4px var(--pf-well-dk), inset 0 -1px 2px var(--pf-well-lt);
+}
+
+/* Username seated in the pill — unbold; white on dark, black on light */
+.prof-name-tab-lbl {
+  position: absolute; z-index: 4; left: 6%; top: 3.1%; height: 8.1%;
+  display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; pointer-events: none;
+}
+.prof-name-nick { font-size: 13px; font-weight: 500; color: var(--pf-slot-ink); letter-spacing: -0.2px; font-family: var(--font-head); }
+.prof-name-at   { font-size: 10px; font-weight: 400; color: var(--pf-slot-ink2); font-family: var(--font-mono); }
+
+/* Profile image — fills the SVG's left pane, below the banner (flush left, no gaps).
+   Bottom-left corner rounded to the card; other corners square (banner / divide). */
 .prof-pic {
-  position: absolute; z-index: 2; left: 0.1%; top: 0.06%; width: 78.35%; height: 68.6%;
-  border-radius: 3.7% 3.7% 3.7% 0; background-size: cover; background-position: center;
+  position: absolute; z-index: 2; left: 0.4%; top: 14.4%; width: 37.2%; height: 56%;
+  border-radius: 0 0 0 6%; background-size: cover; background-position: center;
   background-color: #0c0b0a;
   box-shadow: inset 0 2px 6px var(--pf-well-dk), inset 0 -1px 4px var(--pf-well-lt);
 }
 
-/* Info block — description + optional location/occupation, below the image
-   (nudged ~3px left, dropped ~4px lower) */
-.prof-info { position: absolute; z-index: 3; left: calc(5.5% - 3px); top: calc(71% + 4px); width: 69%; }
+/* Info block — location/occupation (bold) then the description, sitting below
+   the stats row in the right pane. */
+.prof-info { position: absolute; z-index: 3; left: 41%; top: 36.4%; width: 55%; }
 .prof-desc {
   font-size: 10px; color: var(--pf-ink2); line-height: 1.4;
-  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
 }
-.prof-meta { display: flex; flex-wrap: wrap; gap: 3px 12px; margin: 0 0 6px; }
+.prof-meta { position: absolute; z-index: 3; left: 41%; bottom: calc(30.8% + 10px); display: flex; flex-wrap: wrap; gap: 3px 12px; }
 .prof-meta-item { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 800; color: var(--pf-ink); }
 .prof-meta-item svg { width: 12px; height: 12px; opacity: 1; }
 
-/* Numbers — at the bottom of the base */
+/* Numbers — near the top of the right pane, above the bio */
 .prof-stats {
-  position: absolute; z-index: 3; left: 5.5%; bottom: 2.5%; width: 71%;
+  position: absolute; z-index: 3; left: 41%; top: calc(17.1% + 8px); width: 56%;
   display: flex; justify-content: space-between; gap: 4px;
 }
 .prof-stat { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
-.prof-stat-n { font-size: 16px; font-weight: 800; color: var(--pf-ink); font-family: var(--font-head); letter-spacing: -0.3px; line-height: 1; }
-.prof-stat-l { font-size: 7.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--pf-ink2); font-family: var(--font-mono); }
+.prof-stat-n { font-size: 13.5px; font-weight: 800; color: var(--pf-ink); font-family: var(--font-head); letter-spacing: -0.3px; line-height: 1; }
+.prof-stat-l { font-size: 6.8px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--pf-ink2); font-family: var(--font-mono); }
 
-/* Edit pencil — upper-right of the profile image */
+/* Edit pencil — pinned to the upper-right, in the empty strip right of the banner */
 .prof-edit {
-  position: absolute; z-index: 4; left: 67.5%; top: 3.5%;
+  position: absolute; z-index: 4; right: 1.5%; top: calc(1% - 3px); left: auto;
   display: inline-flex; align-items: center; justify-content: center;
-  width: 24px; height: 24px; border-radius: 50%;
+  width: 27px; height: 27px; border-radius: 50%;
   border: none; cursor: pointer; color: var(--pf-ink); background: var(--pf-base);
   box-shadow: -1.5px -1.5px 4px var(--pf-lt), 2px 2px 5px var(--pf-dk);
 }
 .prof-edit:active { box-shadow: inset -1.5px -1.5px 4px var(--pf-lt), inset 2px 2px 4px var(--pf-dk); }
-.prof-edit svg { width: 12px; height: 12px; }
+.prof-edit svg { width: 13.5px; height: 13.5px; }
 
-/* Favourite-album wells — vertical column, embossed IN */
+/* Favourite-album wells — horizontal row below the card, embossed IN.
+   Height % is of the 690×401 canvas, keeping each well a true circle. */
 .prof-alb {
   position: absolute; z-index: 3;
-  width: 15.94%; height: 14.08%; padding: 0; border: none; background: none;
+  width: 15.94%; height: 23.61%; padding: 0; border: none; background: none;
   border-radius: 50%; cursor: pointer; transition: transform .15s;
 }
 .prof-alb:hover { transform: scale(1.05); }
@@ -5397,25 +5408,26 @@
 }
 .prof-alb-img.prof-alb--spin { animation: v3spin 3.2s linear infinite; }
 
-/* CD preview/platforms popup — reuses .wall2-menu/.v3-cd-menu look, repositioned
-   to the left of the CD column (top/bottom set inline per slot). */
-.prof-cd-menu { right: 19%; left: auto; top: auto; bottom: auto; width: 172px; }
+/* CD preview/platforms popup — reuses .wall2-menu/.v3-cd-menu look, opening
+   upward above the CD row (left/right/bottom set inline per slot). */
+.prof-cd-menu { left: auto; right: auto; top: auto; bottom: auto; width: 172px; }
 .prof-alb--empty {
   display: flex; align-items: center; justify-content: center; border-radius: 50%;
   background: #0c0b0a; box-shadow: inset 3px 4px 8px var(--pf-well-dk);
 }
 .prof-alb-add { font-size: 18px; font-weight: 300; color: rgba(255,255,255,.5); line-height: 1; }
 
-/* Dot-mascot Follow button (top-right notch). Reuses the homepage .v3-ring
-   dots in the smiley formation; toggles to a filled "Following" state. */
+/* Dot-mascot Follow button — seats in the pill notch at the card's bottom-right
+   (traced from ProfileTheme_Regular.svg). Reuses the homepage .v3-ring dots in
+   the smiley formation; toggles to a filled "Following" state. */
 .prof-follow {
-  position: absolute; z-index: 4; left: 81.19%; top: 0.7%; width: 18.5%; height: 12.8%;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
-  border: none; cursor: pointer; background: var(--pf-base);
-  border-radius: 14px; box-shadow: -2px -2px 5px var(--pf-lt), 3px 3px 7px var(--pf-dk);
+  position: absolute; z-index: 4; left: 75.5%; top: 54.32%; width: 21%; height: 11.37%;
+  display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 6px;
+  padding: 0 9px; border: none; cursor: pointer; background: var(--pf-base);
+  border-radius: 999px; box-shadow: -2px -2px 5px var(--pf-lt), 3px 3px 7px var(--pf-dk);
   transition: box-shadow .18s;
 }
-.prof-follow .v3-ring { width: 24px; height: 24px; color: var(--pf-ink); }
+.prof-follow .v3-ring { width: 20px; height: 20px; color: var(--pf-ink); }
 .prof-follow .v3-ring-dot { width: 3.2px; height: 3.2px; }
 .prof-follow-lbl {
   font-size: 7.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
@@ -5448,6 +5460,26 @@
 .prof-art:hover .prof-art-av { transform: scale(1.04); }
 .prof-art:active .prof-art-av { transform: scale(.96); }
 .prof-art-nm { font-size: 10.5px; font-weight: 700; color: var(--pf-fg); text-align: center; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Favourite songs — a compact vertical list (art · title/album·artist · play) */
+.prof-songs { display: flex; flex-direction: column; gap: 2px; }
+.prof-song {
+  display: flex; align-items: center; gap: 11px; width: 100%; padding: 7px 8px;
+  background: none; border: none; cursor: pointer; text-align: left;
+  border-radius: 10px; transition: background .14s; font-family: inherit;
+}
+.prof-song:hover { background: color-mix(in srgb, var(--pf-fg) 6%, transparent); }
+.prof-song:active { transform: scale(.99); }
+.prof-song-art {
+  width: 40px; height: 40px; flex-shrink: 0; border-radius: 7px;
+  background-size: cover; background-position: center; background-color: #0c0b0a;
+  box-shadow: 0 3px 8px rgba(0,0,0,.22);
+}
+.prof-song-meta { display: flex; flex-direction: column; min-width: 0; flex: 1; gap: 1px; }
+.prof-song-title { font-size: 12.5px; font-weight: 700; color: var(--pf-fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prof-song-sub { font-size: 10.5px; color: var(--pf-fg2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prof-song-play { flex-shrink: 0; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; color: var(--pf-fg2); }
+.prof-song-play svg { width: 13px; height: 13px; }
 
 /* Top playlists — a row of 3 cards */
 .prof-pls { display: flex; gap: 10px; }

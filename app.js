@@ -759,7 +759,6 @@ function populateReviewPanel(scr) {
   populateRecTag(scr, a);
   populateHist(scr, a);
   populateSongList(scr);
-  populateComposeMedia(scr);
   const active = scr.querySelector('.v3-rev-filter.active');
   populateReviewList(scr, active ? active.dataset.f : 'popular');
 }
@@ -852,33 +851,6 @@ function populateRecTag(scr, album) {
   if (av) { av.style.background = f.grad; av.textContent = f.init; }
   const nm = rec.querySelector('.v3-rev-rec-name');
   if (nm) nm.textContent = f.user;
-}
-
-// Generic behind-the-scenes / press photos (not album covers) — the media column is
-// meant to be BTS shots. Only artist photos exist so far; swap in a real `album.photos`
-// array per album to show genuine media.
-const BTS_PHOTOS = [
-  'images/artist-phoebe.jpg',
-  'images/artist-crystalcastles.jpg',
-  'images/artist-100gecs.jpg',
-  'images/artist-carpenterbrut.jpg',
-];
-function populateComposeMedia(scr) {
-  const strip = scr && scr.querySelector('.v3-rev-media');
-  if (!strip) return;
-  const a = scr._album || window.featuredAlbum;
-  const arch = window.ARCHIVE || [];
-  let imgs;
-  if (a && Array.isArray(a.photos) && a.photos.length) {
-    imgs = a.photos;                                   // real media once it's wired up
-  } else {
-    // Rotate the generic BTS pool by album index so different albums vary.
-    const off = Math.max(0, arch.indexOf(a));
-    imgs = BTS_PHOTOS.map((_, i) => BTS_PHOTOS[(i + off) % BTS_PHOTOS.length]);
-  }
-  // The top item is the music video — gets a play button to signal it's playable.
-  strip.innerHTML = imgs.map((src, i) =>
-    `<div class="v3-rev-photo${i === 0 ? ' v3-rev-photo--video' : ''}" style="background-image:url('${src}')">${i === 0 ? '<span class="v3-rev-play"></span>' : ''}</div>`).join('');
 }
 
 // Deterministic engagement meta (time / likes / comments) for a review, so the
@@ -1860,7 +1832,39 @@ function applyAlbumColors(screenEl) {
 // album-cover extractor to get a representative accent, takes its hue, and feeds
 // profBaseColors() so the embossed card echoes the picture's colour scheme.
 // Applied to every .s-prof2 instance so the dark + light variants stay matched.
+// Rebuild the name-banner path with its right-side anchor points shifted by `dx`
+// SVG units (the move Eric described as "drag the right points to the right").
+function profNameTabPath(dx) {
+  const x = n => (n + dx).toFixed(3);
+  return `M0.500122 69H${x(409.862)}H${x(386.803)}C${x(369.967)} 69 ${x(354.261)} 57.1754 ${x(345.016)} 43.105L${x(328.872)} 18.5347C${x(321.476)} 7.27835 ${x(308.911)} 0.5 ${x(295.443)} 0.5H35.5001C16.1702 0.5 0.500122 16.17 0.500122 35.5V69Z`;
+}
+
+// Size the pill (and the banner around it) so the right edge clears the username.
+// Measures the rendered label, converts px → SVG units, then slides the banner's
+// right edge (path) and the pill's right edge (div width) out together via one `dx`.
+function sizeProfName(screenEl) {
+  const canvas = screenEl && screenEl.querySelector('.prof-canvas');
+  const lbl  = screenEl && screenEl.querySelector('.prof-name-tab-lbl');
+  const tab  = screenEl && screenEl.querySelector('.prof-name-tab');
+  const pill = screenEl && screenEl.querySelector('.prof-name-pill');
+  if (!canvas || !lbl || !tab || !pill) return;
+  const cw = canvas.offsetWidth;
+  if (!cw) return;
+  const u = 690 / cw;                              // px → SVG units
+  const textUnits = lbl.offsetWidth * u;
+  const labelLeft = 0.06 * 690;                    // .prof-name-tab-lbl left (6%) in units
+  const padR = 18;                                 // gap from text end to the pill's straight-edge point
+  // The pill's right straight point sits at 295.502 by default; push it to
+  // labelLeft + text + padR when wider. The banner's anchor (295.443) shares the
+  // same dx, so tab + pill grow together. Clamp so the slanted tab stays on-canvas.
+  const dx = Math.max(0, Math.min(270, labelLeft + textUnits + padR - 295.502));
+  tab.setAttribute('d', profNameTabPath(dx));
+  // Pill div: left is 16.0403u, right cap reaches 314.351u+dx → width in %.
+  pill.style.width = ((314.351 + dx - 16.0403) / 690 * 100).toFixed(2) + '%';
+}
+
 function applyProfColors(screenEl) {
+  sizeProfName(screenEl);
   const pic = screenEl && screenEl.querySelector('.prof-pic');
   if (!pic) return;
   const bg = getComputedStyle(pic).backgroundImage;
@@ -3158,7 +3162,9 @@ function randomizeProfile() {
   };
   const ri = (lo, hi) => lo + Math.floor(Math.random() * (hi - lo + 1));
 
-  const nicks = ['Mira', 'Dev', 'Sasha', 'Ken', 'Luca', 'Noa', 'Remy', 'Yuki', 'Ira', 'Theo', 'Juno', 'Cass', 'Wren', 'Sol', 'Nadia', 'Bram', 'Pax', 'Indie', 'Roan', 'Suki', 'Milo', 'Fern', 'Dae', 'Otis', 'Vera', 'Kai'];
+  const nicks = ['Mira', 'Dev', 'Sasha', 'Ken', 'Luca', 'Noa', 'Remy', 'Yuki', 'Ira', 'Theo', 'Juno', 'Cass', 'Wren', 'Sol', 'Nadia', 'Bram', 'Pax', 'Indie', 'Roan', 'Suki', 'Milo', 'Fern', 'Dae', 'Otis', 'Vera', 'Kai',
+    // Long-username examples — the pill + banner stretch to fit these, no overflow
+    'Konstantina', 'Alexandrina', 'Bartholomew', 'Maximiliano', 'Anastasiya', 'Persephone', 'shoegazer_fm', 'vinyl_goblin', 'moonlit_echo', 'reverb_witch'];
   const sfx = ['', '', '_', 'xo', '.wav', '_fm', 'core', 'zzz', '.mp3', 'beats', 'fm', '_hifi', '777'];
   const bios = [
     'shoegaze apologist. i will make you a playlist whether you asked or not',
@@ -3212,6 +3218,14 @@ function randomizeProfile() {
   P.pic = rnd(pics);
   P.favs = sample(A, 5).map(a => a.album);
   P.favArtists = sample(artists, 4);
+  // Favourite songs — one track pulled from each fav album (deterministic titles)
+  P.favSongs = P.favs.map(albName => {
+    const a = A.find(x => x.album === albName);
+    if (!a) return null;
+    const tr = (typeof songsFor === 'function') ? songsFor(a) : [];
+    const t = tr.length ? tr[Math.floor(Math.random() * tr.length)] : null;
+    return { title: t ? t.title : a.album, artist: a.artist, album: a.album };
+  }).filter(Boolean);
   P.reviews = ri(12, 940);
   P.playlists = ri(3, 48);
   P.followers = ri(30, 48000);
