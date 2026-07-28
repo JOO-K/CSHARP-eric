@@ -899,19 +899,6 @@ function songHtml(light) {
       </div>`;
 }
 
-// Random base-colour hue for the profile card, re-rolled on each render but
-// cached for the duration of one synchronous render pass so the dark + light
-// variants (rendered back-to-back) always get the SAME colour. The microtask
-// clears it, so the next time the profile renders it reshuffles.
-let _profHue = null;
-function profSharedHue() {
-  if (_profHue == null) {
-    _profHue = Math.floor(Math.random() * 360);
-    Promise.resolve().then(() => { _profHue = null; });
-  }
-  return _profHue;
-}
-
 // Profile — "Main" theme. A single embossed card traced from
 // ProfileTheme_Main.svg (690×781): a rounded silhouette with a recessed inner
 // "display" face (.prof-face) up top holding the avatar / identity / bio / stats,
@@ -972,8 +959,10 @@ function profileHtml(light) {
       </div>`;
   }).join('');
 
-  // Recently rated — deterministic prototype rows from the archive.
-  const recent  = (window.ARCHIVE || []).slice(0, 4);
+  // Recently rated — the persona's picks (falls back to the top of the archive).
+  const recent  = (P.recent && P.recent.length)
+    ? P.recent.map(nm => findAlb(nm)).filter(Boolean)
+    : (window.ARCHIVE || []).slice(0, 4);
   const rTimes  = ['2h', '1d', '4d', '1w'];
   const rRates  = [5, 4.5, 4, 4.5];
   const recentHtml = recent.map((a, i) => `
@@ -990,13 +979,7 @@ function profileHtml(light) {
     </button>`).join('');
 
   const editIco = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>`;
-
-  // Random base colour, shared across the dark+light variants of this render.
-  let hueStyle = '';
-  if (window.profBaseColors) {
-    const c = window.profBaseColors(profSharedHue());
-    hueStyle = ' style="' + Object.entries(c).map(([k, v]) => `${k}:${v}`).join(';') + '"';
-  }
+  // Base colour is derived from the profile image after render (applyProfColors).
 
   // Favourite artists (4) — avatar borrowed from an album cover by that artist.
   const artistImg = name => { const a = (window.ARCHIVE || []).find(x => x.artist === name); return a ? a.image : ''; };
@@ -1014,8 +997,11 @@ function profileHtml(light) {
     P.occupation ? `<span class="prof-meta-item">${caseIco}${P.occupation}</span>` : '',
   ].join('');
 
-  // Top 3 of the user's own playlists (most-loved first).
-  const myPls = plLists().filter(p => p.creator === 'you').sort((a, b) => b.favs - a.favs).slice(0, 3);
+  // Playlists — the persona's 3 picks (falls back to the user's own, most-loved).
+  const allPls = plLists();
+  const myPls = (P.playlistNames && P.playlistNames.length)
+    ? P.playlistNames.map(n => allPls.find(p => p.name === n)).filter(Boolean)
+    : allPls.filter(p => p.creator === 'you').sort((a, b) => b.favs - a.favs).slice(0, 3);
   const plsHtml = myPls.map(pl =>
     `<button class="prof-pl" onclick="openPlaylistPage('${esc(pl.name)}')">
       <span class="prof-pl-cover" style="background-image:url('${pl.image}')"></span>
@@ -1024,7 +1010,7 @@ function profileHtml(light) {
     </button>`).join('');
 
   return `
-      <div class="app-screen s-home-v3 s-prof2${light ? ' s-home-v3--light' : ''}"${hueStyle}>
+      <div class="app-screen s-home-v3 s-prof2${light ? ' s-home-v3--light' : ''}">
         ${appHeader(`<span class="v3-hsub-nick">${P.name || 'Your name'}</span> <span class="v3-hsub-handle">@${P.handle || 'handle'}</span>`)}
         <div class="v3-body">
           <div class="prof2-scroll">

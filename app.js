@@ -1241,6 +1241,7 @@ function applyAlbumIndex(screenEl, idx, animateMain, animateForYou, backward, an
 }
 
 function populateHomeData(screenEl) {
+  applyProfColors(screenEl);   // no-op unless this is the profile card
   const seq = albumSeq();
   if (!seq.length) return;
   preloadColors(seq);
@@ -1855,6 +1856,31 @@ function applyAlbumColors(screenEl) {
   });
 }
 
+// Procedurally colour the profile base to match the profile image. Reuses the
+// album-cover extractor to get a representative accent, takes its hue, and feeds
+// profBaseColors() so the embossed card echoes the picture's colour scheme.
+// Applied to every .s-prof2 instance so the dark + light variants stay matched.
+function applyProfColors(screenEl) {
+  const pic = screenEl && screenEl.querySelector('.prof-pic');
+  if (!pic) return;
+  const bg = getComputedStyle(pic).backgroundImage;
+  const m = bg.match(/url\(['"]?([^'"]+?)['"]?\)/);
+  if (!m) return;
+  const url = m[1];
+  computeAlbumColors(url).then(c => {
+    if (!c || !c.accent) return;
+    if (getComputedStyle(pic).backgroundImage.indexOf(url) === -1) return;   // still same pic?
+    const hx = c.accent.replace('#', '');
+    const r = parseInt(hx.slice(0, 2), 16) / 255, g = parseInt(hx.slice(2, 4), 16) / 255, b = parseInt(hx.slice(4, 6), 16) / 255;
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b), dd = mx - mn;
+    if (mx === 0 || dd / mx < 0.12) return;   // near-greyscale → keep the neutral default base
+    let h = 0;
+    if (dd) { h = (mx === r) ? ((g - b) / dd) % 6 : (mx === g) ? (b - r) / dd + 2 : (r - g) / dd + 4; h *= 60; if (h < 0) h += 360; }
+    const cols = window.profBaseColors(Math.round(h));
+    document.querySelectorAll('.s-prof2').forEach(el => { for (const k in cols) el.style.setProperty(k, cols[k]); });
+  });
+}
+
 // Warm the palette cache for every album in the window (mirrors preloadForYou).
 function preloadColors(seq) {
   (seq || []).forEach(a => { if (a && a.image) computeAlbumColors(a.image); });
@@ -2082,6 +2108,7 @@ function goToScreen(idx) {
   if (viewMode === 'multi') viewMode = 'single';
   currentIdx = idx;
   activeNavId = SCREENS[idx] ? SCREENS[idx].id : activeNavId;
+  if (SCREENS[idx] && SCREENS[idx].id === 'profile') randomizeProfile();
   renderViewer();
 }
 
@@ -2298,6 +2325,7 @@ window.navigate = function(targetId, direction) {
   const idx = SCREENS.findIndex(s => s.id === targetId);
   if (idx === -1) return;
   activeNavId = targetId;
+  if (targetId === 'profile') randomizeProfile();   // new personality each visit
 
   if (isMobile) {
     if (mobileViewMode !== 'live') {
@@ -3099,6 +3127,85 @@ window.PROFILE = {
     { title: 'Alright',                      artist: 'Kendrick Lamar',  album: 'To Pimp a Butterfly' },
   ],
 };
+
+// ── Random persona: rolled once on load so every visit shows a new profile ──
+// (image · nickname/handle · bio · location · job · numbers · favourite albums ·
+//  artists · playlists · recently-rated). Edits (picker) still persist per visit.
+function randomizeProfile() {
+  const A = window.ARCHIVE || [];
+  if (!A.length) return;
+  const rnd = arr => arr[Math.floor(Math.random() * arr.length)];
+  const sample = (arr, n) => {
+    const c = arr.slice();
+    for (let i = c.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [c[i], c[j]] = [c[j], c[i]]; }
+    return c.slice(0, n);
+  };
+  const ri = (lo, hi) => lo + Math.floor(Math.random() * (hi - lo + 1));
+
+  const nicks = ['Mira', 'Dev', 'Sasha', 'Ken', 'Luca', 'Noa', 'Remy', 'Yuki', 'Ira', 'Theo', 'Juno', 'Cass', 'Wren', 'Sol', 'Nadia', 'Bram', 'Pax', 'Indie', 'Roan', 'Suki', 'Milo', 'Fern', 'Dae', 'Otis', 'Vera', 'Kai'];
+  const sfx = ['', '', '_', 'xo', '.wav', '_fm', 'core', 'zzz', '.mp3', 'beats', 'fm', '_hifi', '777'];
+  const bios = [
+    'shoegaze apologist. i will make you a playlist whether you asked or not',
+    '19 | i make beats in my closet | do not perceive me',
+    'certified yapper. i will review your favorite album and hurt your feelings <3',
+    'bassist for a band you haven\'t heard of (yet). we play basements only.',
+    '23, gemini, emotionally distributed across four streaming services',
+    'music is just vibes with extra steps',
+    'i peaked musically in 2016 and honestly i\'m okay with that',
+    'drummer 🥁 yes i heard you talking during the quiet part',
+    'put a song on aux and watch me make it everyone\'s problem',
+    'former emo → current emo → future emo. it\'s a cycle.',
+    'i don\'t have a personality, i have a rate-your-music account',
+    'lead singer of Wet Sockets 🎤 stream our EP or don\'t (please do)',
+    '17 y/o aspiring producer. my mom says i\'m talented.',
+    'will trade playlists for emotional support',
+    'professional overthinker, amateur guitarist',
+    'if it\'s not shoegaze i\'m asleep 💤',
+    '26 | dog dad | i cry to jazz and i\'m not ashamed',
+    'here to rate albums and touch grass. mostly the albums.',
+    'i listen to everything and remember absolutely nothing',
+    'sad girl autumn, all year round',
+    'synth hoarder. i own more cables than friends.',
+    'my toxic trait is thinking i could\'ve produced that better',
+    '31, dad of two, still think about that one breakcore set weekly',
+    'aux cord dictator. benevolent, mostly.',
+    'i made my whole personality one obscure band and i regret nothing',
+    'ur honor, i was simply feeling the music',
+    'vinyl guy at parties (insufferable). digital everywhere else.',
+    'screamo for breakfast, ambient for dinner',
+    'i rate everything 4 stars because commitment is scary',
+    'guitarist in three group chats and zero actual bands',
+    '20 | film photography + slowcore | ask me about my tote bags',
+    'heard it before it was cool and i WILL bring it up',
+  ];
+  const countries = ['South Korea', 'Japan', 'United States', 'United Kingdom', 'Germany', 'Brazil', 'Canada', 'France', 'Australia', 'Mexico', 'Sweden', 'Netherlands', 'Spain', 'Italy', 'Nigeria', 'Philippines', 'Poland', 'Portugal'];
+  const jobs = ['Motion Designer', 'Barista', 'Software Engineer', 'Illustrator', 'Student', 'Music Teacher', 'Photographer', 'DJ', 'Producer', 'Bookseller', 'Architect', 'Nurse', 'Sound Engineer', 'Freelance Writer', 'Game Dev', 'Line Cook', 'Librarian', 'Tattoo Artist'];
+  const pics = ['playlist-cyano-birds.jpg', 'playlist-car-dash.jpg', 'playlist-misty-lake.jpg', 'playlist-chrome-ooh.jpg', 'playlist-city-red.jpg', 'playlist-wildflowers.jpg', 'playlist-hibiscus.jpg', 'playlist-statue-night.jpg', 'playlist-ink-alley.jpg', 'playlist-cyano-horse.jpg'].map(f => 'images/' + f);
+
+  const nick = rnd(nicks);
+  const handle = nick.toLowerCase() + rnd(sfx);
+  const artists = [...new Set(A.map(a => a.artist))];
+  const pls = (typeof plLists === 'function') ? plLists() : [];
+
+  const P = window.PROFILE;
+  P.name = nick;
+  P.handle = handle;
+  P.bio = rnd(bios);
+  P.location = rnd(countries);
+  P.occupation = rnd(jobs);
+  P.pic = rnd(pics);
+  P.favs = sample(A, 5).map(a => a.album);
+  P.favArtists = sample(artists, 4);
+  P.reviews = ri(12, 940);
+  P.playlists = ri(3, 48);
+  P.followers = ri(30, 48000);
+  P.following = ri(20, 1400);
+  P.socials = { instagram: handle, x: handle, soundcloud: handle };
+  P.playlistNames = sample(pls, Math.min(3, pls.length)).map(p => p.name);
+  P.recent = sample(A, 4).map(a => a.album);
+}
+randomizeProfile();
+
 let _profSlot = 0;
 
 // ── Favourite-album picker (bottom sheet mounted in the tapped profile) ──
