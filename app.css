@@ -2301,6 +2301,7 @@
    Fixed height creates the ~100px drop of the bento + body below it. */
 .v3-header {
   flex-shrink: 0;
+  position: relative;   /* anchor for the left-aligned nav username (Profile) */
   height: 60px;   /* reduced 20px; the body gains matching top padding so the bento stays put */
   display: grid;
   grid-template-columns: 1fr auto 1fr;
@@ -2336,6 +2337,18 @@
   -webkit-mask: url('images/spindeck-wordmark.png') center / contain no-repeat;
   mask: url('images/spindeck-wordmark.png') center / contain no-repeat;
 }
+/* Left-aligned username in the nav (Profile). Absolutely placed so it never
+   shifts the logo/bubbles or the card below — sits low-left, under the row. */
+.v3-header-user {
+  position: absolute; left: 25px; top: 60px;
+  font-family: var(--font-main); font-size: 17px; font-weight: 500; letter-spacing: -0.2px;
+  color: rgba(232,226,214,0.62); max-width: 72%;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.v3-header-user .v3-hsub-nick { font-weight: 800; color: rgba(232,226,214,0.94); }
+.v3-header-user .v3-hsub-handle { opacity: .7; }
+.s-home-v3--light .v3-header-user { color: rgba(26,18,8,0.55); }
+.s-home-v3--light .v3-header-user .v3-hsub-nick { color: rgba(26,18,8,0.9); }
 .v3-bubble {
   width: 30px;
   height: 30px;
@@ -5289,6 +5302,8 @@
   --pf-fg2:    rgba(232,226,214,0.55);
   --pf-surface:#1c1c23;                       /* picker sheet */
   --pf-border: rgba(232,226,214,0.12);
+  --pf-edge:   rgba(0,0,0,0.4);               /* silhouette hairline */
+  --pf-face:   #303139;                       /* recessed inner display face */
 }
 .s-prof2.s-home-v3--light {
   --pf-base:   #e0d8c6;
@@ -5302,61 +5317,68 @@
   --pf-fg2:    rgba(26,18,8,0.55);
   --pf-surface:#ffffff;
   --pf-border: rgba(26,18,8,0.14);
+  --pf-edge:   rgba(120,102,72,0.35);
+  --pf-face:   #d6cdb8;
 }
 
-/* Scroll area inside v3-body — matches wall/playlists spacing (small top gap) */
-.prof2-scroll { padding: 4px 14px 96px; }
+/* Scroll area inside v3-body — matches the homepage bento's ~10px side margins */
+.prof2-scroll { padding: 6px 12px 96px; }
 
-/* Top gap: username */
-.prof2-userbar {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 6px 4px 12px;
-}
-.prof2-id { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-.prof2-name { font-size: 21px; font-weight: 800; letter-spacing: -0.5px; color: var(--pf-fg); font-family: var(--font-head); line-height: 1.05; }
-.prof2-handle { font-size: 12px; color: var(--pf-fg2); font-family: var(--font-mono); }
-.prof2-editbtn {
-  flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  border: none; cursor: pointer; color: var(--pf-fg);
-  background: var(--pf-base);
-  box-shadow: -2px -2px 5px var(--pf-lt), 3px 3px 7px var(--pf-dk);
-}
-.prof2-editbtn:active { box-shadow: inset -2px -2px 5px var(--pf-lt), inset 2px 2px 5px var(--pf-dk); }
 
-/* Canvas + base panel (744×889 layout) */
-.prof-canvas { position: relative; width: 100%; margin: 0 auto; aspect-ratio: 744 / 889; }
+/* ── Profile card — traced from ProfileTheme_Main.svg (690×781) ── */
+.prof-canvas { position: relative; width: 100%; margin: 2px auto 0; aspect-ratio: 690 / 781; }
 .prof-base {
   position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1;
-  pointer-events: none; color: var(--pf-base); overflow: visible;
+  pointer-events: none; overflow: visible;
   filter: drop-shadow(-5px -5px 9px var(--pf-lt)) drop-shadow(6px 7px 12px var(--pf-dk));
 }
-.prof-base path { fill: var(--pf-base); }
+.prof-base-main { fill: var(--pf-base); stroke: var(--pf-edge); stroke-width: 0.5; }
 
-/* Textured skin laid over the base part. Scaled to ~natural size and offset so
-   the PNG's holes register on the base's pic + 5 CD circles (derived from the
-   pic-hole match; verified against every CD centre). z between base and the
-   labels/controls so those stay on top. */
-.prof-skin {
-  position: absolute; z-index: 3;
-  left: -3.79%; top: -4.65%; width: 107.74%; height: auto;
-  pointer-events: none; user-select: none; -webkit-user-drag: none;
-  filter: drop-shadow(0 6px 14px rgba(0,0,0,.4));
-}
-
-/* Profile picture — embossed IN, under the skin's big hole */
+/* Profile image — fills the SVG's inner box exactly (flush top/left, no gaps).
+   Box is ~square, so a % radius scales to the base's ~20px corners at any size.
+   Bottom-left corner is squared (matches the card's stepped lower-left). */
 .prof-pic {
-  position: absolute; z-index: 2;
-  left: 7.4%; top: 6.75%; width: 68.95%; height: 57.70%;
-  border-radius: 50%; background-size: cover; background-position: center;
+  position: absolute; z-index: 2; left: 0.1%; top: 0.06%; width: 78.35%; height: 68.6%;
+  border-radius: 3.7% 3.7% 3.7% 0; background-size: cover; background-position: center;
   background-color: #0c0b0a;
-  box-shadow: inset 4px 5px 11px var(--pf-well-dk), inset -3px -4px 10px var(--pf-well-lt);
+  box-shadow: inset 0 2px 6px var(--pf-well-dk), inset 0 -1px 4px var(--pf-well-lt);
 }
 
-/* Favourite-album wells — embossed IN, under the skin's CD holes */
+/* Info block — description + optional location/occupation, below the image
+   (nudged ~3px left, dropped ~4px lower) */
+.prof-info { position: absolute; z-index: 3; left: calc(5.5% - 3px); top: calc(71% + 4px); width: 69%; }
+.prof-desc {
+  font-size: 10px; color: var(--pf-ink2); line-height: 1.4;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden;
+}
+.prof-meta { display: flex; flex-wrap: wrap; gap: 3px 12px; margin: 0 0 6px; }
+.prof-meta-item { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 800; color: var(--pf-ink); }
+.prof-meta-item svg { width: 12px; height: 12px; opacity: 1; }
+
+/* Numbers — at the bottom of the base */
+.prof-stats {
+  position: absolute; z-index: 3; left: 5.5%; bottom: 2.5%; width: 71%;
+  display: flex; justify-content: space-between; gap: 4px;
+}
+.prof-stat { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.prof-stat-n { font-size: 16px; font-weight: 800; color: var(--pf-ink); font-family: var(--font-head); letter-spacing: -0.3px; line-height: 1; }
+.prof-stat-l { font-size: 7.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--pf-ink2); font-family: var(--font-mono); }
+
+/* Edit pencil — upper-right of the profile image */
+.prof-edit {
+  position: absolute; z-index: 4; left: 67.5%; top: 3.5%;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; border-radius: 50%;
+  border: none; cursor: pointer; color: var(--pf-ink); background: var(--pf-base);
+  box-shadow: -1.5px -1.5px 4px var(--pf-lt), 2px 2px 5px var(--pf-dk);
+}
+.prof-edit:active { box-shadow: inset -1.5px -1.5px 4px var(--pf-lt), inset 2px 2px 4px var(--pf-dk); }
+.prof-edit svg { width: 12px; height: 12px; }
+
+/* Favourite-album wells — vertical column, embossed IN */
 .prof-alb {
-  position: absolute; z-index: 2;
-  width: 14.78%; height: 12.37%; padding: 0; border: none; background: none;
+  position: absolute; z-index: 3;
+  width: 15.94%; height: 14.08%; padding: 0; border: none; background: none;
   border-radius: 50%; cursor: pointer; transition: transform .15s;
 }
 .prof-alb:hover { transform: scale(1.05); }
@@ -5366,46 +5388,100 @@
   background-size: cover; background-position: center; background-color: #0c0b0a;
   box-shadow: inset 3px 4px 8px var(--pf-well-dk), inset -2px -3px 7px var(--pf-well-lt);
 }
+/* Centre hole → reads as a CD; stays put while the art spins during preview */
+.prof-alb-hole {
+  position: absolute; top: 50%; left: 50%; width: 24%; height: 24%;
+  transform: translate(-50%, -50%); border-radius: 50%;
+  background: var(--pf-face); z-index: 2; pointer-events: none;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,.6), 0 0 0 2px rgba(0,0,0,.28);
+}
+.prof-alb-img.prof-alb--spin { animation: v3spin 3.2s linear infinite; }
+
+/* CD preview/platforms popup — reuses .wall2-menu/.v3-cd-menu look, repositioned
+   to the left of the CD column (top/bottom set inline per slot). */
+.prof-cd-menu { right: 19%; left: auto; top: auto; bottom: auto; width: 172px; }
 .prof-alb--empty {
   display: flex; align-items: center; justify-content: center; border-radius: 50%;
   background: #0c0b0a; box-shadow: inset 3px 4px 8px var(--pf-well-dk);
 }
 .prof-alb-add { font-size: 18px; font-weight: 300; color: rgba(255,255,255,.5); line-height: 1; }
 
-/* Labels/controls that sit ON TOP of the skin (fixed light ink to read on the
-   grungy brown texture regardless of theme) */
-.prof-fav-tag {
-  position: absolute; z-index: 4; left: 62.5%; top: 8.5%;
-  font-size: 9px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase;
-  color: rgba(255,244,228,.72); font-family: var(--font-mono);
-  text-shadow: 0 1px 2px rgba(0,0,0,.5);
+/* Dot-mascot Follow button (top-right notch). Reuses the homepage .v3-ring
+   dots in the smiley formation; toggles to a filled "Following" state. */
+.prof-follow {
+  position: absolute; z-index: 4; left: 81.19%; top: 0.7%; width: 18.5%; height: 12.8%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  border: none; cursor: pointer; background: var(--pf-base);
+  border-radius: 14px; box-shadow: -2px -2px 5px var(--pf-lt), 3px 3px 7px var(--pf-dk);
+  transition: box-shadow .18s;
 }
-.prof-social {
-  position: absolute; z-index: 5;
-  left: 66%; top: 0.5%; width: 28.5%; height: 10.8%;
-  display: flex; align-items: center; justify-content: center;
-  background: none; border: none; cursor: pointer;
-  color: #f2eadd; filter: drop-shadow(0 1px 2px rgba(0,0,0,.5));
+.prof-follow .v3-ring { width: 24px; height: 24px; color: var(--pf-ink); }
+.prof-follow .v3-ring-dot { width: 3.2px; height: 3.2px; }
+.prof-follow-lbl {
+  font-size: 7.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--pf-ink2); font-family: var(--font-mono); line-height: 1;
 }
-.prof-social svg { width: 20px; height: 20px; }
-.prof-social:active { transform: scale(.92); }
-.prof-soc-menu {
-  position: absolute; z-index: 6; top: 12%; right: 2%; min-width: 168px;
-  background: var(--pf-surface); border: 1px solid var(--pf-border);
-  box-shadow: 0 12px 30px rgba(0,0,0,.35);
+.prof-follow.is-following {
+  box-shadow: inset -2px -2px 5px var(--pf-lt), inset 2px 2px 6px var(--pf-dk);
 }
-.prof-soc-item {
-  display: flex; align-items: center; gap: 10px; width: 100%;
-  padding: 10px 12px; background: none; border: none; cursor: pointer;
-  font-family: inherit; font-size: 13.5px; font-weight: 600; color: var(--pf-fg); text-align: left;
-}
-.prof-soc-item:hover { background: color-mix(in srgb, var(--pf-fg) 8%, transparent); }
-.prof-soc-ico { width: 24px; height: 24px; border-radius: 7px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
-.prof-soc-go { margin-left: auto; color: var(--pf-fg2); font-size: 12px; }
+.prof-follow.is-following .v3-ring { color: var(--star); }
+.prof-follow.is-following .prof-follow-lbl { color: var(--star); }
 
-/* Info blob (bottom-left) — bio, on the panel below the skin's lobe */
-.prof-info { position: absolute; z-index: 4; left: 6.5%; top: 78%; width: 44%; }
-.prof-bio { font-size: 11px; color: var(--pf-ink2); line-height: 1.45; }
+/* ── Content sections below the card (artists · songs · playlists · reviews) ── */
+.prof-sec { margin-top: 20px; }
+.prof-sec-hd, .prof-feed-hd {
+  font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--pf-fg2); font-family: var(--font-mono); margin: 0 2px 11px;
+}
+
+/* Favourite artists — a row of 4 (avatars scale to fit) */
+.prof-artists { display: flex; gap: 10px; }
+.prof-art {
+  flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 7px;
+  background: none; border: none; cursor: pointer; padding: 0; font-family: inherit;
+}
+.prof-art-av {
+  width: 100%; max-width: 82px; aspect-ratio: 1; border-radius: 50%;
+  background-size: cover; background-position: center;
+  background-color: #0c0b0a; box-shadow: 0 4px 10px rgba(0,0,0,.28); transition: transform .14s;
+}
+.prof-art:hover .prof-art-av { transform: scale(1.04); }
+.prof-art:active .prof-art-av { transform: scale(.96); }
+.prof-art-nm { font-size: 10.5px; font-weight: 700; color: var(--pf-fg); text-align: center; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Top playlists — a row of 3 cards */
+.prof-pls { display: flex; gap: 10px; }
+.prof-pl {
+  flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px;
+  background: none; border: none; cursor: pointer; padding: 0; font-family: inherit; text-align: left;
+}
+.prof-pl-cover {
+  width: 100%; aspect-ratio: 1; border-radius: 12px; background-size: cover; background-position: center;
+  background-color: #0c0b0a; box-shadow: 0 4px 10px rgba(0,0,0,.26); transition: transform .14s;
+}
+.prof-pl:hover .prof-pl-cover { transform: translateY(-2px); }
+.prof-pl:active .prof-pl-cover { transform: scale(.97); }
+.prof-pl-nm { font-size: 11.5px; font-weight: 700; color: var(--pf-fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prof-pl-meta { font-size: 9.5px; color: var(--pf-fg2); font-family: var(--font-mono); margin-top: -3px; }
+
+/* Recently rated — feed below the card ("more content below") */
+.prof-feed { margin-top: 20px; }
+.prof-rr {
+  display: flex; align-items: center; gap: 11px; width: 100%; padding: 8px;
+  margin-bottom: 6px; background: none; border: none; cursor: pointer;
+  text-align: left; border-radius: 12px; transition: background .14s;
+}
+.prof-rr:hover { background: color-mix(in srgb, var(--pf-fg) 6%, transparent); }
+.prof-rr-art {
+  width: 44px; height: 44px; flex-shrink: 0; border-radius: 8px;
+  background-size: cover; background-position: center; background-color: #0c0b0a;
+  box-shadow: 0 3px 8px rgba(0,0,0,.22);
+}
+.prof-rr-meta { display: flex; flex-direction: column; min-width: 0; flex: 1; gap: 1px; }
+.prof-rr-alb { font-size: 13px; font-weight: 400; color: var(--pf-fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prof-rr-artist { font-size: 11px; font-weight: 700; color: var(--pf-fg2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prof-rr-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+.prof-rr-time { font-size: 9.5px; color: var(--pf-fg2); font-family: var(--font-mono); }
 
 /* ── Favourite-album picker sheet ── */
 .prof-picker {

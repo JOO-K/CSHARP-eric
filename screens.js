@@ -640,7 +640,10 @@ function tabBar(active) {
 // The header, now-playing ticker, and bottom nav are the same on every page
 // that opts into the .s-home-v3 shell. Keep these as the single source of truth.
 
-function appHeader() {
+function appHeader(subtitle) {
+  // Optional `subtitle` renders a left-aligned username in the nav, lowered a
+  // little below the logo/bubble row (used by the Profile screen).
+  const userEl = subtitle ? `<div class="v3-header-user">${subtitle}</div>` : '';
   return `
           <div class="v3-header">
             <div class="v3-header-bubbles">
@@ -659,6 +662,7 @@ function appHeader() {
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
               </button>
             </div>
+            ${userEl}
           </div>`;
 }
 
@@ -895,85 +899,187 @@ function songHtml(light) {
       </div>`;
 }
 
-// Profile — "Funky" theme 01. The emboss base (main outline + info blob + social
-// tab) + the profile picture and 5 favourite-album wells, in the 744×889 layout
-// traced from Profile_Theme_01.svg. Eric's textured skin PNG
-// (images/profile-skin-01.png) is laid OVER the base part (scaled+offset so its
-// holes register on the pic/CD positions — see .prof-skin in app.css) for the
-// grungy old-school look; it's pointer-events:none so the holes stay clickable.
-// Home shell (header · v3-body · nowBar · bottomNav); username in the top gap;
-// info blob carries the bio; social tab opens the social menu.
+// Random base-colour hue for the profile card, re-rolled on each render but
+// cached for the duration of one synchronous render pass so the dark + light
+// variants (rendered back-to-back) always get the SAME colour. The microtask
+// clears it, so the next time the profile renders it reshuffles.
+let _profHue = null;
+function profSharedHue() {
+  if (_profHue == null) {
+    _profHue = Math.floor(Math.random() * 360);
+    Promise.resolve().then(() => { _profHue = null; });
+  }
+  return _profHue;
+}
+
+// Profile — "Main" theme. A single embossed card traced from
+// ProfileTheme_Main.svg (690×781): a rounded silhouette with a recessed inner
+// "display" face (.prof-face) up top holding the avatar / identity / bio / stats,
+// a raised lower strip for top-genre chips, the 5 favourite-album wells as a
+// vertical column of embossed-in circles down the right edge, and a rounded
+// social tab in the top-right notch. Below the card, a "Recently rated" feed.
+// Home shell (header · v3-body · nowBar · bottomNav). Funky·Dark / Funky·Light.
 function profileHtml(light) {
   const P = window.PROFILE || {};
   const findAlb = name => (window.ARCHIVE || []).find(a => a.album === name);
-  // Album-circle centres (r=55) as % of the 744×889 base canvas → bbox left/top.
-  // The skin PNG is laid over this base, scaled+offset so its holes register on
-  // these exact positions (see .prof-skin transform in app.css).
+  const nf = n => (window.fmtRc ? window.fmtRc(n) : String(n));
+  const stat = (n, l) => `<div class="prof-stat"><span class="prof-stat-n">${n}</span><span class="prof-stat-l">${l}</span></div>`;
+  const esc = s => String(s).replace(/'/g, '\\\'');
+
+  // Streaming-platform icons (same look as the homepage CD menu).
+  const spotIco = `<svg width="11" height="11" viewBox="0 0 24 24" fill="white"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.52 17.34c-.24.36-.66.48-1.02.24-2.82-1.74-6.36-2.1-10.56-1.14-.42.12-.78-.18-.9-.54-.12-.42.18-.78.54-.9 4.56-1.02 8.52-.6 11.64 1.32.42.18.48.66.3 1.02zm1.44-3.3c-.3.42-.84.6-1.26.3-3.24-1.98-8.16-2.58-11.94-1.38-.48.12-1.02-.12-1.14-.6-.12-.48.12-1.02.6-1.14 4.38-1.32 9.78-.72 13.5 1.56.36.24.54.84.24 1.26zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.3c-.6.18-1.2-.18-1.38-.72-.18-.6.18-1.2.72-1.38 4.26-1.26 11.28-1.02 15.72 1.62.54.3.72 1.02.42 1.56-.3.42-1.02.6-1.56.3z"/></svg>`;
+  const applIco = `<svg width="9" height="11" viewBox="0 0 13 16" fill="white"><path d="M6.5 0L8 3.5 13 4.3l-3.5 3.4.8 4.8L6.5 10.5 2.2 12.5l.8-4.8L0 4.3l5-.8z"/></svg>`;
+  const scPltIco = `<svg width="12" height="8" viewBox="0 0 24 16" fill="white"><rect x="2" y="7" width="1.8" height="6" rx=".9"/><rect x="6" y="4" width="1.8" height="9" rx=".9"/><rect x="10" y="6" width="1.8" height="7" rx=".9"/><rect x="14" y="2" width="1.8" height="11" rx=".9"/><rect x="18" y="8" width="1.8" height="5" rx=".9"/></svg>`;
+  const penIco = `<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>`;
+
+  // Favourite-album CDs — vertical column down the card's right edge.
+  // Circle centres (r=55) from ProfileTheme_Main.svg (690×781) → bbox left/top %.
+  // Filled CD → preview/platforms popup (like the homepage); empty → picker.
   const slots = [
-    { l: 57.03, t: 64.54 }, { l: 70.23, t: 55.89 }, { l: 78.90, t: 44.03 },
-    { l: 81.99, t: 30.58 }, { l: 79.30, t: 17.01 },
+    { l: 82.54, t: 22.12 }, { l: 82.54, t: 38.02 }, { l: 82.54, t: 53.93 },
+    { l: 82.54, t: 69.83 }, { l: 82.54, t: 85.74 },
   ];
   const slotHtml = slots.map((s, i) => {
     const a = findAlb((P.favs || [])[i]);
-    return `<button class="prof-alb${a ? '' : ' prof-alb--empty'}" style="left:${s.l}%;top:${s.t}%" onclick="openProfPicker(${i}, this)" title="Favourite ${i + 1}">
-      ${a ? `<span class="prof-alb-img" style="background-image:url('${a.image}')"></span>` : `<span class="prof-alb-add">+</span>`}
-    </button>`;
+    if (!a) {
+      return `<button class="prof-alb prof-alb--empty" style="left:${s.l}%;top:${s.t}%" onclick="openProfPicker(${i}, this)" title="Add favourite ${i + 1}"><span class="prof-alb-add">+</span></button>`;
+    }
+    const menuPos = i <= 2 ? `top:${s.t}%` : `bottom:${(100 - s.t - 14.08).toFixed(2)}%`;
+    return `<button class="prof-alb" style="left:${s.l}%;top:${s.t}%" onclick="toggleProfCd(this, event)" title="${esc(a.album)}">
+        <span class="prof-alb-img" style="background-image:url('${a.image}')"></span>
+        <span class="prof-alb-hole"></span>
+      </button>
+      <div class="wall2-menu v3-cd-menu prof-cd-menu" hidden style="${menuPos}">
+        <button class="v3-stream-preview prof-cd-prev" onclick="event.stopPropagation(); profCdPreview(this, ${i})">
+          <span class="v3-stream-preview-ico"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
+          <span class="v3-stream-preview-txt">Listen to preview</span>
+          <span class="v3-stream-preview-dur">0:30</span>
+        </button>
+        <div class="v3-cd-menu-sep"></div>
+        <button class="wall2-menu-item plp-plat-item" onclick="event.stopPropagation(); this.closest('.prof-cd-menu').hidden=true">
+          <span class="plp-plat-ico" style="background:#1DB954">${spotIco}</span>Spotify
+        </button>
+        <button class="wall2-menu-item plp-plat-item" onclick="event.stopPropagation(); this.closest('.prof-cd-menu').hidden=true">
+          <span class="plp-plat-ico" style="background:linear-gradient(135deg,#fc3c44,#fc6f32)">${applIco}</span>Apple Music
+        </button>
+        <button class="wall2-menu-item plp-plat-item" onclick="event.stopPropagation(); this.closest('.prof-cd-menu').hidden=true">
+          <span class="plp-plat-ico" style="background:linear-gradient(135deg,#ff5500,#ff8800)">${scPltIco}</span>SoundCloud
+        </button>
+        <div class="v3-cd-menu-sep"></div>
+        <button class="wall2-menu-item plp-plat-item" onclick="event.stopPropagation(); this.closest('.prof-cd-menu').hidden=true; openProfPicker(${i}, this)">
+          <span class="plp-plat-ico" style="background:var(--pf-base)">${penIco}</span>Replace album
+        </button>
+      </div>`;
   }).join('');
 
-  const socialRow = (id, label, brand, ico) =>
-    `<button class="prof-soc-item" onclick="openSocial('${id}')">
-      <span class="prof-soc-ico" style="background:${brand}">${ico}</span>${label}
-      <span class="prof-soc-go">↗</span>
-    </button>`;
-  const igIco = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.5" cy="6.5" r="1" fill="#fff" stroke="none"/></svg>`;
-  const xIco  = `<svg width="11" height="11" viewBox="0 0 24 24" fill="#fff"><path d="M18.9 2H22l-7.6 8.7L23.3 22h-6.9l-5.4-7-6.2 7H1.7l8.1-9.3L1 2h7l4.9 6.5L18.9 2Zm-2.4 18h1.9L7.6 3.9H5.6L16.5 20Z"/></svg>`;
-  const scIco = `<svg width="13" height="9" viewBox="0 0 24 16" fill="#fff"><rect x="2" y="7" width="1.8" height="6" rx=".9"/><rect x="6" y="4" width="1.8" height="9" rx=".9"/><rect x="10" y="6" width="1.8" height="7" rx=".9"/><rect x="14" y="2" width="1.8" height="11" rx=".9"/><rect x="18" y="8" width="1.8" height="5" rx=".9"/></svg>`;
+  // Recently rated — deterministic prototype rows from the archive.
+  const recent  = (window.ARCHIVE || []).slice(0, 4);
+  const rTimes  = ['2h', '1d', '4d', '1w'];
+  const rRates  = [5, 4.5, 4, 4.5];
+  const recentHtml = recent.map((a, i) => `
+    <button class="prof-rr" onclick="openAlbumPage(ARCHIVE.find(x=>x.album==='${a.album.replace(/'/g, '\\\'')}')||ARCHIVE[0])">
+      <span class="prof-rr-art" style="background-image:url('${a.image}')"></span>
+      <span class="prof-rr-meta">
+        <span class="prof-rr-alb">${a.album}</span>
+        <span class="prof-rr-artist">${a.artist}</span>
+      </span>
+      <span class="prof-rr-right">
+        <span class="prof-rr-stars">${halfStars(rRates[i], 11)}</span>
+        <span class="prof-rr-time">${rTimes[i]}</span>
+      </span>
+    </button>`).join('');
+
+  const editIco = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>`;
+
+  // Random base colour, shared across the dark+light variants of this render.
+  let hueStyle = '';
+  if (window.profBaseColors) {
+    const c = window.profBaseColors(profSharedHue());
+    hueStyle = ' style="' + Object.entries(c).map(([k, v]) => `${k}:${v}`).join(';') + '"';
+  }
+
+  // Favourite artists (4) — avatar borrowed from an album cover by that artist.
+  const artistImg = name => { const a = (window.ARCHIVE || []).find(x => x.artist === name); return a ? a.image : ''; };
+  const artistsHtml = (P.favArtists || []).slice(0, 4).map(name =>
+    `<button class="prof-art" onclick="openArtistPageFor('${esc(name)}')">
+      <span class="prof-art-av" style="background-image:url('${artistImg(name)}')"></span>
+      <span class="prof-art-nm">${name}</span>
+    </button>`).join('');
+
+  // Optional location (country) + occupation, shown only when set.
+  const pinIco  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`;
+  const caseIco = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`;
+  const metaHtml = [
+    P.location   ? `<span class="prof-meta-item">${pinIco}${P.location}</span>` : '',
+    P.occupation ? `<span class="prof-meta-item">${caseIco}${P.occupation}</span>` : '',
+  ].join('');
+
+  // Top 3 of the user's own playlists (most-loved first).
+  const myPls = plLists().filter(p => p.creator === 'you').sort((a, b) => b.favs - a.favs).slice(0, 3);
+  const plsHtml = myPls.map(pl =>
+    `<button class="prof-pl" onclick="openPlaylistPage('${esc(pl.name)}')">
+      <span class="prof-pl-cover" style="background-image:url('${pl.image}')"></span>
+      <span class="prof-pl-nm">${pl.name}</span>
+      <span class="prof-pl-meta">${pl.tracks} songs</span>
+    </button>`).join('');
 
   return `
-      <div class="app-screen s-home-v3 s-prof2${light ? ' s-home-v3--light' : ''}">
-        ${appHeader()}
+      <div class="app-screen s-home-v3 s-prof2${light ? ' s-home-v3--light' : ''}"${hueStyle}>
+        ${appHeader(`<span class="v3-hsub-nick">${P.name || 'Your name'}</span> <span class="v3-hsub-handle">@${P.handle || 'handle'}</span>`)}
         <div class="v3-body">
           <div class="prof2-scroll">
-            <div class="prof2-userbar">
-              <div class="prof2-id">
-                <span class="prof2-name">${P.name || 'Your name'}</span>
-                <span class="prof2-handle">@${P.handle || 'handle'}</span>
-              </div>
-              <button class="prof2-editbtn" title="Edit profile" onclick="event.stopPropagation()">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-              </button>
-            </div>
 
             <div class="prof-canvas">
-              <!-- Emboss base panel (main outline + info blob + social tab) -->
-              <svg class="prof-base" viewBox="0 0 744 889" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-                <path d="M321 1.89282C448.526 1.89282 529.085 64.0207 567.481 112.844C580.295 129.138 602.061 137.867 621.409 130.732L622.328 130.38C654.33 117.69 691.63 128.852 706.925 159.694C731.258 208.759 743.727 259.317 743.727 322.893C743.727 494.15 641.241 644.691 517.824 706.877L516.84 707.365C475.469 727.531 428.178 708.031 400.693 670.918L400.043 670.031L382.222 645.506C371.109 630.213 352.274 622.794 333.436 624.372L331.101 624.56C132.87 639.921 0 491.01 0 322.893C0 145.609 143.717 1.89282 321 1.89282Z"/>
-                <path d="M238.113 654.795C174.226 644.916 105.541 608.331 55.4474 558.286C41.0139 543.867 10.0794 553.733 10.0794 574.135V853.121C10.0794 872.451 25.7495 888.121 45.0794 888.121H390.908C407.461 888.121 421.751 876.525 425.159 860.326L439.579 791.767C442.053 780.007 439.108 767.758 431.559 758.407L364.784 675.693C356.103 664.939 342.49 659.576 328.681 660.152C299.511 661.37 265.762 659.071 238.113 654.795Z"/>
-                <path d="M585.432 94.5524C562.377 66.0677 521.265 37.0414 492.888 17.8749C484.843 12.441 488.519 0.5 498.227 0.5H680.269C690.232 0.5 698.675 7.83187 700.072 17.6957L710.861 93.887C712.049 102.276 702.311 109.271 694.096 107.197C669.812 101.067 637.104 101.507 615.199 105.324C604.477 107.192 592.278 103.012 585.432 94.5524Z"/>
+              <!-- Embossed card silhouette (traced from ProfileTheme_Main.svg) -->
+              <svg class="prof-base" viewBox="0 0 690 781" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+                <path class="prof-base-main" d="M518.118 0.5H20.5C9.4543 0.5 0.5 9.45429 0.5 20.5V760.115C0.5 771.161 9.45432 780.115 20.5 780.115H534.949C545.995 780.115 554.949 771.161 554.949 760.115V719.367C554.949 699.593 565.301 681.262 582.234 671.049C587.762 667.715 588.364 659.93 583.414 655.785L576.432 649.94C562.816 638.54 554.949 621.694 554.949 603.935V597.654C554.949 579.213 563.43 561.797 577.946 550.424L583.75 545.876C588.771 541.943 588.876 534.377 583.965 530.306L576.656 524.247C562.906 512.848 554.949 495.916 554.949 478.056V473.482C554.949 453.75 564.651 435.279 580.897 424.081L583.26 422.452C588.525 418.823 589.078 411.252 584.396 406.897L574.082 397.302C561.881 385.951 554.949 370.037 554.949 353.372V347.663C554.949 327.573 565.072 308.835 581.874 297.822C587.577 294.083 587.903 285.84 582.512 281.663L578.202 278.324C563.534 266.959 554.949 249.449 554.949 230.894V224.471C554.949 188.573 584.051 159.471 619.95 159.471H629.828C649.501 159.471 667.924 169.116 679.134 185.282L685.123 193.919C686.24 195.53 688.766 194.739 688.766 192.779V147.147C688.766 136.102 679.812 127.147 668.766 127.147L558.118 127.147C547.073 127.147 538.118 118.193 538.118 107.147V70.0683V20.5C538.118 9.45431 529.164 0.5 518.118 0.5Z"/>
               </svg>
 
-              <!-- Pic + CD covers sit under the skin; its holes reveal them -->
+              <!-- Profile image fills the inner box entirely -->
               <div class="prof-pic" style="background-image:url('${P.pic || ''}')"></div>
+              <button class="prof-edit" title="Edit profile" onclick="event.stopPropagation()">${editIco}</button>
+
+              <!-- Info: location / occupation (bold) above the description -->
+              <div class="prof-info">
+                ${metaHtml ? `<div class="prof-meta">${metaHtml}</div>` : ''}
+                <div class="prof-desc">${P.bio || 'Tell people what you are into.'}</div>
+              </div>
+
+              <!-- Numbers at the bottom of the base -->
+              <div class="prof-stats">
+                ${stat(nf(P.reviews || 0), 'Reviews')}
+                ${stat(nf(P.playlists || 0), 'Playlists')}
+                ${stat(nf(P.followers || 0), 'Followers')}
+                ${stat(nf(P.following || 0), 'Following')}
+              </div>
+
+              <!-- Favourite-album wells — choose 5 (right column) -->
               ${slotHtml}
 
-              <!-- Textured skin laid over the base, aligned to the holes -->
-              <img class="prof-skin" src="images/profile-skin-01.png?v=1" alt="" aria-hidden="true" draggable="false">
-
-              <div class="prof-fav-tag">favs</div>
-
-              <button class="prof-social" onclick="toggleProfSocial(this)" aria-label="Social links">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+              <!-- Dot mascot → Follow (top-right notch) -->
+              <button class="prof-follow" onclick="toggleProfFollow(this)" aria-pressed="false" title="Follow">
+                <span class="v3-ring v3-ring--smile prof-follow-ring"><span class="v3-ring-spin"><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i></span></span>
+                <span class="prof-follow-lbl">Follow</span>
               </button>
-              <div class="wall2-menu prof-soc-menu" hidden>
-                ${socialRow('instagram','Instagram','linear-gradient(135deg,#f9ce34,#ee2a7b,#6228d7)', igIco)}
-                ${socialRow('x','X · Twitter','#111', xIco)}
-                ${socialRow('soundcloud','SoundCloud','linear-gradient(135deg,#ff5500,#ff8800)', scIco)}
-              </div>
-
-              <div class="prof-info">
-                <div class="prof-bio">${P.bio || 'Tell people what you are into.'}</div>
-              </div>
             </div>
+
+            <!-- Top playlists -->
+            <div class="prof-sec">
+              <div class="prof-sec-hd">Playlists</div>
+              <div class="prof-pls">${plsHtml}</div>
+            </div>
+
+            <!-- Favourite artists (no header) -->
+            <div class="prof-sec">
+              <div class="prof-artists">${artistsHtml}</div>
+            </div>
+
+            <!-- Reviews -->
+            <div class="prof-feed">
+              <div class="prof-feed-hd">Recently rated</div>
+              ${recentHtml}
+            </div>
+
           </div>
         </div>
         ${nowBar()}

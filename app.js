@@ -3077,10 +3077,27 @@ window.obFinish = function () { navigate('home'); };
 window.PROFILE = {
   name:   'Eric',
   handle: 'ericd',
-  bio:    'Shoegaze apologist. I will make you a playlist whether you asked for one or not.',
+  bio:    'Shoegaze apologist and lifelong crate-digger. I review mostly ambient, dream-pop and hip-hop, but I\'ll give anything one honest listen. Half my week is spent building playlists like mixtapes for people I haven\'t met yet.',
+  location:   'South Korea',
+  occupation: 'Motion Designer',
   pic:    'images/playlist-statue-night.jpg',
   favs:   ['Punisher', 'Loveless', 'Blonde', 'Currents', 'To Pimp a Butterfly'],
   socials:{ instagram: 'ericd', x: 'ericd', soundcloud: 'ericd' },
+  // Prototype stats (fictional)
+  reviews:   328,
+  playlists: 12,
+  followers: 1900,
+  following: 214,
+  since:     '2023',
+  // Favourite artists (4) and songs (5). Album names supply the artwork.
+  favArtists: ['Phoebe Bridgers', 'Frank Ocean', 'My Bloody Valentine', 'Tame Impala'],
+  favSongs: [
+    { title: 'Scott Street',                 artist: 'Phoebe Bridgers', album: 'Punisher' },
+    { title: 'Ivy',                          artist: 'Frank Ocean',     album: 'Blonde' },
+    { title: 'Only Shallow',                 artist: 'My Bloody Valentine', album: 'Loveless' },
+    { title: 'The Less I Know the Better',   artist: 'Tame Impala',     album: 'Currents' },
+    { title: 'Alright',                      artist: 'Kendrick Lamar',  album: 'To Pimp a Butterfly' },
+  ],
 };
 let _profSlot = 0;
 
@@ -3163,6 +3180,87 @@ window.openSocial = function (id) {
   const handle = (window.PROFILE.socials || {})[id] || '';
   const base = { instagram: 'https://instagram.com/', x: 'https://x.com/', soundcloud: 'https://soundcloud.com/' }[id];
   if (base) window.open(base + handle, '_blank', 'noopener');
+};
+
+// ── Profile base colour (hand slider, prototype) ──────────────
+// Recolours the embossed base + inner face live from a single hue. Dark and
+// light instances get theme-appropriate saturation/lightness. Persisted on
+// PROFILE.hue so it survives re-renders (applied inline in profileHtml).
+// One hue drives a full token set so the card looks the SAME in dark and light
+// (a colourful embossed panel, not a theme-tinted one). Ink is kept light so it
+// reads on the mid-dark base regardless of the page theme.
+window.profBaseColors = function (hue) {
+  return {
+    '--pf-base':    `hsl(${hue}, 22%, 30%)`,
+    '--pf-face':    `hsl(${hue}, 24%, 25%)`,
+    '--pf-ink':     `hsl(${hue}, 32%, 93%)`,
+    '--pf-ink2':    `hsla(${hue}, 24%, 90%, 0.62)`,
+    '--pf-lt':      'rgba(255,255,255,0.07)',
+    '--pf-dk':      'rgba(0,0,0,0.5)',
+    '--pf-well-dk': 'rgba(0,0,0,0.6)',
+    '--pf-well-lt': 'rgba(255,255,255,0.12)',
+  };
+};
+
+// ── Favourite CD → preview / platforms popup (like the homepage) ──
+window.toggleProfCd = function (btn, e) {
+  if (e) e.stopPropagation();
+  const menu = btn.nextElementSibling;
+  if (!menu || !menu.classList.contains('prof-cd-menu')) return;
+  const willOpen = menu.hidden;
+  const scope = btn.closest('.app-screen') || document;
+  scope.querySelectorAll('.prof-cd-menu').forEach(m => { if (m !== menu) m.hidden = true; });
+  menu.hidden = !willOpen;
+  if (willOpen) {
+    const close = ev => {
+      if (!menu.contains(ev.target) && !btn.contains(ev.target)) {
+        menu.hidden = true;
+        document.removeEventListener('click', close, true);
+      }
+    };
+    setTimeout(() => document.addEventListener('click', close, true), 0);
+  }
+};
+
+// Play/pause a CD's 30s preview; the tapped CD spins while it plays.
+window.profCdPreview = function (prevBtn, slot) {
+  const name = (window.PROFILE.favs || [])[slot];
+  const album = name && (window.ARCHIVE || []).find(a => a.album === name);
+  if (!album) return;
+  const menu = prevBtn.closest('.prof-cd-menu');
+  const cdBtn = menu && menu.previousElementSibling;         // the .prof-alb
+  const img = cdBtn && cdBtn.querySelector('.prof-alb-img');
+  const a = previewAudioEl();
+  unlockAudio(a);                                            // iOS: unlock in-gesture
+  const stop = () => { prevBtn.classList.remove('playing'); if (img) img.classList.remove('prof-alb--spin'); };
+  if (prevBtn.classList.contains('playing')) { a.pause(); stop(); return; }
+  // stop any other CD that was spinning
+  (cdBtn.closest('.app-screen') || document).querySelectorAll('.prof-cd-prev.playing').forEach(b => b.classList.remove('playing'));
+  (cdBtn.closest('.app-screen') || document).querySelectorAll('.prof-alb-img.prof-alb--spin').forEach(x => x.classList.remove('prof-alb--spin'));
+  a.onended = stop;
+  const start = (url) => {
+    if (!url) { prevBtn.classList.add('none'); setTimeout(() => prevBtn.classList.remove('none'), 1400); return; }
+    if (a.src !== url) { a.src = url; a.currentTime = 0; }
+    a.play().then(() => { PREVIEW.unlocked = true; prevBtn.classList.add('playing'); if (img) img.classList.add('prof-alb--spin'); }).catch(() => {});
+  };
+  const cached = PREVIEW_CACHE.get(albumKey(album).toLowerCase());
+  if (cached !== undefined) start(cached);
+  else fetchPreviewUrl(album).then(start);
+};
+
+// ── Follow (the dot-mascot button) ────────────────────────────
+// Toggles Follow ⇄ Following; the smiley mascot winks on follow.
+window.toggleProfFollow = function (btn) {
+  const on = btn.classList.toggle('is-following');
+  btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+  const lbl = btn.querySelector('.prof-follow-lbl');
+  if (lbl) lbl.textContent = on ? 'Following' : 'Follow';
+  const ring = btn.querySelector('.v3-ring');
+  if (on && ring) {
+    ring.classList.add('v3-ring--wink');
+    clearTimeout(btn._winkT);
+    btn._winkT = setTimeout(() => ring.classList.remove('v3-ring--wink'), 1000);
+  }
 };
 
 document.addEventListener('DOMContentLoaded', init);
