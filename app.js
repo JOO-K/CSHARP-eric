@@ -4693,6 +4693,18 @@ function dzPickAlbums(list, n) {
 async function expandRecs() {
   if (!RECS_ENABLED) return 0;
   const gen = ++RECS_GEN;
+  const added = await dzDeal(gen);
+  /* ⚠️ Refresh from the ONE exit point. This used to sit at the bottom of the
+     deal loop, which has several early returns — and hitting RECS_TARGET took
+     one of them, so with a target the rails and feed were never refreshed and
+     stayed on the persona's own albums. That is the actual "everything below
+     the bento repeats" bug. */
+  if (added) dzRefreshHome();
+  return added;
+}
+
+// The deal itself. Returns how many albums it adopted; may bail early.
+async function dzDeal(gen) {
   const own = (window.ARCHIVE || []).filter(function (a) { return a.artistId && !a._rec; });
   if (!own.length) return 0;
   let added = 0;
@@ -4726,6 +4738,25 @@ async function expandRecs() {
     });
   }
   return added;
+}
+
+/* The bento swipes through the widened shelf, but everything UNDER it was built
+   before the deal landed and stayed on the persona's own ~30 albums: the rails
+   memoise into `_KNOW`, and FRIEND_ACTIVITY is generated once per switch. So
+   without this the part of home you see WITHOUT swiping showed the same ten
+   artists and same six albums every single load — which reads as the whole
+   screen repeating even though the queue behind it is fresh.
+   Called once when a deal finishes, not per batch, so the feed doesn't churn
+   under the user while it fills. */
+function dzRefreshHome() {
+  window._KNOW = null;
+  const p = window.ACTIVE_PERSONA && personaById(window.ACTIVE_PERSONA);
+  if (p && typeof personaFeed === 'function') window.FRIEND_ACTIVITY = personaFeed(p);
+  homeShells().forEach(function (s) {
+    if (s.classList.contains('s-home-v3--review')) return;   // don't repaint an open album
+    renderKnowRails(s);
+    renderFriendFeed(s);
+  });
 }
 window.expandRecs = expandRecs;
 

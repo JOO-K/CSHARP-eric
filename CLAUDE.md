@@ -265,6 +265,16 @@ pool out round-robin by artist so two records by the same act are never
 adjacent. (They arrive grouped, one artist's batch at a time; appended raw they
 land in consecutive swipes.)
 
+⚠️ **The rails and the feed have to be refreshed when a deal lands**
+(`dzRefreshHome`). They are built from ARCHIVE at render time — *before* the
+recs arrive — and `knowPicks` memoises into `_KNOW` while `FRIEND_ACTIVITY` is
+generated once per persona switch. Without the refresh the bento swiped through
+a fresh 100 albums while everything under it showed the same ten artists and
+six albums on every single load, which reads as the whole screen repeating.
+`expandRecs` therefore calls it from **one exit point**: the deal loop has
+several early returns and hitting `RECS_TARGET` takes one of them, which is
+exactly how this broke the first time.
+
 ### Rec box (`initRecBox` in app.js, `#recbox` in style.css)
 The knobs are live, on a strip along the **bottom of the desktop viewer** — the
 numbers are a feel decision and reading them off a diff is useless. Seeds ·
