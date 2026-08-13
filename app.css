@@ -2758,23 +2758,30 @@
   color: rgba(232,226,214,0.22);
   margin-left: auto;
 }
+/* Same type scheme as the compact bento's info row: Roboto Flex, ALBUM bold and
+   bright, artist light and recessive. Sizes stay smaller so the pair still fits
+   the feed card's one line beside the 60px art. */
 .v3-friend-meta {
   display: flex; align-items: baseline; gap: 4px;
   min-width: 0; margin-bottom: 1px;
+  font-family: 'Roboto Flex', var(--font-main);
 }
 .v3-friend-album {
-  font-size: 12px; font-weight: 400;
-  color: #e8e2d6;
+  font-size: 12px; font-weight: 700;
+  color: rgba(232,226,214,0.88);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   flex: 0 1 auto; min-width: 0;
 }
 .v3-friend-sep {
   font-size: 9px; color: rgba(232,226,214,0.28); flex-shrink: 0;
 }
+/* Shrinkable too — with the album now the wide bold element, a long artist that
+   refused to shrink pushed the year past the card's right edge. */
 .v3-friend-artist {
-  font-size: 11px; font-weight: 700;
-  color: rgba(232,226,214,0.6);
-  white-space: nowrap; flex-shrink: 0;
+  font-size: 11px; font-weight: 400;
+  color: rgba(232,226,214,0.55);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  flex: 0 1 auto; min-width: 0;
 }
 .v3-friend-date {
   font-size: 10px; font-weight: 400;
@@ -3140,6 +3147,17 @@
   padding-bottom: 3px;
   margin-bottom: -3px;
   transition: font-size 0.4s cubic-bezier(0.4,0,0.2,1), opacity 0.18s ease;
+}
+/* Compact bento only: flip the pair so the ALBUM leads and the artist recedes.
+   The app-wide convention (album 400 / artist 700) still holds everywhere else —
+   review, album page, artist page all keep the base rules above. */
+.s-home-v3:not(.s-home-v3--review) .v3-blue-album {
+  font-weight: 700;
+  color: rgba(232,226,214,0.88);
+}
+.s-home-v3:not(.s-home-v3--review) .v3-blue-artist {
+  font-weight: 400;
+  color: rgba(232,226,214,0.55);
 }
 /* Album title + (fullscreen) release-year wrapper.
    NOTE: no overflow:hidden here — on an inline-flex it moves the baseline to the box's

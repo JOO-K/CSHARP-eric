@@ -251,6 +251,13 @@ Key principles:
 ### Album / Artist / Song typography convention
 Wherever these names appear together, order them **song → album → artist** (top to bottom / left to right), with **album name always before artist**. To distinguish the two: **album = regular weight (400), artist = bold (700)**. Song title stays the most prominent element when present. Applied in: album detail (`.album-title`/`.album-artist`), song detail (`.song-*`), home info row (`.v3-blue-album`/`.v3-blue-artist`), friend cards (`.v3-friend-*`), trending/search (`.trending-*`). Exception: `.lfeed-artist` stays a small uppercase mono kicker (editorial eyebrow, not a peer pair).
 
+⚠️ **The home screen now runs the weights the other way: album 700 / artist 400.**
+It reads better where the pair is small and dense, so it applies to the **compact
+bento info row** (`.s-home-v3:not(.s-home-v3--review)` — the review / album /
+artist pages keep the convention above) and to the **friend-feed cards**, which
+also moved onto `Roboto Flex` to match the bento. If the flip spreads to the rest
+of the app, this section is what changes.
+
 ### Global CSS Variables (defined in `:root`)
 ```css
 --star:      #e8a83c
@@ -893,7 +900,7 @@ When a change adds an asset (e.g. `images/profile-skin-01.png`), `git add` it to
 `flowchart.html` and `data.js` are easy to forget — a screen added to the page
 map or the archive ships broken without them.
 
-> **Uncommitted in the working tree (2026-08-13):** Notifications + Settings
+> **Shipped 2026-08-13 (commit `3b12ae5`):** Notifications + Settings
 > (dark & light each), the header bell/gear wired to them, both added to
 > `NAV_PAGES` and the page map. Then a styling pass: Notifications lost its page
 > title and filter pills (the unread chip moved up beside "Mark all read"),
@@ -910,8 +917,8 @@ map or the archive ships broken without them.
 > Touches `screens.js · app.js · app.css · style.css · index.html ·
 > flowchart.html · CLAUDE.md` and adds `personas/ · personas.js ·
 > tools/build_personas.py · .gitignore`. Verified in-browser (all four personas
-> swap catalogue + feed + rails + profile; both variants) but **not committed or
-> deployed** — the live URL still serves the previous build.
+> swap catalogue + feed + rails + profile; both variants), then committed and
+> deployed.
 > Plus the **dev box**, the album-tracking `--star`, the cross-origin colour
 > fix, the bento quote retired, the handle under the wordmark, and the vinyl
 > rendering rebuilt (see the three traps above).
