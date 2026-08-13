@@ -3159,6 +3159,11 @@
   font-weight: 400;
   color: rgba(232,226,214,0.55);
 }
+/* Sits 2px higher than the base -2.5px. Compact only — the review state stacks
+   this row into a column and wants the base offset.
+   ⚠️ Mirrored by DEVBOX_FIELDS l1y.def in app.js; change both or the dev box
+   silently emits the old position. */
+.s-home-v3:not(.s-home-v3--review) .v3-blue-info-row { top: -4.5px; }
 /* Album title + (fullscreen) release-year wrapper.
    NOTE: no overflow:hidden here — on an inline-flex it moves the baseline to the box's
    bottom edge, which clips the album's descenders. The album ellipsizes itself. */

@@ -82,7 +82,21 @@ def find_artist(name):
     first. So: take the exact-name matches and keep the one with the most fans;
     that is reliably the act people mean. Punctuation-heavy names ("(G)I-DLE")
     get a second pass with the punctuation stripped.
+
+    ESCAPE HATCH: write the artist in the CSV as `Name#<deezer artist id>` to
+    skip the search entirely. Most-fans is the right default but it is still a
+    guess, and some acts lose it — Deezer carries two "bsd.u" entries and the
+    popular one holds a single album while the bracketed `[bsd.u]` has the whole
+    lo-fi catalogue. Find the id with search/artist and pin it.
     """
+    m = re.match(r"^(.*?)\s*#(\d+)$", name)
+    if m:
+        art = get(f"https://api.deezer.com/artist/{m.group(2)}")
+        if art and art.get("id"):
+            return art
+        print(f"    -- pinned id {m.group(2)} not found, falling back to search")
+        name = m.group(1)
+
     cands = []
     for query in (name, re.sub(r"[^\w\s-]", " ", name).strip()):
         r = get(f"https://api.deezer.com/search/artist?limit=25&q={q(query)}")
@@ -246,6 +260,10 @@ def album_detail(album_id):
         "reviewCount": 4000 + (seed(title, "rc") % 86) * 1000,
         "reviews": fake_reviews(title, rating),
         "deezerId": a.get("id"),
+        # The ARTIST id, not just the album's. app.js seeds its runtime
+        # recommendation pool off `artist/<id>/radio`, and looking each one up
+        # by name at load time would be an extra network round trip per seed.
+        "artistId": (a.get("artist") or {}).get("id"),
     }
 
 

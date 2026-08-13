@@ -107,11 +107,17 @@ mobile bar (`renderPersonaBar()` fills both from one markup string).
 
 | id | who | look |
 |----|-----|------|
-| *(none)* | **Demo** — data.js's catalogue + the random persona. The app as it was before any of this. | Float·Dark |
-| `eric` | **Eric** — built from his real Spotify artist capture (`NEWSPOTIFYARTISTS.png`, the same one behind `tools/artists.txt`) | warm amber |
+| `eric` | **Eric** — **the default; the app boots into this one.** Seeded from his real Spotify artist capture (`NEWSPOTIFYARTISTS.png`, the same one behind `tools/artists.txt`), then edited by hand | warm amber |
 | `kpop` | **Kpopper** | glossy pink |
 | `oldies` | **Hank** — classic rock + oldies | warm paper, serif |
 | `hyperpop` | **16yearold** — new-age electronic pop | neon mint, mono |
+| `thomas` | **Thomas** — Eric's friend, from his real Apple Music library export | electric blue |
+
+**There is no "Demo" button any more** — `eric` is the demo. `applyPersona('')`
+still works and still restores data.js's own catalogue + the random persona; it
+just has no entry in the switcher, and `initPersonas` boots into `eric` when
+nothing is saved (booting into the unpersona'd data would leave every button
+unlit, with no way back).
 
 Each list mixes **hits with deep cuts**, at ~25–30 albums. The home bento
 cycles the entire catalogue (`albumSeq()` = featured + all of
@@ -123,6 +129,22 @@ cycles the entire catalogue (`albumSeq()` = featured + all of
 `personas/taste/<id>.csv` (`artist,album,track,rank`) are **the hand-maintained
 source**. `tools/build_personas.py` resolves each row against the **Deezer
 public API** and writes `personas.js`. See `personas/README.md`.
+
+A persona can be **seeded from a real Apple Music library export** with
+`tools/apple_library_to_taste.py` (that's where `thomas` came from). ⚠️ **Ask for
+`Library Tracks.json`, not `Library Albums.json`** — only the tracks file
+carries artist names and **play counts**, so it ranks by what someone actually
+listened to and needs no network at all. The albums file has neither (just
+titles + Apple catalog ids), and the script's fallback path — resolve the ids
+via iTunes, rank by date added — produced a visibly *wrong* persona for Thomas:
+a recency list of things he'd saved, versus the hip-hop/neo-soul/Seoul-R&B
+catalogue his play counts actually describe. `Library Activity.json` is the
+library edit log; there's nothing to rank by in it.
+
+The CSV it writes is still meant to be read and cut by hand. **Korean acts are
+the usual Deezer miss** — 검정치마 is listed under its Korean name, not "The
+Black Skirts"; look the artist up in `search/artist` and use the name Deezer
+returns.
 
 - **Only `artist` is required.** Blank `album` → the build picks their
   most-played real album. For K-pop that lands on whatever single is charting,
@@ -167,6 +189,16 @@ previous persona:** `window._KNOW` (the you-may-know rails memo) and
 data.js's feed names demo albums by title, so under a persona every card would
 point at a record that no longer exists. Add to that list when you add a cache.
 
+⚠️ **The toolbar's persona row overflows its section.** `.tb-section.left` is
+`flex: 1` (a quarter of the bar) but the wordmark + mockup chip + persona
+buttons are wider than that, and `.tb-section.center` — a later static sibling —
+painted over the overflow, so the **last persona button was unclickable** while
+looking perfectly normal (found by hit-testing `elementFromPoint`, not by
+reading the CSS). The centre section's empty gutter is now `pointer-events:
+none` with its own controls back to `auto`. That buys room for a few more
+personas; past ~7 the buttons will reach the `‹ Home ›` controls themselves and
+the row needs to shrink or scroll instead.
+
 `applyPersonaClass()` re-stamps `.persona-<id>` on every `.app-screen` inside
 `renderViewer`, because renderSingle/renderMulti rebuild the screens from
 scratch. The skin itself is one injected `<style id="persona-skins">`.
@@ -187,6 +219,66 @@ the last. That's what the `each(bases, kids)` cross-product in
 > hex, so a persona overrides the big surfaces rather than re-declaring a token
 > set. Per-persona detail work is open — starting with the header wordmark and
 > icons washing out on the light backgrounds.
+
+## Recommendations + search fallback — Deezer at runtime (`app.js`)
+
+A persona ships ~30 albums and the bento cycles the **whole** catalogue, so home
+started repeating within a few swipes. `expandRecs()` widens the shelf to `RECS_TARGET` (100)
+on every load **without shipping a single extra byte**: it takes
+`RECS_SEEDS` (10) of the persona's own artists at random, asks Deezer for each
+one's **related artists**, and takes the best few albums from each. Both draws
+are random, so a reload deals a genuinely different shelf — measured at **88%
+new albums between two consecutive loads**.
+
+- **`artist/<id>/radio` is the wrong endpoint** and was the first cut. Seeded
+  off a K-ballad singer it returns forty *"Crash Landing on You (Original
+  Television Soundtrack), Pt. 3"* singles. Related-artist **albums** are the
+  right source.
+- ⚠️ **That endpoint has no `nb_tracks`, and `record_type` says "album" for
+  live records and compilations too.** The title is the only usable signal
+  (`DZ_JUNK`), plus Deezer's own **`fans`** count — `dzPickAlbums` ranks by fans
+  and draws randomly from the head, which is what keeps *Aja* above *A Decade
+  Of Steely Dan*.
+- **Records arrive `_lite`** — title/artist/cover but no year, genre or track
+  count. That is exactly what the compact bento needs (it hides the year), and
+  `dzHydrate` fills the rest in one call when the album is opened. Ratings and
+  reviews come from `dzSeed`/`dzReviews`, a **port of the generator in
+  tools/build_personas.py** — same pool, same seeding, so a fetched album is
+  indistinguishable from a built one and never changes its numbers.
+- `dzAdopt` **appends** to `trendingAlbums` rather than re-shuffling it: the
+  queue is indexed by position and the user may be mid-swipe. It also nulls
+  `window.SEARCH_INDEX`, which is memoised and would otherwise never see them.
+- Personas carry **`artistId`** (added to `build_personas.py` for this) so the
+  seeds need no name lookup.
+
+**Search** used to only know the persona's own ~30 albums, so "steely dan" found
+nothing. `sdsRemoteSearch` queries Deezer alongside the local index (debounced
+280ms) and appends a **"More on Deezer"** section; local results stay on top.
+Tapping an album opens it like any other; tapping an **artist** first pulls
+their albums into ARCHIVE, because `openArtistPageFor` builds the page by
+filtering ARCHIVE and would otherwise open an empty shell.
+
+**One album per artist** (`RECS_PER_ARTIST = 1`). Four albums by one act in a
+row read as the shelf repeating — the exact complaint this feature exists to
+answer — so breadth comes from more ARTISTS instead, and `dzSpread` deals the
+pool out round-robin by artist so two records by the same act are never
+adjacent. (They arrive grouped, one artist's batch at a time; appended raw they
+land in consecutive swipes.)
+
+### Rec box (`initRecBox` in app.js, `#recbox` in style.css)
+The knobs are live, on a strip along the **bottom of the desktop viewer** — the
+numbers are a feel decision and reading them off a diff is useless. Seeds ·
+Related/seed · Albums/artist · Max queue, plus an on/off toggle, **Re-deal**,
+and a live readout (`97 albums · 64 recommended · 64 new artists · ~88
+requests`). It's appended to `#viewer`, which the mobile prototype hides
+wholesale, so it never reaches a phone. Sliders re-deal on **release**, not on
+input — dragging Seeds 2→14 would otherwise fire a dozen deals at the API.
+
+⚠️ **Deezer allows ~50 requests / 5s and a rec deal is ~45 of them.** `dz()`
+paces every call `DZ_GAP` (115ms) apart and retries a failure once. **It caches
+only successful responses** — an earlier cut cached the `null` from a throttled
+call, which pinned the failure for the whole session: search silently returned
+nothing until reload, long after the quota recovered.
 
 ## Data Layer (`data.js`)
 

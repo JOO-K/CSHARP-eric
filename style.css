@@ -99,7 +99,13 @@ body {
 }
 
 .tb-section { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
-.tb-section.center { justify-content: center; flex: 2; }
+/* The center section is twice as wide as its content and paints after the left
+   one, so its empty gutter used to sit ON TOP of anything the left section
+   overflowed — which silently ate the click on the last persona button once a
+   fifth persona made the row that long. The gutter is transparent, so it should
+   not be a click target either; the controls inside it still are. */
+.tb-section.center { justify-content: center; flex: 2; pointer-events: none; }
+.tb-section.center > * { pointer-events: auto; }
 .tb-section.end    { justify-content: flex-end; }
 
 .vinyl-icon { width: 22px; height: auto; flex-shrink: 0; }
@@ -810,3 +816,31 @@ body {
     inset 0 1px 0 rgba(255,255,255,0.09),
     inset 0 -1px 0 rgba(0,0,0,0.5);
 }
+
+/* ── REC BOX ──────────────────────────────────────────────────────────────
+   The recommendation knobs (app.js §DEEZER AT RUNTIME), as a strip along the
+   bottom of the viewer. Inside #viewer, which the mobile prototype hides
+   wholesale, so it never reaches a phone. */
+#recbox {
+  flex-shrink: 0;
+  display: flex; align-items: center; gap: 14px;
+  padding: 7px 14px;
+  border-top: 1px solid var(--vborder);
+  background: var(--vsurface);
+  font-size: 10.5px; color: var(--vdim);
+  overflow-x: auto;
+}
+#recbox .rb-field { display: flex; align-items: center; gap: 6px; white-space: nowrap; cursor: pointer; }
+#recbox .rb-lbl { letter-spacing: 0.2px; }
+#recbox input[type="range"] { width: 96px; accent-color: var(--vaccent); cursor: pointer; }
+#recbox .rb-val { min-width: 22px; text-align: right; color: var(--vtext); font-variant-numeric: tabular-nums; }
+#recbox .rb-toggle, #recbox .rb-go {
+  height: 22px; padding: 0 10px; border-radius: 6px; cursor: pointer;
+  border: 1px solid var(--vborder);
+  background: rgba(136,146,164,0.10); color: var(--vdim);
+  font-family: inherit; font-size: 10.5px;
+}
+#recbox .rb-toggle.on { background: rgba(136,146,164,0.22); border-color: #404040; color: var(--vtext); }
+#recbox .rb-go:hover { color: var(--vtext); border-color: #404040; }
+#recbox .rb-go.rb-busy { opacity: 0.5; pointer-events: none; }
+#recbox .rb-count { margin-left: auto; white-space: nowrap; font-variant-numeric: tabular-nums; }

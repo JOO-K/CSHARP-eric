@@ -68,6 +68,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 104755862,
+    "artistId": 6390014,
     "favTrack": "Show Me How"
    },
    {
@@ -103,6 +104,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 526138472,
+    "artistId": 6404,
     "favTrack": "Genesis"
    },
    {
@@ -138,6 +140,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 129486262,
+    "artistId": 57379042,
     "favTrack": "money machine"
    },
    {
@@ -173,6 +176,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 71552502,
+    "artistId": 13537803,
     "favTrack": ""
    },
    {
@@ -208,6 +212,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 707965,
+    "artistId": 230,
     "favTrack": "Runaway"
    },
    {
@@ -243,6 +248,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 192574722,
+    "artistId": 7850510,
     "favTrack": ""
    },
    {
@@ -278,6 +284,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 225028,
+    "artistId": 109,
     "favTrack": "Let Go"
    },
    {
@@ -313,6 +320,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 384180,
+    "artistId": 183716,
     "favTrack": "Dog Days Are Over"
    },
    {
@@ -348,6 +356,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 680100,
+    "artistId": 158706,
     "favTrack": "Pursuit of Happiness"
    },
    {
@@ -383,6 +392,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 106146,
+    "artistId": 3878,
     "favTrack": "Paper Planes"
    },
    {
@@ -418,6 +428,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 65371772,
+    "artistId": 4105259,
     "favTrack": "Waves"
    },
    {
@@ -453,6 +464,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 79981842,
+    "artistId": 4073450,
     "favTrack": ""
    },
    {
@@ -488,77 +500,8 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 164869492,
+    "artistId": 897,
     "favTrack": "Mr. Brightside"
-   },
-   {
-    "album": "A Love Letter To You 4",
-    "artist": "Trippie Redd",
-    "year": 2019,
-    "genre": "Hip-Hop",
-    "tracks": 21,
-    "image": "https://cdn-images.dzcdn.net/images/cover/6a785cb8480e972691c802371120d452/1000x1000-000000-80-0-0.jpg",
-    "rating": 3.9,
-    "reviewCount": 28000,
-    "reviews": [
-     {
-      "name": "dustpan",
-      "init": "DP",
-      "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
-      "rating": 4.5,
-      "text": "overrated by half a star but still a great time"
-     },
-     {
-      "name": "kira.wav",
-      "init": "KW",
-      "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
-      "rating": 4,
-      "text": "the sequencing alone deserves an award"
-     },
-     {
-      "name": "vxblank",
-      "init": "VX",
-      "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
-      "rating": 4,
-      "text": "sounds like a memory i haven't had yet"
-     }
-    ],
-    "deezerId": 498842071,
-    "favTrack": ""
-   },
-   {
-    "album": "I Want to Die in New Orleans",
-    "artist": "$uicideboy$",
-    "year": 2018,
-    "genre": "Hip-Hop",
-    "tracks": 14,
-    "image": "https://cdn-images.dzcdn.net/images/cover/4d69f3398cd565b341e61669783fe575/1000x1000-000000-80-0-0.jpg",
-    "rating": 4.6,
-    "reviewCount": 42000,
-    "reviews": [
-     {
-      "name": "kira.wav",
-      "init": "KW",
-      "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
-      "rating": 5,
-      "text": "a mood more than an album, and that's a compliment"
-     },
-     {
-      "name": "vxblank",
-      "init": "VX",
-      "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
-      "rating": 4.5,
-      "text": "played this on a night drive and understood it completely"
-     },
-     {
-      "name": "echoplex",
-      "init": "EP",
-      "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
-      "rating": 4,
-      "text": "the mixing is doing so much heavy lifting here"
-     }
-    ],
-    "deezerId": 200441192,
-    "favTrack": ""
    },
    {
     "album": "Dream Your Life Away",
@@ -593,6 +536,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 8435920,
+    "artistId": 4768525,
     "favTrack": "Riptide"
    },
    {
@@ -628,41 +572,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 95169442,
-    "favTrack": ""
-   },
-   {
-    "album": "We Rock Hard",
-    "artist": "Freestylers",
-    "year": 2016,
-    "genre": "Electronic",
-    "tracks": 15,
-    "image": "https://cdn-images.dzcdn.net/images/cover/dde1802e8a6e312b2722e7505e23f7b9/1000x1000-000000-80-0-0.jpg",
-    "rating": 4.5,
-    "reviewCount": 79000,
-    "reviews": [
-     {
-      "name": "noisegate",
-      "init": "NG",
-      "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
-      "rating": 5,
-      "text": "grew on me. first listen confused me, tenth listen floored me"
-     },
-     {
-      "name": "dustpan",
-      "init": "DP",
-      "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
-      "rating": 4.5,
-      "text": "this is the one i put on when i want to feel something"
-     },
-     {
-      "name": "kira.wav",
-      "init": "KW",
-      "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
-      "rating": 4,
-      "text": "genuinely reshaped what i thought this genre could do"
-     }
-    ],
-    "deezerId": 13834908,
+    "artistId": 9102232,
     "favTrack": ""
    },
    {
@@ -698,6 +608,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 223971002,
+    "artistId": 126763622,
     "favTrack": ""
    },
    {
@@ -733,6 +644,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 322197877,
+    "artistId": 2972051,
     "favTrack": ""
    },
    {
@@ -768,6 +680,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 9138453,
+    "artistId": 5865244,
     "favTrack": ""
    },
    {
@@ -803,6 +716,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 9902710,
+    "artistId": 3945911,
     "favTrack": ""
    },
    {
@@ -838,41 +752,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 59826262,
-    "favTrack": ""
-   },
-   {
-    "album": "SHIRO'S SONGBOOK BLEACH Bankai!",
-    "artist": "Shiro Sagisu",
-    "year": 2022,
-    "genre": "Soundtrack",
-    "tracks": 17,
-    "image": "https://cdn-images.dzcdn.net/images/cover/4b8120c044af671d806a23a4251aa5a2/1000x1000-000000-80-0-0.jpg",
-    "rating": 4.5,
-    "reviewCount": 74000,
-    "reviews": [
-     {
-      "name": "noisegate",
-      "init": "NG",
-      "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
-      "rating": 5,
-      "text": "this is the one i put on when i want to feel something"
-     },
-     {
-      "name": "dustpan",
-      "init": "DP",
-      "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
-      "rating": 4.5,
-      "text": "genuinely reshaped what i thought this genre could do"
-     },
-     {
-      "name": "kira.wav",
-      "init": "KW",
-      "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
-      "rating": 4,
-      "text": "overrated by half a star but still a great time"
-     }
-    ],
-    "deezerId": 383874467,
+    "artistId": 4428921,
     "favTrack": ""
    },
    {
@@ -908,6 +788,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 428240707,
+    "artistId": 9160146,
     "favTrack": ""
    },
    {
@@ -943,6 +824,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 525768842,
+    "artistId": 7951446,
     "favTrack": ""
    },
    {
@@ -978,6 +860,367 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 685307641,
+    "artistId": 13541247,
+    "favTrack": ""
+   },
+   {
+    "album": "Selected Ambient Works 85-92",
+    "artist": "Aphex Twin",
+    "year": 1992,
+    "genre": "Electronic",
+    "tracks": 13,
+    "image": "https://cdn-images.dzcdn.net/images/cover/61597432632bf90678b7132db0451f45/1000x1000-000000-80-0-0.jpg",
+    "rating": 4.6,
+    "reviewCount": 79000,
+    "reviews": [
+     {
+      "name": "staticfog",
+      "init": "SF",
+      "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
+      "rating": 5,
+      "text": "genuinely reshaped what i thought this genre could do"
+     },
+     {
+      "name": "velvetblast",
+      "init": "VB",
+      "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
+      "rating": 4.5,
+      "text": "overrated by half a star but still a great time"
+     },
+     {
+      "name": "noisegate",
+      "init": "NG",
+      "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
+      "rating": 4,
+      "text": "the sequencing alone deserves an award"
+     }
+    ],
+    "deezerId": 12977824,
+    "artistId": 580,
+    "favTrack": ""
+   },
+   {
+    "album": "A View of U",
+    "artist": "Machinedrum",
+    "year": 2020,
+    "genre": "Electronic",
+    "tracks": 11,
+    "image": "https://cdn-images.dzcdn.net/images/cover/ea2d3d001ea48337154b16ed4bc4f207/1000x1000-000000-80-0-0.jpg",
+    "rating": 4.7,
+    "reviewCount": 75000,
+    "reviews": [
+     {
+      "name": "dustpan",
+      "init": "DP",
+      "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
+      "rating": 5,
+      "text": "grew on me. first listen confused me, tenth listen floored me"
+     },
+     {
+      "name": "kira.wav",
+      "init": "KW",
+      "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
+      "rating": 4.5,
+      "text": "this is the one i put on when i want to feel something"
+     },
+     {
+      "name": "vxblank",
+      "init": "VX",
+      "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
+      "rating": 4,
+      "text": "genuinely reshaped what i thought this genre could do"
+     }
+    ],
+    "deezerId": 165274902,
+    "artistId": 284217,
+    "favTrack": ""
+   },
+   {
+    "album": "OK Computer",
+    "artist": "Radiohead",
+    "year": 1997,
+    "genre": "Alternative",
+    "tracks": 12,
+    "image": "https://cdn-images.dzcdn.net/images/cover/05a186e0a859a36f9cd51cdae2158fe1/1000x1000-000000-80-0-0.jpg",
+    "rating": 4.4,
+    "reviewCount": 86000,
+    "reviews": [
+     {
+      "name": "staticfog",
+      "init": "SF",
+      "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
+      "rating": 5,
+      "text": "a mood more than an album, and that's a compliment"
+     },
+     {
+      "name": "velvetblast",
+      "init": "VB",
+      "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
+      "rating": 4.5,
+      "text": "played this on a night drive and understood it completely"
+     },
+     {
+      "name": "noisegate",
+      "init": "NG",
+      "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
+      "rating": 4,
+      "text": "the mixing is doing so much heavy lifting here"
+     }
+    ],
+    "deezerId": 14879699,
+    "artistId": 399,
+    "favTrack": ""
+   },
+   {
+    "album": "Via",
+    "artist": "MONORAL",
+    "year": 2008,
+    "genre": "Rock",
+    "tracks": 11,
+    "image": "https://cdn-images.dzcdn.net/images/cover/20aa0dddfdddf821caca30e73a0056a2/1000x1000-000000-80-0-0.jpg",
+    "rating": 4.0,
+    "reviewCount": 9000,
+    "reviews": [
+     {
+      "name": "velvetblast",
+      "init": "VB",
+      "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
+      "rating": 4.5,
+      "text": "genuinely reshaped what i thought this genre could do"
+     },
+     {
+      "name": "noisegate",
+      "init": "NG",
+      "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
+      "rating": 4,
+      "text": "overrated by half a star but still a great time"
+     },
+     {
+      "name": "dustpan",
+      "init": "DP",
+      "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
+      "rating": 4,
+      "text": "the sequencing alone deserves an award"
+     }
+    ],
+    "deezerId": 277473352,
+    "artistId": 6023,
+    "favTrack": ""
+   },
+   {
+    "album": "Eyebrow Moon",
+    "artist": "Lee So Ra",
+    "year": 2004,
+    "genre": "K-Pop",
+    "tracks": 12,
+    "image": "https://cdn-images.dzcdn.net/images/cover/1b6e98726f23b7d4a485dc3b65e48495/1000x1000-000000-80-0-0.jpg",
+    "rating": 4.5,
+    "reviewCount": 53000,
+    "reviews": [
+     {
+      "name": "staticfog",
+      "init": "SF",
+      "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
+      "rating": 5,
+      "text": "criminally short. i wanted twenty more minutes"
+     },
+     {
+      "name": "velvetblast",
+      "init": "VB",
+      "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
+      "rating": 4.5,
+      "text": "a mood more than an album, and that's a compliment"
+     },
+     {
+      "name": "noisegate",
+      "init": "NG",
+      "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
+      "rating": 4,
+      "text": "played this on a night drive and understood it completely"
+     }
+    ],
+    "deezerId": 83400402,
+    "artistId": 12346638,
+    "favTrack": ""
+   },
+   {
+    "album": "A Mad And Faithful Telling",
+    "artist": "DeVotchKa",
+    "year": 2008,
+    "genre": "Alternative",
+    "tracks": 10,
+    "image": "https://cdn-images.dzcdn.net/images/cover/ed848a5edb5a66b826f6e1f48394b295/1000x1000-000000-80-0-0.jpg",
+    "rating": 3.8,
+    "reviewCount": 89000,
+    "reviews": [
+     {
+      "name": "noisegate",
+      "init": "NG",
+      "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
+      "rating": 4.5,
+      "text": "the kind of record you finish and immediately restart"
+     },
+     {
+      "name": "dustpan",
+      "init": "DP",
+      "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
+      "rating": 4,
+      "text": "front to back, not a single skip on this one"
+     },
+     {
+      "name": "kira.wav",
+      "init": "KW",
+      "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
+      "rating": 4,
+      "text": "i was not emotionally prepared for the back half"
+     }
+    ],
+    "deezerId": 43839671,
+    "artistId": 4657,
+    "favTrack": ""
+   },
+   {
+    "album": "Once Twice Melody",
+    "artist": "Beach House",
+    "year": 2022,
+    "genre": "Alternative",
+    "tracks": 18,
+    "image": "https://cdn-images.dzcdn.net/images/cover/3583e424251d6094b96f965c8eabb844/1000x1000-000000-80-0-0.jpg",
+    "rating": 4.6,
+    "reviewCount": 48000,
+    "reviews": [
+     {
+      "name": "vxblank",
+      "init": "VX",
+      "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
+      "rating": 5,
+      "text": "i've recommended this to six people and lost two friends"
+     },
+     {
+      "name": "echoplex",
+      "init": "EP",
+      "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
+      "rating": 4.5,
+      "text": "every song earns its place, which is rarer than it should be"
+     },
+     {
+      "name": "staticfog",
+      "init": "SF",
+      "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
+      "rating": 4,
+      "text": "the closer justifies the entire tracklist"
+     }
+    ],
+    "deezerId": 265701822,
+    "artistId": 75055,
+    "favTrack": ""
+   },
+   {
+    "album": "Classics",
+    "artist": "Ratatat",
+    "year": 2006,
+    "genre": "Electronic",
+    "tracks": 10,
+    "image": "https://cdn-images.dzcdn.net/images/cover/e4feaf32c3b02433038ede4c5d042c4e/1000x1000-000000-80-0-0.jpg",
+    "rating": 4.5,
+    "reviewCount": 84000,
+    "reviews": [
+     {
+      "name": "dustpan",
+      "init": "DP",
+      "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
+      "rating": 5,
+      "text": "the closer justifies the entire tracklist"
+     },
+     {
+      "name": "kira.wav",
+      "init": "KW",
+      "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
+      "rating": 4.5,
+      "text": "the kind of record you finish and immediately restart"
+     },
+     {
+      "name": "vxblank",
+      "init": "VX",
+      "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
+      "rating": 4,
+      "text": "front to back, not a single skip on this one"
+     }
+    ],
+    "deezerId": 106676,
+    "artistId": 6058,
+    "favTrack": ""
+   },
+   {
+    "album": "Cybele",
+    "artist": "Axian",
+    "year": 2022,
+    "genre": "Hip-Hop",
+    "tracks": 12,
+    "image": "https://cdn-images.dzcdn.net/images/cover/91e0e3e0e72de96c3d13b2f8045c002f/1000x1000-000000-80-0-0.jpg",
+    "rating": 4.0,
+    "reviewCount": 43000,
+    "reviews": [
+     {
+      "name": "echoplex",
+      "init": "EP",
+      "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
+      "rating": 4.5,
+      "text": "played this on a night drive and understood it completely"
+     },
+     {
+      "name": "staticfog",
+      "init": "SF",
+      "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
+      "rating": 4,
+      "text": "the mixing is doing so much heavy lifting here"
+     },
+     {
+      "name": "velvetblast",
+      "init": "VB",
+      "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
+      "rating": 4,
+      "text": "not their best but their most honest"
+     }
+    ],
+    "deezerId": 342842077,
+    "artistId": 12394580,
+    "favTrack": ""
+   },
+   {
+    "album": "pook",
+    "artist": "[bsd.u]",
+    "year": 2017,
+    "genre": "Hip-Hop",
+    "tracks": 21,
+    "image": "https://cdn-images.dzcdn.net/images/cover/f0c2c873252e01a27afc05573a3014c4/1000x1000-000000-80-0-0.jpg",
+    "rating": 4.4,
+    "reviewCount": 36000,
+    "reviews": [
+     {
+      "name": "velvetblast",
+      "init": "VB",
+      "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
+      "rating": 5,
+      "text": "sounds like a memory i haven't had yet"
+     },
+     {
+      "name": "noisegate",
+      "init": "NG",
+      "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
+      "rating": 4.5,
+      "text": "perfect headphones album, sounds thin on speakers though"
+     },
+     {
+      "name": "dustpan",
+      "init": "DP",
+      "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
+      "rating": 4,
+      "text": "everyone talks about the singles, the deep cuts are the real thing"
+     }
+    ],
+    "deezerId": 767571211,
+    "artistId": 9150544,
     "favTrack": ""
    }
   ],
@@ -995,11 +1238,8 @@ window.PERSONAS = [
    "Joey Bada$$": "https://cdn-images.dzcdn.net/images/artist/d1be00d41334b5939bbd79fc0c2d871d/1000x1000-000000-80-0-0.jpg",
    "Earl Sweatshirt": "https://cdn-images.dzcdn.net/images/artist/6b52a349bff96760f2ff3483634dedf4/1000x1000-000000-80-0-0.jpg",
    "The Killers": "https://cdn-images.dzcdn.net/images/artist/979d671d4b391bc07747bd1569e51997/1000x1000-000000-80-0-0.jpg",
-   "Trippie Redd": "https://cdn-images.dzcdn.net/images/artist/9c6a85a7936ea791fcd819ff60db3101/1000x1000-000000-80-0-0.jpg",
-   "$uicideboy$": "https://cdn-images.dzcdn.net/images/artist/6e1c90401ea0548202794939bd7dd4de/1000x1000-000000-80-0-0.jpg",
    "Vance Joy": "https://cdn-images.dzcdn.net/images/artist/7193e13dea1bf3dfd91bf84005bebacf/1000x1000-000000-80-0-0.jpg",
    "BAYNK": "https://cdn-images.dzcdn.net/images/artist/c6551e3801490c5015694ac3983527b6/1000x1000-000000-80-0-0.jpg",
-   "Freestylers": "https://cdn-images.dzcdn.net/images/artist/21eb37b777304668d694b815fb852ccc/1000x1000-000000-80-0-0.jpg",
    "Cake Pop": "https://cdn-images.dzcdn.net/images/artist/883eb6315c096cfd18f10ef5d9ab23a2/1000x1000-000000-80-0-0.jpg",
    "리쌍 LeeSSang": "https://cdn-images.dzcdn.net/images/artist/572042bc0cc386a1dd3e6f8c59b6536d/1000x1000-000000-80-0-0.jpg",
    "DAVICHI": "https://cdn-images.dzcdn.net/images/artist/9b47307fa2cd89aeeac25ac27fefc5eb/1000x1000-000000-80-0-0.jpg",
@@ -1007,11 +1247,20 @@ window.PERSONAS = [
    "Pigeondust": "https://cdn-images.dzcdn.net/images/artist/68ba82ea919b4aaccfbca3a9857fd7ce/1000x1000-000000-80-0-0.jpg",
    "J. Rawls": "https://cdn-images.dzcdn.net/images/artist/a14662bb62f657aec4f9a27982944bc3/1000x1000-000000-80-0-0.jpg",
    "Tim Presley": "https://cdn-images.dzcdn.net/images/artist/2fd6168f2574a73dabc6059f6ab8dfea/1000x1000-000000-80-0-0.jpg",
-   "Shiro Sagisu": "https://cdn-images.dzcdn.net/images/artist/3c1cdc9e3212627b86d567ea2623d154/1000x1000-000000-80-0-0.jpg",
    "Megumi Hayashibara": "https://cdn-images.dzcdn.net/images/artist/449c3455b841ccc47c94c20f05f433a4/1000x1000-000000-80-0-0.jpg",
    "Yoko Takahashi": "https://cdn-images.dzcdn.net/images/artist/5f00dfbbfba851ce06d79d062f7830e7/1000x1000-000000-80-0-0.jpg",
    "Jan Panenka": "https://cdn-images.dzcdn.net/images/artist/00ed465579ed0df66d53278ce57043a3/1000x1000-000000-80-0-0.jpg",
-   "Niki Istrefi": "https://cdn-images.dzcdn.net/images/artist/4a11fecc8156938f97f27c138fd12a60/1000x1000-000000-80-0-0.jpg"
+   "Niki Istrefi": "https://cdn-images.dzcdn.net/images/artist/4a11fecc8156938f97f27c138fd12a60/1000x1000-000000-80-0-0.jpg",
+   "Aphex Twin": "https://cdn-images.dzcdn.net/images/artist/22545b72e8b8eecd902824d600badcf3/1000x1000-000000-80-0-0.jpg",
+   "Machinedrum": "https://cdn-images.dzcdn.net/images/artist/bbb34d1a797cc24ad1b832266d23a2c2/1000x1000-000000-80-0-0.jpg",
+   "Radiohead": "https://cdn-images.dzcdn.net/images/artist/96b688020014a21cb80a0268b90287f5/1000x1000-000000-80-0-0.jpg",
+   "MONORAL": "https://cdn-images.dzcdn.net/images/artist/a2e47148d21155dbc736f3289edf2942/1000x1000-000000-80-0-0.jpg",
+   "Lee So Ra": "https://cdn-images.dzcdn.net/images/artist/5993c685a7b44e2d6d3f232b03685a41/1000x1000-000000-80-0-0.jpg",
+   "DeVotchKa": "https://cdn-images.dzcdn.net/images/artist/38f613546f2654a9562829d8753e6d73/1000x1000-000000-80-0-0.jpg",
+   "Beach House": "https://cdn-images.dzcdn.net/images/artist/bab7f5aedc71370b598262e065d3a0ef/1000x1000-000000-80-0-0.jpg",
+   "Ratatat": "https://cdn-images.dzcdn.net/images/artist/853ca41d12d5a08bb79f3a061c4287df/1000x1000-000000-80-0-0.jpg",
+   "Axian": "https://cdn-images.dzcdn.net/images/artist/af20d5abdf54aec366add9335541d078/1000x1000-000000-80-0-0.jpg",
+   "[bsd.u]": "https://cdn-images.dzcdn.net/images/artist/e5be82189e15acd7a7482ea814b434de/1000x1000-000000-80-0-0.jpg"
   }
  },
  {
@@ -1080,6 +1329,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 466106885,
+    "artistId": 178008437,
     "favTrack": "Super Shy"
    },
    {
@@ -1115,6 +1365,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 434848357,
+    "artistId": 168158797,
     "favTrack": "UNFORGIVEN"
    },
    {
@@ -1150,6 +1401,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 653112011,
+    "artistId": 113547672,
     "favTrack": "Supernova"
    },
    {
@@ -1185,6 +1437,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 427059047,
+    "artistId": 153042292,
     "favTrack": "I AM"
    },
    {
@@ -1220,6 +1473,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 106746252,
+    "artistId": 338654,
     "favTrack": "Bad Boy"
    },
    {
@@ -1255,6 +1509,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 268310522,
+    "artistId": 161553,
     "favTrack": "SCIENTIST"
    },
    {
@@ -1290,6 +1545,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 432208777,
+    "artistId": 240582,
     "favTrack": "Super"
    },
    {
@@ -1325,6 +1581,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 303671207,
+    "artistId": 13923487,
     "favTrack": "MANIAC"
    },
    {
@@ -1360,6 +1617,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 233347232,
+    "artistId": 60552072,
     "favTrack": "0X1=LOVESONG"
    },
    {
@@ -1395,6 +1653,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 336124187,
+    "artistId": 3649631,
     "favTrack": "SNEAKERS"
    },
    {
@@ -1430,6 +1689,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 533684252,
+    "artistId": 160138282,
     "favTrack": "DASH"
    },
    {
@@ -1465,6 +1725,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 177111982,
+    "artistId": 10803980,
     "favTrack": "How You Like That"
    },
    {
@@ -1500,6 +1761,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 217565572,
+    "artistId": 2810121,
     "favTrack": "Celebrity"
    },
    {
@@ -1535,6 +1797,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 325690137,
+    "artistId": 6982223,
     "favTrack": "Yet To Come"
    },
    {
@@ -1570,6 +1833,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 106879282,
+    "artistId": 1310497,
     "favTrack": "Lion Heart"
    },
    {
@@ -1605,6 +1869,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 208865052,
+    "artistId": 1377613,
     "favTrack": "Don't Call Me"
    },
    {
@@ -1640,6 +1905,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 106878232,
+    "artistId": 1493569,
     "favTrack": "Rum Pum Pum Pum"
    },
    {
@@ -1675,6 +1941,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 233173682,
+    "artistId": 1492615,
     "favTrack": "Come Back Home"
    },
    {
@@ -1710,6 +1977,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 294550162,
+    "artistId": 2562931,
     "favTrack": "INVU"
    },
    {
@@ -1745,6 +2013,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 755397181,
+    "artistId": 8904144,
     "favTrack": "You can't sit with us"
    },
    {
@@ -1780,6 +2049,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 662608161,
+    "artistId": 244386532,
     "favTrack": "DRIP"
    },
    {
@@ -1815,6 +2085,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 563010272,
+    "artistId": 259645622,
     "favTrack": "Magnetic"
    },
    {
@@ -1850,6 +2121,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 626871541,
+    "artistId": 271210292,
     "favTrack": "Touch"
    },
    {
@@ -1885,6 +2157,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 729966751,
+    "artistId": 2651261,
     "favTrack": "Sixth Sense"
    },
    {
@@ -1920,6 +2193,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 467869945,
+    "artistId": 410599,
     "favTrack": "Why So Lonely"
    },
    {
@@ -1955,6 +2229,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 550637802,
+    "artistId": 4814124,
     "favTrack": "Can You Hear My Heart"
    },
    {
@@ -1990,6 +2265,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 256094172,
+    "artistId": 78598292,
     "favTrack": "Hi High"
    },
    {
@@ -2025,6 +2301,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 961823341,
+    "artistId": 15219,
     "favTrack": "MAISON"
    },
    {
@@ -2060,6 +2337,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 118951582,
+    "artistId": 7161880,
     "favTrack": "HIP"
    },
    {
@@ -2095,6 +2373,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 606909592,
+    "artistId": 52083222,
     "favTrack": "Sunrise"
    },
    {
@@ -2130,6 +2409,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 554234022,
+    "artistId": 58272932,
     "favTrack": "The Fifth Season"
    },
    {
@@ -2165,6 +2445,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 886977162,
+    "artistId": 49280302,
     "favTrack": "Answer"
    },
    {
@@ -2200,6 +2481,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 130999752,
+    "artistId": 365514,
     "favTrack": "REVEAL"
    }
   ],
@@ -2306,6 +2588,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 12047952,
+    "artistId": 1,
     "favTrack": "Come Together"
    },
    {
@@ -2341,6 +2624,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 12114240,
+    "artistId": 860,
     "favTrack": "Time"
    },
    {
@@ -2376,6 +2660,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 8887733,
+    "artistId": 848,
     "favTrack": "Going to California"
    },
    {
@@ -2411,6 +2696,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 6237061,
+    "artistId": 169,
     "favTrack": "The Chain"
    },
    {
@@ -2446,6 +2732,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 908516,
+    "artistId": 11,
     "favTrack": "Gimme Shelter"
    },
    {
@@ -2481,6 +2768,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 11205658,
+    "artistId": 997,
     "favTrack": "Life on Mars?"
    },
    {
@@ -2516,6 +2804,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 213021,
+    "artistId": 817,
     "favTrack": "Baba O'Riley"
    },
    {
@@ -2551,6 +2840,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 11692568,
+    "artistId": 2468,
     "favTrack": "Up Around the Bend"
    },
    {
@@ -2586,6 +2876,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 436186197,
+    "artistId": 2179,
     "favTrack": "God Only Knows"
    },
    {
@@ -2621,6 +2912,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 1208585,
+    "artistId": 2707,
     "favTrack": ""
    },
    {
@@ -2656,6 +2948,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 6415260,
+    "artistId": 847,
     "favTrack": "Riders on the Storm"
    },
    {
@@ -2691,6 +2984,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 455130,
+    "artistId": 849,
     "favTrack": "Purple Haze"
    },
    {
@@ -2726,6 +3020,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 81868,
+    "artistId": 1379,
     "favTrack": ""
    },
    {
@@ -2761,6 +3056,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 1399868,
+    "artistId": 808,
     "favTrack": ""
    },
    {
@@ -2796,6 +3092,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 901407822,
+    "artistId": 1415,
     "favTrack": "Waterloo Sunset"
    },
    {
@@ -2831,6 +3128,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 491146635,
+    "artistId": 1156,
     "favTrack": ""
    },
    {
@@ -2866,6 +3164,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 345012,
+    "artistId": 2798,
     "favTrack": ""
    },
    {
@@ -2901,6 +3200,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 6327489,
+    "artistId": 2945,
     "favTrack": "Try a Little Tenderness"
    },
    {
@@ -2936,6 +3236,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 7014343,
+    "artistId": 900,
     "favTrack": "Bring It On Home to Me"
    },
    {
@@ -2971,6 +3272,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 184480112,
+    "artistId": 1154,
     "favTrack": ""
    },
    {
@@ -3006,6 +3308,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 230976,
+    "artistId": 166,
     "favTrack": ""
    },
    {
@@ -3041,6 +3344,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 71054242,
+    "artistId": 1559,
     "favTrack": "Sunday Morning"
    },
    {
@@ -3076,6 +3380,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 1444232,
+    "artistId": 647,
     "favTrack": ""
    },
    {
@@ -3111,6 +3416,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 320916697,
+    "artistId": 412,
     "favTrack": ""
    },
    {
@@ -3146,6 +3452,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 747884691,
+    "artistId": 6173,
     "favTrack": "A Rose for Emily"
    },
    {
@@ -3181,6 +3488,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 11205606,
+    "artistId": 4715,
     "favTrack": "Alone Again Or"
    },
    {
@@ -3216,6 +3524,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 320445247,
+    "artistId": 2411,
     "favTrack": "Thirteen"
    },
    {
@@ -3251,6 +3560,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 231727202,
+    "artistId": 2062,
     "favTrack": "Place to Be"
    },
    {
@@ -3286,6 +3596,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 85859,
+    "artistId": 8213,
     "favTrack": "Marquee Moon"
    },
    {
@@ -3321,6 +3632,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 272469712,
+    "artistId": 2720,
     "favTrack": "Can You Get to That"
    },
    {
@@ -3356,6 +3668,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 345311,
+    "artistId": 2027,
     "favTrack": "Move On Up"
    },
    {
@@ -3391,6 +3704,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 10154728,
+    "artistId": 1118,
     "favTrack": "Use Me"
    },
    {
@@ -3426,6 +3740,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 7472029,
+    "artistId": 2344,
     "favTrack": "Halleluwah"
    },
    {
@@ -3461,6 +3776,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 1422793,
+    "artistId": 69681,
     "favTrack": "Coconut"
    }
   ],
@@ -3567,6 +3883,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 208438142,
+    "artistId": 11926479,
     "favTrack": ""
    },
    {
@@ -3602,6 +3919,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 907282002,
+    "artistId": 14582191,
     "favTrack": ""
    },
    {
@@ -3637,6 +3955,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 722106551,
+    "artistId": 170234767,
     "favTrack": ""
    },
    {
@@ -3672,6 +3991,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 500727721,
+    "artistId": 117501182,
     "favTrack": ""
    },
    {
@@ -3707,6 +4027,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 159176512,
+    "artistId": 57379042,
     "favTrack": ""
    },
    {
@@ -3742,6 +4063,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 597350882,
+    "artistId": 1462230,
     "favTrack": ""
    },
    {
@@ -3777,6 +4099,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 568973201,
+    "artistId": 7850510,
     "favTrack": ""
    },
    {
@@ -3812,6 +4135,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 492776131,
+    "artistId": 6478881,
     "favTrack": ""
    },
    {
@@ -3847,6 +4171,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 818268351,
+    "artistId": 7411938,
     "favTrack": ""
    },
    {
@@ -3882,6 +4207,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 318335407,
+    "artistId": 67859242,
     "favTrack": ""
    },
    {
@@ -3917,6 +4243,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 381445657,
+    "artistId": 14148833,
     "favTrack": ""
    },
    {
@@ -3952,6 +4279,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 113725342,
+    "artistId": 4631793,
     "favTrack": ""
    },
    {
@@ -3987,6 +4315,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 462170755,
+    "artistId": 7135525,
     "favTrack": ""
    },
    {
@@ -4022,6 +4351,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 197993572,
+    "artistId": 7850514,
     "favTrack": ""
    },
    {
@@ -4057,6 +4387,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 714451151,
+    "artistId": 106464312,
     "favTrack": ""
    },
    {
@@ -4092,6 +4423,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 1018573931,
+    "artistId": 70047472,
     "favTrack": ""
    },
    {
@@ -4127,6 +4459,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 712171491,
+    "artistId": 62817042,
     "favTrack": ""
    },
    {
@@ -4162,6 +4495,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 684088921,
+    "artistId": 112964282,
     "favTrack": ""
    },
    {
@@ -4197,6 +4531,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 606354742,
+    "artistId": 76812952,
     "favTrack": ""
    },
    {
@@ -4232,6 +4567,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 406082517,
+    "artistId": 14728423,
     "favTrack": ""
    },
    {
@@ -4267,6 +4603,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 445255985,
+    "artistId": 14803387,
     "favTrack": ""
    },
    {
@@ -4302,6 +4639,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 304588117,
+    "artistId": 5804578,
     "favTrack": ""
    },
    {
@@ -4337,6 +4675,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 304591887,
+    "artistId": 6073616,
     "favTrack": "Peroxide"
    },
    {
@@ -4372,6 +4711,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 257989642,
+    "artistId": 10877874,
     "favTrack": "Don't Be So Hard On Your Own Beauty"
    },
    {
@@ -4407,6 +4747,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 261715512,
+    "artistId": 122602052,
     "favTrack": "Pain"
    },
    {
@@ -4442,6 +4783,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 234682722,
+    "artistId": 10468777,
     "favTrack": "Chaeri"
    },
    {
@@ -4477,6 +4819,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 97768252,
+    "artistId": 9829696,
     "favTrack": "Career Boy"
    },
    {
@@ -4512,6 +4855,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 89227412,
+    "artistId": 8885366,
     "favTrack": ""
    },
    {
@@ -4547,6 +4891,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 264058322,
+    "artistId": 10922274,
     "favTrack": ""
    },
    {
@@ -4582,6 +4927,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 191892312,
+    "artistId": 12042424,
     "favTrack": ""
    },
    {
@@ -4617,6 +4963,7 @@ window.PERSONAS = [
      }
     ],
     "deezerId": 443070165,
+    "artistId": 91079502,
     "favTrack": ""
    }
   ],
@@ -4652,6 +4999,1076 @@ window.PERSONAS = [
    "Namasenda": "https://cdn-images.dzcdn.net/images/artist/6a76f8b4014961664e26f649b4d29508/1000x1000-000000-80-0-0.jpg",
    "Umru": "https://cdn-images.dzcdn.net/images/artist/2b9ab8d2767d2bdc2f6c191f5c055bb8/1000x1000-000000-80-0-0.jpg",
    "8485": "https://cdn-images.dzcdn.net/images/artist/3cbb5566af824afae7ab13e9cf5a5ad1/1000x1000-000000-80-0-0.jpg"
+  }
+ },
+ {
+  "id": "thomas",
+  "profile": {
+   "name": "Thomas",
+   "handle": "thomas.aiff",
+   "bio": "Neo-soul, boom bap and Seoul R&B. 88,000 plays since 2016, and Yes Lawd! is responsible for far too many of them.",
+   "location": "Seoul",
+   "occupation": "Album Hoarder",
+   "since": "2016",
+   "followers": 640,
+   "following": 341,
+   "reviews": 268,
+   "playlists": 19
+  },
+  "skin": {
+   "font": "'DM Sans'",
+   "radius": "10px",
+   "dark": {
+    "accent": "#5b8cff",
+    "bg": "#0d1017",
+    "ink": "#e6ecf5",
+    "ink2": "rgba(230,236,245,0.5)",
+    "card": "#161c27"
+   },
+   "light": {
+    "accent": "#2f5ecb",
+    "bg": "#eef0f5",
+    "ink": "#10141c",
+    "ink2": "rgba(16,20,28,0.55)",
+    "card": "#e0e4ee"
+   }
+  },
+  "albums": [
+   {
+    "album": "IGOR",
+    "artist": "Tyler, The Creator",
+    "year": 2019,
+    "genre": "Hip-Hop",
+    "tracks": 12,
+    "image": "https://cdn-images.dzcdn.net/images/cover/041ab5ceb6fb6ebf9512966835be9e1b/1000x1000-000000-80-0-0.jpg",
+    "rating": 3.8,
+    "reviewCount": 86000,
+    "reviews": [
+     {
+      "name": "staticfog",
+      "init": "SF",
+      "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
+      "rating": 4.5,
+      "text": "production is immaculate, lyrics cut deeper every listen"
+     },
+     {
+      "name": "velvetblast",
+      "init": "VB",
+      "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
+      "rating": 4,
+      "text": "grew on me. first listen confused me, tenth listen floored me"
+     },
+     {
+      "name": "noisegate",
+      "init": "NG",
+      "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
+      "rating": 4,
+      "text": "this is the one i put on when i want to feel something"
+     }
+    ],
+    "deezerId": 97140952,
+    "artistId": 1194083,
+    "favTrack": "EARFQUAKE"
+   },
+   {
+    "album": "THIRSTY",
+    "artist": "검정치마",
+    "year": 2019,
+    "genre": "K-Pop",
+    "tracks": 12,
+    "image": "https://cdn-images.dzcdn.net/images/cover/ba72ed129289a327e89332392179bdfe/1000x1000-000000-80-0-0.jpg",
+    "rating": 4.7,
+    "reviewCount": 76000,
+    "reviews": [
+     {
+      "name": "noisegate",
+      "init": "NG",
+      "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
+      "rating": 5,
+      "text": "this is the one i put on when i want to feel something"
+     },
+     {
+      "name": "dustpan",
+      "init": "DP",
+      "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
+      "rating": 4.5,
+      "text": "genuinely reshaped what i thought this genre could do"
+     },
+     {
+      "name": "kira.wav",
+      "init": "KW",
+      "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
+      "rating": 4,
+      "text": "overrated by half a star but still a great time"
+     }
+    ],
+    "deezerId": 436977427,
+    "artistId": 115893862,
+    "favTrack": "Island (Queen of Diamonds)"
+   },
+   {
+    "album": "TEEN TROUBLES",
+    "artist": "검정치마",
+    "year": 2022,
+    "genre": "K-Pop",
+    "tracks": 18,
+    "image": "https://cdn-images.dzcdn.net/images/cover/1f57b42c78f64db752978fded1d5c123/1000x1000-000000-80-0-0.jpg",
+    "rating": 4.6,
+    "reviewCount": 39000,
+    "reviews": [
+     {
+      "name": "kira.wav",
+      "init": "KW",
+      "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
+      "rating": 5,
+      "text": "perfect headphones album, sounds thin on speakers though"
+     },
+     {
+      "name": "vxblank",
+      "init": "VX",
+      "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
+      "rating": 4.5,
+      "text": "everyone talks about the singles, the deep cuts are the real thing"
+     },
+     {
+      "name": "echoplex",
+      "init": "EP",
+      "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
+      "rating": 4,
+      "text": "criminally short. i wanted twenty more minutes"
+     }
+    ],
+    "deezerId": 356014307,
+    "artistId": 115893862,
+    "favTrack": "Powder Blue"
+   },
+   {
+    "album": "CALL ME IF YOU GET LOST",
+    "artist": "Tyler, The Creator",
+    "year": 2021,
+    "genre": "Hip-Hop",
+    "tracks": 16,
+    "image": "https://cdn-images.dzcdn.net/images/cover/2d740784396546039fe626ac2b92877b/1000x1000-000000-80-0-0.jpg",
+    "rating": 4.0,
+    "reviewCount": 67000,
+    "reviews": [
+     {
+      "name": "staticfog",
+      "init": "SF",
+      "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
+      "rating": 4.5,
+      "text": "grew on me. first listen confused me, tenth listen floored me"
+     },
+     {
+      "name": "velvetblast",
+      "init": "VB",
+      "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
+      "rating": 4,
+      "text": "this is the one i put on when i want to feel something"
+     },
+     {
+      "name": "noisegate",
+      "init": "NG",
+      "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
+      "rating": 4,
+      "text": "genuinely reshaped what i thought this genre could do"
+     }
+    ],
+    "deezerId": 239516692,
+    "artistId": 1194083,
+    "favTrack": "HOT WIND BLOWS (feat. Lil Wayne)"
+   },
+   {
+    "album": "Sweet Boy",
+    "artist": "Malcolm Todd",
+    "year": 2024,
+    "genre": "Alternative",
+    "tracks": 16,
+    "image": "https://cdn-images.dzcdn.net/images/cover/bee99e8730b8fb1ad941bbe2607a5a99/1000x1000-000000-80-0-0.jpg",
+    "rating": 3.8,
+    "reviewCount": 73000,
+    "reviews": [
+     {
+      "name": "echoplex",
+      "init": "EP",
+      "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
+      "rating": 4.5,
+      "text": "the kind of record you finish and immediately restart"
+     },
+     {
+      "name": "staticfog",
+      "init": "SF",
+      "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
+      "rating": 4,
+      "text": "front to back, not a single skip on this one"
+     },
+     {
+      "name": "velvetblast",
+      "init": "VB",
+      "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
+      "rating": 4,
+      "text": "i was not emotionally prepared for the back half"
+     }
+    ],
+    "deezerId": 567736181,
+    "artistId": 193142737,
+    "favTrack": "4Me 4Me"
+   },
+   {
+    "album": "Ventura",
+    "artist": "Anderson .Paak",
+    "year": 2019,
+    "genre": "R&B",
+    "tracks": 11,
+    "image": "https://cdn-images.dzcdn.net/images/cover/cfff75ee48e3a1bfea51894e9f772036/1000x1000-000000-80-0-0.jpg",
+    "rating": 4.1,
+    "reviewCount": 4000,
+    "reviews": [
+     {
+      "name": "dustpan",
+      "init": "DP",
+      "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
+      "rating": 4.5,
+      "text": "a mood more than an album, and that's a compliment"
+     },
+     {
+      "name": "kira.wav",
+      "init": "KW",
+      "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
+      "rating": 4,
+      "text": "played this on a night drive and understood it completely"
+     },
+     {
+      "name": "vxblank",
+      "init": "VX",
+      "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
+      "rating": 4,
+      "text": "the mixing is doing so much heavy lifting here"
+     }
+    ],
+    "deezerId": 93038342,
+    "artistId": 6474027,
+    "favTrack": "What Can We Do? (feat. Nate Dogg)"
+   },
+   {
+    "album": "It Is What It Is",
+    "artist": "Thundercat",
+    "year": 2020,
+    "genre": "R&B",
+    "tracks": 15,
+    "image": "https://cdn-images.dzcdn.net/images/cover/a52aa475e4c011ff84f7418f3b7fd11c/1000x1000-000000-80-0-0.jpg",
+    "rating": 3.8,
+    "reviewCount": 51000,
+    "reviews": [
+     {
+      "name": "velvetblast",
+      "init": "VB",
+      "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
+      "rating": 4.5,
+      "text": "not their best but their most honest"
+     },
+     {
+      "name": "noisegate",
+      "init": "NG",
+      "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
+      "rating": 4,
+      "text": "i've recommended this to six people and lost two friends"
+     },
+     {
+      "name": "dustpan",
+      "init": "DP",
+      "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
+      "rating": 4,
+      "text": "every song earns its place, which is rarer than it should be"
+     }
+    ],
+    "deezerId": 127010392,
+    "artistId": 546520,
+    "favTrack": "Funny Thing"
+   },
+   {
+    "album": "Musiq, Pt. 1",
+    "artist": "Knxwledge",
+    "year": 2019,
+    "genre": "R&B",
+    "tracks": 8,
+    "image": "https://cdn-images.dzcdn.net/images/cover/e612ce0203154b40d73a7c04b1314d65/1000x1000-000000-80-0-0.jpg",
+    "rating": 3.9,
+    "reviewCount": 51000,
+    "reviews": [
+     {
+      "name": "dustpan",
+      "init": "DP",
+      "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
+      "rating": 4.5,
+      "text": "grew on me. first listen confused me, tenth listen floored me"
+     },
+     {
+      "name": "kira.wav",
+      "init": "KW",
+      "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
+      "rating": 4,
+      "text": "this is the one i put on when i want to feel something"
+     },
+     {
+      "name": "vxblank",
+      "init": "VX",
+      "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
+      "rating": 4,
+      "text": "genuinely reshaped what i thought this genre could do"
+     }
+    ],
+    "deezerId": 133302552,
+    "artistId": 5057451,
+    "favTrack": "Jstfriends"
+   },
+   {
+    "album": "NewJeans 2nd EP 'Get Up'",
+    "artist": "NewJeans",
+    "year": 2023,
+    "genre": "K-Pop",
+    "tracks": 6,
+    "image": "https://cdn-images.dzcdn.net/images/cover/37e446fe36cee17b6215e5d506d18354/1000x1000-000000-80-0-0.jpg",
+    "rating": 4.4,
+    "reviewCount": 60000,
+    "reviews": [
+     {
+      "name": "kira.wav",
+      "init": "KW",
+      "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
+      "rating": 5,
+      "text": "sounds like a memory i haven't had yet"
+     },
+     {
+      "name": "vxblank",
+      "init": "VX",
+      "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
+      "rating": 4.5,
+      "text": "perfect headphones album, sounds thin on speakers though"
+     },
+     {
+      "name": "echoplex",
+      "init": "EP",
+      "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
+      "rating": 4,
+      "text": "everyone talks about the singles, the deep cuts are the real thing"
+     }
+    ],
+    "deezerId": 466106885,
+    "artistId": 178008437,
+    "favTrack": "ETA"
+   },
+   {
+    "album": "summer flows 0.02",
+    "artist": "wave to earth",
+    "year": 2020,
+    "genre": "Alternative",
+    "tracks": 5,
+    "image": "https://cdn-images.dzcdn.net/images/cover/e7b1e6fc4bc81a5c04775d9587773d31/1000x1000-000000-80-0-0.jpg",
+    "rating": 3.8,
+    "reviewCount": 69000,
+    "reviews": [
+     {
+      "name": "noisegate",
+      "init": "NG",
+      "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
+      "rating": 4.5,
+      "text": "criminally short. i wanted twenty more minutes"
+     },
+     {
+      "name": "dustpan",
+      "init": "DP",
+      "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
+      "rating": 4,
+      "text": "a mood more than an album, and that's a compliment"
+     },
+     {
+      "name": "kira.wav",
+      "init": "KW",
+      "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
+      "rating": 4,
+      "text": "played this on a night drive and understood it completely"
+     }
+    ],
+    "deezerId": 675568361,
+    "artistId": 72302562,
+    "favTrack": "summer flows"
+   },
+   {
+    "album": "Free Nationals",
+    "artist": "Free Nationals",
+    "year": 2019,
+    "genre": "R&B",
+    "tracks": 13,
+    "image": "https://cdn-images.dzcdn.net/images/cover/a632d75590749ae20b6ae3809c93055e/1000x1000-000000-80-0-0.jpg",
+    "rating": 4.1,
+    "reviewCount": 4000,
+    "reviews": [
+     {
+      "name": "kira.wav",
+      "init": "KW",
+      "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
+      "rating": 4.5,
+      "text": "everyone talks about the singles, the deep cuts are the real thing"
+     },
+     {
+      "name": "vxblank",
+      "init": "VX",
+      "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
+      "rating": 4,
+      "text": "criminally short. i wanted twenty more minutes"
+     },
+     {
+      "name": "echoplex",
+      "init": "EP",
+      "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
+      "rating": 4,
+      "text": "a mood more than an album, and that's a compliment"
+     }
+    ],
+    "deezerId": 116804352,
+    "artistId": 52240862,
+    "favTrack": "Gidget (feat. Anderson .Paak & T.Nava)"
+   },
+   {
+    "album": "You're The Man (Expanded Edition)",
+    "artist": "Marvin Gaye",
+    "year": 2023,
+    "genre": "R&B",
+    "tracks": 20,
+    "image": "https://cdn-images.dzcdn.net/images/cover/432c72b7c24bbad838808d967bda1ab8/1000x1000-000000-80-0-0.jpg",
+    "rating": 4.7,
+    "reviewCount": 63000,
+    "reviews": [
+     {
+      "name": "dustpan",
+      "init": "DP",
+      "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
+      "rating": 5,
+      "text": "criminally short. i wanted twenty more minutes"
+     },
+     {
+      "name": "kira.wav",
+      "init": "KW",
+      "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
+      "rating": 4.5,
+      "text": "a mood more than an album, and that's a compliment"
+     },
+     {
+      "name": "vxblank",
+      "init": "VX",
+      "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
+      "rating": 4,
+      "text": "played this on a night drive and understood it completely"
+     }
+    ],
+    "deezerId": 477668565,
+    "artistId": 1154,
+    "favTrack": "My Last Chance (SalaAM ReMi LP Mix)"
+   },
+   {
+    "album": "Luv 4 Rent",
+    "artist": "Smino",
+    "year": 2022,
+    "genre": "Hip-Hop",
+    "tracks": 15,
+    "image": "https://cdn-images.dzcdn.net/images/cover/1b432fef4c89093b66c950d10c1db930/1000x1000-000000-80-0-0.jpg",
+    "rating": 3.8,
+    "reviewCount": 75000,
+    "reviews": [
+     {
+      "name": "vxblank",
+      "init": "VX",
+      "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
+      "rating": 4.5,
+      "text": "criminally short. i wanted twenty more minutes"
+     },
+     {
+      "name": "echoplex",
+      "init": "EP",
+      "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
+      "rating": 4,
+      "text": "a mood more than an album, and that's a compliment"
+     },
+     {
+      "name": "staticfog",
+      "init": "SF",
+      "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
+      "rating": 4,
+      "text": "played this on a night drive and understood it completely"
+     }
+    ],
+    "deezerId": 368463357,
+    "artistId": 9492178,
+    "favTrack": "No L's"
+   },
+   {
+    "album": "Hitler Wears Hermes 8: Side B",
+    "artist": "Westside Gunn",
+    "year": 2021,
+    "genre": "Hip-Hop",
+    "tracks": 20,
+    "image": "https://cdn-images.dzcdn.net/images/cover/641806922f664c84a0ca60abde2290d3/1000x1000-000000-80-0-0.jpg",
+    "rating": 4.2,
+    "reviewCount": 64000,
+    "reviews": [
+     {
+      "name": "vxblank",
+      "init": "VX",
+      "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
+      "rating": 4.5,
+      "text": "sounds like a memory i haven't had yet"
+     },
+     {
+      "name": "echoplex",
+      "init": "EP",
+      "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
+      "rating": 4,
+      "text": "perfect headphones album, sounds thin on speakers though"
+     },
+     {
+      "name": "staticfog",
+      "init": "SF",
+      "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
+      "rating": 4,
+      "text": "everyone talks about the singles, the deep cuts are the real thing"
+     }
+    ],
+    "deezerId": 260175572,
+    "artistId": 8323782,
+    "favTrack": "The Fly who couldn't Fly straight (feat. Tyler, The Creator)"
+   },
+   {
+    "album": "0.1 flaws and all.",
+    "artist": "wave to earth",
+    "year": 2023,
+    "genre": "Alternative",
+    "tracks": 14,
+    "image": "https://cdn-images.dzcdn.net/images/cover/693859ae241aff27a8fc9eee44e7e29c/1000x1000-000000-80-0-0.jpg",
+    "rating": 4.7,
+    "reviewCount": 37000,
+    "reviews": [
+     {
+      "name": "dustpan",
+      "init": "DP",
+      "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
+      "rating": 5,
+      "text": "criminally short. i wanted twenty more minutes"
+     },
+     {
+      "name": "kira.wav",
+      "init": "KW",
+      "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
+      "rating": 4.5,
+      "text": "a mood more than an album, and that's a compliment"
+     },
+     {
+      "name": "vxblank",
+      "init": "VX",
+      "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
+      "rating": 4,
+      "text": "played this on a night drive and understood it completely"
+     }
+    ],
+    "deezerId": 647725701,
+    "artistId": 72302562,
+    "favTrack": "bad"
+   },
+   {
+    "album": "Zip",
+    "artist": "Zion.T",
+    "year": 2023,
+    "genre": "K-Pop",
+    "tracks": 10,
+    "image": "https://cdn-images.dzcdn.net/images/cover/e40097b7b2ca9e5f34727166238fe1d1/1000x1000-000000-80-0-0.jpg",
+    "rating": 3.8,
+    "reviewCount": 82000,
+    "reviews": [
+     {
+      "name": "kira.wav",
+      "init": "KW",
+      "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
+      "rating": 4.5,
+      "text": "the mixing is doing so much heavy lifting here"
+     },
+     {
+      "name": "vxblank",
+      "init": "VX",
+      "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
+      "rating": 4,
+      "text": "not their best but their most honest"
+     },
+     {
+      "name": "echoplex",
+      "init": "EP",
+      "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
+      "rating": 4,
+      "text": "i've recommended this to six people and lost two friends"
+     }
+    ],
+    "deezerId": 520058942,
+    "artistId": 4990400,
+    "favTrack": "UNLOVE (prod. HONNE)"
+   },
+   {
+    "album": "A Call from My Dream",
+    "artist": "Meaningful Stone",
+    "year": 2020,
+    "genre": "K-Pop",
+    "tracks": 11,
+    "image": "https://cdn-images.dzcdn.net/images/cover/fcd40265a11f2d5d54c977740ff993b0/1000x1000-000000-80-0-0.jpg",
+    "rating": 4.8,
+    "reviewCount": 5000,
+    "reviews": [
+     {
+      "name": "staticfog",
+      "init": "SF",
+      "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
+      "rating": 5,
+      "text": "i was not emotionally prepared for the back half"
+     },
+     {
+      "name": "velvetblast",
+      "init": "VB",
+      "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
+      "rating": 4.5,
+      "text": "production is immaculate, lyrics cut deeper every listen"
+     },
+     {
+      "name": "noisegate",
+      "init": "NG",
+      "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
+      "rating": 4,
+      "text": "grew on me. first listen confused me, tenth listen floored me"
+     }
+    ],
+    "deezerId": 175933532,
+    "artistId": 83542562,
+    "favTrack": "Beep-Boop, Beep-Boop"
+   },
+   {
+    "album": "I Know",
+    "artist": "SURL",
+    "year": 2019,
+    "genre": "K-Pop",
+    "tracks": 6,
+    "image": "https://cdn-images.dzcdn.net/images/cover/1159489251b0b5ffcdcd53fcb822e18d/1000x1000-000000-80-0-0.jpg",
+    "rating": 4.8,
+    "reviewCount": 9000,
+    "reviews": [
+     {
+      "name": "kira.wav",
+      "init": "KW",
+      "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
+      "rating": 5,
+      "text": "genuinely reshaped what i thought this genre could do"
+     },
+     {
+      "name": "vxblank",
+      "init": "VX",
+      "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
+      "rating": 4.5,
+      "text": "overrated by half a star but still a great time"
+     },
+     {
+      "name": "echoplex",
+      "init": "EP",
+      "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
+      "rating": 4,
+      "text": "the sequencing alone deserves an award"
+     }
+    ],
+    "deezerId": 114389382,
+    "artistId": 51079912,
+    "favTrack": "Dry Flower"
+   },
+   {
+    "album": "Fancy That",
+    "artist": "PinkPantheress",
+    "year": 2025,
+    "genre": "Pop",
+    "tracks": 9,
+    "image": "https://cdn-images.dzcdn.net/images/cover/0b8720478ef28aedf91af614d36721ec/1000x1000-000000-80-0-0.jpg",
+    "rating": 3.8,
+    "reviewCount": 19000,
+    "reviews": [
+     {
+      "name": "staticfog",
+      "init": "SF",
+      "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
+      "rating": 4.5,
+      "text": "i was not emotionally prepared for the back half"
+     },
+     {
+      "name": "velvetblast",
+      "init": "VB",
+      "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
+      "rating": 4,
+      "text": "production is immaculate, lyrics cut deeper every listen"
+     },
+     {
+      "name": "noisegate",
+      "init": "NG",
+      "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
+      "rating": 4,
+      "text": "grew on me. first listen confused me, tenth listen floored me"
+     }
+    ],
+    "deezerId": 749411161,
+    "artistId": 122602052,
+    "favTrack": "Tonight"
+   },
+   {
+    "album": "The Bricktionary",
+    "artist": "Boldy James",
+    "year": 2024,
+    "genre": "Hip-Hop",
+    "tracks": 12,
+    "image": "https://cdn-images.dzcdn.net/images/cover/9575253ce7f2e035e3bd9d2cf764a973/1000x1000-000000-80-0-0.jpg",
+    "rating": 4.4,
+    "reviewCount": 37000,
+    "reviews": [
+     {
+      "name": "noisegate",
+      "init": "NG",
+      "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
+      "rating": 5,
+      "text": "played this on a night drive and understood it completely"
+     },
+     {
+      "name": "dustpan",
+      "init": "DP",
+      "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
+      "rating": 4.5,
+      "text": "the mixing is doing so much heavy lifting here"
+     },
+     {
+      "name": "kira.wav",
+      "init": "KW",
+      "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
+      "rating": 4,
+      "text": "not their best but their most honest"
+     }
+    ],
+    "deezerId": 668820061,
+    "artistId": 4437489,
+    "favTrack": "Rabies (feat. Benny the Butcher)"
+   },
+   {
+    "album": "Apollo XXI",
+    "artist": "Steve Lacy",
+    "year": 2019,
+    "genre": "Pop",
+    "tracks": 12,
+    "image": "https://cdn-images.dzcdn.net/images/cover/2f152c3d4d7a7e607e985d77339af1de/1000x1000-000000-80-0-0.jpg",
+    "rating": 4.8,
+    "reviewCount": 59000,
+    "reviews": [
+     {
+      "name": "noisegate",
+      "init": "NG",
+      "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
+      "rating": 5,
+      "text": "the sequencing alone deserves an award"
+     },
+     {
+      "name": "dustpan",
+      "init": "DP",
+      "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
+      "rating": 4.5,
+      "text": "sounds like a memory i haven't had yet"
+     },
+     {
+      "name": "kira.wav",
+      "init": "KW",
+      "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
+      "rating": 4,
+      "text": "perfect headphones album, sounds thin on speakers though"
+     }
+    ],
+    "deezerId": 348062427,
+    "artistId": 65574,
+    "favTrack": "Only If"
+   },
+   {
+    "album": "DIE FOR MY BITCH",
+    "artist": "Baby Keem",
+    "year": 2019,
+    "genre": "Hip-Hop",
+    "tracks": 14,
+    "image": "https://cdn-images.dzcdn.net/images/cover/ec4d1dc297efd82066b110137a96b2c6/1000x1000-000000-80-0-0.jpg",
+    "rating": 4.1,
+    "reviewCount": 52000,
+    "reviews": [
+     {
+      "name": "noisegate",
+      "init": "NG",
+      "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
+      "rating": 4.5,
+      "text": "production is immaculate, lyrics cut deeper every listen"
+     },
+     {
+      "name": "dustpan",
+      "init": "DP",
+      "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
+      "rating": 4,
+      "text": "grew on me. first listen confused me, tenth listen floored me"
+     },
+     {
+      "name": "kira.wav",
+      "init": "KW",
+      "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
+      "rating": 4,
+      "text": "this is the one i put on when i want to feel something"
+     }
+    ],
+    "deezerId": 103731632,
+    "artistId": 48947681,
+    "favTrack": "STATS"
+   },
+   {
+    "album": "BETWEEN 1&2",
+    "artist": "TWICE",
+    "year": 2022,
+    "genre": "K-Pop",
+    "tracks": 7,
+    "image": "https://cdn-images.dzcdn.net/images/cover/0824c80571e9cee63eaacc5a52a8e6d8/1000x1000-000000-80-0-0.jpg",
+    "rating": 3.9,
+    "reviewCount": 68000,
+    "reviews": [
+     {
+      "name": "dustpan",
+      "init": "DP",
+      "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
+      "rating": 4.5,
+      "text": "the closer justifies the entire tracklist"
+     },
+     {
+      "name": "kira.wav",
+      "init": "KW",
+      "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
+      "rating": 4,
+      "text": "the kind of record you finish and immediately restart"
+     },
+     {
+      "name": "vxblank",
+      "init": "VX",
+      "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
+      "rating": 4,
+      "text": "front to back, not a single skip on this one"
+     }
+    ],
+    "deezerId": 349507667,
+    "artistId": 161553,
+    "favTrack": "Talk that Talk"
+   },
+   {
+    "album": "PsychoWarrior: MG Ultra X",
+    "artist": "Machine Girl",
+    "year": 2025,
+    "genre": "Rock",
+    "tracks": 14,
+    "image": "https://cdn-images.dzcdn.net/images/cover/5524a0c132b3155eb63da3eed42c52b6/1000x1000-000000-80-0-0.jpg",
+    "rating": 4.3,
+    "reviewCount": 11000,
+    "reviews": [
+     {
+      "name": "vxblank",
+      "init": "VX",
+      "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
+      "rating": 4.5,
+      "text": "every song earns its place, which is rarer than it should be"
+     },
+     {
+      "name": "echoplex",
+      "init": "EP",
+      "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
+      "rating": 4,
+      "text": "the closer justifies the entire tracklist"
+     },
+     {
+      "name": "staticfog",
+      "init": "SF",
+      "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
+      "rating": 4,
+      "text": "the kind of record you finish and immediately restart"
+     }
+    ],
+    "deezerId": 804904441,
+    "artistId": 151688,
+    "favTrack": "Come On Baby, Scrape My Data"
+   },
+   {
+    "album": "Bae 5",
+    "artist": "Yung Bae",
+    "year": 2019,
+    "genre": "Electronic",
+    "tracks": 11,
+    "image": "https://cdn-images.dzcdn.net/images/cover/ab6c930c504be4fa76a641bc249d9342/1000x1000-000000-80-0-0.jpg",
+    "rating": 4.8,
+    "reviewCount": 52000,
+    "reviews": [
+     {
+      "name": "kira.wav",
+      "init": "KW",
+      "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
+      "rating": 5,
+      "text": "this is the one i put on when i want to feel something"
+     },
+     {
+      "name": "vxblank",
+      "init": "VX",
+      "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
+      "rating": 4.5,
+      "text": "genuinely reshaped what i thought this genre could do"
+     },
+     {
+      "name": "echoplex",
+      "init": "EP",
+      "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
+      "rating": 4,
+      "text": "overrated by half a star but still a great time"
+     }
+    ],
+    "deezerId": 353004357,
+    "artistId": 10559669,
+    "favTrack": "Welcome To the Disco (feat. Macross 82-99)"
+   },
+   {
+    "album": "If Not Winter",
+    "artist": "Wisp",
+    "year": 2025,
+    "genre": "Alternative",
+    "tracks": 12,
+    "image": "https://cdn-images.dzcdn.net/images/cover/2d57d164fb25bf72ff140cce956586a2/1000x1000-000000-80-0-0.jpg",
+    "rating": 4.8,
+    "reviewCount": 24000,
+    "reviews": [
+     {
+      "name": "velvetblast",
+      "init": "VB",
+      "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
+      "rating": 5,
+      "text": "the closer justifies the entire tracklist"
+     },
+     {
+      "name": "noisegate",
+      "init": "NG",
+      "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
+      "rating": 4.5,
+      "text": "the kind of record you finish and immediately restart"
+     },
+     {
+      "name": "dustpan",
+      "init": "DP",
+      "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
+      "rating": 4,
+      "text": "front to back, not a single skip on this one"
+     }
+    ],
+    "deezerId": 793816941,
+    "artistId": 60989,
+    "favTrack": "Breathe onto me"
+   },
+   {
+    "album": "We Will Always Love You",
+    "artist": "The Avalanches",
+    "year": 2020,
+    "genre": "Alternative",
+    "tracks": 25,
+    "image": "https://cdn-images.dzcdn.net/images/cover/d9cc9c74a02b22ba3d85c544b3f4ca49/1000x1000-000000-80-0-0.jpg",
+    "rating": 4.5,
+    "reviewCount": 53000,
+    "reviews": [
+     {
+      "name": "dustpan",
+      "init": "DP",
+      "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
+      "rating": 5,
+      "text": "genuinely reshaped what i thought this genre could do"
+     },
+     {
+      "name": "kira.wav",
+      "init": "KW",
+      "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
+      "rating": 4.5,
+      "text": "overrated by half a star but still a great time"
+     },
+     {
+      "name": "vxblank",
+      "init": "VX",
+      "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
+      "rating": 4,
+      "text": "the sequencing alone deserves an award"
+     }
+    ],
+    "deezerId": 190809862,
+    "artistId": 2748,
+    "favTrack": "The Divine Chord (feat. MGMT & Johnny Marr)"
+   },
+   {
+    "album": "GNX",
+    "artist": "Kendrick Lamar",
+    "year": 2024,
+    "genre": "Hip-Hop",
+    "tracks": 12,
+    "image": "https://cdn-images.dzcdn.net/images/cover/da5256ff8cacfe9ad90521f6e3792259/1000x1000-000000-80-0-0.jpg",
+    "rating": 4.7,
+    "reviewCount": 6000,
+    "reviews": [
+     {
+      "name": "velvetblast",
+      "init": "VB",
+      "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
+      "rating": 5,
+      "text": "the mixing is doing so much heavy lifting here"
+     },
+     {
+      "name": "noisegate",
+      "init": "NG",
+      "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
+      "rating": 4.5,
+      "text": "not their best but their most honest"
+     },
+     {
+      "name": "dustpan",
+      "init": "DP",
+      "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
+      "rating": 4,
+      "text": "i've recommended this to six people and lost two friends"
+     }
+    ],
+    "deezerId": 673968231,
+    "artistId": 525046,
+    "favTrack": "tv off (feat. Lefty Gunplay)"
+   }
+  ],
+  "artistImg": {
+   "Tyler, The Creator": "https://cdn-images.dzcdn.net/images/artist/5eceecd683beab6dd901a7931294a121/1000x1000-000000-80-0-0.jpg",
+   "검정치마": "https://cdn-images.dzcdn.net/images/artist/c943745d0525a9e3130985007d3d4ac9/1000x1000-000000-80-0-0.jpg",
+   "Malcolm Todd": "https://cdn-images.dzcdn.net/images/artist/5ecb8fe8b0335deeff7434fd3160199c/1000x1000-000000-80-0-0.jpg",
+   "Anderson .Paak": "https://cdn-images.dzcdn.net/images/artist/0f9dc219acab54ef70b1df30dbb584a9/1000x1000-000000-80-0-0.jpg",
+   "Thundercat": "https://cdn-images.dzcdn.net/images/artist/b2860b5439b003147cbe69c85135d484/1000x1000-000000-80-0-0.jpg",
+   "Knxwledge": "https://cdn-images.dzcdn.net/images/artist/52c4d50186db5403504e366179cc4da0/1000x1000-000000-80-0-0.jpg",
+   "NewJeans": "https://cdn-images.dzcdn.net/images/artist/0866c2c1d7d00879f5db46ddc1250db8/1000x1000-000000-80-0-0.jpg",
+   "wave to earth": "https://cdn-images.dzcdn.net/images/artist/d27a4c2c28addd9d63bc141683839fdf/1000x1000-000000-80-0-0.jpg",
+   "Free Nationals": "https://cdn-images.dzcdn.net/images/artist/73a36c2e60bcc0f9e8f13ef763e1ca7d/1000x1000-000000-80-0-0.jpg",
+   "Marvin Gaye": "https://cdn-images.dzcdn.net/images/artist/149cf44d269d34d3277b97ea1b907366/1000x1000-000000-80-0-0.jpg",
+   "Smino": "https://cdn-images.dzcdn.net/images/artist/e10d8fd2f603c84b2107a381ca706f58/1000x1000-000000-80-0-0.jpg",
+   "Westside Gunn": "https://cdn-images.dzcdn.net/images/artist/7e9cf830c300127e64d5bd787e7a5260/1000x1000-000000-80-0-0.jpg",
+   "Zion.T": "https://cdn-images.dzcdn.net/images/artist/8b77c93c1e5e1bd1259f32e96f0a5234/1000x1000-000000-80-0-0.jpg",
+   "Meaningful Stone": "https://cdn-images.dzcdn.net/images/artist/3fc6d5f8e5f039cffde4f54222e69146/1000x1000-000000-80-0-0.jpg",
+   "SURL": "https://cdn-images.dzcdn.net/images/artist/baf7a1e96ef73081b0cf757d49d58e8d/1000x1000-000000-80-0-0.jpg",
+   "PinkPantheress": "https://cdn-images.dzcdn.net/images/artist/dbf10322b8c415487c9caa678f4d82f6/1000x1000-000000-80-0-0.jpg",
+   "Boldy James": "https://cdn-images.dzcdn.net/images/artist/9b735d89b32ba4af8e708ee3acc21044/1000x1000-000000-80-0-0.jpg",
+   "Steve Lacy": "https://cdn-images.dzcdn.net/images/artist/1ddf70d9445da4439a16bfea909d77f6/1000x1000-000000-80-0-0.jpg",
+   "Baby Keem": "https://cdn-images.dzcdn.net/images/artist/56a2450351b4a111dc01ed495374da55/1000x1000-000000-80-0-0.jpg",
+   "TWICE": "https://cdn-images.dzcdn.net/images/artist/1f4acadade675899b7f775ae4ac67faa/1000x1000-000000-80-0-0.jpg",
+   "Machine Girl": "https://cdn-images.dzcdn.net/images/artist/6482fc8b31280076fb95805caf2ad8bf/1000x1000-000000-80-0-0.jpg",
+   "Yung Bae": "https://cdn-images.dzcdn.net/images/artist/3a1a96ebd73f62573222a60e11a90df1/1000x1000-000000-80-0-0.jpg",
+   "Wisp": "https://cdn-images.dzcdn.net/images/artist/0b300fde073a989cb19d535619191898/1000x1000-000000-80-0-0.jpg",
+   "The Avalanches": "https://cdn-images.dzcdn.net/images/artist/35a18264dafe849395e679b0ad1fae41/1000x1000-000000-80-0-0.jpg",
+   "Kendrick Lamar": "https://cdn-images.dzcdn.net/images/artist/be0a7c550567f4af0ed202d7235b74d6/1000x1000-000000-80-0-0.jpg"
   }
  }
 ];

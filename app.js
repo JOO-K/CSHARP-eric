@@ -93,7 +93,7 @@ function init() {
   // After the first render: fills the persona switcher and, if one was in use
   // last visit, swaps the catalogue over to it (which re-renders).
   initPersonas();
-  if (!isMobile) initDevBox();
+  if (!isMobile) { initDevBox(); initRecBox(); }
 }
 
 // ============================================================
@@ -3212,6 +3212,10 @@ function runSearch() {
   else if (cat === 'songs')    { html = songs.map(sngHtml).join(''); }
   if (!html.trim()) html = `<div class="sds-empty">No matches for &ldquo;${_sdsEsc(q)}&rdquo;.</div>`;
   resEl.innerHTML = html;
+  // …then let Deezer fill in underneath (debounced, appends its own section).
+  // The index only holds the persona's ~30 albums, so anything outside their
+  // shelf — "steely dan" — has no local match at all.
+  if (typeof sdsRemoteSearch === 'function') sdsRemoteSearch(q, ov);
 }
 
 // Result tap → browse to it (artist / album page), then close the overlay.
@@ -3821,6 +3825,11 @@ window.applyPersona = function (id) {
   applyPersonaClass();
   renderPersonaBar();
   renderViewer();
+  // Widen the shelf in the background. ~30 albums cycled fast enough that the
+  // bento started repeating; expandRecs pulls a few hundred off Deezer radios
+  // seeded by this persona's own artists. Deliberately NOT awaited — the home
+  // paints from the persona's records immediately and the rest arrive under it.
+  if (typeof expandRecs === 'function') expandRecs();
 };
 
 // Every screen instance carries the persona class so the skin sheet can bite.
@@ -3919,15 +3928,18 @@ function personaProfile(p) {
 function renderPersonaBar() {
   const list = window.PERSONAS || [];
   if (!list.length) return;
-  const opts = [{ id: '', name: 'Demo' }].concat(list.map(p => ({ id: p.id, name: p.profile.name })));
+  // No "Demo" entry: `eric` IS the demo now — a real person's catalogue reads
+  // better than the random one, and the slot was the widest button in a row
+  // that had already outgrown its section. `applyPersona('')` still works and
+  // still restores data.js's catalogue; it just has no button.
+  const opts = list.map(p => ({ id: p.id, name: p.profile.name }));
   const active = window.ACTIVE_PERSONA || '';
 
   const bar = document.getElementById('persona-bar');
   if (bar) {
     bar.innerHTML = opts.map(o =>
       `<button class="tb-pers${active === o.id ? ' active' : ''}"` +
-      ` onclick="applyPersona('${o.id}')"` +
-      ` title="${o.id || 'The original random-persona demo data'}">${o.name}</button>`).join('');
+      ` onclick="applyPersona('${o.id}')" title="${o.id}">${o.name}</button>`).join('');
   }
 
   const mb = document.getElementById('persona-bar-mb');
@@ -3955,7 +3967,7 @@ const DEVBOX_FIELDS = [
   { k: 'padL', label: 'Pad L', min: 0,   max: 32, step: 0.5, def: 12 },
   { grp: 'Line 1 — album · artist' },
   { k: 'l1x', label: 'X',     min: -20, max: 20, step: 0.5, def: 0 },
-  { k: 'l1y', label: 'Y',     min: -20, max: 20, step: 0.5, def: -2.5 },
+  { k: 'l1y', label: 'Y',     min: -20, max: 20, step: 0.5, def: -4.5 },
   { k: 'l1s', label: 'Size',  min: 0.6, max: 1.8, step: 0.01, def: 1 },
   { grp: 'Line 2 — rating' },
   { k: 'l2x', label: 'X',     min: -20, max: 20, step: 0.5, def: 0 },
@@ -4048,14 +4060,17 @@ window.devBoxCopy = function (btn) {
   else if (out) { out.select(); document.execCommand('copy'); done(); }
 };
 
-// Boot: restore the last-used persona, else stay on the demo data.
+// Boot: restore the last-used persona, else open as `eric` — with the Demo
+// button gone there is no way back to the unpersona'd data.js catalogue from
+// the UI, so booting into it would leave every button unlit.
 function initPersonas() {
   if (!(window.PERSONAS || []).length) return;
   applyPersonaSkins();
   let saved = '';
   try { saved = localStorage.getItem('spindeck-persona') || ''; } catch (e) {}
-  if (saved && personaById(saved)) applyPersona(saved);
-  else renderPersonaBar();
+  const start = (saved && personaById(saved)) ? saved
+              : (personaById('eric') ? 'eric' : window.PERSONAS[0].id);
+  applyPersona(start);
 }
 
 /* ── The category-aware content editor ────────────────────────
@@ -4441,5 +4456,483 @@ window.toggleProfFollow = function (btn) {
     btn._winkT = setTimeout(() => ring.classList.remove('v3-ring--wink'), 1000);
   }
 };
+
+/* ══════════════════════════════════════════════════════════════════════════
+   DEEZER AT RUNTIME — the recommendation pool + the search fallback
+   ══════════════════════════════════════════════════════════════════════════
+   A persona ships ~30 albums and the bento cycles the whole catalogue, so the
+   home screen ran out of records and started repeating. This widens it to a few
+   hundred WITHOUT shipping them: on every load a handful of the persona's own
+   artists seed `artist/<id>/radio`, and what comes back is folded into ARCHIVE.
+   Deezer's radio is itself randomised and the seeds are re-drawn each load, so
+   a reload genuinely deals a different shelf.
+
+   The same client backs search. The local index only knows the persona's own
+   albums, so "steely dan" found nothing; Deezer is queried as a fallback and
+   its hits open like any other album.
+
+   Records arrive LITE — radio carries title / artist / cover but no year, genre
+   or track count. That is everything the compact bento needs (it hides the
+   year), and `dzHydrate` fills the rest in one call when the album is opened.
+   Ratings and reviews come from the same seeded algorithm as
+   tools/build_personas.py, so a fetched album renders identically to a built-in
+   one and always shows the same numbers. */
+
+/* Tunable live from the rec box at the bottom of the desktop viewer, so these
+   are `let`. One album per artist by default: four in a row by the same act
+   read as the shelf repeating, which is the thing this feature exists to fix.
+   The fan-out is wider to compensate — breadth now comes from more ARTISTS. */
+let RECS_ENABLED    = true;
+let RECS_SEEDS      = 10;  // of the persona's own artists, re-drawn each load
+let RECS_PER_SEED   = 10;  // related artists taken per seed
+let RECS_PER_ARTIST = 1;   // albums taken per related artist — never two in a row
+let RECS_TARGET     = 100; // ceiling on the queue
+let   RECS_GEN        = 0;   // bumped on persona switch; in-flight deals bail
+
+/* Deezer allows roughly 50 requests / 5s per client. Filling the rec pool is
+   ~45 calls, which sat right on that line and starved whatever came next — the
+   search fallback would come back empty seconds after a page load, looking
+   like a broken feature. So every call is PACED, and a failure is retried once.
+
+   ⚠️ Only successful responses are cached. Caching the `null` from a throttled
+   call pinned the failure for the rest of the session: search stayed broken
+   until reload even once the quota had recovered. */
+const DZ_CACHE = new Map();
+const DZ_GAP = 115;          // ms between requests → ~43 per 5s, inside the limit
+let DZ_NEXT = 0;
+function dz(path, retry) {
+  if (DZ_CACHE.has(path)) return Promise.resolve(DZ_CACHE.get(path));
+  const url = 'https://api.deezer.com/' + path +
+              (path.indexOf('?') >= 0 ? '&' : '?') + 'output=jsonp';
+  const now = Date.now();
+  const at = Math.max(now, DZ_NEXT);
+  DZ_NEXT = at + DZ_GAP;
+  return new Promise(function (res) { setTimeout(res, at - now); })
+    .then(function () { return jsonp(url, 8000); })
+    .then(function (d) {
+      if (d && !d.error) { DZ_CACHE.set(path, d); return d; }
+      if (retry) return d;                        // one retry, then give up
+      DZ_NEXT = Date.now() + 1200;                // back off past the window
+      return dz(path, true);
+    });
+}
+
+// ── The generated-review algorithm, ported from tools/build_personas.py ──
+const DZ_QUOTES = [
+  'the kind of record you finish and immediately restart',
+  'front to back, not a single skip on this one',
+  'i was not emotionally prepared for the back half',
+  'production is immaculate, lyrics cut deeper every listen',
+  'grew on me. first listen confused me, tenth listen floored me',
+  'this is the one i put on when i want to feel something',
+  'genuinely reshaped what i thought this genre could do',
+  'overrated by half a star but still a great time',
+  'the sequencing alone deserves an award',
+  "sounds like a memory i haven't had yet",
+  'perfect headphones album, sounds thin on speakers though',
+  'everyone talks about the singles, the deep cuts are the real thing',
+  'criminally short. i wanted twenty more minutes',
+  "a mood more than an album, and that's a compliment",
+  'played this on a night drive and understood it completely',
+  'the mixing is doing so much heavy lifting here',
+  'not their best but their most honest',
+  "i've recommended this to six people and lost two friends",
+  'every song earns its place, which is rarer than it should be',
+  'the closer justifies the entire tracklist'
+];
+const DZ_NAMES = [['echoplex', 'EP'], ['staticfog', 'SF'], ['velvetblast', 'VB'],
+                  ['noisegate', 'NG'], ['dustpan', 'DP'], ['kira.wav', 'KW'], ['vxblank', 'VX']];
+const DZ_GRADS = ['linear-gradient(135deg,#e05a6b,#8a2f52)', 'linear-gradient(135deg,#2f7fe0,#1c3f8a)',
+                  'linear-gradient(135deg,#3fae7a,#1d6b4a)', 'linear-gradient(135deg,#b06ae0,#5f2f8a)',
+                  'linear-gradient(135deg,#e0a53f,#8a5f1d)', 'linear-gradient(135deg,#e05aa8,#8a2f6b)',
+                  'linear-gradient(135deg,#4fc3d0,#1d6b7a)'];
+const DZ_GEN = { 'Rap/Hip Hop': 'Hip-Hop', 'Electro': 'Electronic', 'Films/Games': 'Soundtrack',
+                 'Dance': 'Electronic', 'Soul & Funk': 'Soul', 'Asian Music': 'K-Pop' };
+
+function dzSeed() {
+  let h = 0;
+  for (let i = 0; i < arguments.length; i++) {
+    const p = String(arguments[i]);
+    for (let j = 0; j < p.length; j++) h = (h * 131 + p.charCodeAt(j)) & 0x7FFFFFFF;
+  }
+  return h;
+}
+function dzReviews(title, rating) {
+  const idxs = [], used = {};
+  for (let i = 0; i < 12 && idxs.length < 3; i++) {
+    const k = dzSeed(title, i) % DZ_QUOTES.length;
+    if (!used[k]) { used[k] = 1; idxs.push(k); }
+  }
+  while (idxs.length < 3) idxs.push((idxs[idxs.length - 1] + 1) % DZ_QUOTES.length);
+  const scale = rating >= 4.4 ? [5, 4.5, 4] : [4.5, 4, 4];
+  return idxs.map(function (pi, k) {
+    const u = dzSeed(title, 'u', k) % DZ_NAMES.length;
+    return { name: DZ_NAMES[u][0], init: DZ_NAMES[u][1], grad: DZ_GRADS[u],
+             rating: scale[k], text: DZ_QUOTES[pi] };
+  });
+}
+
+/* One Deezer album object (from radio, search or an artist's list) → an app
+   record. `_lite` marks the fields that endpoint did not carry. */
+function dzRecord(al, artist) {
+  const title = (al && al.title) || '';
+  const ar = artist || (al && al.artist) || {};
+  const rating = Math.round((3.8 + (dzSeed(ar.name, title) % 11) * 0.1) * 10) / 10;
+  return {
+    album: title, artist: ar.name || '',
+    year: parseInt((al.release_date || '').slice(0, 4), 10) || 0,
+    genre: '', tracks: al.nb_tracks || 10,
+    image: al.cover_xl || al.cover_big || al.cover_medium || '',
+    rating: rating,
+    reviewCount: 4000 + (dzSeed(title, 'rc') % 86) * 1000,
+    reviews: dzReviews(title, rating),
+    deezerId: al.id, artistId: ar.id,
+    _rec: true, _lite: true
+  };
+}
+
+// Fill year / genre / track count. One call, only when an album is opened.
+function dzHydrate(a) {
+  if (!a || !a._lite || a._hydrating || !a.deezerId) return Promise.resolve(a);
+  a._hydrating = true;
+  return dz('album/' + a.deezerId).then(function (d) {
+    if (d && !d.error) {
+      a.year   = parseInt((d.release_date || '').slice(0, 4), 10) || a.year;
+      const g  = (((d.genres || {}).data || [{}])[0] || {}).name || '';
+      a.genre  = DZ_GEN[g] || g || a.genre || 'Alternative';
+      a.tracks = d.nb_tracks || a.tracks;
+      a._lite  = false;
+    }
+    a._hydrating = false;
+    return a;
+  });
+}
+
+function dzKey(artist, album) { return String(artist || '').toLowerCase() + '::' + String(album || '').toLowerCase(); }
+
+/* Round-robin a list by artist: take one album from each artist in turn, so two
+   records by the same act are as far apart as the list allows. */
+function dzSpread(list) {
+  const byArtist = new Map();
+  list.forEach(function (a) {
+    const k = String(a.artist || '').toLowerCase();
+    if (!byArtist.has(k)) byArtist.set(k, []);
+    byArtist.get(k).push(a);
+  });
+  const lanes = shuffled([...byArtist.values()]);
+  const out = [];
+  for (let i = 0; out.length < list.length; i++) {
+    let placed = false;
+    lanes.forEach(function (lane) { if (lane[i]) { out.push(lane[i]); placed = true; } });
+    if (!placed) break;
+  }
+  return out;
+}
+
+/* Fold new albums into ARCHIVE + the bento queue. APPENDS to trendingAlbums
+   rather than re-shuffling it — the queue is indexed by position and the user
+   may be part-way through swiping it. */
+function dzAdopt(records) {
+  const A = window.ARCHIVE || [];
+  const have = new Set(A.map(function (a) { return dzKey(a.artist, a.album); }));
+  const fresh = [];
+  records.forEach(function (r) {
+    const k = dzKey(r.artist, r.album);
+    if (!r.artist || !r.album || !r.image || have.has(k)) return;
+    have.add(k); fresh.push(r);
+  });
+  if (!fresh.length) return 0;
+  window.ARCHIVE = A.concat(fresh);
+  /* Re-deal the WHOLE queue round-robin by artist — the persona's own records
+     and the fetched ones together, not recs appended behind them. Appending
+     meant swiping all ~30 of your own albums before a single recommendation
+     appeared, which is the same wall of familiar covers this feature was
+     meant to break up. Round-robin also keeps two records by one act apart;
+     they arrive grouped, one artist's batch at a time. */
+  const queue = (window.trendingAlbums || []).concat(fresh);
+  window.trendingAlbums = dzSpread(queue);
+  window.SEARCH_INDEX = null;   // memoised — must be dropped or search misses them
+  return fresh.length;
+}
+
+/* Releases that are not the thing a review app wants to show. `artist/<id>/
+   radio` was the first cut and it is a trap: seeded off a K-ballad singer it
+   comes back as forty "Crash Landing on You (Original Television Soundtrack),
+   Pt. 3" singles. Related-artist ALBUMS carry `record_type` and `nb_tracks`,
+   which is what makes real filtering possible. */
+/* ⚠️ Two things this endpoint does NOT give you: `nb_tracks` is absent
+   entirely, and `record_type` reads "album" for live records and compilations
+   just the same as for studio LPs. The title is the only real signal, so the
+   filter has to be generous — a raw Steely Dan list is Alive In America, Gold,
+   A Decade Of…, Showbiz Kids and Citizen 1972-1980 before it is Aja. */
+const DZ_JUNK = new RegExp([
+  'original (television |motion picture )?soundtrack', '\\bost\\b',
+  'karaoke', 'tribute', '\\bcovers?\\b', '\\bremix(es|ed)?\\b',
+  'greatest hits', '\\bbest of\\b', 'the essential', 'anthology', '\\bcollection\\b',
+  '\\bhits\\b', '\\blive\\b', '\\bunplugged\\b', '\\bdemos\\b', '\\bkaraoke\\b',
+  '(19|20)\\d{2}\\s*[-–]\\s*(19|20)\\d{2}',      // "1972 - 1980" — a compilation span
+  '\\bthe .{2,30} story\\b',
+].join('|'), 'i');
+function dzGoodAlbum(al) {
+  return !!al && !!al.title && (al.record_type || 'album') === 'album'
+      && !DZ_JUNK.test(al.title);
+}
+/* Rank an artist's releases by Deezer's own `fans` count and keep the head of
+   the list — the records people actually listen to — then draw randomly from
+   that shortlist so two loads don't pick the same ones. */
+function dzPickAlbums(list, n) {
+  const good = (list || []).filter(dzGoodAlbum)
+    .sort(function (a, b) { return (b.fans || 0) - (a.fans || 0); });
+  return shuffled(good.slice(0, Math.max(n, n * 2))).slice(0, n);
+}
+
+/* Deal a fresh shelf: a few of the persona's own artists → Deezer's RELATED
+   artists → the records those artists actually released. Two levels of
+   randomness (which seeds, which of their neighbours) is what makes a reload
+   feel like a different day rather than the same twenty albums. */
+async function expandRecs() {
+  if (!RECS_ENABLED) return 0;
+  const gen = ++RECS_GEN;
+  const own = (window.ARCHIVE || []).filter(function (a) { return a.artistId && !a._rec; });
+  if (!own.length) return 0;
+  let added = 0;
+  const seen = {};
+  const seeds = shuffled(own).slice(0, RECS_SEEDS);
+  for (const s of seeds) {
+    if (gen !== RECS_GEN) return added;                  // persona switched under us
+    if ((window.ARCHIVE || []).length >= RECS_TARGET) return added;
+    const rel = await dz('artist/' + s.artistId + '/related?limit=12');
+    if (gen !== RECS_GEN) return added;
+    const near = shuffled((((rel || {}).data) || []).filter(function (a) {
+      if (!a.id || seen[a.id]) return false;
+      seen[a.id] = 1; return true;
+    })).slice(0, RECS_PER_SEED);
+
+    // One seed's neighbours are fetched in PARALLEL — serially this took ~12s
+    // to fill the shelf, which is long enough that the first swipes still see
+    // the short catalogue. Deezer's limit is ~50 requests / 5s and a seed is
+    // only RECS_PER_SEED of them, so the burst is well inside it.
+    const lists = await Promise.all(near.map(function (ar) {
+      return dz('artist/' + ar.id + '/albums?limit=20').then(function (r) { return { ar: ar, r: r }; });
+    }));
+    if (gen !== RECS_GEN) return added;
+    lists.forEach(function (x) {
+      const room = RECS_TARGET - (window.ARCHIVE || []).length;
+      if (room <= 0) return;
+      const good = dzPickAlbums(((x.r || {}).data) || [], RECS_PER_ARTIST);
+      // Adopted per seed rather than in one batch at the end, so the queue
+      // grows while the rest is still in flight.
+      added += dzAdopt(good.map(function (al) { return dzRecord(al, x.ar); }).slice(0, room));
+    });
+  }
+  return added;
+}
+window.expandRecs = expandRecs;
+
+/* ── Search fallback ──────────────────────────────────────────────────────
+   Runs alongside the local index, not instead of it: the persona's own records
+   stay on top and Deezer fills in underneath. */
+let SDS_REMOTE_T = 0;
+function sdsRemoteSearch(q, ov) {
+  clearTimeout(SDS_REMOTE_T);
+  if (!q || q.length < 2) return;
+  SDS_REMOTE_T = setTimeout(function () {
+    Promise.all([
+      dz('search/artist?limit=4&q=' + encodeURIComponent(q)),
+      dz('search/album?limit=8&q=' + encodeURIComponent(q))
+    ]).then(function (res) {
+      const ar = res[0], al = res[1];
+      const inp = ov.querySelector('.sds-input');
+      if (!inp || inp.value.trim().toLowerCase() !== q) return;   // typed on since
+      const resEl = ov.querySelector('.sds-results');
+      if (!resEl) return;
+
+      const last = ov._last || (ov._last = { artists: [], albums: [], songs: [] });
+      const known = new Set((last.albums || []).map(function (a) {
+        return dzKey(a.artist || (a.ref || {}).artist, a.album || (a.ref || {}).album);
+      }));
+      const knownArtists = new Set((last.artists || []).map(function (a) {
+        return String(a.name || '').toLowerCase();
+      }));
+
+      const artists = (((ar || {}).data) || [])
+        .filter(function (a) { return a.name && !knownArtists.has(a.name.toLowerCase()); })
+        .map(function (a) {
+          return { name: a.name, image: a.picture_xl || a.picture_big || '',
+                   count: a.nb_album || 0, _dzArtist: { id: a.id, name: a.name } };
+        });
+      const albums = (((al || {}).data) || [])
+        .filter(function (a) { return a.title && a.artist && !known.has(dzKey(a.artist.name, a.title)); })
+        .map(function (a) {
+          const rec = dzRecord(a, a.artist);
+          return { album: rec.album, artist: rec.artist, image: rec.image, year: rec.year, ref: rec };
+        });
+      if (!artists.length && !albums.length) return;
+
+      const aOff = (last.artists || []).length, bOff = (last.albums || []).length;
+      last.artists = (last.artists || []).concat(artists);
+      last.albums  = (last.albums || []).concat(albums);
+
+      const rows =
+        artists.map(function (a, i) {
+          return '<button class="sds-row" data-type="artist" data-i="' + (aOff + i) + '">' +
+            '<span class="sds-thumb sds-thumb--round" style="background-image:url(\'' + a.image + '\')"></span>' +
+            '<span class="sds-row-main"><span class="sds-row-t">' + _sdsEsc(a.name) + '</span>' +
+            '<span class="sds-row-s">Artist' + (a.count ? ' · ' + a.count + ' albums' : '') + '</span></span></button>';
+        }).join('') +
+        albums.map(function (a, i) {
+          return '<button class="sds-row" data-type="album" data-i="' + (bOff + i) + '">' +
+            '<span class="sds-thumb" style="background-image:url(\'' + a.image + '\')"></span>' +
+            '<span class="sds-row-main"><span class="sds-row-t">' + _sdsEsc(a.album) + '</span>' +
+            '<span class="sds-row-s">Album · <b>' + _sdsEsc(a.artist) + '</b>' +
+            (a.year ? ' · ' + a.year : '') + '</span></span></button>';
+        }).join('');
+
+      const old = resEl.querySelector('.sds-sec--remote');
+      if (old) old.remove();
+      const empty = resEl.querySelector('.sds-empty');
+      if (empty) empty.remove();
+      resEl.insertAdjacentHTML('beforeend',
+        '<div class="sds-sec sds-sec--remote"><div class="sds-sec-hd">More on Deezer</div>' + rows + '</div>');
+    });
+  }, 280);
+}
+
+/* Wrap the two openers so a fetched record behaves like a built-in one: an
+   album fills in its missing metadata, and an artist we have never seen has
+   their albums pulled into ARCHIVE first — openArtistPageFor builds the page by
+   filtering ARCHIVE, so without that it would open an empty shell. */
+const _sdsOpenResult = sdsOpenResult;
+sdsOpenResult = function (type, i) {
+  const ov = document.getElementById('sd-search');
+  const last = (ov && ov._last) || {};
+  const a = type === 'artist' ? (last.artists || [])[i] : null;
+  if (a && a._dzArtist) {
+    closeSearch();
+    dz('artist/' + a._dzArtist.id + '/albums?limit=40').then(function (r) {
+      // Same junk filter as the rec pool — a legacy act's raw album list is
+      // half live records and compilations ("A Decade Of Steely Dan", "Gold").
+      const raw = (((r || {}).data) || []);
+      const good = raw.filter(dzGoodAlbum)
+        .sort(function (x, y) { return (y.fans || 0) - (x.fans || 0); });
+      dzAdopt((good.length ? good : raw).slice(0, 12)
+        .map(function (al) { return dzRecord(al, a._dzArtist); }));
+      window.openArtistPageFor(a._dzArtist.name);
+    });
+    return;
+  }
+  return _sdsOpenResult.call(this, type, i);
+};
+
+const _openAlbumPage = window.openAlbumPage;
+window.openAlbumPage = function (album, pinnedReview) {
+  const out = _openAlbumPage.apply(this, arguments);
+  if (album && album._lite) {
+    dzHydrate(album).then(function () {
+      if (window.activeAlbum !== album) return;
+      homeShells().forEach(function (s) { if (s._album === album) populateReviewPanel(s); });
+    });
+  }
+  return out;
+};
+
+/* ── Rec box: the recommendation knobs, live ──────────────────────────────
+   A strip along the bottom of the desktop viewer. It lives inside #viewer, so
+   it is desktop-only for free — the mobile prototype hides that whole element.
+   Changing a knob re-deals immediately, which is the point: the numbers are a
+   feel decision and reading them off a diff is useless. */
+const RECBOX_FIELDS = [
+  { k: 'seeds',    label: 'Seeds',        min: 1, max: 20, get: () => RECS_SEEDS,      set: v => RECS_SEEDS = v,
+    hint: 'your own artists used as starting points' },
+  { k: 'perSeed',  label: 'Related /seed', min: 1, max: 20, get: () => RECS_PER_SEED,   set: v => RECS_PER_SEED = v,
+    hint: 'neighbours pulled per seed artist' },
+  { k: 'perArt',   label: 'Albums /artist', min: 1, max: 6, get: () => RECS_PER_ARTIST, set: v => RECS_PER_ARTIST = v,
+    hint: 'keep at 1 for one album per artist' },
+  { k: 'target',   label: 'Max queue',    min: 40, max: 400, step: 10, get: () => RECS_TARGET, set: v => RECS_TARGET = v,
+    hint: 'ceiling on the whole shelf' },
+];
+
+function recBoxCounts() {
+  const A = window.ARCHIVE || [];
+  const recs = A.filter(function (a) { return a._rec; });
+  const artists = new Set(recs.map(function (a) { return a.artist; }));
+  return A.length + ' albums · ' + recs.length + ' recommended · ' +
+         artists.size + ' new artists · ~' +
+         (RECS_SEEDS * (1 + RECS_PER_SEED)) + ' requests';
+}
+
+function recBoxSync() {
+  const el = document.getElementById('recbox');
+  if (!el) return;
+  el.querySelector('.rb-count').textContent = recBoxCounts();
+  RECBOX_FIELDS.forEach(function (f) {
+    const inp = el.querySelector('[data-k="' + f.k + '"]');
+    if (inp && document.activeElement !== inp) inp.value = f.get();
+    const out = el.querySelector('[data-v="' + f.k + '"]');
+    if (out) out.textContent = f.get();
+  });
+  const t = el.querySelector('.rb-toggle');
+  if (t) t.classList.toggle('on', !!RECS_ENABLED);
+}
+
+/* Drop everything fetched and deal again from scratch. `RECS_GEN` is bumped by
+   expandRecs, so any deal still in flight drops its results on the floor
+   instead of racing this one. */
+async function recBoxRedeal(btn) {
+  RECS_GEN++;
+  const A = window.ARCHIVE || [];
+  window.ARCHIVE = A.filter(function (a) { return !a._rec; });
+  window.trendingAlbums = (window.trendingAlbums || []).filter(function (a) { return !a._rec; });
+  if (window.featuredAlbum && window.featuredAlbum._rec) {
+    window.featuredAlbum = window.ARCHIVE[0];
+    window.activeAlbum = window.featuredAlbum;
+  }
+  window.SEARCH_INDEX = null;
+  if (btn) btn.classList.add('rb-busy');
+  recBoxSync();
+  await expandRecs();
+  if (btn) btn.classList.remove('rb-busy');
+  recBoxSync();
+  renderViewer();
+}
+
+function initRecBox() {
+  const viewer = document.getElementById('viewer');
+  if (!viewer || document.getElementById('recbox')) return;
+  const el = document.createElement('div');
+  el.id = 'recbox';
+  el.innerHTML =
+    '<button class="rb-toggle" title="Turn the recommendation pool on or off">Recs</button>' +
+    RECBOX_FIELDS.map(function (f) {
+      return '<label class="rb-field" title="' + f.hint + '">' +
+        '<span class="rb-lbl">' + f.label + '</span>' +
+        '<input type="range" data-k="' + f.k + '" min="' + f.min + '" max="' + f.max +
+        '" step="' + (f.step || 1) + '" value="' + f.get() + '">' +
+        '<span class="rb-val" data-v="' + f.k + '">' + f.get() + '</span></label>';
+    }).join('') +
+    '<button class="rb-go">Re-deal</button>' +
+    '<span class="rb-count"></span>';
+  viewer.appendChild(el);
+
+  el.querySelectorAll('input[type="range"]').forEach(function (inp) {
+    inp.addEventListener('input', function () {
+      const f = RECBOX_FIELDS.find(function (x) { return x.k === inp.dataset.k; });
+      if (!f) return;
+      f.set(+inp.value);
+      recBoxSync();
+    });
+    // Re-deal on release rather than on every tick of the slider — dragging
+    // Seeds from 2 to 14 would otherwise fire a dozen deals at the API.
+    inp.addEventListener('change', function () { recBoxRedeal(el.querySelector('.rb-go')); });
+  });
+  el.querySelector('.rb-toggle').addEventListener('click', function () {
+    RECS_ENABLED = !RECS_ENABLED;
+    recBoxSync();
+    recBoxRedeal(el.querySelector('.rb-go'));
+  });
+  el.querySelector('.rb-go').addEventListener('click', function (e) { recBoxRedeal(e.currentTarget); });
+  recBoxSync();
+  setInterval(recBoxSync, 1200);   // the first deal lands a few seconds in
+}
 
 document.addEventListener('DOMContentLoaded', init);
