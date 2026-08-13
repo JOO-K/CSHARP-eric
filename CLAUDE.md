@@ -44,8 +44,12 @@ standalone screens**; they're live sub-states of the home shell (see below).
 | `wall` | Album Wall | Float·Dark, Float·Light |
 | `song` | Song / Track | Float·Dark, Float·Light |
 | `profile` | Profile | Funky·Dark, Funky·Light (theme 01) |
+| `profile-edit` | Edit Profile (customising) | Funky·Dark, Funky·Light |
 | `playlists` | Playlists | Float·Dark, Float·Light |
+| `playlist-new` | New Playlist (creation) | Float·Dark, Float·Light |
 | `playlist` | Playlist Page (detail) | Float·Dark, Float·Light |
+| `notifications` | Notifications (activity inbox) | Float·Dark, Float·Light |
+| `settings` | Settings | Float·Dark, Float·Light |
 
 `auth`/`onboarding`/`song` use the older `.app-screen` component CSS re-skinned to
 the current palette via the **`sd-theme-dark` / `sd-theme-light`** scope classes
@@ -66,6 +70,123 @@ highlighted entry. The rail is `position:absolute` over `#stage` so the phone
 centers in the true middle of the viewport (`#phone-container` fills full width).
 
 ---
+
+## Dev Box (`initDevBox` in app.js, `#devbox` in index.html)
+
+A tuning panel floating on the right of `#stage`, behind the toolbar's **⚙ Dev**
+button. Desktop viewer only. It live-tunes the **compact bento's info box** —
+block gap/padding, plus X · Y · Size for each of the two lines — and prints the
+CSS.
+
+- The sliders write a `<style id="devbox-live">` appended to `<head>`, and
+  **`devBoxCss()` produces both that and the Copy CSS output**, so what's on
+  screen is exactly what gets pasted. No second code path to drift.
+- Rules are scoped `.s-home-v3:not(.s-home-v3--review)` — (0,2,0), enough to
+  beat the base `.v3-blue-info-row` / `.v3-blue-stars-row` declarations without
+  touching the review/album/artist state.
+- **The defaults are the live values in app.css**, so an untouched panel emits
+  the current layout rather than resetting it. If you change those declarations
+  in app.css, update `DEVBOX_FIELDS[].def` to match or the panel will silently
+  disagree with the stylesheet.
+- Size is a `scale()` on the row (with `transform-origin: left center`), not a
+  font-size — the children carry fixed px sizes, so scaling the row is the lever
+  that doesn't require converting all of them to `em`.
+
+**The sample-review quote is gone from the bento** (`.v3-blue-quote { display:
+none }`). It was already hidden in review mode, so this retires it everywhere;
+the markup and the typewriter in app.js remain and just paint into a hidden
+node, so deleting that one rule brings it back. With two lines instead of three,
+`.v3-blue` moved off `space-between` (which would shove them to the far top and
+bottom of the box) onto a centred stack.
+
+## Personas (`personas/` → `personas.js` → `applyPersona` in app.js)
+
+The mockup can be shown as **four different people**, each with their own
+catalogue and their own look. The switcher lives in the desktop toolbar and the
+mobile bar (`renderPersonaBar()` fills both from one markup string).
+
+| id | who | look |
+|----|-----|------|
+| *(none)* | **Demo** — data.js's catalogue + the random persona. The app as it was before any of this. | Float·Dark |
+| `eric` | **Eric** — built from his real Spotify artist capture (`NEWSPOTIFYARTISTS.png`, the same one behind `tools/artists.txt`) | warm amber |
+| `kpop` | **Kpopper** | glossy pink |
+| `oldies` | **Hank** — classic rock + oldies | warm paper, serif |
+| `hyperpop` | **16yearold** — new-age electronic pop | neon mint, mono |
+
+Each list mixes **hits with deep cuts**, at ~25–30 albums. The home bento
+cycles the entire catalogue (`albumSeq()` = featured + all of
+`trendingAlbums`), so a short list makes the app look empty — that is what a
+9-album persona looked like.
+
+### Where the data comes from
+`personas/personas.csv` (identity + skin tokens, one row per persona) and
+`personas/taste/<id>.csv` (`artist,album,track,rank`) are **the hand-maintained
+source**. `tools/build_personas.py` resolves each row against the **Deezer
+public API** and writes `personas.js`. See `personas/README.md`.
+
+- **Only `artist` is required.** Blank `album` → the build picks their
+  most-played real album. For K-pop that lands on whatever single is charting,
+  so those are pinned by name — same for legacy acts, where the top-tracks tally
+  favours compilations.
+- **Two traps the matcher exists to dodge:** short group names collide (Deezer
+  lists several acts called *Ive*, *BTS*, *f(x)*), so `find_artist` keeps the
+  **most-followed exact name match** — search order does not put the famous one
+  first. And a global album search returns cover bands ("The Beatles Complete On
+  Ukulele" outranked The Beatles), so albums are looked up **within the resolved
+  artist's own catalogue**, with a name check on the way out.
+- Ratings/reviews are generated in the script, **seeded off the album title**,
+  so a rebuild produces identical numbers — no git churn.
+- **Artwork is a Deezer CDN URL, never a downloaded file** (`ARTWORK_AT_SCALE.md`).
+  77 albums add ~0 bytes to the repo. This is also what makes the planned move
+  to Dropbox a re-run of the script rather than a rewrite.
+
+### Personas deal a fresh home every time
+A persona's identity is authored and fixed, so it can't get its variety the way
+the demo does (`randomizeProfile` re-rolls an entire new person each visit). It
+comes from the home page instead: `reshuffleHome()` re-deals the featured album,
+the bento's swipe queue, the you-may-know rails and the friend feed on every
+switch — and on every page load, since `initPersonas` re-applies the saved one.
+The toolbar's **Shuffle** runs the same function.
+
+`personaFeed()` generates the feed rather than remapping data.js's 1:1 (which
+produced an identical feed every load): people from the demo's cast, albums
+drawn at random from the persona's own shelf, and the **quote taken from that
+album's own generated reviews**, so a feed card and its album page agree.
+
+⚠️ `trendingAlbums` takes the **whole** remaining catalogue. The name says five
+and data.js's comment says five, but `albumSeq()` is `featured + trendingAlbums`
+— slicing it to five silently shrinks the bento's swipe queue to six albums.
+`shuffleAlbums` used to do exactly that.
+
+### Switching (`applyPersona(id)`)
+Swaps `ARCHIVE` wholesale, then re-derives everything from it —
+`featuredAlbum` / `trendingAlbums` / `activeAlbum`, the profile, and the home
+feed. ⚠️ **Anything cached off `ARCHIVE` must be cleared here or it serves the
+previous persona:** `window._KNOW` (the you-may-know rails memo) and
+`_pinnedReview` are, and `FRIEND_ACTIVITY` is rebuilt by `personaFeed()` —
+data.js's feed names demo albums by title, so under a persona every card would
+point at a record that no longer exists. Add to that list when you add a cache.
+
+`applyPersonaClass()` re-stamps `.persona-<id>` on every `.app-screen` inside
+`renderViewer`, because renderSingle/renderMulti rebuild the screens from
+scratch. The skin itself is one injected `<style id="persona-skins">`.
+
+### Skins carry TWO colour sets
+`personaSkinCss` emits a dark block on `.persona-<id>` and a light block on
+`.persona-<id>.s-home-v3--light, .persona-<id>.sd-theme-light`. **A persona
+with one colour set painted both viewer variants the same** and the Dark|Light
+pair stopped being a comparison — hence `accentD/bgD/inkD/…` **and**
+`accentL/bgL/inkL/…` in the CSV. `font` and `radius` are shared.
+
+⚠️ Build the descendant selectors per base, not by joining bases with a comma:
+`"a, b .x"` scopes `.x` under `b` only, silently dropping every light screen but
+the last. That's what the `each(bases, kids)` cross-product in
+`personaSkinCss` is for.
+
+> **The skin is still a broad first pass.** The screens were built on hard-coded
+> hex, so a persona overrides the big surfaces rather than re-declaring a token
+> set. Per-persona detail work is open — starting with the header wordmark and
+> icons washing out on the light backgrounds.
 
 ## Data Layer (`data.js`)
 
@@ -307,6 +428,82 @@ Card geometry comes from Eric's `PlaylistBox_NEW.svg` / `PlaylistHLBox_NEW.svg` 
 
 Apostrophes in names are escaped with the same inline `replace(/'/g, '\\\'')` idiom the wall uses. (`openArtistPageFor` in app.js and the `.pl2-artist`/`.pl2-song`/`.pl2-genre` CSS survive from the removed tabs, currently unused.)
 
+## New Playlist (`playlistNewHtml(light)` + `PLNEW` in `app.js`)
+
+The creation page behind the Playlists **"+"** (`.pl2-add`, which was a dead
+`event.stopPropagation()` stub) — `openNewPlaylist()` resets state, pushes the
+back stack and navigates to `playlist-new`.
+
+**The concept:** it's built on the *same geometry as the playlist detail page* —
+Eric's `PlaylistPageBox.svg` panel path, the image panel, the CD in its swoop —
+so the form reads as the page you're filling in. Pick a cover and the panel + CD
+both take it; type a name and it lands in the title; add songs and the count
+ticks up. By the time you press Create you've already seen the result.
+
+- **Fields:** cover · name (inline input styled as an editable `.plp-name`) ·
+  **Public / Private** pills in the slot the detail page gives the heart ·
+  add-songs (search **or** library) + a removable chosen list. No description
+  field — the data model and the detail page have nowhere to show one.
+- **Layout order** (deliberate, don't shuffle it): hero → **Create** → search +
+  Library → **chosen songs** → results. Create sits at the top so it stays
+  reachable no matter how many songs get added, and the chosen list sits directly
+  under the search so picks stack up beneath it as you go. There's no "Songs"
+  heading, and `plnewChosenHtml()` returns **nothing** when the list is empty
+  (`.plnew-chosen:empty` collapses) — the results hint already says what to do,
+  so a placeholder there would only push the results down.
+- **Cover is a real upload.** The well is a `<label>` wrapping a hidden
+  `<input type="file">`, so the whole panel opens the native picker;
+  `plnewUpload()` reads it to a `data:` URL into `PLNEW.cover` (which survives
+  re-renders — the file input's own value does not). There is deliberately **no
+  cover suggestion strip**; covers are custom art, per the sample data.
+- **Two ways to add songs**, side by side under the chosen list:
+  - **Search** (`plnew-searchbar`) over `plnewPool()` — every `songsFor()` track
+    across `ARCHIVE`, flattened once. Keyed `album::trackNo::title`; **the track
+    number matters**, because `songsFor` picks titles from a word list and one
+    album can end up with two tracks of the same name, which keying on
+    album+title alone would merge into one row.
+  - **Library** (`plnew-libbtn` → `PLNEW.mode = 'library'`) — pulls from the
+    playlists you already have, since the Playlists screen *is* the library in
+    this app. Lists `plLists()`, tap one to open its tracks, add individually or
+    **Add all** (`plnewAddAll`, deduped by key). Typing in search switches the
+    mode back.
+- **Nothing is listed until you act** — no query and no library selection shows a
+  one-line hint, not a suggestion list. (An earlier cut pre-filled suggestions
+  from `featuredAlbum` + `trendingAlbums`; note if you ever reinstate that,
+  **`trendingAlbums` is the whole archive minus the feature — ~145, not five,
+  despite the name** — unsliced it renders hundreds of rows and janks the page.)
+- **Create** (`plnewCreate`) builds a real playlist object, `unshift`es it onto
+  `window.PLNEW_CREATED`, and navigates to its detail page. `plLists()` spreads
+  `PLNEW_CREATED` in at the **front** of the library, and `playlistPageHtml`
+  renders `pl.songs` when present instead of its seeded stand-in tracklist — so a
+  playlist you build shows the actual songs you picked. Disabled until it has a
+  name; 0 songs is allowed and the detail page shows a `.plp-empty` state.
+  No upload? the cover falls back to the **first track's album art**, and only to
+  `images/spindeck-appicon.png` if the playlist is empty too, so a library card
+  is never a broken image.
+- **`plTracksFor(pl)`** (screens.js) is the single source of a playlist's
+  tracklist — real `pl.songs` if it has them, else the seeded stand-in. Both the
+  detail page and the library browser call it, so they can't drift; its keys
+  match `plnewPool()`'s so the picker knows what's already added.
+
+**Rendering discipline — read this before touching it.** State lives in `PLNEW`;
+the screen paints it two ways:
+1. `playlistNewHtml()` renders the current state **directly** (the getter pattern
+   the other dynamic screens use), so a fresh render is always correct on its own.
+2. `plnewSync()` patches the **live** instances after an edit, rather than
+   re-rendering — a full re-render would blow away the caret of the field being
+   typed in. It also keeps the viewer's side-by-side dark/light variants agreeing
+   (the same problem the onboarding wizard solves with `obSync`). Inputs are only
+   written when the value actually differs, so the instance being typed in is
+   never touched. The markup builders (`plnewCoversHtml` / `plnewChosenHtml` /
+   `plnewResultsHtml` / `plnewCountLabel` / `plnewCreateLabel`) are shared by both
+   paths.
+
+An earlier cut relied on a post-render `plnewInit` hook alongside the `obInit`
+calls in `renderViewer`'s rAF; it silently never fired when arriving via the "+"
+(the screen rendered as a bare shell with empty containers) and was removed.
+**Don't reintroduce a render hook here** — the getter is what makes it reliable.
+
 ## Playlist Page (`playlistPageHtml(light)` in screens.js)
 
 The detail page for one song playlist. Geometry from Eric's `PlaylistPageBox.svg` (688×303): the hero is an `aspect-ratio: 688/303` box — image panel + CD are positioned divs (percent coords straight from the SVG); the info panel and Popular dog-ear are **his exact SVG paths inlined** (`.plp-shape-panel`/`.plp-shape-tag`, filled via CSS per theme). The info panel has a concave swoop carved from its bottom-right; the spinning CD (reuses `v3spin` + `.v3-cd-hole`) seats in it and overflows below the panel.
@@ -353,12 +550,169 @@ top gap** (`.prof2-userbar`). Rendered **Funky·Dark / Funky·Light**; tokens
   writes `PROFILE.favs[slot]` and `renderViewer()`s.
 - **Social:** `.prof-social` tab → `toggleProfSocial` opens `.prof-soc-menu`;
   `openSocial(id)` deep-links to instagram/x/soundcloud + the stored handle.
-- The pencil in the userbar is a placeholder edit affordance (no handler yet).
+- The card's pencil (`.prof-edit`) opens **Edit Profile** — see below.
 - Being an `.s-home-v3`, `populateHomeData` runs on it (now-playing bar) — the
   bento-only calls no-op just like on wall/playlists.
 - **Deploy note:** `images/profile-skin-01.png` is a new asset — `git add` it.
 
 ---
+
+## Edit Profile (`profileEditHtml` + `PFEDIT` in `app.js`)
+
+The customising page behind the profile card's pencil (`.prof-edit`, previously a
+dead `event.stopPropagation()` stub). `openProfileEdit()` seeds the draft, pushes
+the back stack and navigates to `profile-edit`.
+
+**There is no form.** The page *is* the profile — the same card plus the same
+Playlists and Favourite-songs sections — drawn from the draft, with every
+editable region turned into a **slot**:
+
+- a **filled** slot carries `.pfe-slot`: a persistent gold **"+" badge**
+  (`::before`) so it reads as swappable without having to hover, plus a dashed
+  outline (`::after`) on hover. Tapping swaps its content;
+- an **empty** one renders a `.pfe-add` "+" tile instead of collapsing;
+- both open the same popup, so nothing extra is added to the page.
+
+The top bar reads **back pill · "Editing profile" · Save changes**, so the mode is
+labelled rather than implied.
+
+Badge placement is per-slot (`.prof-pic`, `.prof-info`, `.prof-meta`,
+`.prof-name-tab-lbl`, `.prof-alb`, `.prof-pl`, `.prof-song` each get their own
+offsets) because the card's regions butt right up against each other — a badge
+hung off a generic corner lands on a neighbour or covers its own text. Note the
+discs get `pfe-slot` from `profCanvasHtml`'s slot branch, **not** from the `ed()`
+helper the other card regions use; they're built separately.
+
+### The content editor (`openProfEditor(kind, slot)`)
+One bottom sheet, reskinned by the **kind** it's opened with — that's what makes
+"search depending on the category" work:
+
+| kind | opened from | popup |
+|------|-------------|-------|
+| `album` | the five CDs on the card | searches `ARCHIVE` |
+| `song` | Favourite songs rows | searches `plnewPool()` (every archive track) |
+| `playlist` | Playlists tiles | searches `plLists()` |
+| `photo` | the card's picture | grid of `PROFILE_PHOTOS` + a real upload tile |
+| `name` | the name banner | small form (display name + handle) |
+| `text` | bio / location | small form; config in `PFE_TEXT` |
+
+`openProfPicker(slot)` is kept as a thin wrapper (`→ openProfEditor('album')`)
+because the *non-edit* profile card's discs still call it.
+
+### State
+`PFEDIT` is a **draft** copied from `PROFILE` on open, so **Cancel genuinely
+discards** and Save is the only thing that commits. Every pick writes through
+`profFavTarget()` — the draft when the edit page is open, `PROFILE` otherwise.
+`pfeditDraft()` seeds it lazily so the screen also works opened straight from the
+viewer's left rail.
+
+No sync layer and no post-render hook: each pick re-renders, and since nothing on
+the page itself is typed into (the only inputs live inside the popup) a full
+re-render can't steal a caret.
+
+### Two traps
+⚠️ **`pfeditSave` must NOT call `goBack()`.** `captureScreenSnap()` stores
+`{...window.PROFILE}` for the `profile` screen and `goBack` does
+`Object.assign(window.PROFILE, snap.profile)` — going back after a save would
+restore the pre-edit copy and **silently revert it**. Save drops that snapshot
+(`backStack.pop()`) and calls `navigate('profile', 'back')`; the `back` direction
+is also what stops `navigate` re-rolling the random persona (`randomizeProfile`).
+Cancel *does* use `goBack`, where restoring the snapshot is exactly right.
+
+⚠️ **`pfeditSave`'s `Object.assign` is a whitelist** — a field the page edits but
+the list omits is silently dropped on save even though the UI looked like it
+worked. It currently covers name/handle/bio/location/occupation/pic/favs/socials
+**plus `favSongs`, `playlistNames`, `playlistCovers`**. Add to it when you add a
+slot.
+
+### CSS gotcha
+`.pfe-slot` must **not** set `position: relative`. The card's regions
+(`.prof-pic`, `.prof-info`, `.prof-meta`, `.prof-name-tab-lbl`, `.prof-alb`) are
+absolutely positioned from the traced SVG coordinates, and relative drops them
+back into normal flow and wrecks the card. They already establish a containing
+block for `::after`; only the flow-level rows (`.prof-pl`, `.prof-song`) get
+`position: relative` added.
+
+### Shared card
+**`profCanvasHtml(P, opts)`** (screens.js) is the profile CARD, extracted so the
+profile screen and the edit page can't drift apart. `opts.edit` drops the Follow
+button and the pencil (it's your own page), turns each region into a slot, and
+sends every album disc straight to the picker instead of the listen/platforms
+menu. It takes the record to draw, so the edit page passes the **draft**.
+
+**Not editable here:** the stats (generated persona data), Recently-rated (that's
+activity, not customisation), and socials — the profile card doesn't render them,
+so per the "no extra UI" rule they get no slot. **Not built:** a theme picker;
+"theme 02 (angular)" doesn't exist yet and a control for it would just be another
+dead affordance.
+
+## Notifications (`notificationsHtml` + `ntfItems` in `screens.js`)
+
+The activity inbox behind the header's **bell** bubble. Standard `.s-home-v3`
+shell (`appHeader` · `v3-body` · `nowBar` · `bottomNav('home')`), back pill →
+Home. Shares its scoped colour tokens with Settings (see below).
+
+- **Data** — `ntfItems()` is a hand-authored array, not generated: the copy
+  carries the app's voice and each row names a real `ARCHIVE` album so the art
+  resolves. `ntfPeople()` maps each community handle (the same accounts that
+  author the sample playlists in `plLists`) to ONE `rp-*` photo, so a person
+  looks like themselves everywhere they appear.
+- **Row anatomy** — avatar + kind badge · copy · time · trailing slot. The
+  trailing slot is an album thumb, or a **Follow** button on a follow row
+  (`ntfFollowBack`). **System rows** (`release` / `milestone`) have no person,
+  so the album cover becomes the avatar — and they get *no* trailing thumb,
+  which would just be the same cover twice (`isSys` guards both).
+- **Copy** — the object (album / playlist) is optional; a follow row has none,
+  so `line()` must not interpolate it blindly. Album names render regular
+  weight, people/artists bold, per the app-wide convention.
+- **No page title and no filter pills** — both were removed; the rows start
+  straight under the top row (back pill · unread chip · Mark all read), which is
+  what the screen looked best as. `ntfTab` (the pill handler) and the rows'
+  `data-tab` attributes survive unused, so a `.ntf-bar` of `.wall2-cat` pills
+  brings filtering straight back.
+- **Unread** — `.ntf-row--new` fills the row and draws an accent **left rail**
+  (`::after`). It is deliberately not a top-right dot: the right edge is
+  occupied by the trailing thumb / Follow button. `ntfMarkAll` strips the class,
+  removes the `.ntf-count` chip (now in the top row, beside its own button) and
+  disables the button.
+- Group headers are `position: sticky` against `.v3-body` (the scroller) and
+  need the opaque `--sd-bg` fill so rows don't ghost through them.
+
+## Settings (`settingsHtml` in `screens.js`)
+
+Behind the header's **gear** bubble; back pill → Profile. A grouped list built
+from small local helpers inside `settingsHtml`: `setRow(label, sub, control,
+onclick)` · `section(title, rows)` · `service(...)`, with four control types —
+switch (`sdToggle`), segmented picker (`sdSeg`), status pill (`sdConnect`), and
+a chevron link. Sections: Appearance · Connected services · Playback ·
+Notifications · Privacy · About.
+
+- The account card up top reads `window.PROFILE` (so it follows the random
+  persona) and taps through to Edit Profile. **Sign out** (`navigate('auth')`)
+  sits directly beneath it — account actions together at the top, not buried
+  under six sections of preferences — so the card's `margin-bottom` is tight
+  (9px) and `.set-signout` carries the 20px gap down to Appearance.
+- **Show listening activity** heads the *Connected services* card rather than
+  living in Privacy: it governs what those services broadcast, so it reads as
+  the master switch above them.
+- The Theme segment's initial active option follows the variant being rendered
+  (Dark variant → "Dark"), so the two mockups don't contradict their own chrome.
+  It's presentational — it does not re-theme the screen.
+- On a service row the **pill alone** carries connect state; the sub-label stays
+  the description of what the service gives you either way.
+
+### Shared tokens
+`.s-ntf, .s-set` define `--sd-bg / --sd-ink / --sd-ink2 / --sd-ink3 / --sd-card
+/ --sd-card-hi / --sd-line / --sd-well / --sd-hover`, and
+`.s-ntf.s-home-v3--light, .s-set.s-home-v3--light` redefine just those nine.
+That's the `--pf-*` pattern from the profile screens — **light theme is one
+variable block, not a parallel rule tree.** Prefer it for new screens.
+
+### Both screens render twice
+The viewer shows Dark and Light side by side, so every handler
+(`ntfTab`/`ntfMarkAll`/`sdToggle`/`sdSeg`/`sdConnect`) scopes to
+`btn.closest('.app-screen')`. A document-wide query would drive both copies at
+once — same rule as `plTab`.
 
 ## Onboarding Wizard (`onboardingHtml` + `OB` state in `app.js`)
 
@@ -401,6 +755,12 @@ topNav(active)           // 'playlists' | 'feed' | 'home'
 halfStars(rating, size)  // halfStars(4.4, 16) → star span HTML
 ```
 
+### Three traps in the vinyls (all found the hard way)
+
+1. **Draw the disc with a gradient mask, never an SVG `mask-image`.** An SVG mask is rasterised once and then *sampled*. At ~10px, with a fractional size and gap, every disc in a row lands on a different sub-pixel offset and samples that bitmap differently — so they render at visibly different weights and **the first one looks bigger than the other four**. `.hstar` now uses `radial-gradient(circle closest-side, transparent 0 20%, #000 21% 91%, transparent 92%)`, resolved at paint time at device resolution. Stops map 1:1 onto the old artwork (hole radius 10% of the box, outer edge 45.5%). `halfStars` also **rounds** its size and `.hstars` uses a whole-pixel `gap`; the old `×0.72` gave `10.08px` and the gap was `1.5px`.
+2. **`--vinyl-empty` follows the SURFACE, not the theme.** Light mode is mostly cream, so the default flips to dark ink — but the bento stats block and the review panel sit on the album's **procedural colour, which is dark in both themes**. Theming those by variant put dark ink on a dark album and the empty vinyls vanished. `.s-home-v3--light .v3-blue-stars-row, .v3-rev-card, .v3-rev-hist` override back to the light value. (`--text3` remains the fallback for everything else that uses it.)
+3. **`vertical-align` does nothing on `.hstars`** — it's a flex item of `.v3-blue-stars-row`, and flex items ignore it. Alignment there comes from the row's `align-items: baseline`, which already puts the disc **boxes** exactly on the number's text baseline (measured: 0.00px off). A disc is still taller than the digits' cap height, so it looms; `.hstars` carries `transform: translateY(10%)` as an *optical* correction, scale-relative so it holds at every rating size.
+
 `halfStars(rating, size)` now renders **vinyl records, not stars** — every rating across the app routes through it. Each unit is a `.hstar` span masked by `--vinyl-mask` (a disc-with-center-hole SVG); `full`/`empty`/`half` just set the background (half = a 50/50 `--star`/`--text3` gradient under the mask). Sizes are scaled ×0.72 so a vinyl matches the old ★ glyph's footprint (its top lines up with an adjacent number's cap height). `--text3` still controls the empty color per screen.
 
 > Note: ~38 inline plain `★` glyphs in text bits (e.g. "4.4 ★" labels, `.star-pick`, `.dorf-act-rating`) do **not** go through `halfStars` and are still literal stars.
@@ -416,9 +776,74 @@ halfStars(rating, size)  // halfStars(4.4, 16) → star span HTML
 
 ## Tracklist (`populateSongList` / `songsFor`)
 
-`.v3-rev-songs` sits below the CTA in review mode: a full-width table of **# · title · duration · rating (number + vinyls)**. Clicking a row → `openSongLog(this)` → the log sheet for that song. Song titles/durations/ratings are **deterministic placeholders** (`songsFor` seeds a PRNG from the album name; there's no real per-song data — `album.tracks` is only a count). Caps at ~8.5 rows (`.v3-rev-songs--scroll` → `max-height` + bottom mask fade) so the 9th peeks to signal scroll.
+`.v3-rev-songs` sits below the CTA in review mode: a full-width table of **# · title · duration · rating (number + vinyls)**. Clicking a row → `openSongLog(this)` → the log sheet for that song. Song titles/durations/ratings are **deterministic placeholders** (`songsFor` seeds a PRNG from the album name; there's no real per-song data — `album.tracks` is only a count).
+
+**Every track is listed, in flow.** It used to cap at ~8.5 rows and scroll inside itself (`.v3-rev-songs--scroll` → `max-height` + mask fade); that nested scroller hid the back half of a long album inside a page that already scrolls. Don't reinstate it.
 
 **2-line title handling:** a long album name wraps to two lines in review mode; `enterReview`/`setMainAlbum` measure it synchronously (full text → `offsetHeight`) and toggle `.v3-rev-title-2line`, which drops the CTA down a line.
+
+## Review panel order
+
+Top to bottom: CTA (`.v3-rev-mine`) · histogram · **tracklist** · artist albums
+(artist page only) · **friend-rec pill** · filter tabs · review list.
+
+- **The friend-rec pill (`.v3-rev-rec`, "X listened to this") sits with the
+  reviews**, directly above the filter tabs — it's social proof, so it belongs to
+  that section, not up beside the CTA where it used to push the whole panel down.
+  Its old neighbours (`.v3-rev-rec:not([hidden]) + .v3-rev-top` and the hand-mode
+  `margin-left: 90px`) are gone; it now aligns to the review list's 12px gutter.
+- **The CTA is centred on the album and artist pages**
+  (`.s-home-v3--review.s-home-v3--album .v3-rev-mine { align-items: center }`) —
+  the art is full-width there and there's no CD column to align against. The
+  plain fullscreen-review state keeps it left, aligned to the stats text.
+
+## Review cards (`populateReviewList` in app.js)
+
+One card = `.v3-rev-card-top` (avatar · name · **`.v3-rev-acts`** · time) then
+`.v3-rev-meta` (rating) then `.v3-rev-text`.
+
+- **The social actions live top-right, the timestamp hard right.** `.v3-rev-acts`
+  (upvote pill + comment count) carries `margin-left: auto`; `.v3-rev-time` is
+  just `flex-shrink: 0` after it. They used to sit in the meta row pressed
+  against the rating vinyls, which read as one crowded cluster.
+- **The meta row is the rating alone** — vinyls + `.v3-rev-score`, the same
+  number-beside-vinyls pairing used on the wall and the tracklist.
+- Three builders emit this markup — the **pinned** card, the **list** card, and
+  the **"mine"** card posted by the inline composer. Change all three together.
+
+## Artist Page (`populateArtistPage` / `artistAlbumsHtml` in app.js)
+
+Not a screen — an `--artist` sub-state of the home shell layered on the album
+page (`s-home-v3--review` + `--album` + `--artist`), entered via
+`openArtistPageFor(name)`. `.v3-album` becomes the banner and `.v3-blue-album`
+the artist name. `populateArtistPage` still writes the genre into
+`.v3-blue-artist`, but **it and `.v3-blue-sep` are hidden** — the name stands
+alone under the banner.
+
+- **Banner:** full-bleed (`left:-10px; width:calc(100% + 20px)`), **top flush
+  with the bento's top edge** — exactly where the album cover starts — and
+  masked so only the *bottom* fades into the page. It used to be lifted `-20px`
+  with a fade at both ends; the top fade read as a harsh cut-off floating under
+  the header.
+- **No artist rating.** `.v3-blue-score` and the stars-row vinyls are hidden, as
+  is the `.v3-rev-hist` histogram — an artist isn't a thing you score. The
+  review count survives as the one stat; the ratings live on the albums below.
+- **Albums** (`.v3-artist-albums`) replace the histogram: a `.v3-aa-hd` head
+  with a **row/grid toggle**, then either a `.v3-aa-row` rail or the trending
+  `.wall2-grid`. `ARTIST_ALBUM_VIEW` is module-global and `setArtistAlbumView`
+  repaints **every** home shell, so the dark/light pair can't disagree.
+  ⚠️ The rail's `scroll-snap-align: start` snaps to the scrollport edge and
+  would scroll its own left padding away — `scroll-padding-left` matches it.
+- The **Popular reviews** heading is emitted as the last block of
+  `artistAlbumsHtml`, so it hides with the container when the page leaves the
+  artist state (there's no artist-only markup in either home variant to
+  maintain).
+- ⚠️ **Light theme:** the album page keeps the album's dark procedural colour
+  behind the review panel in *both* themes, so every `.s-home-v3--light
+  .v3-rev-*` rule is light ink. The artist page forces the cream bg instead, so
+  it needs its own `--light.--artist` block re-inking the panel dark — without
+  it the whole lower half is invisible. **Any new `--light .v3-rev-*` rule needs
+  an artist counterpart.**
 
 ---
 
@@ -436,9 +861,16 @@ On mobile (`≤767px`): Single / Multi / Flow / Live modes via header segmented 
 
 ## Key Design Decisions
 
+- **The handle sits under the wordmark** — `.v3-header-brand` stacks `.v3-header-logo` + `.v3-header-handle`. It's filled by `populateHomeData`, **not interpolated into the markup**: two of the three headers live in static `html:` templates that are evaluated once at load, so an inline `${PROFILE.handle}` would freeze at page-load and never follow a persona switch. (Also: no backticks inside those templates, even in comments — they terminate the literal.)
+- **The header bubbles are real entry points** — `appHeader()`'s bell → `navigate('notifications')` and gear → `navigate('settings')`. The bell used to just toggle its own unread dot. Note the header exists in **three** places: `appHeader()` plus an inline copy in each of the two home v3 variants — change all three together.
+- **The trending wall keeps its margins** — `.wall2-scroll` is inset `12px` and the grid keeps its gutters, rounded tiles, shadows and hung-off rank badges (the generic `.wall2-grid`, shared with the artist page). An edge-to-edge flush mosaic (no side inset, `column-gap: 0`, square tiles, badge moved inside) was tried in `c4c77a5` and reverted — the artwork ran into the frame and read as one ugly slab. Don't reintroduce it.
 - **No top nav bar on home** — search and profile icons live in the 46px search corner of the bento
 - **Bottom nav is pinned** — requires `height: 100%` on `.s-home-v3`, not just `flex: 1`
 - **CD is absolutely positioned** — decoupled from row height so it can be any size without pushing the blue box taller
+- **The rating gold follows the album** — `--star` resolves `var(--v3-star, var(--persona-accent, #e8a83c))`, so the vinyls and the review histogram re-tint on every album switch. ⚠️ **Nothing may set `--star` directly** — a persona doing so pinned the vinyls to one colour and stopped them tracking the album.
+- **Ratings read `--v3-star`, not `--v3-accent`.** A greyscale or black-dominant cover deliberately extracts to a neutral (the `darkFrac` branch hard-codes `#b9b9c1`) — correct for the bento box, dreadful for the vinyls, which just went grey. `computeAlbumColors` therefore also emits `star`: the accent unless its saturation is under 0.22, in which case the house gold. `accent` itself is untouched — the boxes still want the neutral.
+- **`renderSingle()` alone is never enough.** It rebuilds the phones from their static templates, so every screen comes back with the placeholder cover baked into the markup and no data. Anything that rebuilds must follow with `paintAfterRender()` — which is why the resize handler calls `renderViewer()`, not `renderSingle()`.
+- **Colour extraction needs CORS** — `computeAlbumColors` sets `img.crossOrigin = 'anonymous'` for absolute URLs. Without it, `getImageData` throws a tainted-canvas error on the personas' Deezer CDN covers, the `catch` swallows it, and every album silently falls back to the hard-coded flood colour.
 - **Stars are never plain black when empty** — always `rgba` grey
 - **Album art drives color** — don't hardcode accent on home screen
 - **Fillet shadows**: dark theme cannot use `filter: drop-shadow` on fillets (GPU artifact); light theme CAN since it uses CSS gradient, not mask-image
@@ -453,17 +885,51 @@ On mobile (`≤767px`): Single / Multi / Flow / Live modes via header segmented 
 
 GitHub Pages from `main` branch root:
 ```
-git add app.css app.js screens.js style.css index.html
+git add app.css app.js screens.js style.css index.html data.js flowchart.html CLAUDE.md
 git commit -m "description"
 git push
 ```
 When a change adds an asset (e.g. `images/profile-skin-01.png`), `git add` it too.
+`flowchart.html` and `data.js` are easy to forget — a screen added to the page
+map or the archive ships broken without them.
+
+> **Uncommitted in the working tree (2026-08-13):** Notifications + Settings
+> (dark & light each), the header bell/gear wired to them, both added to
+> `NAV_PAGES` and the page map. Then a styling pass: Notifications lost its page
+> title and filter pills (the unread chip moved up beside "Mark all read"),
+> Settings moved **Sign out** up under the account card (and "Show listening
+> activity" up to head Connected services), and the trending wall's
+> edge-to-edge mosaic was reverted to the inset grid. Then the **artist page**
+> rework: flush-top full-bleed banner, no artist rating, histogram replaced by
+> the albums row/grid toggle, a Popular-reviews heading, a legible light theme,
+> and review cards with the upvote/comment moved to the card's top-right.
+> Finally, across the album + artist pages: the friend-rec pill moved down to
+> the reviews, the tracklist un-capped to every track, and the CTA centred.
+> Then the **persona system**: `personas/` (CSVs) · `tools/build_personas.py` ·
+> the generated `personas.js` · `applyPersona` + the toolbar/mobile switcher.
+> Touches `screens.js · app.js · app.css · style.css · index.html ·
+> flowchart.html · CLAUDE.md` and adds `personas/ · personas.js ·
+> tools/build_personas.py · .gitignore`. Verified in-browser (all four personas
+> swap catalogue + feed + rails + profile; both variants) but **not committed or
+> deployed** — the live URL still serves the previous build.
+> Plus the **dev box**, the album-tracking `--star`, the cross-origin colour
+> fix, the bento quote retired, the handle under the wordmark, and the vinyl
+> rendering rebuilt (see the three traps above).
+> Assets bumped to `app.css?v=228 · screens.js?v=200 · app.js?v=200 ·
+> style.css?v=145 · personas.js?v=3`.
+>
+> Open on the personas: (G)I-DLE, Leessang, J. Rawls and Jan Panenka find no
+> usable Deezer match · the skins are a first pass (header wordmark/icons wash
+> out on the light persona backgrounds) · `eric` is built from the old
+> `NEWSPOTIFYARTISTS.png` capture and should be re-cut when the Top Songs
+> screenshots arrive.
 
 > **Last deploy (2026-07-21):** the left-nav relink + centered mockups, dark/light
 > for auth/onboarding/song, the 8-step onboarding wizard, and the Funky profile
 > (theme 01 + skin PNG) are live. Assets at `app.css?v=165 · screens.js?v=158 ·
 > app.js?v=158 · style.css?v=141 · data.js?v=143`.
 >
-> Open threads: light-theme bento boxes are still `#999` placeholders · profile
-> theme 02 (angular) not started · `PREVIEWS_ENABLED = false` · ~38 inline `★`
-> glyphs still bypass the vinyl `halfStars` treatment.
+> Open threads: **Social (08) and Live Stream (09) are on the page map but have
+> no screen** — the remaining gap · light-theme bento boxes are still `#999`
+> placeholders · profile theme 02 (angular) not started · `PREVIEWS_ENABLED =
+> false` · ~38 inline `★` glyphs still bypass the vinyl `halfStars` treatment.

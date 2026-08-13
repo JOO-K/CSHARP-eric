@@ -1,0 +1,35 @@
+artist,album,track,rank
+# Eric's real Spotify artists, off NEWSPOTIFYARTISTS.png (the same capture that
+# seeded tools/artists.txt). Albums left blank take the artist's most-played;
+# named ones are pinned where the auto-pick lands on a single or a compilation.
+# Still worth replacing/extending from the Top Songs screenshots when they land.
+Men I Trust,Oncle Jazz,Show Me How,1
+Justice,†,Genesis,2
+100 gecs,1000 gecs,money machine,3
+death's dynamic shroud,I'll Try Living Like This,,4
+Kanye West,My Beautiful Dark Twisted Fantasy,Runaway,5
+A. G. Cook,7G,,6
+Frou Frou,Details,Let Go,7
+Florence + The Machine,Lungs,Dog Days Are Over,8
+Kid Cudi,Man on the Moon: The End of Day,Pursuit of Happiness,9
+M.I.A.,Kala,Paper Planes,10
+Joey Bada$$,1999,Waves,11
+Earl Sweatshirt,Some Rap Songs,,12
+The Killers,Hot Fuss,Mr. Brightside,13
+Trippie Redd,A Love Letter to You 4,,14
+$uicideboy$,I Want to Die in New Orleans,,15
+Vance Joy,Dream Your Life Away,Riptide,16
+BAYNK,Someone's,,17
+Freestylers,We Rock Hard,,18
+Cake Pop,Cake Pop,,19
+Leessang,AsuRa BalBalTa,,20
+DAVICHI,50 x half,,21
+Bugseed,,,22
+Pigeondust,,,23
+J. Rawls,The Liquid Crystal Project,,24
+Tim Presley,,,25
+Shiro SAGISU,,,26
+Megumi Hayashibara,,,27
+Yoko Takahashi,,,28
+Jan Panenka,,,29
+Niki Istrefi,,,30

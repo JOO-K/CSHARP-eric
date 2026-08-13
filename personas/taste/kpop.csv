@@ -1,0 +1,38 @@
+artist,album,track,rank
+# Albums are named explicitly here. Left blank, the build picks the artist's
+# most-played album, and for K-pop that lands on whatever single is charting
+# (or a live tour record) instead of the album people mean.
+NewJeans,Get Up,Super Shy,1
+LE SSERAFIM,UNFORGIVEN,UNFORGIVEN,2
+aespa,Armageddon,Supernova,3
+IVE,I'VE IVE,I AM,4
+(G)I-DLE,I feel,Queencard,5
+Red Velvet,The Perfect Red Velvet,Bad Boy,6
+TWICE,Formula of Love: O+T=<3,SCIENTIST,7
+SEVENTEEN,FML,Super,8
+Stray Kids,ODDINARY,MANIAC,9
+TOMORROW X TOGETHER,The Chaos Chapter: FREEZE,0X1=LOVESONG,10
+ITZY,CHECKMATE,SNEAKERS,11
+NMIXX,Fe3O4: BREAK,DASH,12
+BLACKPINK,THE ALBUM,How You Like That,13
+IU,LILAC,Celebrity,14
+BTS,Proof,Yet To Come,15
+Girls' Generation,Lion Heart,Lion Heart,16
+SHINee,Don't Call Me,Don't Call Me,17
+f(x),Pink Tape,Rum Pum Pum Pum,18
+2NE1,Crush,Come Back Home,19
+TAEYEON,INVU,INVU,20
+SUNMI,1/6,You can't sit with us,21
+BABYMONSTER,DRIP,DRIP,22
+ILLIT,SUPER REAL ME,Magnetic,23
+KATSEYE,SIS (Soft Is Strong),Touch,24
+Brown Eyed Girls,Sixth Sense,Sixth Sense,25
+Wonder Girls,Reboot,Why So Lonely,26
+EPIK HIGH,Sleepless in __________,Can You Hear My Heart,27
+LOONA,[+ +],Hi High,28
+Dreamcatcher,Apocalypse : Save us,MAISON,29
+MAMAMOO,reality in BLACK,HIP,30
+GFRIEND,Time for us,Sunrise,31
+OH MY GIRL,The Fifth Season,The Fifth Season,32
+ATEEZ,TREASURE EPILOGUE : Action To Answer,Answer,33
+THE BOYZ,REVEAL,REVEAL,34

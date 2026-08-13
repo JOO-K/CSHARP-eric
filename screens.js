@@ -42,15 +42,23 @@ const SCREENS = [
                    .has-notif expands the bubble into a blue pill with the unread count on the right.
                    Click toggles the state (mockup demo). -->
               <button class="v3-bubble v3-bubble--notif has-notif" title="Notifications" aria-label="Notifications"
-                      onclick="this.classList.toggle('has-notif')">
+                      onclick="navigate('notifications')">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
                 <span class="v3-bubble-count">+5</span>
               </button>
             </div>
-            <div class="v3-header-logo" role="img" aria-label="Spindeck"></div>
+            <div class="v3-header-brand">
+              <div class="v3-header-logo" role="img" aria-label="Spindeck"></div>
+              <!-- filled by populateHomeData(). The two home variants are static
+                   html templates evaluated ONCE at load, so interpolating
+                   PROFILE here would freeze the handle and never follow a
+                   persona switch. (No backticks in here - this sits inside a
+                   template literal.) -->
+              <div class="v3-header-handle"></div>
+            </div>
             <div class="v3-header-right">
               <!-- Settings (inner) -->
-              <button class="v3-bubble v3-bubble--settings" title="Settings" aria-label="Settings">
+              <button class="v3-bubble v3-bubble--settings" title="Settings" aria-label="Settings" onclick="navigate('settings')">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
               </button>
               <!-- Search (outer/rightmost) -->
@@ -173,12 +181,6 @@ const SCREENS = [
                stopPropagation keeps clicks from bubbling to the viewer's variant-switch wrapper -->
           <div class="v3-review-panel" onclick="event.stopPropagation()" onmousedown="event.stopPropagation()">
 
-            <!-- Friend rec tag — shown only when a friend has activity on this album (else algo-served: no tag) -->
-            <div class="v3-rev-rec" hidden>
-              <span class="v3-rev-rec-av"></span>
-              <span class="v3-rev-rec-txt"><b class="v3-rev-rec-name"></b> listened to this</span>
-            </div>
-
             <!-- Top row: streaming links (centered under CD) + your review (aligned to stats text).
                  Uses the bento's 78/22 split so it mirrors with the hand layout. -->
             <div class="v3-rev-top">
@@ -199,11 +201,19 @@ const SCREENS = [
               <div class="v3-rev-hist-axis"><span>½</span><span>5</span></div>
             </div>
 
-            <!-- Tracklist — rate individual songs; scrolls after ~8 rows, 9th fades to hint more -->
+            <!-- Tracklist — every track, in flow; rate one by tapping its row -->
             <div class="v3-rev-songs"></div>
 
             <!-- Artist page — grid of the artist's albums (trending style; shown only in --artist state) -->
             <div class="v3-artist-albums"></div>
+
+            <!-- Friend rec tag — shown only when a friend has activity on this album
+                 (else algo-served: no tag). Sits with the reviews, below the
+                 tracklist: it IS social proof, so it reads as part of that section. -->
+            <div class="v3-rev-rec" hidden>
+              <span class="v3-rev-rec-av"></span>
+              <span class="v3-rev-rec-txt"><b class="v3-rev-rec-name"></b> listened to this</span>
+            </div>
 
             <!-- Other users' reviews — full width -->
             <div class="v3-rev-filters">
@@ -300,15 +310,23 @@ const SCREENS = [
                    .has-notif expands the bubble into a blue pill with the unread count on the right.
                    Click toggles the state (mockup demo). -->
               <button class="v3-bubble v3-bubble--notif has-notif" title="Notifications" aria-label="Notifications"
-                      onclick="this.classList.toggle('has-notif')">
+                      onclick="navigate('notifications')">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
                 <span class="v3-bubble-count">+5</span>
               </button>
             </div>
-            <div class="v3-header-logo" role="img" aria-label="Spindeck"></div>
+            <div class="v3-header-brand">
+              <div class="v3-header-logo" role="img" aria-label="Spindeck"></div>
+              <!-- filled by populateHomeData(). The two home variants are static
+                   html templates evaluated ONCE at load, so interpolating
+                   PROFILE here would freeze the handle and never follow a
+                   persona switch. (No backticks in here - this sits inside a
+                   template literal.) -->
+              <div class="v3-header-handle"></div>
+            </div>
             <div class="v3-header-right">
               <!-- Settings (inner) -->
-              <button class="v3-bubble v3-bubble--settings" title="Settings" aria-label="Settings">
+              <button class="v3-bubble v3-bubble--settings" title="Settings" aria-label="Settings" onclick="navigate('settings')">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
               </button>
               <!-- Search (outer/rightmost) -->
@@ -431,12 +449,6 @@ const SCREENS = [
                stopPropagation keeps clicks from bubbling to the viewer's variant-switch wrapper -->
           <div class="v3-review-panel" onclick="event.stopPropagation()" onmousedown="event.stopPropagation()">
 
-            <!-- Friend rec tag — shown only when a friend has activity on this album (else algo-served: no tag) -->
-            <div class="v3-rev-rec" hidden>
-              <span class="v3-rev-rec-av"></span>
-              <span class="v3-rev-rec-txt"><b class="v3-rev-rec-name"></b> listened to this</span>
-            </div>
-
             <!-- Top row: streaming links (centered under CD) + your review (aligned to stats text).
                  Uses the bento's 78/22 split so it mirrors with the hand layout. -->
             <div class="v3-rev-top">
@@ -457,11 +469,19 @@ const SCREENS = [
               <div class="v3-rev-hist-axis"><span>½</span><span>5</span></div>
             </div>
 
-            <!-- Tracklist — rate individual songs; scrolls after ~8 rows, 9th fades to hint more -->
+            <!-- Tracklist — every track, in flow; rate one by tapping its row -->
             <div class="v3-rev-songs"></div>
 
             <!-- Artist page — grid of the artist's albums (trending style; shown only in --artist state) -->
             <div class="v3-artist-albums"></div>
+
+            <!-- Friend rec tag — shown only when a friend has activity on this album
+                 (else algo-served: no tag). Sits with the reviews, below the
+                 tracklist: it IS social proof, so it reads as part of that section. -->
+            <div class="v3-rev-rec" hidden>
+              <span class="v3-rev-rec-av"></span>
+              <span class="v3-rev-rec-txt"><b class="v3-rev-rec-name"></b> listened to this</span>
+            </div>
 
             <!-- Other users' reviews — full width -->
             <div class="v3-rev-filters">
@@ -578,12 +598,48 @@ const SCREENS = [
     ]
   },
 
+  // ── 11b. EDIT PROFILE (customising, behind the card's pencil) ──
+  {
+    id: 'profile-edit', name: 'Edit Profile', statusTheme: 'light',
+    variants: [
+      { label: 'Funky·Dark',  thumb: ['accent','w60','w80','w50','w70'], get html() { return profileEditHtml(false); } },
+      { label: 'Funky·Light', thumb: ['accent','w60','w80','w50','w70'], get html() { return profileEditHtml(true);  } },
+    ]
+  },
+
+  // ── 12a. NEW PLAYLIST (creation, behind the Playlists "+") ──
+  {
+    id: 'playlist-new', name: 'New Playlist', statusTheme: 'light',
+    variants: [
+      { label: 'Float·Dark',  version: 'v1', thumb: ['accent','w50','w80','w60','w70'], get html() { return playlistNewHtml(false); } },
+      { label: 'Float·Light', version: 'v1', thumb: ['accent','w50','w80','w60','w70'], get html() { return playlistNewHtml(true);  } },
+    ]
+  },
+
   // ── 12b. PLAYLIST PAGE (detail) ─────────────────────────────
   {
     id: 'playlist', name: 'Playlist Page', statusTheme: 'light',
     variants: [
       { label: 'Float·Dark',  version: 'v1', thumb: ['accent','w80','w60','w70','w50'], get html() { return playlistPageHtml(false); } },
       { label: 'Float·Light', version: 'v1', thumb: ['accent','w80','w60','w70','w50'], get html() { return playlistPageHtml(true);  } },
+    ]
+  },
+
+  // ── 13. NOTIFICATIONS (behind the header's bell bubble) ─────
+  {
+    id: 'notifications', name: 'Notifications', statusTheme: 'light',
+    variants: [
+      { label: 'Float·Dark',  version: 'v1', thumb: ['w60','accent','w80','w70','w80'], get html() { return notificationsHtml(false); } },
+      { label: 'Float·Light', version: 'v1', thumb: ['w60','accent','w80','w70','w80'], get html() { return notificationsHtml(true);  } },
+    ]
+  },
+
+  // ── 14. SETTINGS (behind the header's gear bubble) ──────────
+  {
+    id: 'settings', name: 'Settings', statusTheme: 'light',
+    variants: [
+      { label: 'Float·Dark',  version: 'v1', thumb: ['w50','w80','w60','w80','w70'], get html() { return settingsHtml(false); } },
+      { label: 'Float·Light', version: 'v1', thumb: ['w50','w80','w60','w80','w70'], get html() { return settingsHtml(true);  } },
     ]
   },
 
@@ -600,7 +656,10 @@ function topNav(active) {
 }
 
 function halfStars(rating, size) {
-  const sz = (size || 14) * 0.72;   // match the old ★ glyph's visual footprint so the vinyl top lines up with the number's cap height
+  // ×0.72 matches the old ★ glyph's footprint; ROUNDED because a fractional
+  // size put every disc in the row on a different sub-pixel boundary, which
+  // made them rasterise at visibly different weights (see .hstar in app.css).
+  const sz = Math.round((size || 14) * 0.72);
   let out = '';
   for (let i = 1; i <= 5; i++) {
     if (rating >= i)            out += `<span class="hstar full"  style="width:${sz}px;height:${sz}px"></span>`;
@@ -640,14 +699,22 @@ function appHeader(subtitle) {
           <div class="v3-header">
             <div class="v3-header-bubbles">
               <button class="v3-bubble v3-bubble--notif has-notif" title="Notifications" aria-label="Notifications"
-                      onclick="this.classList.toggle('has-notif')">
+                      onclick="navigate('notifications')">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
                 <span class="v3-bubble-count">+5</span>
               </button>
             </div>
-            <div class="v3-header-logo" role="img" aria-label="Spindeck"></div>
+            <div class="v3-header-brand">
+              <div class="v3-header-logo" role="img" aria-label="Spindeck"></div>
+              <!-- filled by populateHomeData(). The two home variants are static
+                   html templates evaluated ONCE at load, so interpolating
+                   PROFILE here would freeze the handle and never follow a
+                   persona switch. (No backticks in here - this sits inside a
+                   template literal.) -->
+              <div class="v3-header-handle"></div>
+            </div>
             <div class="v3-header-right">
-              <button class="v3-bubble v3-bubble--settings" title="Settings" aria-label="Settings">
+              <button class="v3-bubble v3-bubble--settings" title="Settings" aria-label="Settings" onclick="navigate('settings')">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
               </button>
               <button class="v3-bubble v3-bubble--search" title="Search" aria-label="Search" onclick="openSearch(this)">
@@ -898,30 +965,45 @@ function songHtml(light) {
 // wells sit as a horizontal row of embossed-in circles below the card, and a
 // "Recently rated" feed follows. Home shell (header · v3-body · nowBar ·
 // bottomNav). Funky·Dark / Funky·Light.
-function profileHtml(light) {
-  const P = window.PROFILE || {};
+// The profile CARD itself (the embossed silhouette + name banner + picture +
+// bio + stats + the five favourite-album CDs). Shared, because the Edit Profile
+// screen shows the very same card live above its form — building it twice would
+// let the preview drift from the real thing.
+//   P            the record to draw (PROFILE, or the edit screen's draft)
+//   opts.edit    true on the edit screen: no Follow button (it's your own page),
+//                the pencil is dropped, and a CD goes straight to the album
+//                picker instead of the listen/platforms menu.
+function profCanvasHtml(P, opts) {
+  const o = opts || {};
   const findAlb = name => (window.ARCHIVE || []).find(a => a.album === name);
-  const nf = n => (window.fmtRc ? window.fmtRc(n) : String(n));
+  const nf   = n => (window.fmtRc ? window.fmtRc(n) : String(n));
   const stat = (n, l) => `<div class="prof-stat"><span class="prof-stat-n">${n}</span><span class="prof-stat-l">${l}</span></div>`;
-  const esc = s => String(s).replace(/'/g, '\\\'');
+  const esc  = s => String(s).replace(/'/g, '\\\'');
 
-  // Streaming-platform icons (same look as the homepage CD menu).
-  const spotIco = `<svg width="11" height="11" viewBox="0 0 24 24" fill="white"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.52 17.34c-.24.36-.66.48-1.02.24-2.82-1.74-6.36-2.1-10.56-1.14-.42.12-.78-.18-.9-.54-.12-.42.18-.78.54-.9 4.56-1.02 8.52-.6 11.64 1.32.42.18.48.66.3 1.02zm1.44-3.3c-.3.42-.84.6-1.26.3-3.24-1.98-8.16-2.58-11.94-1.38-.48.12-1.02-.12-1.14-.6-.12-.48.12-1.02.6-1.14 4.38-1.32 9.78-.72 13.5 1.56.36.24.54.84.24 1.26zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.3c-.6.18-1.2-.18-1.38-.72-.18-.6.18-1.2.72-1.38 4.26-1.26 11.28-1.02 15.72 1.62.54.3.72 1.02.42 1.56-.3.42-1.02.6-1.56.3z"/></svg>`;
-  const applIco = `<svg width="9" height="11" viewBox="0 0 13 16" fill="white"><path d="M6.5 0L8 3.5 13 4.3l-3.5 3.4.8 4.8L6.5 10.5 2.2 12.5l.8-4.8L0 4.3l5-.8z"/></svg>`;
+  const spotIco  = `<svg width="11" height="11" viewBox="0 0 24 24" fill="white"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.52 17.34c-.24.36-.66.48-1.02.24-2.82-1.74-6.36-2.1-10.56-1.14-.42.12-.78-.18-.9-.54-.12-.42.18-.78.54-.9 4.56-1.02 8.52-.6 11.64 1.32.42.18.48.66.3 1.02zm1.44-3.3c-.3.42-.84.6-1.26.3-3.24-1.98-8.16-2.58-11.94-1.38-.48.12-1.02-.12-1.14-.6-.12-.48.12-1.02.6-1.14 4.38-1.32 9.78-.72 13.5 1.56.36.24.54.84.24 1.26zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.3c-.6.18-1.2-.18-1.38-.72-.18-.6.18-1.2.72-1.38 4.26-1.26 11.28-1.02 15.72 1.62.54.3.72 1.02.42 1.56-.3.42-1.02.6-1.56.3z"/></svg>`;
+  const applIco  = `<svg width="9" height="11" viewBox="0 0 13 16" fill="white"><path d="M6.5 0L8 3.5 13 4.3l-3.5 3.4.8 4.8L6.5 10.5 2.2 12.5l.8-4.8L0 4.3l5-.8z"/></svg>`;
   const scPltIco = `<svg width="12" height="8" viewBox="0 0 24 16" fill="white"><rect x="2" y="7" width="1.8" height="6" rx=".9"/><rect x="6" y="4" width="1.8" height="9" rx=".9"/><rect x="10" y="6" width="1.8" height="7" rx=".9"/><rect x="14" y="2" width="1.8" height="11" rx=".9"/><rect x="18" y="8" width="1.8" height="5" rx=".9"/></svg>`;
-  const penIco = `<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>`;
+  const penIco   = `<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>`;
+  const editIco  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>`;
+  const pinIco   = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`;
 
-  // Favourite-album CDs — horizontal row below the card.
-  // Circle centres (r=55) from ProfileTheme_Regular.svg (690×401) → bbox left/top %.
-  // Filled CD → preview/platforms popup (like the homepage); empty → picker.
+  // Favourite-album CDs — circle centres (r=55) from ProfileTheme_Regular.svg
+  // (690×401) → bbox left/top %. Filled CD → preview/platforms popup (like the
+  // homepage); empty → picker. On the edit screen every slot is the picker.
   const slots = [
     { l: 0.16, t: 76.16 }, { l: 21.01, t: 76.16 }, { l: 41.86, t: 76.16 },
     { l: 62.84, t: 76.16 }, { l: 83.82, t: 76.16 },
   ];
   const slotHtml = slots.map((s, i) => {
     const a = findAlb((P.favs || [])[i]);
-    if (!a) {
-      return `<button class="prof-alb prof-alb--empty" style="left:${s.l}%;top:${s.t}%" onclick="openProfPicker(${i}, this)" title="Add favourite ${i + 1}"><span class="prof-alb-add">+</span></button>`;
+    if (!a || o.edit) {
+      // A filled disc in edit mode is a slot (outline + "+" badge). An empty one
+      // already shows its own big "+", so it doesn't take the badge as well.
+      const cls = a ? (o.edit ? 'prof-alb pfe-slot' : 'prof-alb') : 'prof-alb prof-alb--empty';
+      const inner = a
+        ? `<span class="prof-alb-img" style="background-image:url('${a.image}')"></span><span class="prof-alb-hole"></span>`
+        : `<span class="prof-alb-add">+</span>`;
+      return `<button class="${cls}" style="left:${s.l}%;top:${s.t}%" onclick="openProfPicker(${i}, this)" title="${a ? 'Replace ' + esc(a.album) : 'Add favourite ' + (i + 1)}">${inner}</button>`;
     }
     // Menu opens upward above the CD; anchor to canvas edges so it stays in frame.
     const hpos = i <= 1 ? `left:${s.l}%` : i >= 3 ? `right:${(100 - s.l - 15.94).toFixed(2)}%` : `left:50%;transform:translateX(-50%)`;
@@ -953,6 +1035,71 @@ function profileHtml(light) {
       </div>`;
   }).join('');
 
+  // In edit mode every editable region of the card becomes a slot you tap: it
+  // carries .pfe-slot (which paints the + / pencil badge in CSS) and opens the
+  // category-aware editor. Empty regions show a "+ Add …" placeholder rather
+  // than collapsing, so there's always something to aim at.
+  const ed  = (kind, slot) => o.edit ? ` pfe-slot" onclick="event.stopPropagation(); openProfEditor('${kind}'${slot != null ? `, '${slot}'` : ''})` : '';
+  const metaHtml = P.location
+    ? `<span class="prof-meta-item">${pinIco}${P.location}</span>`
+    : (o.edit ? `<span class="prof-meta-item prof-meta-item--add">${pinIco}Add location</span>` : '');
+
+  return `
+            <div class="prof-canvas">
+              <!-- Embossed card silhouette (traced from ProfileTheme_Regular4.svg) -->
+              <svg class="prof-base" viewBox="0 0 690 466" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+                <path class="prof-base-main" d="M668.876 65.6968L0.609863 65.6967L0.609853 299.988L0.609853 307.953C0.609791 318.999 9.56414 327.953 20.6099 327.953L38.1656 327.953L50.497 327.953L624.855 328.367L669.006 328.082C680.001 328.01 688.876 319.077 688.876 308.082L688.876 299.988L688.876 85.6968C688.876 74.6511 679.922 65.6968 668.876 65.6968Z"/>
+                <path class="prof-divide" d="M262.306 328.059L262.306 65.6479L0.902954 65.6479L0.902944 308.059C0.902943 319.105 9.85724 328.059 20.9029 328.059L41.324 328.059L226.604 328.059L262.306 328.059Z"/>
+                <!-- Name banner — right edge is resized to the username by sizeProfName().
+                     Bottom edge runs a few units into the card so the fill hides the seam. -->
+                <path class="prof-name-tab" d="M0.500122 69H409.862H386.803C369.967 69 354.261 57.1754 345.016 43.105L328.872 18.5347C321.476 7.27835 308.911 0.5 295.443 0.5H35.5001C16.1702 0.5 0.500122 16.17 0.500122 35.5V69Z"/>
+              </svg>
+
+              <!-- White username pill inside the banner — width grows with the banner -->
+              <div class="prof-name-pill" style="width:43.23%"></div>
+
+              <!-- Username, seated inside the white pill (black text) -->
+              <div class="prof-name-tab-lbl${ed('name')}">
+                <span class="prof-name-nick">${P.name || 'Your name'}</span>
+                <span class="prof-name-at">@${P.handle || 'handle'}</span>
+              </div>
+
+              <!-- Profile image fills the left pane entirely -->
+              <div class="prof-pic${ed('photo')}" style="background-image:url('${P.pic || ''}')"></div>
+              ${o.edit ? '' : `<button class="prof-edit" title="Edit profile" onclick="event.stopPropagation(); openProfileEdit()">${editIco}</button>`}
+
+              <!-- Info: description; location (bold) pinned to the pane's lower-left -->
+              <div class="prof-info${ed('text', 'bio')}">
+                <div class="prof-desc${o.edit && !P.bio ? ' prof-desc--add' : ''}">${P.bio || (o.edit ? 'Add a bio' : 'Tell people what you are into.')}</div>
+              </div>
+              ${metaHtml ? `<div class="prof-meta${ed('text', 'location')}">${metaHtml}</div>` : ''}
+
+              <!-- Numbers at the bottom of the base -->
+              <div class="prof-stats">
+                ${stat(nf(P.reviews || 0), 'Reviews')}
+                ${stat(nf(P.playlists || 0), 'Playlists')}
+                ${stat(nf(P.followers || 0), 'Followers')}
+                ${stat(nf(P.following || 0), 'Following')}
+              </div>
+
+              <!-- Favourite-album wells — choose 5 (right column) -->
+              ${slotHtml}
+
+              ${o.edit ? '' : `<!-- Dot mascot → Follow (top-right notch) -->
+              <button class="prof-follow" onclick="toggleProfFollow(this)" aria-pressed="false" title="Follow">
+                <span class="v3-ring v3-ring--smile prof-follow-ring"><span class="v3-ring-spin"><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i></span></span>
+                <span class="prof-follow-lbl">Follow</span>
+              </button>`}
+            </div>`;
+}
+
+function profileHtml(light) {
+  const P = window.PROFILE || {};
+  const findAlb = name => (window.ARCHIVE || []).find(a => a.album === name);
+  const esc = s => String(s).replace(/'/g, '\\\'');
+
+
+
   // Recently rated — the persona's picks (falls back to the top of the archive).
   const recent  = (P.recent && P.recent.length)
     ? P.recent.map(nm => findAlb(nm)).filter(Boolean)
@@ -972,8 +1119,6 @@ function profileHtml(light) {
       </span>
     </button>`).join('');
 
-  const editIco = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>`;
-  // Base colour is derived from the profile image after render (applyProfColors).
 
   // Favourite songs (5) — artwork borrowed from the song's album cover.
   const playIco = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
@@ -989,9 +1134,6 @@ function profileHtml(light) {
     </button>`;
   }).join('');
 
-  // Optional location (country) + occupation, shown only when set.
-  const pinIco  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`;
-  const metaHtml = P.location ? `<span class="prof-meta-item">${pinIco}${P.location}</span>` : '';
 
   // Playlists — the persona's 3 picks (falls back to the user's own, most-loved).
   const allPls = plLists();
@@ -1013,52 +1155,7 @@ function profileHtml(light) {
         <div class="v3-body">
           <div class="prof2-scroll">
 
-            <div class="prof-canvas">
-              <!-- Embossed card silhouette (traced from ProfileTheme_Regular4.svg) -->
-              <svg class="prof-base" viewBox="0 0 690 466" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-                <path class="prof-base-main" d="M668.876 65.6968L0.609863 65.6967L0.609853 299.988L0.609853 307.953C0.609791 318.999 9.56414 327.953 20.6099 327.953L38.1656 327.953L50.497 327.953L624.855 328.367L669.006 328.082C680.001 328.01 688.876 319.077 688.876 308.082L688.876 299.988L688.876 85.6968C688.876 74.6511 679.922 65.6968 668.876 65.6968Z"/>
-                <path class="prof-divide" d="M262.306 328.059L262.306 65.6479L0.902954 65.6479L0.902944 308.059C0.902943 319.105 9.85724 328.059 20.9029 328.059L41.324 328.059L226.604 328.059L262.306 328.059Z"/>
-                <!-- Name banner — right edge is resized to the username by sizeProfName().
-                     Bottom edge runs a few units into the card so the fill hides the seam. -->
-                <path class="prof-name-tab" d="M0.500122 69H409.862H386.803C369.967 69 354.261 57.1754 345.016 43.105L328.872 18.5347C321.476 7.27835 308.911 0.5 295.443 0.5H35.5001C16.1702 0.5 0.500122 16.17 0.500122 35.5V69Z"/>
-              </svg>
-
-              <!-- White username pill inside the banner — width grows with the banner -->
-              <div class="prof-name-pill" style="width:43.23%"></div>
-
-              <!-- Username, seated inside the white pill (black text) -->
-              <div class="prof-name-tab-lbl">
-                <span class="prof-name-nick">${P.name || 'Your name'}</span>
-                <span class="prof-name-at">@${P.handle || 'handle'}</span>
-              </div>
-
-              <!-- Profile image fills the left pane entirely -->
-              <div class="prof-pic" style="background-image:url('${P.pic || ''}')"></div>
-              <button class="prof-edit" title="Edit profile" onclick="event.stopPropagation()">${editIco}</button>
-
-              <!-- Info: description; location (bold) pinned to the pane's lower-left -->
-              <div class="prof-info">
-                <div class="prof-desc">${P.bio || 'Tell people what you are into.'}</div>
-              </div>
-              ${metaHtml ? `<div class="prof-meta">${metaHtml}</div>` : ''}
-
-              <!-- Numbers at the bottom of the base -->
-              <div class="prof-stats">
-                ${stat(nf(P.reviews || 0), 'Reviews')}
-                ${stat(nf(P.playlists || 0), 'Playlists')}
-                ${stat(nf(P.followers || 0), 'Followers')}
-                ${stat(nf(P.following || 0), 'Following')}
-              </div>
-
-              <!-- Favourite-album wells — choose 5 (right column) -->
-              ${slotHtml}
-
-              <!-- Dot mascot → Follow (top-right notch) -->
-              <button class="prof-follow" onclick="toggleProfFollow(this)" aria-pressed="false" title="Follow">
-                <span class="v3-ring v3-ring--smile prof-follow-ring"><span class="v3-ring-spin"><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i></span></span>
-                <span class="prof-follow-lbl">Follow</span>
-              </button>
-            </div>
+            ${profCanvasHtml(P)}
 
             <!-- Top playlists -->
             <div class="prof-sec">
@@ -1076,6 +1173,104 @@ function profileHtml(light) {
             <div class="prof-feed">
               <div class="prof-feed-hd">Recently rated</div>
               ${recentHtml}
+            </div>
+
+          </div>
+        </div>
+        ${nowBar()}
+        ${bottomNav('profile')}
+      </div>`;
+}
+
+// Edit Profile — the customising page behind the profile card's pencil.
+//
+// There is NO separate form. The page IS the profile (the shared profCanvasHtml
+// card plus the Playlists and Favourite-songs sections), drawn from the draft,
+// with every editable region turned into a SLOT: filled slots swap their content
+// on tap, empty ones show a "+" tile. Every slot opens the same category-aware
+// popup (openProfEditor in app.js), which searches albums / songs / playlists —
+// or shows a small text form — depending on what's being filled.
+//
+// State is window.PFEDIT (app.js), a draft copied from PROFILE on open; Save
+// commits it, Cancel throws it away. Each pick re-renders, and since nothing on
+// the page itself is typed into, a full re-render costs nothing.
+function profileEditHtml(light) {
+  const D = (typeof window.pfeditDraft === 'function') ? window.pfeditDraft() : (window.PROFILE || {});
+  const dots = '<i class="v3-ring-dot"></i>'.repeat(6);
+  const findAlb = name => (window.ARCHIVE || []).find(a => a.album === name);
+  const esc = s => String(s == null ? '' : s).replace(/'/g, '\'');
+  const playIco = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
+
+  // A slot: filled shows the content and swaps it on tap; empty shows a + tile.
+  // Both open the same category-aware editor (openProfEditor in app.js), which
+  // searches albums / songs / playlists depending on what's being filled.
+  const addTile = (kind, slot, label, shape) => `
+              <button class="pfe-add pfe-add--${shape}" onclick="openProfEditor('${kind}', '${slot}')">
+                <span class="pfe-add-plus">+</span>
+                <span class="pfe-add-lbl">${label}</span>
+              </button>`;
+
+  // Playlists — 3 slots
+  const allPls = plLists();
+  const plNames = (D.playlistNames && D.playlistNames.length)
+    ? D.playlistNames.slice(0, 3)
+    : allPls.filter(p => p.creator === 'you').sort((a, b) => b.favs - a.favs).slice(0, 3).map(p => p.name);
+  const plsHtml = [0, 1, 2].map(i => {
+    const pl = allPls.find(p => p.name === plNames[i]);
+    if (!pl) return addTile('playlist', i, 'Add playlist', 'tile');
+    return `<button class="prof-pl pfe-slot" onclick="openProfEditor('playlist', '${i}')" title="Replace">
+      <span class="prof-pl-cover" style="background-image:url('${(D.playlistCovers && D.playlistCovers[i]) || pl.image}')"></span>
+      <span class="prof-pl-nm">${pl.name}</span>
+      <span class="prof-pl-meta">${pl.tracks} songs</span>
+    </button>`;
+  }).join('');
+
+  // Favourite songs — 5 slots
+  const favSongs = D.favSongs || [];
+  const songsHtml = [0, 1, 2, 3, 4].map(i => {
+    const s = favSongs[i];
+    if (!s) return addTile('song', i, 'Add a song', 'row');
+    const a = findAlb(s.album);
+    return `<button class="prof-song pfe-slot" onclick="openProfEditor('song', '${i}')" title="Replace">
+      <span class="prof-song-art" style="background-image:url('${a ? a.image : ''}')"></span>
+      <span class="prof-song-meta">
+        <span class="prof-song-title">${s.title}</span>
+        <span class="prof-song-sub">${s.album} · ${s.artist}</span>
+      </span>
+      <span class="prof-song-play">${playIco}</span>
+    </button>`;
+  }).join('');
+
+  return `
+      <div class="app-screen s-home-v3 s-prof2 s-pfedit${light ? ' s-home-v3--light' : ''}">
+        ${appHeader()}
+        <div class="v3-body">
+          <div class="prof2-scroll pfe-scroll">
+
+            <div class="pfe-top">
+              <button class="plp-back-pill" onclick="pfeditCancel()" title="Discard and go back">
+                <span class="v3-ring plp-ring"><span class="v3-ring-spin">${dots}</span></span>
+              </button>
+              <div class="pfe-top-right">
+                <span class="pfe-editing">Editing profile</span>
+                <button class="pfe-save" data-pfe="save" onclick="pfeditSave()">Save changes</button>
+              </div>
+            </div>
+
+            <!-- The real card, drawn from the draft. Every editable region is a
+                 slot: tap it to fill or replace it. -->
+            ${profCanvasHtml(D, { edit: true })}
+
+            <div class="pfe-hint">Tap anything to change it.</div>
+
+            <div class="prof-sec">
+              <div class="prof-sec-hd">Playlists</div>
+              <div class="prof-pls">${plsHtml}</div>
+            </div>
+
+            <div class="prof-sec">
+              <div class="prof-sec-hd">Favourite songs</div>
+              <div class="prof-songs">${songsHtml}</div>
             </div>
 
           </div>
@@ -1142,8 +1337,12 @@ function wallHtml(light) {
 // Custom playlists — memey user-typed titles (mixed case, stray symbols: they're
 // personal, not editorial), custom cover art (images/playlist-*.jpg — Eric's own
 // images, NOT album covers), and a last-edited stamp shown on the card by-line.
+// Playlists the user built on the New Playlist page (window.PLNEW_CREATED, set
+// up in app.js) ride at the FRONT — the array is "most recently edited first",
+// and one you just made is the most recent thing there is.
 function plLists() {
   return [
+    ...(window.PLNEW_CREATED || []),
     { name: 'desert island picks ✧',        creator: 'you',         tracks: 24, favs: 87,  plays: 12400, edited: '2h ago', image: 'images/playlist-cyano-birds.jpg' },
     { name: 'nite drives ~ no destination', creator: 'you',         tracks: 18, favs: 12,  plays: 2100,  edited: '1d ago', image: 'images/playlist-car-dash.jpg' },
     { name: '3am and raining',              creator: 'staticfog',   tracks: 31, favs: 24,  plays: 8900,  edited: '3d ago', image: 'images/playlist-misty-lake.jpg', staff: true },
@@ -1206,7 +1405,7 @@ function playlistsHtml(light) {
                 <button class="wall2-cat" onclick="event.stopPropagation(); plTab(this,'popularity')">Popularity</button>
               </div>
               <button class="pl2-discover" title="Discover community playlists" onclick="event.stopPropagation(); plTab(this,'discover')">Discover</button>
-              <button class="pl2-add" title="New playlist" aria-label="New playlist" onclick="event.stopPropagation()">
+              <button class="pl2-add" title="New playlist" aria-label="New playlist" onclick="event.stopPropagation(); openNewPlaylist()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
               </button>
             </div>
@@ -1229,6 +1428,120 @@ function playlistsHtml(light) {
       </div>`;
 }
 
+// The tracklist for a playlist. A playlist built on the New Playlist page
+// carries its REAL picks in pl.songs; every sample list gets a deterministic
+// stand-in instead — a seeded pick of archive albums, one generated song each,
+// ratings hovering near 4.0 (±0.35) plus 1–2 seeded outliers (a dud or a banger).
+// Shared, because the detail page and the New Playlist "Add from library"
+// browser have to show the SAME songs for a given playlist.
+// Keys match plnewPool()'s `album::trackNo::title` so the picker can tell which
+// tracks are already in the new playlist.
+function plTracksFor(pl) {
+  const arch = window.ARCHIVE || [];
+  if (pl.songs && pl.songs.length) return pl.songs.slice();
+  const rnd = seedRand(pl.name + '::pl');
+  const out = Array.from({ length: pl.tracks || 0 }, () => {
+    const a = arch[Math.floor(rnd() * arch.length)] || arch[0];
+    const t = songsFor(a);
+    const s = t[Math.floor(rnd() * t.length)];
+    return { title: s.title, dur: s.dur, n: s.n,
+             album: a.album, artist: a.artist, image: a.image, genre: a.genre };
+  });
+  const outliers = new Set();
+  const oCount = Math.min(1 + Math.floor(rnd() * 2), out.length);
+  while (outliers.size < oCount) outliers.add(Math.floor(rnd() * out.length));
+  out.forEach((row, i) => {
+    let r = 4.0 + (rnd() - 0.5) * 0.7;
+    if (outliers.has(i)) r = rnd() < 0.5 ? 2.4 + rnd() * 0.7 : 4.7 + rnd() * 0.25;
+    row.rating = (Math.round(r * 10) / 10).toFixed(1);
+    row.key = row.album + '::' + row.n + '::' + row.title;
+  });
+  return out;
+}
+
+// New Playlist — the creation page behind the Playlists "+" button.
+//
+// Deliberately built on the SAME geometry as the playlist detail page (Eric's
+// PlaylistPageBox.svg path, the image panel, the CD in its swoop) so the form
+// reads as the page you are filling in: pick a cover and the panel + CD take it,
+// type a name and it lands in the title, add songs and the count ticks up. By
+// the time you hit Create you have already seen the result.
+//
+// State lives in window.PLNEW (app.js). This getter paints it directly — the
+// getter pattern the other dynamic screens use — so a fresh render is always
+// correct on its own, with no post-render init step to go missing. Once the user
+// starts interacting, plnewSync() patches the live instances in place instead of
+// re-rendering, so the field being typed in keeps its caret; that also keeps the
+// viewer's side-by-side dark and light variants agreeing (same problem the
+// onboarding wizard solves with obSync).
+function playlistNewHtml(light) {
+  const dots = '<i class="v3-ring-dot"></i>'.repeat(6);
+  const S    = window.PLNEW || { name:'', cover:null, privacy:'public', songs:[], q:'' };
+  const esc  = s => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  const call = (fn, fallback) => (typeof window[fn] === 'function' ? window[fn]() : fallback);
+  const priv = p => `plnew-priv-btn${S.privacy === p ? ' active' : ''}`;
+  return `
+      <div class="app-screen s-home-v3 s-plnew${light ? ' s-home-v3--light' : ''}">
+        ${appHeader()}
+        <div class="v3-body">
+          <div class="plnew-scroll">
+            <button class="plp-back-pill" onclick="plnewCancel()" title="Back">
+              <span class="v3-ring plp-ring"><span class="v3-ring-spin">${dots}</span></span>
+            </button>
+
+            <div class="plp-hero plnew-hero">
+              <label class="plp-hero-img plnew-cover${S.cover ? ' plnew-cover--set' : ''}" data-plnew="cover"
+                     title="Upload a cover"
+                     style="${S.cover ? `background-image:url('${S.cover}')` : ''}">
+                <input type="file" accept="image/*" class="plnew-file" onchange="plnewUpload(this)">
+                <span class="plnew-cover-hint">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 16V4"/><path d="m7.5 8.5 4.5-4.5 4.5 4.5"/><path d="M4 15v3.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V15"/></svg>
+                  <i>upload a cover</i>
+                </span>
+              </label>
+              <svg class="plp-hero-shape" viewBox="0 0 688 303" preserveAspectRatio="none" aria-hidden="true">
+                <path class="plp-shape-panel" d="M640.322 0.601501L686.662 48.7753V151.386C686.662 162.155 677.932 170.886 667.162 170.886H608.625C570.514 170.886 539.619 201.781 539.619 239.892C539.619 250.425 531.08 258.965 520.546 258.965H253.095V0.601501H640.322Z"/>
+              </svg>
+              <div class="plp-info plnew-info">
+                <input class="plnew-name" type="text" maxlength="46" placeholder="name it…"
+                       autocomplete="off" spellcheck="false" data-plnew="name"
+                       value="${esc(S.name)}" oninput="plnewSetName(this.value)">
+                <div class="plp-by">by <b>you</b></div>
+                <div class="plp-meta" data-plnew="count">${call('plnewCountLabel', '0 songs')}</div>
+                <div class="plnew-priv">
+                  <button class="${priv('public')}"  data-priv="public"  onclick="plnewSetPriv('public')">Public</button>
+                  <button class="${priv('private')}" data-priv="private" onclick="plnewSetPriv('private')">Private</button>
+                </div>
+              </div>
+              <div class="plp-cd plnew-cd" data-plnew="cd"
+                   style="${S.cover ? `background-image:url('${S.cover}')` : ''}"><div class="v3-cd-hole"></div></div>
+            </div>
+
+            <button class="plnew-create" data-plnew="create" onclick="plnewCreate()"
+                    ${S.name.trim() ? '' : 'disabled'}>${call('plnewCreateLabel', 'Create playlist')}</button>
+
+            <div class="plnew-find">
+              <div class="plnew-searchbar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+                <input class="plnew-q" type="text" placeholder="Search songs, albums, artists"
+                       autocomplete="off" spellcheck="false" data-plnew="q"
+                       value="${esc(S.q)}" oninput="plnewSearch(this.value)">
+              </div>
+              <button class="plnew-libbtn${S.mode === 'library' ? ' active' : ''}" data-plnew="libbtn"
+                      title="Add songs from your existing playlists" onclick="plnewToggleLib()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+                Library
+              </button>
+            </div>
+            <div class="plnew-chosen" data-plnew="chosen">${call('plnewChosenHtml', '')}</div>
+            <div class="plnew-results" data-plnew="results">${call('plnewResultsHtml', '')}</div>
+          </div>
+        </div>
+        ${nowBar()}
+        ${bottomNav('playlists')}
+      </div>`;
+}
+
 // Playlist page — geometry from PlaylistPageBox.svg (688×303): image panel
 // (left, ~253×259) · info panel (right) with the Popular dog-ear notch top-right
 // and a concave swoop carved from its bottom-right where the CD (r=55) sits,
@@ -1241,22 +1554,11 @@ function playlistPageHtml(light) {
   const pl = window.activePlaylist || plLists()[0];
   if (!pl) return '<div class="app-screen s-home-v3"></div>';
   const hot = pl.favs > 25;
-  // Deterministic tracklist: seeded pick of archive albums, one generated song each
-  const rnd = seedRand(pl.name + '::pl');
-  const songs = Array.from({ length: pl.tracks }, () => {
-    const a = arch[Math.floor(rnd() * arch.length)] || arch[0];
-    const t = songsFor(a);
-    return { s: t[Math.floor(rnd() * t.length)], album: a };
-  });
-  // Ratings hover near 4.0 (±0.35), with 1–2 seeded outliers (a dud or a banger)
-  const outliers = new Set();
-  const oCount = Math.min(1 + Math.floor(rnd() * 2), songs.length);
-  while (outliers.size < oCount) outliers.add(Math.floor(rnd() * songs.length));
-  songs.forEach((row, i) => {
-    let r = 4.0 + (rnd() - 0.5) * 0.7;
-    if (outliers.has(i)) r = rnd() < 0.5 ? 2.4 + rnd() * 0.7 : 4.7 + rnd() * 0.25;
-    row.rating = (Math.round(r * 10) / 10).toFixed(1);
-  });
+  const songs = plTracksFor(pl).map(t => ({
+    s: { title: t.title, dur: t.dur },
+    album: arch.find(a => a.album === t.album) || { album: t.album, artist: t.artist, image: t.image, genre: t.genre },
+    rating: Number(t.rating || 4).toFixed(1),
+  }));
   // Majority genres — counted across the tracklist's albums, top 3 by share
   const gCount = new Map();
   songs.forEach(row => { const g = row.album.genre; if (g) gCount.set(g, (gCount.get(g) || 0) + 1); });
@@ -1266,7 +1568,7 @@ function playlistPageHtml(light) {
         ${appHeader()}
         <div class="v3-body">
           <div class="plp-scroll">
-            <button class="plp-back-pill" onclick="navigate('playlists')" title="Back to Library">
+            <button class="plp-back-pill" onclick="goBack('playlists')" title="Back">
               <span class="v3-ring plp-ring"><span class="v3-ring-spin"><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i></span></span>
             </button>
             <div class="plp-hero${hot ? ' plp-hero--hl' : ''}">
@@ -1304,6 +1606,7 @@ function playlistPageHtml(light) {
               </div>
             </div>
             <div class="plp-songs">
+              ${songs.length ? '' : '<div class="plp-empty">No songs yet — this playlist is empty.</div>'}
               ${songs.map((row, i) => `
               <div class="plp-song" onclick="event.stopPropagation(); plSongTap(this)" data-image="${row.album.image}" data-title="${row.s.title}" data-sub="${row.album.album}">
                 <div class="plp-song-num">${i + 1}</div>
@@ -1321,6 +1624,298 @@ function playlistPageHtml(light) {
 
 // Bottom nav — glass "console" bar: raised center hump (holds the now-playing bubble)
 // with 4 buttons in the lower bar. Floats centered, off the bottom, over the content.
+/* ============================================================
+   NOTIFICATIONS  (`s-ntf`) — behind the header's bell bubble
+   ============================================================
+   An activity inbox on the standard home shell. One flat list of rows;
+   the filter pills (All / Social / Reviews / Releases) hide rows by
+   `data-tab` client-side (notifTab in app.js), and a time bucket header
+   hides itself when its rows all filter out. Unread rows carry
+   `.ntf-row--new` (accent rail + dot); "Mark all read" strips them.
+
+   Every row is: avatar (or album art) + kind badge · copy · time ·
+   trailing slot (album thumb, or a Follow-back button for follows). */
+
+// Who shows up in the inbox. Handles are the same community accounts that
+// author the sample playlists (plLists) so the prototype stays consistent;
+// each keeps ONE photo from the rp-* pool so a person looks like themselves
+// wherever they appear.
+function ntfPeople() {
+  return {
+    velvetblast: 'images/rp-07.jpg',
+    staticfog:   'images/rp-14.jpg',
+    echoplex:    'images/rp-22.jpg',
+    moonwire:    'images/rp-31.jpg',
+    tapehiss:    'images/rp-40.jpg',
+    glassmoth:   'images/rp-49.jpg',
+  };
+}
+
+// The inbox itself. Hand-authored (not generated) — the copy carries the
+// app's voice, and each row names a real archive album so the art resolves.
+// `tab` drives the filter pills; `bucket` drives the time grouping.
+function ntfItems() {
+  return [
+    { type:'like',      tab:'reviews',  user:'velvetblast', bucket:'today', unread:true,
+      text:'liked your review of', album:'Loveless', time:'12m' },
+    { type:'follow',    tab:'social',   user:'moonwire',    bucket:'today', unread:true,
+      text:'started following you', time:'40m' },
+    { type:'comment',   tab:'social',   user:'staticfog',   bucket:'today', unread:true,
+      text:'replied to your review of', album:'Punisher', time:'1h',
+      quote:'ok but you gave this a 4.5 and Blonde a 4.0? explain yourself' },
+    { type:'release',   tab:'releases', bucket:'today',     unread:true,
+      text:'is out now', album:'Blackstar', artistLine:true, time:'3h' },
+    { type:'milestone', tab:'reviews',  bucket:'today',     unread:true,
+      text:'Your review of', album:'Untrue', tail:'passed 100 upvotes', time:'5h' },
+
+    { type:'like',      tab:'reviews',  user:'echoplex',    bucket:'week',
+      text:'liked your review of', album:'Blonde', time:'1d' },
+    { type:'playlist',  tab:'social',   user:'staticfog',   bucket:'week',
+      text:'added a song you rated to', playlist:'3am and raining', time:'2d' },
+    { type:'follow',    tab:'social',   user:'tapehiss',    bucket:'week',
+      text:'started following you', time:'2d' },
+    { type:'comment',   tab:'social',   user:'glassmoth',   bucket:'week',
+      text:'replied to your review of', album:'Mezzanine', time:'4d',
+      quote:'the Angel take is correct and you should say it louder' },
+    { type:'release',   tab:'releases', bucket:'week',
+      text:'is out now', album:'Titanic Rising', artistLine:true, time:'5d' },
+
+    { type:'like',      tab:'reviews',  user:'moonwire',    bucket:'earlier',
+      text:'liked your review of', album:'To Pimp a Butterfly', time:'1w' },
+    { type:'milestone', tab:'reviews',  bucket:'earlier',
+      text:'Your playlist', playlist:'desert island picks ✧', tail:'hit 87 favorites', time:'2w' },
+    { type:'follow',    tab:'social',   user:'velvetblast', bucket:'earlier',
+      text:'started following you', time:'3w' },
+  ];
+}
+
+function notificationsHtml(light) {
+  const arch  = window.ARCHIVE || [];
+  const pics  = ntfPeople();
+  const items = ntfItems();
+  const esc   = s => String(s).replace(/'/g, '\\\'');
+  const albOf = name => arch.find(a => a.album === name) || arch[0] || {};
+  const unread = items.filter(i => i.unread).length;
+
+  // Small glyph clipped to the avatar's bottom-right — says what happened
+  // before you've read a word of the copy.
+  const BADGES = {
+    like:      '<path d="M12 20s-7-4.6-7-9.3A4.2 4.2 0 0 1 12 8a4.2 4.2 0 0 1 7 2.7C19 15.4 12 20 12 20Z"/>',
+    follow:    '<path d="M10 11a3.4 3.4 0 1 0 0-6.8A3.4 3.4 0 0 0 10 11Z"/><path d="M3.5 20v-1.5A4.5 4.5 0 0 1 8 14h4a4.5 4.5 0 0 1 4.5 4.5V20Z"/><path d="M19 6.5v5M21.5 9h-5" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round"/>',
+    comment:   '<path d="M4 5.5h16a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1h-8.6L7 20v-4.5H4a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1Z"/>',
+    release:   '<path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Zm0 11a2 2 0 1 1 0-4 2 2 0 0 1 0 4Z"/>',
+    milestone: '<path d="m12 3.5 2.6 5.6 6.1.8-4.5 4.2 1.2 6-5.4-3-5.4 3 1.2-6L3.3 9.9l6.1-.8Z"/>',
+    playlist:  '<path d="M4 6h12v2H4zM4 11h12v2H4zM4 16h8v2H4z"/><path d="M18.5 11.5v6.2a2 2 0 1 1-1.6-2V10l3.6-.9v2Z"/>',
+  };
+
+  // System rows (release / milestone) already wear the album art as their
+  // avatar, so they get no trailing thumb — it would just be the same cover
+  // twice. A follow gets the follow-back button instead of art.
+  const isSys = it => it.type === 'release' || it.type === 'milestone';
+  const trail = it => {
+    if (it.type === 'follow')
+      return `<button class="ntf-follow" onclick="event.stopPropagation(); ntfFollowBack(this)">Follow</button>`;
+    if (it.album && !isSys(it))
+      return `<div class="ntf-art" style="background-image:url('${albOf(it.album).image || ''}')"></div>`;
+    return '';
+  };
+
+  // Copy line. Person rows lead with the handle; system rows lead with the
+  // sentence. The object (album / playlist) is optional — a follow has none.
+  const line = it => {
+    if (it.type === 'release') {
+      const a = albOf(it.album);
+      return `<b>${a.artist || ''}</b> — <i>${it.album}</i> ${it.text}`;
+    }
+    if (it.type === 'milestone')
+      return `${it.text} <i>${it.album || it.playlist}</i> ${it.tail}`;
+    const obj = it.playlist || it.album;
+    return `<b>${it.user}</b> ${it.text}${obj ? ` <i>${obj}</i>` : ''}`;
+  };
+
+  // Where a row takes you: an album row opens that album, a person row
+  // opens their profile, a playlist row opens the playlist.
+  const go = it => {
+    if (it.playlist) return `openPlaylistPage('${esc(it.playlist)}')`;
+    if (it.album)    return `openAlbumPage(ARCHIVE.find(x=>x.album==='${esc(it.album)}')||ARCHIVE[0])`;
+    return `navigate('profile')`;
+  };
+
+  const row = it => {
+    // System rows have no person, so the album cover stands in for the avatar.
+    const face = isSys(it)
+      ? `style="background-image:url('${albOf(it.album).image || 'images/spindeck-icon.png'}')"`
+      : `style="background-image:url('${pics[it.user] || ''}')"`;
+    return `
+              <div class="ntf-row${it.unread ? ' ntf-row--new' : ''}" data-tab="${it.tab}" onclick="${go(it)}">
+                <div class="ntf-ava" ${face}>
+                  <span class="ntf-badge ntf-badge--${it.type}">
+                    <svg viewBox="0 0 24 24" fill="currentColor">${BADGES[it.type]}</svg>
+                  </span>
+                </div>
+                <div class="ntf-body">
+                  <div class="ntf-text">${line(it)}</div>
+                  ${it.quote ? `<div class="ntf-quote">${it.quote}</div>` : ''}
+                  <div class="ntf-time">${it.time}</div>
+                </div>
+                ${trail(it)}
+              </div>`;
+  };
+
+  const BUCKETS = [['today', 'Today'], ['week', 'This week'], ['earlier', 'Earlier']];
+  const groups = BUCKETS.map(([key, label]) => {
+    const rows = items.filter(i => i.bucket === key);
+    if (!rows.length) return '';
+    return `
+            <div class="ntf-group">
+              <div class="ntf-group-hd">${label}</div>
+              ${rows.map(row).join('')}
+            </div>`;
+  }).join('');
+
+  return `
+      <div class="app-screen s-home-v3 s-ntf${light ? ' s-home-v3--light' : ''}">
+        ${appHeader()}
+        <div class="v3-body">
+          <div class="ntf-scroll">
+            <div class="ntf-top">
+              <button class="plp-back-pill" onclick="navigate('home')" title="Back">
+                <span class="v3-ring plp-ring"><span class="v3-ring-spin">${'<i class="v3-ring-dot"></i>'.repeat(6)}</span></span>
+              </button>
+              <div class="ntf-top-r">
+                ${unread ? `<span class="ntf-count">${unread} new</span>` : ''}
+                <button class="ntf-readall" onclick="event.stopPropagation(); ntfMarkAll(this)">Mark all read</button>
+              </div>
+            </div>
+
+            ${groups}
+
+            <div class="ntf-empty" hidden>Nothing here yet.</div>
+          </div>
+        </div>
+        ${nowBar()}
+        ${bottomNav('home')}
+      </div>`;
+}
+
+/* ============================================================
+   SETTINGS  (`s-set`) — behind the header's gear bubble
+   ============================================================
+   A plain grouped-list settings page on the home shell: an account card
+   up top (tap → Edit Profile), then labelled sections of rows. A row is
+   built by setRow() and ends in one of four controls — a switch
+   (sdToggle), a segmented picker (sdSeg), a status pill, or a chevron
+   link. Sign out is the one destructive row and sits alone at the end. */
+
+function settingsHtml(light) {
+  const P = window.PROFILE || {};
+  const dots = '<i class="v3-ring-dot"></i>'.repeat(6);
+
+  // — controls —
+  const sw = (on) => `
+                  <button class="set-sw${on ? ' is-on' : ''}" role="switch" aria-checked="${!!on}"
+                          onclick="event.stopPropagation(); sdToggle(this)"><span class="set-sw-knob"></span></button>`;
+  const seg = (opts, active) => `
+                  <div class="set-seg">${opts.map(o =>
+                    `<button class="${o === active ? 'active' : ''}" onclick="event.stopPropagation(); sdSeg(this)">${o}</button>`).join('')}</div>`;
+  const pill  = (txt, on) => `<span class="set-pill${on ? ' set-pill--on' : ''}">${txt}</span>`;
+  const chev  = `<svg class="set-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>`;
+
+  // label · optional sub-label · trailing control. `onclick` makes the whole
+  // row tappable (link rows); control rows swallow the click on the control.
+  const setRow = (label, sub, control, onclick) => `
+                <div class="set-row${onclick ? ' set-row--link' : ''}"${onclick ? ` onclick="${onclick}"` : ''}>
+                  <div class="set-row-body">
+                    <div class="set-row-label">${label}</div>
+                    ${sub ? `<div class="set-row-sub">${sub}</div>` : ''}
+                  </div>
+                  ${control}
+                </div>`;
+
+  const section = (title, rows) => `
+              <section class="set-sec">
+                <div class="set-sec-hd">${title}</div>
+                <div class="set-card">${rows}</div>
+              </section>`;
+
+  // Connected services — brand dot + name + connect state.
+  const service = (name, sub, brand, on) => `
+                <div class="set-row set-row--link" onclick="event.stopPropagation(); sdConnect(this)">
+                  <span class="set-svc-dot" style="background:${brand}"></span>
+                  <div class="set-row-body">
+                    <div class="set-row-label">${name}</div>
+                    <div class="set-row-sub">${sub}</div>
+                  </div>
+                  ${pill(on ? 'Connected' : 'Connect', on)}
+                </div>`;
+
+  return `
+      <div class="app-screen s-home-v3 s-set${light ? ' s-home-v3--light' : ''}">
+        ${appHeader()}
+        <div class="v3-body">
+          <div class="set-scroll">
+            <button class="plp-back-pill" onclick="navigate('profile')" title="Back">
+              <span class="v3-ring plp-ring"><span class="v3-ring-spin">${dots}</span></span>
+            </button>
+
+            <h2 class="set-title">Settings</h2>
+
+            <div class="set-acct" onclick="navigate('profile-edit')">
+              <div class="set-acct-pic" style="background-image:url('${P.pic || 'images/rp-01.jpg'}')"></div>
+              <div class="set-acct-body">
+                <div class="set-acct-name">${P.name || 'You'}</div>
+                <div class="set-acct-handle">@${P.handle || 'you'} · since ${P.since || '2023'}</div>
+              </div>
+              <span class="set-acct-edit">Edit profile ${chev}</span>
+            </div>
+
+            <button class="set-signout" onclick="navigate('auth')">Sign out</button>
+
+            ${section('Appearance', [
+              setRow('Theme', null, seg(['Dark', 'Light', 'Auto'], light ? 'Light' : 'Dark')),
+              setRow('Profile theme', 'Funky 01', chev, "navigate('profile-edit')"),
+              setRow('Reduce motion', 'Stops the spinning CD and ticker', sw(false)),
+            ].join('')) }
+
+            ${section('Connected services', [
+              // Sits above the services because it governs what they broadcast.
+              setRow('Show listening activity', 'Friends see what you\'re playing, live', sw(true)),
+              service('Spotify',     'Export playlists · scrobble plays', '#1db954', true),
+              service('Apple Music', 'Sync your library',                 '#fa2d48', false),
+              service('Last.fm',     'Import your listening history',     '#d51007', false),
+            ].join('')) }
+
+            ${section('Playback', [
+              setRow('30-second previews', 'Tap the CD to play a clip', sw(false)),
+              setRow('Autoplay next track', null, sw(true)),
+              setRow('Explicit content', null, sw(true)),
+              setRow('Audio quality', 'High', chev, 'void 0'),
+            ].join('')) }
+
+            ${section('Notifications', [
+              setRow('New followers', null, sw(true)),
+              setRow('Review likes &amp; replies', null, sw(true)),
+              setRow('New releases from artists you follow', null, sw(true)),
+              setRow('Weekly recap', 'Your listening, every Sunday', sw(false)),
+            ].join('')) }
+
+            ${section('Privacy', [
+              setRow('Private profile', 'Only approved followers see your reviews', sw(false)),
+              setRow('Blocked accounts', '2', chev, 'void 0'),
+            ].join('')) }
+
+            ${section('About', [
+              setRow('Version', 'Spindeck 0.9 (prototype)', ''),
+              setRow('Terms of service', null, chev, 'void 0'),
+              setRow('Privacy policy', null, chev, 'void 0'),
+            ].join('')) }
+          </div>
+        </div>
+        ${nowBar()}
+        ${bottomNav('profile')}
+      </div>`;
+}
+
 function bottomNav(active = 'home') {
   const on = id => active === id ? ' active' : '';
   return `

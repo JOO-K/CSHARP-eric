@@ -1412,18 +1412,69 @@
 /* ============================================================
    HALF STARS
    ============================================================ */
-.hstars { display: inline-flex; gap: 1.5px; align-items: center; vertical-align: middle; }
+/* `vertical-align: baseline` (not middle) sits the discs ON the text baseline,
+   so a rating's vinyls line up with the number beside it. An inline-flex takes
+   its baseline from its first item, and these items are empty inline-blocks —
+   whose baseline is their bottom edge — so the discs bottom out exactly on it. */
+/* Whole-pixel gap — 1.5px pushed each successive disc onto a different
+   sub-pixel boundary, which is half of why they rendered at different weights.
+   The row already aligns the discs' BOX bottoms exactly on the number's text
+   baseline (measured: 0.00px off). But a disc is taller than the digits' cap
+   height, so sitting it on the baseline makes it loom above the number. The
+   nudge drops it by ~10% of its own size, which lines the disc's optical centre
+   up with the digits' — scale-relative, so it holds at every rating size. */
+.hstars {
+  display: inline-flex; gap: 2px; align-items: center; vertical-align: baseline;
+  transform: translateY(10%);
+}
 /* Each rating unit is a vinyl record: a CSS mask clips the background to the
    disc shape, so full/empty/half coloring (incl. the 50/50 split) still works. */
+/* The disc is drawn by a radial-gradient mask, NOT the --vinyl-mask SVG.
+   ⚠️ Why: an SVG mask-image is rasterised once and then sampled. These discs are
+   ~10px and land on fractional x-positions (fractional size × 1.5px gap × the
+   viewer's 0.88 phone scale), so every disc in a row sampled that bitmap at a
+   different sub-pixel offset and came out a slightly different weight — the
+   first one read as visibly LARGER than the other four. A gradient is resolved
+   at paint time at device resolution, so all five rasterise identically.
+   Stops are relative to `closest-side` = half the box, so they map 1:1 onto the
+   old artwork: hole radius 10% of the box, outer edge 45.5% (was 45.8%). */
 .hstar {
   display: inline-block; width: 14px; height: 14px; flex: 0 0 auto;
-  background: var(--text3);
-  -webkit-mask: var(--vinyl-mask) center / contain no-repeat;
-          mask: var(--vinyl-mask) center / contain no-repeat;
+  background: var(--vinyl-empty, var(--text3));
+  -webkit-mask: radial-gradient(circle closest-side,
+                  transparent 0 20%, #000 21% 91%, transparent 92%);
+          mask: radial-gradient(circle closest-side,
+                  transparent 0 20%, #000 21% 91%, transparent 92%);
 }
 .hstar.full  { background: var(--star); }
-.hstar.empty { background: var(--text3); }
-.hstar.half  { background: linear-gradient(90deg, var(--star) 50%, var(--text3) 50%); }
+.hstar.empty { background: var(--vinyl-empty, var(--text3)); }
+.hstar.half  {
+  background: linear-gradient(90deg, var(--star) 50%, var(--vinyl-empty, var(--text3)) 50%);
+}
+/* Unfilled vinyls read as part of the rating, not as background texture, so they
+   get their own token rather than the very faint --text3 (which stays as the
+   fallback everywhere else that uses it).
+   ⚠️ The value follows the SURFACE, not the theme. In light mode most of the app
+   is cream, so the default flips to dark ink — but the bento stats block and the
+   review panel sit on the album's PROCEDURAL colour, which is dark in BOTH
+   themes (see applyColorVars). Theming those by variant put dark ink on a dark
+   album and made the empty vinyls disappear, which looked like "the light theme
+   didn't change". */
+.s-home-v3        { --vinyl-empty: rgba(255,255,255,0.85); }
+.s-home-v3--light { --vinyl-empty: rgba(26,18,8,0.62); }
+.s-home-v3--light .v3-blue-stars-row,
+.s-home-v3--light .v3-rev-card,
+.s-home-v3--light .v3-rev-hist { --vinyl-empty: rgba(255,255,255,0.85); }
+
+/* ── The rating gold follows the album ────────────────────────────────────
+   `--v3-accent` is extracted from the current cover by applyColorVars (set
+   inline on the screen), so the vinyls and the histogram bars re-tint on every
+   album switch instead of sitting at one fixed gold. The chain degrades:
+   album accent → the active persona's accent → the default gold. Screens with
+   no bento (wall, playlists, settings…) never get --v3-accent, so they simply
+   fall through to the persona/default. */
+.s-home-v3        { --star: var(--v3-star, var(--persona-accent, #e8a83c)); }
+.s-home-v3--light { --star: var(--v3-star, var(--persona-accent, #c08818)); }
 
 /* ============================================================
    BENTO HOME
@@ -2328,9 +2379,22 @@
    one asset (the mark is single-tone, unlike the 2-tone turntable icon).
    Asset is 1749×249 (≈7.02:1); `contain` in a 106×30 box lands it at ~106×15,
    vertically centred on the bubble row. */
-.v3-header-logo {
-  align-self: start;      /* sit in the same top band as the bubbles */
+/* Wordmark + handle stack, centred in the header's middle grid column. The
+   stack (not the logo) now carries the top band alignment, so the wordmark
+   stays exactly where it was and the handle hangs beneath it. */
+.v3-header-brand {
+  align-self: start;
   margin-top: 10px;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+.v3-header-handle {
+  font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.3px;
+  color: rgba(232,226,214,0.42);
+  line-height: 1; white-space: nowrap;
+}
+.s-home-v3--light .v3-header-handle { color: rgba(26,18,8,0.42); }
+
+.v3-header-logo {
   width: 106px;
   height: 30px;           /* = bubble height, so the mark centers on bubble centers */
   background-color: rgba(232,226,214,0.92);
@@ -3104,6 +3168,14 @@
   font-family: var(--font-mono);
   letter-spacing: 0.2px;
 }
+/* The sample review is gone from the compact bento (it was already hidden in
+   review mode, so this retires it everywhere). The markup and the typewriter in
+   app.js stay — they just paint into a hidden node — so it can be brought back
+   by deleting this one rule. With it gone the stats block holds TWO lines, and
+   .v3-blue switches from space-between (which would push them to the far top
+   and bottom of the box) to a centred stack the dev box can tune. */
+.v3-blue-quote { display: none; }
+.v3-blue { justify-content: center; gap: 3px; }
 .v3-blue-quote {
   overflow: hidden;
   white-space: nowrap;
@@ -3574,12 +3646,14 @@
    no CD / tracklist / media; a grid of the artist's albums below the info. */
 .s-home-v3--review.s-home-v3--album.s-home-v3--artist .v3-album {
   left: -10px; width: calc(100% + 20px);   /* edge-to-edge, past the bento's 10px margins */
-  top: -20px;                              /* lift the banner up so more of it shows above the fade */
+  top: 0;                                  /* top edge sits on the bento's top, exactly where the
+                                              album cover starts — a clean edge, not a soft crop */
   border-radius: 0;
   box-shadow: none;
-  /* as tall as the album cover (inherits aspect-ratio:1), fading top+bottom into the bg */
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 6%, #000 76%, transparent 100%);
-          mask-image: linear-gradient(to bottom, transparent 0%, #000 6%, #000 76%, transparent 100%);
+  /* as tall as the album cover (inherits aspect-ratio:1). Only the BOTTOM fades
+     into the bg; a top fade read as a harsh cut-off floating under the header. */
+  -webkit-mask-image: linear-gradient(to bottom, #000 62%, transparent 100%);
+          mask-image: linear-gradient(to bottom, #000 62%, transparent 100%);
 }
 .s-home-v3--artist .v3-cd,
 .s-home-v3--artist .v3-preview-btn,
@@ -3587,6 +3661,11 @@
 .s-home-v3--artist .v3-rev-songs,
 .s-home-v3--artist .v3-rev-media,
 .s-home-v3--artist .v3-blue-date { display: none; }
+/* No artist rating — an artist isn't a thing you score; their ALBUMS carry the
+   ratings, in the grid below. The review count stays as the one stat. */
+.s-home-v3--artist .v3-blue-score,
+.s-home-v3--artist .v3-blue-stars-row .hstar,
+.s-home-v3--artist .v3-rev-hist { display: none; }
 /* Left-align the artist name / genre / stars */
 .s-home-v3--artist .v3-blue {
   left: 0; width: 100%;
@@ -3595,10 +3674,9 @@
 .s-home-v3--artist .v3-blue-info-row,
 .s-home-v3--artist .v3-blue-stars-row,
 .s-home-v3--artist .v3-blue-title { align-items: flex-start; justify-content: flex-start; text-align: left; }
-/* Left-align the Review/rate/log button with the text (drop the CD-column offset) */
+/* Drop the CD-column offset; centring comes from the --album rule above */
 .s-home-v3--artist .v3-rev-mine {
   margin-left: 0 !important; margin-right: 0 !important;
-  align-items: flex-start;
 }
 /* Artist page uses the default theme background, not the album's procedural color */
 .s-home-v3--review.s-home-v3--artist { background: #111116; }
@@ -3606,16 +3684,92 @@
 .s-home-v3--artist .v3-bg-fill { display: none; }
 /* Match the trending page's 12px side margins (drop the review panel's extra 10px inset) */
 .s-home-v3--artist .v3-review-panel { padding-left: 0; padding-right: 0; }
-/* Genre — smaller + grey */
-.s-home-v3--artist .v3-blue-artist { font-size: 10px; font-weight: 400; color: rgba(232,226,214,0.5); }
-.s-home-v3--light.s-home-v3--artist .v3-blue-artist { color: rgba(26,18,8,0.45); }
-/* Rating bars — full width on the artist page (ignore the hand-column shift) */
-.s-home-v3--review.s-home-v3--artist .v3-rev-hist {
-  padding-left: 12px; padding-right: 12px; margin: 8px 0 8px;
+/* No genre line — the artist name stands alone under the banner. (populateArtistPage
+   still writes the genre into .v3-blue-artist; it's just not shown here.) */
+.s-home-v3--artist .v3-blue-artist,
+.s-home-v3--artist .v3-blue-sep { display: none; }
+/* ── Artist page, LIGHT — the one screen in this state with a cream page ──
+   The album page keeps the album's dark procedural colour behind the review
+   panel in BOTH themes, which is why every `.s-home-v3--light .v3-rev-*` rule
+   is light ink. The artist page forces the cream bg instead, so that same ink
+   lands invisible — these re-ink the panel dark. Scoped `--light.--artist`
+   (0,3,0) so it beats the generic `--light` rules without !important. */
+.s-home-v3--light.s-home-v3--artist .v3-blue-album { color: #1a1208; }
+.s-home-v3--light.s-home-v3--artist .v3-blue-count,
+.s-home-v3--light.s-home-v3--artist .v3-rev-count { color: rgba(26,18,8,0.4); }
+.s-home-v3--light.s-home-v3--artist .v3-rev-cta {
+  background: rgba(26,18,8,0.06); border-color: rgba(26,18,8,0.12); color: #1a1208;
 }
-/* Albums grid — only shown on the artist page (trending styling reused inside) */
+.s-home-v3--light.s-home-v3--artist .v3-rev-rec {
+  background: rgba(26,18,8,0.05); border-color: rgba(26,18,8,0.1); color: rgba(26,18,8,0.7);
+}
+.s-home-v3--light.s-home-v3--artist .v3-rev-rec-name { color: #1a1208; }
+.s-home-v3--light.s-home-v3--artist .v3-rev-filters { border-top-color: rgba(26,18,8,0.12); }
+.s-home-v3--light.s-home-v3--artist .v3-rev-filter { color: rgba(26,18,8,0.4); }
+.s-home-v3--light.s-home-v3--artist .v3-rev-filter.active { color: #b06a2a; }
+.s-home-v3--light.s-home-v3--artist .v3-rev-card { border-bottom-color: rgba(26,18,8,0.1); }
+.s-home-v3--light.s-home-v3--artist .v3-rev-name { color: rgba(26,18,8,0.85); }
+.s-home-v3--light.s-home-v3--artist .v3-rev-text { color: rgba(26,18,8,0.55); }
+.s-home-v3--light.s-home-v3--artist .v3-rev-score { color: rgba(26,18,8,0.5); }
+.s-home-v3--light.s-home-v3--artist .v3-rev-time,
+.s-home-v3--light.s-home-v3--artist .v3-rev-likes { color: rgba(26,18,8,0.3); }
+.s-home-v3--light.s-home-v3--artist .v3-rev-empty { color: rgba(26,18,8,0.4); }
+
+/* ── Artist albums — only shown on the artist page ────────────────
+   Replaces the rating histogram. A section head with a row/grid toggle, then
+   either a horizontal rail or the trending grid (both reuse .wall2-* styling,
+   so a cover looks the same wherever it appears). Built by populateArtistPage. */
 .v3-artist-albums { display: none; }
-.s-home-v3--artist .v3-artist-albums { display: block; padding: 2px 12px 0; }
+.s-home-v3--artist .v3-artist-albums { display: block; padding: 6px 12px 0; }
+.v3-aa-hd {
+  display: flex; align-items: center; gap: 8px;
+  padding: 0 0 9px;
+}
+.v3-aa-title {
+  font-size: 13px; font-weight: 800; letter-spacing: -0.2px;
+  color: #e8e2d6;
+}
+.v3-aa-n {
+  font-family: var(--font-mono); font-size: 9.5px;
+  color: rgba(232,226,214,0.32);
+}
+/* Row/grid switch — a two-cell segmented control, mirrors .set-seg's language */
+.v3-aa-seg {
+  margin-left: auto; display: flex; gap: 2px; padding: 2px;
+  border-radius: 999px; background: rgba(255,255,255,0.05);
+}
+.v3-aa-seg button {
+  display: flex; align-items: center; justify-content: center;
+  width: 24px; height: 20px; padding: 0;
+  border: none; border-radius: 999px; background: none; cursor: pointer;
+  color: rgba(232,226,214,0.4);
+  transition: background .15s, color .15s;
+}
+.v3-aa-seg button:hover { color: #e8e2d6; }
+.v3-aa-seg button.active { background: rgba(232,168,60,0.16); color: var(--star); }
+.v3-aa-seg svg { width: 13px; height: 13px; }
+/* Row mode — a horizontal rail; the cell width is fixed so covers line up */
+.v3-aa-row {
+  display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x proximity;
+  padding-bottom: 4px; margin: 0 -12px; padding-left: 12px; padding-right: 12px;
+  /* snap-align:start snaps to the SCROLLPORT edge, which would scroll the
+     padding away and leave the first cover flush to the frame — match it */
+  scroll-padding-left: 12px;
+  scrollbar-width: none;
+}
+.v3-aa-row::-webkit-scrollbar { display: none; }
+.v3-aa-row .wall2-cell { flex: 0 0 96px; scroll-snap-align: start; }
+/* The reviews heading is emitted as the last block of .v3-artist-albums (it sits
+   directly above .v3-rev-filters in the panel), so it hides with the container
+   when the page leaves the artist state. */
+.v3-aa-hd--rev { padding-top: 16px; }
+/* Artist page — light theme */
+.s-home-v3--light .v3-aa-title { color: #1a1208; }
+.s-home-v3--light .v3-aa-n { color: rgba(26,18,8,0.4); }
+.s-home-v3--light .v3-aa-seg { background: rgba(26,18,8,0.05); }
+.s-home-v3--light .v3-aa-seg button { color: rgba(26,18,8,0.4); }
+.s-home-v3--light .v3-aa-seg button:hover { color: #1a1208; }
+.s-home-v3--light .v3-aa-seg button.active { background: rgba(176,106,42,0.14); color: #b06a2a; }
 .s-home-v3--review.s-home-v3--album .v3-album {
   left: 0; top: 0; width: 100%; height: auto; aspect-ratio: 1;
   border-radius: 12px;
@@ -3775,7 +3929,10 @@
 .v3-rev-hist-bar { flex: 1; height: 100%; display: flex; align-items: flex-end; }
 .v3-rev-hist-bar > span {
   display: block; width: 100%; min-height: 2px; border-radius: 2px 2px 0 0;
-  background: linear-gradient(to top, rgba(232,168,60,0.4), var(--star, #e8a83c));
+  /* both stops ride --star, so the bars re-tint with the album like the vinyls */
+  background: linear-gradient(to top,
+    color-mix(in srgb, var(--star, #e8a83c) 40%, transparent),
+    var(--star, #e8a83c));
 }
 .v3-rev-hist-axis {
   display: flex; justify-content: space-between; margin-top: 4px;
@@ -3807,16 +3964,17 @@
 .s-home-v3--review.s-home-v3--album .v3-rev-actions { top: 3px; }
 /* Reviews sit exactly 10px below the CTA button (icon column no longer in the way). */
 .s-home-v3--review .v3-rev-mine { padding-bottom: 0; }
-.s-home-v3--review .v3-rev-hist { margin-top: 10px; }
-.v3-rev-songs-scroll { display: flex; flex-direction: column; }
-.v3-rev-songs--scroll .v3-rev-songs-scroll {
-  max-height: 296px;              /* ~8.5 rows (34.6px each) → the 9th peeks through */
-  overflow-y: auto;
-  scrollbar-width: none;
-  -webkit-mask-image: linear-gradient(to bottom, #000 82%, transparent);
-          mask-image: linear-gradient(to bottom, #000 82%, transparent);
+/* Album + artist pages: the CTA is centred under the full-width art rather than
+   hung off the stats column (there's no CD column beside it in these states).
+   --artist inherits this — it always carries --album too. */
+.s-home-v3--review.s-home-v3--album .v3-rev-mine {
+  align-items: center;
+  padding-left: 0; padding-right: 0;
 }
-.v3-rev-songs-scroll::-webkit-scrollbar { display: none; }
+.s-home-v3--review .v3-rev-hist { margin-top: 10px; }
+/* The full tracklist, in flow — it no longer caps its height and scrolls inside
+   itself (the page is the scroller; a nested one hid the rest of the album). */
+.v3-rev-songs-scroll { display: flex; flex-direction: column; }
 .v3-song-row {
   position: relative;   /* anchor for the hanging track number */
   display: flex; align-items: center; gap: 10px;
@@ -3846,21 +4004,18 @@
   min-width: 28px; justify-content: flex-end;
   color: var(--star); font-size: 11.5px; font-weight: 700; font-family: var(--font-mono);
 }
-/* Friend-rec tag — sits at the top of the review panel; hidden when algo-served */
+/* Friend-rec tag — social proof, so it sits with the REVIEWS (below the
+   tracklist, directly above the filter tabs), not up by the CTA. It aligns to
+   the review list's 12px gutter and is hand-mode agnostic there. */
 .v3-rev-rec {
   display: flex; align-items: center; gap: 8px; width: fit-content;
-  margin: 0 0 0 10px; padding: 5px 12px 5px 5px;
+  margin: 14px 12px 0; padding: 5px 12px 5px 5px;
   background: rgba(232,226,214,0.06); border: 1px solid rgba(255,255,255,0.07);
   border-radius: 999px; font-size: 11.5px; color: rgba(232,226,214,0.75);
 }
-/* Align the friend pill with the album name / CTA content column (mirrors hand layout) */
-.s-home-v3--left .v3-rev-rec { margin-left: 90px; }
 .v3-rev-rec[hidden] { display: none; }
-/* When the friend pill shows, push the CTA + streaming icons ~8px below it.
-   Also drop the button/icon column's own top offsets (only needed in the no-pill layout). */
-.v3-rev-rec:not([hidden]) + .v3-rev-top { margin-top: 8px; }
-.v3-rev-rec:not([hidden]) + .v3-rev-top .v3-rev-mine { margin-top: 0; }
-.v3-rev-rec:not([hidden]) + .v3-rev-top .v3-rev-actions { padding-top: 0; }
+/* The pill supplies the gap above the filters when it shows */
+.v3-rev-rec:not([hidden]) + .v3-rev-filters { margin-top: 8px; }
 .v3-rev-rec-av {
   width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
   display: inline-flex; align-items: center; justify-content: center;
@@ -3920,10 +4075,19 @@
   font-size: 11px; font-weight: 600;
   color: rgba(232,226,214,0.8);
 }
+/* Upvote + comments ride in the card's TOP-RIGHT, with the timestamp hard right.
+   They used to sit in the meta row beside the rating vinyls, crowding them. */
+.v3-rev-acts { display: flex; align-items: center; gap: 6px; margin-left: auto; }
 .v3-rev-time {
-  font-size: 10px; color: rgba(232,226,214,0.22); margin-left: auto;
+  font-size: 10px; color: rgba(232,226,214,0.22);
+  flex-shrink: 0;   /* .v3-rev-acts carries the auto margin now — time stays last */
 }
-.v3-rev-meta { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+/* The meta row is the rating alone: vinyls + the score, the app's usual pairing */
+.v3-rev-meta { display: flex; align-items: center; gap: 5px; margin-bottom: 3px; }
+.v3-rev-score {
+  font-family: var(--font-mono); font-size: 9.5px; font-weight: 700;
+  color: rgba(232,226,214,0.5);
+}
 .v3-rev-likes { font-size: 9.5px; color: rgba(232,226,214,0.25); }
 .v3-rev-text {
   font-size: 10.5px; line-height: 1.3; color: rgba(232,226,214,0.45);
@@ -4330,9 +4494,7 @@
    only the scroll content below is wall-specific.
    ============================================================ */
 .wall2-scroll {
-  /* No side padding — the grid runs edge to edge (see .wall2-grid).
-     The bar re-adds its own inset; bottom clears the nowbar/nav overlay. */
-  padding: 4px 0 96px;
+  padding: 4px 12px 96px;   /* .v3-body is the scroller; bottom clears the nowbar/nav overlay */
 }
 .wall2-hd {
   display: flex; align-items: baseline; gap: 8px;
@@ -4348,7 +4510,7 @@
 }
 .wall2-bar {
   display: flex; align-items: center; gap: 12px;
-  padding: 0 12px 12px;   /* the grid is edge-to-edge, so the bar carries the side inset */
+  padding-bottom: 12px;
 }
 .wall2-cat {
   flex-shrink: 0;
@@ -4405,8 +4567,7 @@
 .s-home-v3--light .wall2-menu-item:hover { background: rgba(26,18,8,0.07); color: #1a1208; }
 .s-home-v3--light .wall2-menu-item.active { color: #b06a2a; }
 /* NOTE: .wall2-grid / -cell / -art / -meta are shared — the artist page's
-   album grid (renderArtistPage in app.js) reuses them. Keep these generic;
-   the trending wall's seamless-mosaic treatment is scoped to .s-wall2 below. */
+   album grid (renderArtistPage in app.js) reuses them, so keep them generic. */
 .wall2-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -4465,39 +4626,13 @@
   box-shadow: 0 6px 14px rgba(30,20,10,0.18), 0 2px 5px rgba(30,20,10,0.15);
 }
 
-/* ── Trending wall: flush mosaic, captions underneath ────────────
-   Covers run edge to edge with no side inset and no column gutter, so each
-   row reads as one unbroken band of artwork. The caption sits BELOW its cover
-   (not overlaid on it — that got too busy), which means rows need a little
-   vertical air: column-gap stays 0, row-gap opens up for the text.
-   Scoped to .s-wall2 so the artist page's grid is unaffected. */
-.s-wall2 .wall2-grid { column-gap: 0; row-gap: 13px; }
+/* ── Trending wall grid ──────────────────────────────────────────
+   The wall shares the generic .wall2-grid with the artist page: inset from
+   the frame, gutters between the covers, rounded + shadowed tiles, and the
+   rank badge hung off the top-left corner. (An edge-to-edge flush mosaic —
+   no side inset, no column gutter, square tiles — was tried and dropped:
+   the artwork ran into the frame and read as a solid slab.) */
 .s-wall2 .wall2-cell { position: relative; }
-.s-wall2 .wall2-art {
-  border-radius: 0;
-  box-shadow: none;
-  /* half-pixel bleed: fractional 1fr track widths otherwise leave hairline
-     seams of screen bg between tiles in a row */
-  margin-right: -0.5px;
-}
-/* Hover lifts the tile OVER its neighbours — a translate would just open a gap */
-.s-wall2 .wall2-cell:hover { z-index: 3; }
-.s-wall2 .wall2-cell:hover .wall2-art {
-  transform: scale(1.045);
-  box-shadow: 0 10px 26px rgba(0,0,0,0.5);
-}
-.s-home-v3--light.s-wall2 .wall2-cell:hover .wall2-art {
-  box-shadow: 0 10px 26px rgba(30,20,10,0.3);
-}
-/* Rank badge moves inside the tile — there's no padding left to hang off of */
-.s-wall2 .wall2-rank {
-  top: 5px; left: 5px; z-index: 2;
-  width: 18px; height: 18px; font-size: 10px;
-}
-/* The covers are flush to the frame, so the caption gets its own small inset
-   rather than sitting hard against the screen edge. */
-.s-wall2 .wall2-meta { margin-top: 5px; padding: 0 5px; gap: 1px; }
-.s-wall2 .wall2-rating { margin-top: 2px; }
 
 /* ============================================================
    PLAYLISTS / LIBRARY v2 — adapted to the home shell like the wall.
@@ -4823,6 +4958,220 @@
 .s-home-v3--light .plp-fav:hover { background: rgba(26,18,8,0.1); color: #1a1208; }
 .s-home-v3--light .plp-fav.on { background: var(--star); border-color: var(--star); color: #16130d; }
 .s-home-v3--light .plp-cd { box-shadow: 0 4px 12px rgba(30,20,10,0.25), 0 1px 3px rgba(30,20,10,0.15); }
+.plp-empty {
+  padding: 22px 4px; text-align: center;
+  font-family: var(--font-mono); font-size: 10.5px; color: rgba(232,226,214,0.35);
+}
+.s-home-v3--light .plp-empty { color: rgba(26,18,8,0.4); }
+
+/* ============================================================
+   NEW PLAYLIST (.s-plnew) — the creation page behind the "+".
+   Reuses the playlist page's hero (.plp-hero / .plp-hero-img /
+   .plp-shape-panel / .plp-cd) so the form IS a preview of the page being
+   built; only the editable bits and the pickers below are new here.
+   ============================================================ */
+.plnew-scroll { padding: 4px 12px 96px; }
+
+/* — cover well: the detail page's image panel as a real upload target. It's a
+   <label> wrapping a hidden file input, so the whole panel opens the picker. — */
+.plnew-cover {
+  display: flex; align-items: center; justify-content: center;
+  border: 1px dashed rgba(232,226,214,0.22);
+  cursor: pointer;
+  transition: border-color .15s, background-color .15s;
+}
+.plnew-cover:hover { border-color: var(--star); }
+.plnew-cover--set { border-color: transparent; }
+.plnew-file { display: none; }
+.plnew-cover-hint {
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  font-family: var(--font-mono); font-size: 8px; letter-spacing: .06em;
+  color: rgba(232,226,214,0.4); text-align: center; padding: 0 6px;
+}
+.plnew-cover-hint svg { width: 17px; height: 17px; }
+.plnew-cover-hint i { font-style: normal; }
+.plnew-cover:hover .plnew-cover-hint { color: var(--star); }
+.plnew-cover--set .plnew-cover-hint { display: none; }
+/* the CD is empty until a cover is chosen — give it a disc-coloured blank
+   instead of letting the page show through the hole */
+.plnew-cd { background-color: rgba(232,226,214,0.09); }
+.s-home-v3--light .plnew-cd { background-color: rgba(26,18,8,0.1); }
+.s-home-v3--light .plnew-cover { border-color: rgba(26,18,8,0.22); }
+.s-home-v3--light .plnew-cover-hint { color: rgba(26,18,8,0.42); }
+.s-home-v3--light .plnew-cover--set { border-color: transparent; }
+
+/* — name field: sits where .plp-name sits, styled as an editable version — */
+.plnew-name {
+  width: 100%; padding: 0 26px 2px 0;                 /* right pad clears the dog-ear */
+  background: none; border: none; border-bottom: 1px solid rgba(232,226,214,0.16);
+  font-family: var(--font-main); font-size: 15px; font-weight: 800; letter-spacing: -0.3px;
+  color: #e8e2d6; outline: none;
+}
+.plnew-name::placeholder { color: rgba(232,226,214,0.26); font-weight: 700; }
+.plnew-name:focus { border-bottom-color: var(--star); }
+.s-home-v3--light .plnew-name { color: #1a1208; border-bottom-color: rgba(26,18,8,0.18); }
+.s-home-v3--light .plnew-name::placeholder { color: rgba(26,18,8,0.3); }
+
+/* — public / private, in the slot the detail page gives the heart — */
+.plnew-priv { margin-top: auto; margin-bottom: 10px; display: flex; gap: 5px; }
+.plnew-priv-btn {
+  padding: 5px 10px; border-radius: 999px;
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(232,226,214,0.55);
+  font-family: var(--font-mono); font-size: 9px; font-weight: 700; letter-spacing: .04em;
+  cursor: pointer; transition: background .15s, color .15s, border-color .15s;
+}
+.plnew-priv-btn:hover { background: rgba(255,255,255,0.1); color: #e8e2d6; }
+.plnew-priv-btn.active { background: var(--star); border-color: var(--star); color: #16130d; }
+.s-home-v3--light .plnew-priv-btn {
+  background: rgba(26,18,8,0.05); border-color: rgba(26,18,8,0.12); color: rgba(26,18,8,0.5);
+}
+.s-home-v3--light .plnew-priv-btn.active { background: var(--star); border-color: var(--star); color: #16130d; }
+
+/* — rows: the detail page's song row, plus an add / remove control — */
+.plnew-row { cursor: default; }
+.plnew-res-art {
+  width: 26px; height: 26px; border-radius: 5px; flex-shrink: 0;
+  background-size: cover; background-position: center;
+  background-color: rgba(255,255,255,0.05);
+}
+.plnew-plus, .plnew-x {
+  flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,0.07); border: none;
+  color: rgba(232,226,214,0.7);
+  font-size: 15px; line-height: 1; cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.plnew-plus:hover, .plnew-x:hover { background: rgba(255,255,255,0.14); color: #e8e2d6; }
+.plnew-res--on .plnew-plus { background: var(--star); color: #16130d; }
+.s-home-v3--light .plnew-plus, .s-home-v3--light .plnew-x {
+  background: rgba(26,18,8,0.07); color: rgba(26,18,8,0.6);
+}
+.s-home-v3--light .plnew-res--on .plnew-plus { background: var(--star); color: #16130d; }
+
+/* — find row: search + the "Library" toggle that browses your own playlists — */
+.plnew-find { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; }
+.plnew-libbtn {
+  flex-shrink: 0; height: 35px; padding: 0 12px; border-radius: 10px;
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(255,255,255,0.05); border: none;
+  color: rgba(232,226,214,0.7);
+  font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: .04em;
+  cursor: pointer; transition: background .15s, color .15s;
+}
+.plnew-libbtn svg { width: 13px; height: 13px; }
+.plnew-libbtn:hover { background: rgba(255,255,255,0.1); color: #e8e2d6; }
+.plnew-libbtn.active { background: var(--star); color: #16130d; }
+.s-home-v3--light .plnew-libbtn { background: rgba(26,18,8,0.05); color: rgba(26,18,8,0.6); }
+.s-home-v3--light .plnew-libbtn:hover { background: rgba(26,18,8,0.1); color: #1a1208; }
+.s-home-v3--light .plnew-libbtn.active { background: var(--star); color: #16130d; }
+
+/* — library browser: your playlists, then one opened to its tracks — */
+.plnew-liblist {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 8px 2px; background: none; border: none;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  cursor: pointer; text-align: left;
+}
+.plnew-liblist:hover { background: rgba(255,255,255,0.03); }
+.plnew-lib-art {
+  width: 34px; height: 34px; border-radius: 6px; flex-shrink: 0;
+  background-size: cover; background-position: center;
+  background-color: rgba(255,255,255,0.05);
+}
+.plnew-lib-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.plnew-lib-name {
+  font-family: var(--font-main); font-size: 12px; font-weight: 700; color: #e8e2d6;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.plnew-lib-sub { font-family: var(--font-mono); font-size: 9px; color: rgba(232,226,214,0.38); }
+.plnew-lib-chev { flex-shrink: 0; font-size: 16px; color: rgba(232,226,214,0.35); }
+.plnew-libhead {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 2px 8px; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 2px;
+}
+.plnew-libback {
+  flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,0.07); border: none;
+  color: rgba(232,226,214,0.8); font-size: 15px; line-height: 1; cursor: pointer;
+}
+.plnew-libback:hover { background: rgba(255,255,255,0.14); }
+.plnew-libhead-t {
+  flex: 1; min-width: 0;
+  font-family: var(--font-main); font-size: 11.5px; font-weight: 700; color: #e8e2d6;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.plnew-liball {
+  flex-shrink: 0; padding: 5px 10px; border-radius: 999px;
+  background: var(--star); border: none; color: #16130d;
+  font-family: var(--font-mono); font-size: 9px; font-weight: 700;
+  cursor: pointer;
+}
+.plnew-liball:disabled {
+  background: rgba(255,255,255,0.07); color: rgba(232,226,214,0.35); cursor: default;
+}
+.s-home-v3--light .plnew-liblist { border-bottom-color: rgba(26,18,8,0.08); }
+.s-home-v3--light .plnew-liblist:hover { background: rgba(26,18,8,0.03); }
+.s-home-v3--light .plnew-lib-name { color: #1a1208; }
+.s-home-v3--light .plnew-lib-sub { color: rgba(26,18,8,0.42); }
+.s-home-v3--light .plnew-lib-chev { color: rgba(26,18,8,0.35); }
+.s-home-v3--light .plnew-libhead { border-bottom-color: rgba(26,18,8,0.12); }
+.s-home-v3--light .plnew-libback { background: rgba(26,18,8,0.07); color: rgba(26,18,8,0.7); }
+.s-home-v3--light .plnew-libhead-t { color: #1a1208; }
+.s-home-v3--light .plnew-liball:disabled { background: rgba(26,18,8,0.07); color: rgba(26,18,8,0.35); }
+
+/* — search — */
+.plnew-searchbar {
+  flex: 1; min-width: 0;
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 12px; border-radius: 10px;
+  background: rgba(255,255,255,0.05);
+}
+.plnew-searchbar svg { width: 15px; height: 15px; flex-shrink: 0; color: rgba(232,226,214,0.45); }
+.plnew-searchbar input {
+  flex: 1; min-width: 0; background: none; border: none; outline: none;
+  font-family: var(--font-main); font-size: 12px; color: #e8e2d6;
+}
+.plnew-searchbar input::placeholder { color: rgba(232,226,214,0.32); }
+.s-home-v3--light .plnew-searchbar { background: rgba(26,18,8,0.05); }
+.s-home-v3--light .plnew-searchbar svg { color: rgba(26,18,8,0.45); }
+.s-home-v3--light .plnew-searchbar input { color: #1a1208; }
+.s-home-v3--light .plnew-searchbar input::placeholder { color: rgba(26,18,8,0.35); }
+
+.plnew-results { max-height: 268px; overflow-y: auto; scrollbar-width: none; }
+.plnew-results::-webkit-scrollbar { display: none; }
+
+.plnew-empty {
+  padding: 16px 4px; font-family: var(--font-mono); font-size: 10px;
+  color: rgba(232,226,214,0.34); text-align: center;
+}
+.plnew-empty b { color: rgba(232,226,214,0.6); }
+.s-home-v3--light .plnew-empty { color: rgba(26,18,8,0.4); }
+.s-home-v3--light .plnew-empty b { color: rgba(26,18,8,0.65); }
+
+/* The chosen list sits between the search and the results, so songs stack right
+   under the search as you add them. It renders empty (no placeholder) until
+   there's something in it — collapse the gap in that case. */
+.plnew-chosen { margin-bottom: 10px; }
+.plnew-chosen:empty { display: none; }
+
+/* — the commit — sits at the TOP of the form, under the hero, so it's reachable
+   without scrolling past however many songs have been added — */
+.plnew-create {
+  width: 100%; margin: 4px 0 16px; padding: 13px;
+  border-radius: 12px; border: none;
+  background: var(--star); color: #16130d;
+  font-family: var(--font-main); font-size: 13px; font-weight: 800; letter-spacing: -0.1px;
+  cursor: pointer; transition: opacity .15s, filter .15s;
+}
+.plnew-create:hover:not(:disabled) { filter: brightness(1.07); }
+.plnew-create:disabled {
+  background: rgba(255,255,255,0.07); color: rgba(232,226,214,0.3); cursor: not-allowed;
+}
+.s-home-v3--light .plnew-create:disabled { background: rgba(26,18,8,0.07); color: rgba(26,18,8,0.32); }
+
 .s-home-v3--light .plp-song { border-bottom-color: rgba(26,18,8,0.08); }
 .s-home-v3--light .plp-song-title  { color: #1a1208; }
 .s-home-v3--light .plp-song-album  { color: rgba(26,18,8,0.55); }
@@ -5551,3 +5900,399 @@
 .pp-t { font-size: 11px; font-weight: 700; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 .pp-s { font-size: 9.5px; color: var(--pf-fg2); text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; margin-top: -2px; }
 .pp-empty { grid-column: 1 / -1; text-align: center; color: var(--pf-fg2); font-size: 13px; padding: 30px 0; }
+
+/* ============================================================
+   EDIT PROFILE (.s-pfedit) — direct manipulation, no form.
+   The page is the profile itself; every editable region carries
+   .pfe-slot (tap to swap) or, when empty, a .pfe-add "+" tile.
+   Both open the category-aware popup (#prof-picker).
+   ============================================================ */
+.pfe-scroll { padding-bottom: 96px; }
+
+/* top bar — back pill on the left, Save on the right */
+.pfe-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.pfe-top .plp-back-pill { margin-bottom: 10px; }
+.pfe-top-right { display: flex; align-items: center; gap: 9px; margin-bottom: 10px; }
+.pfe-editing {
+  font-family: var(--font-mono); font-size: 9.5px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--pf-fg2);
+  white-space: nowrap;
+}
+.pfe-save {
+  margin-bottom: 10px; padding: 9px 16px; border-radius: 999px; border: none;
+  background: var(--star); color: #16130d;
+  font-family: var(--font-main); font-size: 12px; font-weight: 800;
+  cursor: pointer; transition: filter .15s;
+}
+.pfe-save:hover { filter: brightness(1.07); }
+
+.pfe-hint {
+  margin: 8px 0 16px; text-align: center;
+  font-family: var(--font-mono); font-size: 9.5px; letter-spacing: .04em;
+  color: var(--pf-fg2);
+}
+
+/* ── a filled slot: outline it on hover ──
+   NOTE: no blanket `position: relative` here. The card's regions (.prof-pic,
+   .prof-info, .prof-meta, .prof-name-tab-lbl, .prof-alb) are all absolutely
+   positioned from the traced SVG coordinates, and relative would drop them back
+   into normal flow and wreck the layout. They already establish a containing
+   block for ::after; only the flow-level rows below need it added. */
+.pfe-slot { cursor: pointer; }
+.prof-pl.pfe-slot, .prof-song.pfe-slot { position: relative; }
+.pfe-slot::after {
+  content: ''; position: absolute; inset: -4px;
+  border: 1px dashed transparent; border-radius: 8px;
+  pointer-events: none; transition: border-color .15s, background .15s;
+}
+.pfe-slot:hover::after { border-color: var(--star); background: rgba(232,168,60,0.07); }
+/* the round album discs get a round outline instead of a rounded rect */
+.prof-alb.pfe-slot::after { inset: -3px; border-radius: 50%; }
+
+/* ── the "+" badge — sits on EVERY slot, filled or not, so it's obvious the
+   content is swappable without having to hover to find out ── */
+.pfe-slot::before {
+  content: '+';
+  position: absolute; z-index: 6; top: -6px; right: -6px;
+  width: 17px; height: 17px; border-radius: 50%;
+  background: var(--star); color: #16130d;
+  font-family: var(--font-main); font-size: 14px; font-weight: 700;
+  line-height: 16px; text-align: center;
+  pointer-events: none;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.5);
+  transition: transform .15s;
+}
+.pfe-slot:hover::before { transform: scale(1.15); }
+/* per-slot placement: the card regions are absolutely positioned and butt right
+   up against each other, so the badge is tucked INSIDE them rather than hung off
+   a corner where it would land on a neighbour */
+.prof-pic.pfe-slot::before          { top: 7px;  right: 7px; }
+.prof-info.pfe-slot::before         { top: 0;    right: 0; }
+.prof-meta.pfe-slot::before         { top: 50%;  right: -21px; margin-top: -8px; }
+.prof-name-tab-lbl.pfe-slot::before { top: 50%;  right: -21px; margin-top: -8px; }
+.prof-alb.pfe-slot::before          { top: auto; bottom: -1px; right: -1px; }
+.prof-pl.pfe-slot::before           { top: -5px; right: -5px; }
+/* song rows already carry a play glyph on the right — put the badge on the art */
+.prof-song.pfe-slot::before         { top: 4px;  right: auto; left: 30px; }
+
+/* empty-state placeholders inside the card */
+.prof-desc--add, .prof-meta-item--add { opacity: .55; font-style: italic; }
+
+/* ── an empty slot: a dashed "+" tile (grid) or row (list) ── */
+.pfe-add {
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  background: none; cursor: pointer; color: var(--pf-fg2);
+  border: 1px dashed var(--pf-border); border-radius: 10px;
+  font-family: var(--font-mono); font-size: 9.5px; letter-spacing: .04em;
+  transition: border-color .15s, color .15s, background .15s;
+}
+.pfe-add:hover { border-color: var(--star); color: var(--star); background: rgba(232,168,60,0.06); }
+.pfe-add-plus { font-size: 17px; line-height: 1; font-weight: 400; }
+.pfe-add--tile { flex-direction: column; aspect-ratio: 1; gap: 4px; padding: 8px; text-align: center; }
+.pfe-add--row  { width: 100%; padding: 13px; justify-content: flex-start; }
+
+/* ============================================================
+   CONTENT EDITOR POPUP (#prof-picker) — one sheet, many kinds.
+   The grid/searchbar chrome is shared with the original album
+   picker; these add the photo grid, the upload tile and the
+   text-form kinds (name / bio / location / occupation).
+   ============================================================ */
+.pp-sheet--form { max-height: none; }
+.pp-form { display: flex; flex-direction: column; padding: 2px 2px 6px; }
+.pp-flabel {
+  font-family: var(--font-mono); font-size: 9px; font-weight: 700;
+  letter-spacing: .12em; text-transform: uppercase; color: var(--pf-fg2);
+  margin: 10px 0 5px;
+}
+.pp-flabel:first-child { margin-top: 0; }
+.pp-text {
+  width: 100%; padding: 10px 12px; border-radius: 10px;
+  background: rgba(255,255,255,0.06); border: 1px solid transparent;
+  color: var(--pf-fg);
+  font-family: var(--font-main); font-size: 13px;
+  outline: none; transition: border-color .15s;
+}
+.pp-text::placeholder { color: rgba(232,226,214,0.3); }
+.pp-text:focus { border-color: var(--star); }
+.pp-textarea { resize: vertical; min-height: 92px; line-height: 1.45; }
+.pp-handle { display: flex; align-items: center; gap: 6px; }
+.pp-handle > span { font-family: var(--font-mono); font-size: 13px; color: var(--pf-fg2); }
+.pp-done {
+  margin-top: 16px; padding: 12px; border-radius: 11px; border: none;
+  background: var(--star); color: #16130d;
+  font-family: var(--font-main); font-size: 13px; font-weight: 800;
+  cursor: pointer; transition: filter .15s;
+}
+.pp-done:hover { filter: brightness(1.07); }
+
+/* photo kind — square grid + an upload tile above it */
+.pp-upload {
+  display: flex; align-items: center; justify-content: center;
+  padding: 11px; margin-bottom: 12px; border-radius: 10px;
+  border: 1px dashed var(--pf-border); color: var(--pf-fg2);
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: .04em;
+  cursor: pointer; transition: border-color .15s, color .15s;
+}
+.pp-upload:hover { border-color: var(--star); color: var(--star); }
+.pp-upload input { display: none; }
+.pp-grid--photo { grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.pp-grid--photo .pp-img { aspect-ratio: 1; border-radius: 8px; }
+
+/* light theme */
+.s-home-v3--light .pp-text { background: rgba(26,18,8,0.06); color: #1a1208; }
+.s-home-v3--light .pp-text::placeholder { color: rgba(26,18,8,0.32); }
+
+/* ============================================================
+   NOTIFICATIONS (.s-ntf) + SETTINGS (.s-set)
+   ============================================================
+   Both ride the standard .s-home-v3 shell (header · v3-body · nowbar ·
+   bottom nav) and share one set of scoped tokens, so the light theme is
+   a single variable block per screen instead of a parallel rule tree.
+   They also reuse existing furniture: .plp-back-pill for the back
+   control and .wall2-cat pills for the notification filters. */
+.s-ntf, .s-set {
+  --sd-bg:      #111116;                      /* screen bg — badge rings punch through to it */
+  --sd-ink:     #e8e2d6;
+  --sd-ink2:    rgba(232,226,214,0.55);
+  --sd-ink3:    rgba(232,226,214,0.32);
+  --sd-card:    rgba(255,255,255,0.05);       /* raised row/card fill */
+  --sd-card-hi: inset 0 1px 0 rgba(255,255,255,0.06);
+  --sd-line:    rgba(232,226,214,0.09);
+  --sd-well:    rgba(0,0,0,0.38);             /* recessed track (switch/segment) */
+  --sd-hover:   rgba(255,255,255,0.04);
+}
+.s-ntf.s-home-v3--light, .s-set.s-home-v3--light {
+  --sd-bg:      #f0ece3;
+  --sd-ink:     #1a1208;
+  --sd-ink2:    rgba(26,18,8,0.55);
+  --sd-ink3:    rgba(26,18,8,0.34);
+  --sd-card:    rgba(26,18,8,0.05);
+  --sd-card-hi: inset 0 1px 0 rgba(255,255,255,0.6);
+  --sd-line:    rgba(26,18,8,0.1);
+  --sd-well:    rgba(120,102,72,0.2);
+  --sd-hover:   rgba(26,18,8,0.05);
+}
+
+/* ── NOTIFICATIONS ────────────────────────────────────────── */
+.ntf-scroll { padding: 4px 12px 96px; }   /* bottom clears the nowbar/nav overlay */
+.ntf-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.ntf-top-r { display: flex; align-items: center; gap: 9px; }
+.ntf-readall {
+  border: none; background: none; cursor: pointer;
+  font-family: var(--font-mono); font-size: 9.5px; letter-spacing: .05em;
+  color: var(--sd-ink3); padding: 6px 2px;
+  transition: color .15s;
+}
+.ntf-readall:hover { color: var(--sd-ink); }
+.ntf-readall[disabled] { opacity: .4; cursor: default; }
+
+/* No page title and no filter pills — the rows start straight under the top
+   row, so the unread chip rides beside "Mark all read". */
+.ntf-count {
+  font-family: var(--font-mono); font-size: 9.5px;
+  padding: 3px 8px; border-radius: 999px;
+  background: var(--star); color: #16130d;
+}
+
+/* Time bucket. The header sticks to the top of .v3-body (the scroller) and
+   needs an opaque screen-bg fill so rows do not ghost through it. */
+.ntf-group { margin-bottom: 6px; }
+.ntf-group-hd {
+  position: sticky; top: 0; z-index: 2;
+  background: var(--sd-bg);
+  padding: 6px 2px 8px;
+  font-family: var(--font-mono); font-size: 9.5px;
+  text-transform: uppercase; letter-spacing: .12em;
+  color: var(--sd-ink3);
+}
+.ntf-group[hidden] { display: none; }
+
+/* Row. Unread rows are the filled ones — read rows sit flat on the bg, so
+   "what is new" is legible without a badge on every line. */
+.ntf-row {
+  position: relative;
+  display: flex; align-items: flex-start; gap: 11px;
+  padding: 10px 11px; margin-bottom: 3px;
+  border-radius: 11px; cursor: pointer;
+  transition: background .15s;
+}
+.ntf-row:hover { background: var(--sd-hover); }
+.ntf-row--new { background: var(--sd-card); box-shadow: var(--sd-card-hi); }
+.ntf-row--new:hover { filter: brightness(1.12); }
+/* Unread rail — a bar on the left edge, NOT a corner dot: the right edge is
+   occupied by the trailing album thumb / Follow button. Inset top and bottom
+   so it clears the card's 11px rounded corners without needing overflow. */
+.ntf-row--new::after {
+  content: ''; position: absolute; left: 0; top: 11px; bottom: 11px;
+  width: 3px; border-radius: 0 3px 3px 0;
+  background: var(--star);
+}
+.ntf-row[hidden] { display: none; }
+
+.ntf-ava {
+  position: relative; flex-shrink: 0;
+  width: 44px; height: 44px; border-radius: 10px;
+  background-size: cover; background-position: center;
+  background-color: var(--sd-card);
+}
+.ntf-badge {
+  position: absolute; right: -5px; bottom: -5px;
+  width: 20px; height: 20px; border-radius: 50%;
+  display: grid; place-items: center;
+  border: 2px solid var(--sd-bg);
+  color: #16130d;               /* glyph ink on the coloured disc */
+}
+.ntf-badge svg { width: 11px; height: 11px; }
+.ntf-badge--like      { background: #e05a6b; }
+.ntf-badge--follow    { background: #6f9fe8; }
+.ntf-badge--comment   { background: #7fcf9e; }
+.ntf-badge--release   { background: #c9a7f0; }
+.ntf-badge--milestone { background: var(--star); }
+.ntf-badge--playlist  { background: #f0a77f; }
+
+.ntf-body { flex: 1; min-width: 0; padding-right: 4px; }
+/* album = regular weight, artist/person = bold — the app-wide convention */
+.ntf-text { font-size: 12.5px; line-height: 1.42; color: var(--sd-ink2); }
+.ntf-text b { font-weight: 700; color: var(--sd-ink); }
+.ntf-text i { font-style: normal; font-weight: 400; color: var(--sd-ink); }
+.ntf-quote {
+  margin-top: 6px; padding: 7px 9px;
+  border-left: 2px solid var(--sd-line); border-radius: 0 8px 8px 0;
+  background: var(--sd-hover);
+  font-size: 11.5px; font-style: italic; line-height: 1.35;
+  color: var(--sd-ink2);
+}
+.ntf-time { margin-top: 5px; font-family: var(--font-mono); font-size: 9.5px; color: var(--sd-ink3); }
+
+.ntf-art {
+  flex-shrink: 0; width: 40px; height: 40px;
+  border-radius: 5px; margin-top: 2px;
+  background-size: cover; background-position: center;
+  background-color: var(--sd-card);
+}
+.ntf-follow {
+  flex-shrink: 0; margin-top: 4px;
+  padding: 6px 13px; border-radius: 999px;
+  border: 1px solid var(--sd-line); background: none;
+  font-family: var(--font-main); font-size: 11px; font-weight: 700;
+  color: var(--sd-ink); cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.ntf-follow:hover { background: var(--star); border-color: var(--star); color: #16130d; }
+.ntf-follow.is-on {
+  background: none; border-color: var(--sd-line);
+  color: var(--sd-ink3); font-weight: 500;
+}
+.ntf-empty {
+  padding: 34px 0; text-align: center;
+  font-family: var(--font-mono); font-size: 10.5px; color: var(--sd-ink3);
+}
+
+/* ── SETTINGS ─────────────────────────────────────────────── */
+.set-scroll { padding: 4px 12px 96px; }
+.set-title {
+  margin: 4px 0 13px; font-size: 26px; font-weight: 800;
+  letter-spacing: -0.7px; color: var(--sd-ink);
+}
+
+/* Account card — the one non-list block; taps through to Edit Profile */
+.set-acct {
+  display: flex; align-items: center; gap: 11px;
+  padding: 11px; margin-bottom: 9px;   /* Sign out sits right under it, as a pair */
+  border-radius: 12px; cursor: pointer;
+  background: var(--sd-card); box-shadow: var(--sd-card-hi);
+  transition: filter .15s;
+}
+.set-acct:hover { filter: brightness(1.12); }
+.set-acct-pic {
+  width: 46px; height: 46px; flex-shrink: 0;
+  border-radius: 10px; background-size: cover; background-position: center;
+}
+.set-acct-body { flex: 1; min-width: 0; }
+.set-acct-name { font-size: 15.5px; font-weight: 800; letter-spacing: -0.3px; color: var(--sd-ink); }
+.set-acct-handle { margin-top: 2px; font-family: var(--font-mono); font-size: 9.5px; color: var(--sd-ink2); }
+.set-acct-edit {
+  display: flex; align-items: center; gap: 1px; flex-shrink: 0;
+  font-family: var(--font-mono); font-size: 9.5px; color: var(--sd-ink3);
+}
+
+.set-sec { margin-bottom: 17px; }
+.set-sec-hd {
+  padding: 0 4px 7px;
+  font-family: var(--font-mono); font-size: 9.5px;
+  text-transform: uppercase; letter-spacing: .12em;
+  color: var(--sd-ink3);
+}
+.set-card {
+  border-radius: 12px; overflow: hidden;
+  background: var(--sd-card); box-shadow: var(--sd-card-hi);
+}
+.set-row {
+  display: flex; align-items: center; gap: 11px;
+  padding: 12px 13px;
+  border-top: 1px solid var(--sd-line);
+}
+.set-row:first-child { border-top: none; }
+.set-row--link { cursor: pointer; transition: background .15s; }
+.set-row--link:hover { background: var(--sd-hover); }
+.set-row-body { flex: 1; min-width: 0; }
+.set-row-label { font-size: 12.5px; font-weight: 600; color: var(--sd-ink); }
+.set-row-sub { margin-top: 2px; font-size: 10.5px; line-height: 1.3; color: var(--sd-ink3); }
+.set-chev { width: 15px; height: 15px; flex-shrink: 0; color: var(--sd-ink3); }
+
+/* Switch — recessed track, raised knob; ON fills with the star yellow */
+.set-sw {
+  flex-shrink: 0; position: relative;
+  width: 40px; height: 23px; padding: 0;
+  border: none; border-radius: 999px; cursor: pointer;
+  background: var(--sd-well);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.4);
+  transition: background .18s;
+}
+.set-sw-knob {
+  position: absolute; top: 3px; left: 3px;
+  width: 17px; height: 17px; border-radius: 50%;
+  background: #e8e2d6;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.45);
+  transition: transform .18s ease;
+}
+.set-sw.is-on { background: var(--star); }
+.set-sw.is-on .set-sw-knob { transform: translateX(17px); background: #16130d; }
+
+/* Segmented picker (Theme) */
+.set-seg {
+  flex-shrink: 0; display: flex; gap: 2px;
+  padding: 2px; border-radius: 999px;
+  background: var(--sd-well);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.35);
+}
+.set-seg button {
+  border: none; background: none; cursor: pointer;
+  padding: 5px 10px; border-radius: 999px;
+  font-family: var(--font-main); font-size: 10.5px; font-weight: 600;
+  color: var(--sd-ink2);
+  transition: background .15s, color .15s;
+}
+.set-seg button:hover { color: var(--sd-ink); }
+.set-seg button.active { background: var(--star); color: #16130d; font-weight: 700; }
+
+/* Connected-service status pill */
+.set-pill {
+  flex-shrink: 0;
+  padding: 4px 10px; border-radius: 999px;
+  border: 1px solid var(--sd-line);
+  font-family: var(--font-mono); font-size: 9.5px;
+  color: var(--sd-ink3);
+}
+.set-pill--on { border-color: transparent; background: rgba(79,199,138,0.16); color: #4fc78a; }
+.set-svc-dot { flex-shrink: 0; width: 9px; height: 9px; border-radius: 50%; }
+
+.set-signout {
+  width: 100%; margin-bottom: 20px; padding: 13px;
+  border-radius: 12px; cursor: pointer;
+  border: 1px solid rgba(224,90,107,0.35); background: none;
+  font-family: var(--font-main); font-size: 12.5px; font-weight: 700;
+  color: #e0616f;
+  transition: background .15s;
+}
+.set-signout:hover { background: rgba(224,90,107,0.12); }

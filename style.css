@@ -191,6 +191,99 @@ body {
 }
 .tb-act:hover { color: var(--vtext); border-color: #404040; }
 
+/* Persona switcher — one segmented control, rendered into BOTH the desktop
+   toolbar and the mobile bar by renderPersonaBar(). "Demo" is the original
+   data.js catalogue; the rest come from personas.js. */
+.tb-persona {
+  display: flex; align-items: center; gap: 2px;
+  flex-shrink: 0;            /* never squeezed by the wordmark beside it */
+  height: 26px; box-sizing: border-box;
+  margin-left: 6px; padding: 0 2px;
+  border-radius: 8px; background: rgba(136,146,164,0.10);
+}
+.tb-pers {
+  background: none; border: none; cursor: pointer;
+  height: 22px; padding: 0 9px; border-radius: 6px;
+  display: inline-flex; align-items: center;
+  font-family: inherit; font-size: 11px; line-height: 1; white-space: nowrap;
+  color: var(--vdim);
+  transition: color .12s, background .12s;
+}
+.tb-pers:hover { color: var(--vtext); }
+.tb-pers.active { background: rgba(136,146,164,0.20); color: var(--vtext); }
+
+/* ============================================================
+   DEV BOX — live-tune the compact bento's two info lines.
+   Floats over #stage on the right; the phone stays centred because
+   #phone-container fills the full width (same trick as #page-nav).
+   ============================================================ */
+#devbox {
+  position: absolute; top: 14px; right: 14px; z-index: 60;
+  width: 240px; max-height: calc(100% - 28px);
+  display: flex; flex-direction: column;
+  background: var(--vsurface);
+  border: 1px solid var(--vborder); border-radius: 10px;
+  box-shadow: 0 10px 34px rgba(0,0,0,0.45);
+  font-size: 11px; color: var(--vtext);
+  overflow: hidden;
+}
+#devbox[hidden] { display: none; }
+.db-hd {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 10px; border-bottom: 1px solid var(--vborder);
+}
+.db-title { font-weight: 600; letter-spacing: .2px; }
+.db-x {
+  background: none; border: none; color: var(--vdim);
+  font-size: 16px; line-height: 1; cursor: pointer; padding: 0 2px;
+}
+.db-x:hover { color: var(--vtext); }
+.db-body { padding: 6px 10px 8px; overflow-y: auto; }
+.db-grp {
+  margin-top: 8px; padding-top: 7px;
+  border-top: 1px solid var(--vborder);
+  color: var(--vdim); font-size: 10px; letter-spacing: .4px; text-transform: uppercase;
+}
+.db-grp:first-child { margin-top: 0; padding-top: 0; border-top: none; }
+.db-row {
+  display: grid; grid-template-columns: 44px 1fr 44px;
+  align-items: center; gap: 7px; margin: 6px 0;
+  color: var(--vtext); text-transform: none; letter-spacing: 0; font-size: 11px;
+}
+.db-row input[type=range] { width: 100%; accent-color: var(--vaccent); height: 14px; }
+.db-val {
+  font-family: ui-monospace, Menlo, monospace; font-size: 10px;
+  color: var(--vdim); text-align: right;
+}
+.db-foot {
+  display: flex; gap: 6px; padding: 8px 10px;
+  border-top: 1px solid var(--vborder);
+}
+.db-btn {
+  flex: 1; padding: 5px 8px; cursor: pointer;
+  background: none; border: 1px solid var(--vborder); border-radius: 6px;
+  color: var(--vdim); font-family: inherit; font-size: 11px;
+}
+.db-btn:hover { color: var(--vtext); border-color: #404040; }
+.db-btn--go { color: var(--vtext); }
+.db-out {
+  height: 116px; resize: none; border: none; border-top: 1px solid var(--vborder);
+  background: var(--vbg); color: var(--vdim);
+  font-family: ui-monospace, Menlo, monospace; font-size: 9.5px; line-height: 1.45;
+  padding: 7px 9px; white-space: pre; overflow: auto;
+}
+
+/* Mobile: a dropdown, not a segment — five persona names will not fit next to
+   the Single/Multi/Flow/Live control on a phone. */
+.tb-persona--mb { margin-left: auto; padding: 0; background: none; }
+.tb-pers-sel {
+  height: 34px; max-width: 116px;
+  padding: 0 6px; border-radius: 6px;
+  border: 1px solid var(--vborder); background: var(--vbg);
+  color: var(--vtext); font-family: inherit; font-size: 12px;
+  cursor: pointer;
+}
+
 /* ============================================================
    STAGE
    ============================================================ */

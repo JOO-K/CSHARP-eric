@@ -90,6 +90,10 @@ function init() {
 
   if (isMobile) { initMobile(); } else { initViewer(); }
   initFillets();
+  // After the first render: fills the persona switcher and, if one was in use
+  // last visit, swaps the catalogue over to it (which re-renders).
+  initPersonas();
+  if (!isMobile) initDevBox();
 }
 
 // ============================================================
@@ -102,8 +106,13 @@ function initViewer() {
     if (e.key === 'ArrowLeft')  navigatePrev();
     if (e.key === 'ArrowRight') navigateNext();
   });
+  /* ⚠️ Must be renderViewer, NOT renderSingle. renderSingle only rebuilds the
+     phones from their static templates — every screen comes back with the
+     placeholder cover baked into the markup and no data. Calling it alone left
+     the album art stuck on `images/album-crystalcastles1.png` and `_albumIdx`
+     undefined, which looked exactly like the colour extraction being broken. */
   window.addEventListener('resize', debounce(() => {
-    if (viewMode === 'single') renderSingle();
+    if (viewMode === 'single') renderViewer();
   }, 100));
 }
 
@@ -112,13 +121,19 @@ function renderViewer() {
   else                        renderMulti();
   renderThumbs();
   updateToolbar();
-  requestAnimationFrame(() => {
-    document.querySelectorAll('.s-home-v3').forEach(el => {
-      populateHomeData(el);
-    });
-    document.querySelectorAll('.s-onboarding').forEach(obInit);
-    applyFilletMasks();
-  });
+  // renderSingle/renderMulti rebuild the screens from scratch, so the active
+  // persona's class has to be stamped back on before anything paints.
+  if (typeof applyPersonaClass === 'function') applyPersonaClass();
+  requestAnimationFrame(paintAfterRender);
+}
+
+/* Everything that has to run against the freshly-built screens. Kept separate
+   so any path that rebuilds the DOM can re-run it — a rebuild without this is
+   a screen full of placeholder markup. */
+function paintAfterRender() {
+  document.querySelectorAll('.s-home-v3').forEach(el => populateHomeData(el));
+  document.querySelectorAll('.s-onboarding').forEach(obInit);
+  applyFilletMasks();
 }
 
 // ── Home screen data population ───────────────────────────────
@@ -280,6 +295,16 @@ function homeShells() {
   // the home-shell instances currently in the DOM (dark + light on desktop; one on mobile)
   return [...document.querySelectorAll('.s-home-v3')].filter(el => el.querySelector('.v3-album'));
 }
+// Capture the current PLAIN screen plus any sub-state needed to restore it faithfully
+// (a profile's exact persona, the open playlist) — so Back returns you to the same view,
+// not a freshly-randomised one.
+function captureScreenSnap() {
+  const id = currentScreen().id;
+  const snap = { review: false, screenId: id };
+  if (id === 'profile')  snap.profile  = { ...window.PROFILE };
+  if (id === 'playlist') snap.playlist = window.activePlaylist;
+  return snap;
+}
 function snapView(scr) {
   if (scr && scr.classList.contains('s-home-v3--review')) {
     return {
@@ -289,12 +314,11 @@ function snapView(scr) {
       albumRef: scr._album,
     };
   }
-  return { review: false, screenId: currentScreen().id };   // bento home, or a plain screen
+  return captureScreenSnap();   // bento home, or a plain screen (profile / playlist / …)
 }
-function pushBack() {
-  const scr = homeShells()[0];
-  if (scr) backStack.push(snapView(scr));
-}
+// The current view, whether a fullscreen home shell or a plain screen.
+function captureLocation() { return snapView(homeShells()[0]); }
+function pushBack() { backStack.push(captureLocation()); }
 function measure2Line(scr) {
   const alb = scr.querySelector('.v3-blue-album');
   if (!alb) return;
@@ -326,16 +350,22 @@ function applyShellState(scr, snap) {
   }
   const body = scr.querySelector('.v3-body'); if (body) body.scrollTop = 0;
 }
-window.goBack = function () {
+window.goBack = function (fallbackId) {
   const snap = backStack.pop();
   const shells = homeShells();
-  if (!snap) { shells.forEach(s => exitReview(s)); return; }          // nothing recorded → bento
+  if (!snap) {                                                         // nothing recorded
+    if (fallbackId) { navigate(fallbackId, 'back'); return; }         // caller's default (e.g. Library)
+    shells.forEach(s => exitReview(s)); return;                       // else the bento home
+  }
   if (snap.review) { shells.forEach(s => applyShellState(s, snap)); return; }   // an earlier shell state
+  // A plain-screen snapshot — restore its sub-state, then go there WITHOUT re-randomising.
+  if (snap.profile)  Object.assign(window.PROFILE, snap.profile);
+  if (snap.playlist) window.activePlaylist = snap.playlist;
   if (snap.screenId && snap.screenId !== currentScreen().id) {        // a different screen
     navigate(snap.screenId, 'back');
     return;
   }
-  shells.forEach(s => exitReview(s));                                  // the bento home
+  shells.forEach(s => exitReview(s));                                  // back to the bento home
 };
 
 window.enterReview = function (scr) {
@@ -417,19 +447,61 @@ function populateArtistPage(scr) {
   if (nameEl) nameEl.textContent = a.artist;
   const genreEl = scr.querySelector('.v3-blue-artist');   // now the genre
   if (genreEl) genreEl.textContent = a.genre || '';
-  const grid = scr.querySelector('.v3-artist-albums');
-  if (grid) {
-    const arch = window.ARCHIVE || [];
-    let albums = arch.filter(x => x.artist === a.artist);
-    if (albums.length < 3) albums = albums.concat(arch.filter(x => x.artist !== a.artist)).slice(0, 6);
-    grid.innerHTML = '<div class="wall2-grid">' + albums.map(al => `
+  const box = scr.querySelector('.v3-artist-albums');
+  if (box) box.innerHTML = artistAlbumsHtml(a);
+}
+
+/* The artist's albums — replaces the rating histogram (an artist has no single
+   score). Two views of the same cells: a horizontal rail or the trending grid.
+   ARTIST_ALBUM_VIEW is module-global so both the dark and light instances agree
+   and the choice survives a re-render. */
+let ARTIST_ALBUM_VIEW = 'grid';
+
+function artistAlbumsFor(a) {
+  const arch = window.ARCHIVE || [];
+  let albums = arch.filter(x => x.artist === a.artist);
+  // The archive holds one album per artist, so pad with the rest of the shelf —
+  // a one-cell "discography" reads as a bug rather than as a short catalogue.
+  if (albums.length < 3) albums = albums.concat(arch.filter(x => x.artist !== a.artist)).slice(0, 6);
+  return albums;
+}
+
+function artistAlbumsHtml(a) {
+  const albums = artistAlbumsFor(a);
+  const row = ARTIST_ALBUM_VIEW === 'row';
+  const cells = albums.map(al => `
       <div class="wall2-cell" onclick="event.stopPropagation(); openAlbumPage(ARCHIVE.find(x=>x.album==='${al.album.replace(/'/g, "\\'")}')||ARCHIVE[0])">
         <div class="wall2-art" style="background-image:url('${al.image}')"></div>
         <div class="wall2-meta"><span class="wall2-album">${al.album}</span><span class="wall2-artist">${al.artist}</span></div>
         <div class="wall2-rating">${halfStars(al.rating, 11)}<span class="wall2-score">${al.rating.toFixed(1)}</span></div>
-      </div>`).join('') + '</div>';
-  }
+      </div>`).join('');
+  const icoRow  = `<svg viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="7" width="5.5" height="10" rx="1.4"/><rect x="9.25" y="7" width="5.5" height="10" rx="1.4"/><rect x="16.5" y="7" width="5.5" height="10" rx="1.4"/></svg>`;
+  const icoGrid = `<svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="8" height="8" rx="1.6"/><rect x="13" y="3" width="8" height="8" rx="1.6"/><rect x="3" y="13" width="8" height="8" rx="1.6"/><rect x="13" y="13" width="8" height="8" rx="1.6"/></svg>`;
+  return `
+      <div class="v3-aa-hd">
+        <span class="v3-aa-title">Albums</span>
+        <span class="v3-aa-n">${albums.length}</span>
+        <div class="v3-aa-seg">
+          <button class="${row ? 'active' : ''}" title="Row" onclick="event.stopPropagation(); setArtistAlbumView('row')">${icoRow}</button>
+          <button class="${row ? '' : 'active'}" title="Grid" onclick="event.stopPropagation(); setArtistAlbumView('grid')">${icoGrid}</button>
+        </div>
+      </div>
+      <div class="${row ? 'v3-aa-row' : 'wall2-grid'}">${cells}</div>
+      <div class="v3-aa-hd v3-aa-hd--rev"><span class="v3-aa-title">Popular reviews</span></div>`;
 }
+
+// Both home shells hold an artist page, so repaint every one of them — a
+// document-wide toggle that only redrew the clicked copy would leave the
+// dark/light pair disagreeing (same rule as plTab / ntfTab).
+window.setArtistAlbumView = function (mode) {
+  ARTIST_ALBUM_VIEW = mode;
+  homeShells().forEach(s => {
+    if (!s.classList.contains('s-home-v3--artist')) return;
+    const a = s._album || window.activeAlbum || window.featuredAlbum;
+    const box = s.querySelector('.v3-artist-albums');
+    if (a && box) box.innerHTML = artistAlbumsHtml(a);
+  });
+};
 
 window.exitReview = function (scr) {
   if (!scr) return;
@@ -480,6 +552,75 @@ window.pickWallTime = function (el) {
   closeWallMenus(scr);
 };
 
+/* ── Notifications (s-ntf) ──────────────────────────────────────
+   Every handler scopes to the clicked `.app-screen` — the viewer shows the
+   dark and light variants side by side, so a document-wide query would
+   drive both copies at once. */
+
+// Filter pills. Rows carry data-tab; a time-bucket group hides itself when
+// all of its rows filter out, and the empty state shows if nothing is left.
+// CURRENTLY UNUSED — the pill row was removed from the page (the rows still
+// carry data-tab, so re-adding a `.ntf-bar` of pills brings this straight back).
+window.ntfTab = function (btn, tab) {
+  const scr = btn.closest('.app-screen');
+  if (!scr) return;
+  scr.querySelectorAll('.ntf-bar .wall2-cat').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  let shown = 0;
+  scr.querySelectorAll('.ntf-row').forEach(r => {
+    r.hidden = tab !== 'all' && r.dataset.tab !== tab;
+    if (!r.hidden) shown++;
+  });
+  scr.querySelectorAll('.ntf-group').forEach(g => {
+    g.hidden = !g.querySelector('.ntf-row:not([hidden])');
+  });
+  const empty = scr.querySelector('.ntf-empty');
+  if (empty) empty.hidden = shown > 0;
+};
+
+// "Mark all read" — drops the unread treatment and the header count chip.
+window.ntfMarkAll = function (btn) {
+  const scr = btn.closest('.app-screen');
+  if (!scr) return;
+  scr.querySelectorAll('.ntf-row--new').forEach(r => r.classList.remove('ntf-row--new'));
+  const chip = scr.querySelector('.ntf-count');
+  if (chip) chip.remove();
+  btn.disabled = true;
+};
+
+// Follow back from a follow notification.
+window.ntfFollowBack = function (btn) {
+  const on = btn.classList.toggle('is-on');
+  btn.textContent = on ? 'Following' : 'Follow';
+};
+
+/* ── Settings (s-set) ───────────────────────────────────────── */
+
+// Switch row.
+window.sdToggle = function (btn) {
+  const on = btn.classList.toggle('is-on');
+  btn.setAttribute('aria-checked', String(on));
+};
+
+// Segmented picker (Theme) — active moves within its own group.
+window.sdSeg = function (btn) {
+  const seg = btn.closest('.set-seg');
+  if (!seg) return;
+  seg.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+};
+
+// Connected-service row — flips the trailing pill between the two states.
+window.sdConnect = function (row) {
+  const pill = row.querySelector('.set-pill');
+  if (!pill) return;
+  // The pill alone carries the state; the sub-label stays the description of
+  // what the service gives you, connected or not.
+  const on = pill.classList.toggle('set-pill--on');
+  pill.textContent = on ? 'Connected' : 'Connect';
+};
+
 // Playlists page — in-page tab switching (Lists / Artists / Albums / Songs / Genres).
 window.plTab = function (btn, tab) {
   const scr = btn.closest('.app-screen');
@@ -494,6 +635,7 @@ window.plTab = function (btn, tab) {
 window.openPlaylistPage = function (name) {
   const pl = plLists().find(l => l.name === name);
   if (!pl) return;
+  backStack.push(captureLocation());   // remember where we came from (profile / Library / …)
   window.activePlaylist = pl;
   navigate('playlist');
 };
@@ -518,6 +660,251 @@ function plRingSmile(scope) {
 // The mascot peeks intermittently — every so often the arrow reforms into the
 // smiley for a moment, purely for personality. No-ops when no playlist page is up.
 setInterval(() => plRingSmile(document), 11000);
+
+/* ============================================================
+   NEW PLAYLIST — the creation page behind the Playlists "+"
+   ------------------------------------------------------------
+   Same multi-instance discipline as the onboarding wizard: ALL state lives in
+   PLNEW, every action mutates it and then plnewSync() re-applies the whole
+   thing to EVERY .s-plnew on the page. That matters because the desktop viewer
+   renders the dark and light variants side by side — mutating only the clicked
+   instance would leave the other one stale.
+
+   Finished playlists land in PLNEW_CREATED, which plLists() (screens.js) spreads
+   in at the FRONT of the library, so a new one shows up top of the Playlists tab
+   and its detail page renders the real tracks you picked.
+   ============================================================ */
+window.PLNEW_CREATED = [];
+// mode: 'search' (type to find anything) | 'library' (browse your own playlists)
+// libOpen: the playlist name being browsed inside library mode, or null for the
+// list of playlists. cover is a data: URL once the user uploads one.
+const PLNEW = { name: '', cover: null, privacy: 'public', songs: [], q: '', mode: 'search', libOpen: null };
+const PLNEW_FALLBACK_COVER = 'images/spindeck-appicon.png';
+
+// Every song in the archive, flattened once — songsFor() is deterministic per
+// album, so the pool is stable across renders and a row keeps its identity.
+let _plnewPool = null;
+function plnewPool() {
+  if (_plnewPool) return _plnewPool;
+  _plnewPool = [];
+  (window.ARCHIVE || []).forEach(a => {
+    (typeof songsFor === 'function' ? songsFor(a) : []).forEach(t => {
+      _plnewPool.push({
+        // Track number is part of the key on purpose: songsFor() picks titles
+        // from a word list, so one album can end up with two tracks of the same
+        // name. Keying on album+title alone would make them one row.
+        key: a.album + '::' + t.n + '::' + t.title,
+        title: t.title, dur: t.dur, rating: t.rating,
+        album: a.album, artist: a.artist, image: a.image, genre: a.genre,
+      });
+    });
+  });
+  return _plnewPool;
+}
+
+window.openNewPlaylist = function () {
+  PLNEW.name = ''; PLNEW.cover = null; PLNEW.privacy = 'public';
+  PLNEW.songs = []; PLNEW.q = ''; PLNEW.mode = 'search'; PLNEW.libOpen = null;
+  backStack.push(captureLocation());
+  navigate('playlist-new');
+};
+window.plnewCancel = function () { goBack('playlists'); };
+
+window.plnewSetName = function (v) { PLNEW.name = v;  plnewSync(); };
+window.plnewSetPriv = function (p) { PLNEW.privacy = p; plnewSync(); };
+// Typing switches back out of library mode — you're searching now.
+window.plnewSearch  = function (q) { PLNEW.q = q; if (q.trim()) PLNEW.mode = 'search'; plnewSync(); };
+
+// Cover is a real upload: the well is a <label> wrapping a file input, so the
+// picker opens natively. The image is read to a data: URL and lives in PLNEW,
+// which means it survives re-renders (the file input's own value does not).
+window.plnewUpload = function (input) {
+  const f = input && input.files && input.files[0];
+  if (!f) return;
+  const fr = new FileReader();
+  fr.onload = () => { PLNEW.cover = fr.result; plnewSync(); };
+  fr.readAsDataURL(f);
+};
+
+// ── "Add from library" — pull songs in from playlists you already have.
+// (In this app the Playlists screen IS the library, hence the name.)
+window.plnewToggleLib = function () {
+  PLNEW.mode = PLNEW.mode === 'library' ? 'search' : 'library';
+  PLNEW.libOpen = null;
+  plnewSync();
+};
+window.plnewOpenList  = function (name) { PLNEW.libOpen = name; plnewSync(); };
+window.plnewCloseList = function ()     { PLNEW.libOpen = null; plnewSync(); };
+window.plnewAddAll = function (name) {
+  const pl = plLists().find(l => l.name === name);
+  if (!pl) return;
+  const have = new Set(PLNEW.songs.map(s => s.key));
+  plTracksFor(pl).forEach(t => { if (!have.has(t.key)) { PLNEW.songs.push(t); have.add(t.key); } });
+  plnewSync();
+};
+window.plnewAddSong = function (key) {
+  if (PLNEW.songs.some(s => s.key === key)) return;
+  // The pool covers every archive track; a playlist row resolves there too,
+  // since plTracksFor() builds its keys the same way.
+  const t = plnewPool().find(s => s.key === key)
+         || (PLNEW.libOpen ? plTracksFor(plLists().find(l => l.name === PLNEW.libOpen) || {}).find(s => s.key === key) : null);
+  if (t) PLNEW.songs.push(t);
+  plnewSync();
+};
+window.plnewRemoveSong = function (key) {
+  PLNEW.songs = PLNEW.songs.filter(s => s.key !== key);
+  plnewSync();
+};
+
+window.plnewCreate = function () {
+  const name = PLNEW.name.trim();
+  if (!name) return;                               // the button is disabled anyway
+  const pl = {
+    name,
+    creator: 'you',
+    tracks:  PLNEW.songs.length,
+    favs: 0, plays: 0,
+    edited: 'just now',
+    // No upload? borrow the first track's album art, and only fall back to the
+    // app mark if the playlist is empty too — so a card is never a broken image.
+    image:  PLNEW.cover || (PLNEW.songs[0] && PLNEW.songs[0].image) || PLNEW_FALLBACK_COVER,
+    private: PLNEW.privacy === 'private',
+    songs:  PLNEW.songs.slice(),                   // the real picks, for the detail page
+  };
+  window.PLNEW_CREATED.unshift(pl);
+  window.activePlaylist = pl;
+  navigate('playlist');                            // straight into the thing you just made
+};
+
+/* The three list bodies. These are shared: playlistNewHtml() calls them so a
+   FRESH render already paints the current PLNEW (the getter pattern the rest of
+   the dynamic screens use), and plnewSync() calls them again to patch the live
+   instances between renders without a full re-render — which would blow away
+   the focus/caret of whatever field is being typed in. */
+// The chosen list sits directly under the search, so songs stack up beneath it
+// as you add them. Empty renders NOTHING (not an empty-state line) — the results
+// hint below already says what to do, and a placeholder here would just push the
+// results down for no reason.
+window.plnewChosenHtml = function () {
+  if (!PLNEW.songs.length) return '';
+  return PLNEW.songs.map((t, i) => `
+    <div class="plp-song plnew-row">
+      <div class="plp-song-num">${i + 1}</div>
+      <div class="plp-song-line"><span class="plp-song-title">${obEsc(t.title)}</span><span class="plp-song-album">${obEsc(t.album)}</span> · <span class="plp-song-artist">${obEsc(t.artist)}</span></div>
+      <div class="plp-song-dur">${t.dur}</div>
+      <button class="plnew-x" title="Remove" aria-label="Remove"
+              onclick="plnewRemoveSong('${obOc(t.key)}')">×</button>
+    </div>`).join('');
+};
+
+// One track row with an add / remove control, shared by search and library.
+function plnewTrackRow(t, picked) {
+  const has = picked.has(t.key);
+  return `
+    <div class="plp-song plnew-row plnew-res${has ? ' plnew-res--on' : ''}">
+      <div class="plnew-res-art" style="background-image:url('${t.image}')"></div>
+      <div class="plp-song-line"><span class="plp-song-title">${obEsc(t.title)}</span><span class="plp-song-album">${obEsc(t.album)}</span> · <span class="plp-song-artist">${obEsc(t.artist)}</span></div>
+      <div class="plp-song-dur">${t.dur}</div>
+      <button class="plnew-plus" title="${has ? 'Added' : 'Add to playlist'}" aria-label="Add"
+              onclick="plnew${has ? 'RemoveSong' : 'AddSong'}('${obOc(t.key)}')">${has ? '✓' : '+'}</button>
+    </div>`;
+}
+
+window.plnewResultsHtml = function () {
+  const picked = new Set(PLNEW.songs.map(s => s.key));
+
+  // ── library mode: your own playlists, then one opened to its tracks ──
+  if (PLNEW.mode === 'library') {
+    if (!PLNEW.libOpen) {
+      const lists = plLists().filter(l => l.name !== PLNEW.name.trim());
+      if (!lists.length) return `<div class="plnew-empty">No playlists to pull from yet.</div>`;
+      return lists.map(l => `
+        <button class="plnew-liblist" onclick="plnewOpenList('${obOc(l.name)}')">
+          <span class="plnew-lib-art" style="background-image:url('${l.image}')"></span>
+          <span class="plnew-lib-meta">
+            <span class="plnew-lib-name">${obEsc(l.name)}</span>
+            <span class="plnew-lib-sub">${l.tracks} songs · by ${obEsc(l.creator)}</span>
+          </span>
+          <span class="plnew-lib-chev">›</span>
+        </button>`).join('');
+    }
+    const pl = plLists().find(l => l.name === PLNEW.libOpen);
+    if (!pl) return `<div class="plnew-empty">That playlist is gone.</div>`;
+    const tracks = plTracksFor(pl);
+    const left = tracks.filter(t => !picked.has(t.key)).length;
+    return `
+      <div class="plnew-libhead">
+        <button class="plnew-libback" onclick="plnewCloseList()" aria-label="Back to playlists">‹</button>
+        <span class="plnew-libhead-t">${obEsc(pl.name)}</span>
+        <button class="plnew-liball" onclick="plnewAddAll('${obOc(pl.name)}')" ${left ? '' : 'disabled'}>
+          ${left ? `Add all · ${left}` : 'All added'}
+        </button>
+      </div>
+      ${tracks.map(t => plnewTrackRow(t, picked)).join('')}`;
+  }
+
+  // ── search mode: nothing until you actually type ──
+  const term = PLNEW.q.trim().toLowerCase();
+  if (!term) {
+    return `<div class="plnew-empty">Search for a song, album or artist — or pull one in from <b>Library</b>.</div>`;
+  }
+  const list = plnewPool().filter(t =>
+    t.title.toLowerCase().includes(term) ||
+    t.album.toLowerCase().includes(term) ||
+    t.artist.toLowerCase().includes(term)).slice(0, 40);
+  if (!list.length) return `<div class="plnew-empty">Nothing matches “${obEsc(PLNEW.q)}”.</div>`;
+  return list.map(t => plnewTrackRow(t, picked)).join('');
+};
+
+window.plnewCountLabel  = function () { const n = PLNEW.songs.length; return n === 1 ? '1 song' : `${n} songs`; };
+window.plnewCreateLabel = function () {
+  const n = PLNEW.songs.length;
+  return n ? `Create playlist · ${n} song${n === 1 ? '' : 's'}` : 'Create playlist';
+};
+
+// Patch every live .s-plnew after an edit. The screen's own getter already
+// paints the initial state, so this only has to keep the two side-by-side
+// variants agreeing once the user starts interacting.
+function plnewSync() { document.querySelectorAll('.s-plnew').forEach(plnewSyncOne); }
+
+function plnewSyncOne(root) {
+  const q = sel => root.querySelector(`[data-plnew="${sel}"]`);
+  const cover = PLNEW.cover;
+
+  const coverEl = q('cover');
+  if (coverEl) {
+    coverEl.style.backgroundImage = cover ? `url('${cover}')` : '';
+    coverEl.classList.toggle('plnew-cover--set', !!cover);
+  }
+  const cd = q('cd');
+  if (cd) cd.style.backgroundImage = cover ? `url('${cover}')` : '';
+
+  // Only write an input when it actually differs — assigning .value on the field
+  // being typed in would jump the caret to the end. The typing instance already
+  // matches, so this only ever touches the OTHER variant.
+  const nameEl = q('name');
+  if (nameEl && nameEl.value !== PLNEW.name) nameEl.value = PLNEW.name;
+  const qEl = q('q');
+  if (qEl && qEl.value !== PLNEW.q) qEl.value = PLNEW.q;
+
+  const countEl = q('count');
+  if (countEl) countEl.textContent = plnewCountLabel();
+
+  root.querySelectorAll('.plnew-priv-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.priv === PLNEW.privacy);
+  });
+  const libBtn = q('libbtn');
+  if (libBtn) libBtn.classList.toggle('active', PLNEW.mode === 'library');
+
+  const chosen = q('chosen');  if (chosen)  chosen.innerHTML  = plnewChosenHtml();
+  const results = q('results'); if (results) results.innerHTML = plnewResultsHtml();
+
+  const create = q('create');
+  if (create) {
+    create.disabled = !PLNEW.name.trim();
+    create.textContent = plnewCreateLabel();
+  }
+}
 
 // First home render of the session: the live-pill dots greet you. Smiley for
 // ~5 seconds, then a wink + grin, then they morph into the arrow and get to work.
@@ -584,7 +971,7 @@ window.openArtistPageFor = function (artistName) {
     homeShells().forEach(enter);
     return;
   }
-  const originSnap = { review: false, screenId: currentScreen().id };
+  const originSnap = captureScreenSnap();              // origin screen + its sub-state (persona/…)
   navigate('home');
   requestAnimationFrame(() => requestAnimationFrame(() => {
     backStack.push(originSnap);                        // Back → that origin screen
@@ -608,7 +995,7 @@ window.openAlbumPage = function (album, pinnedReview) {
     return;
   }
   // Coming from another screen (e.g. trending): remember it, then go home + straight to album page.
-  const originSnap = { review: false, screenId: currentScreen().id };
+  const originSnap = captureScreenSnap();              // origin screen + its sub-state (persona/…)
   navigate('home');
   requestAnimationFrame(() => requestAnimationFrame(() => {
     backStack.push(originSnap);                        // Back → that origin screen
@@ -710,12 +1097,15 @@ window.submitReview = function (btn) {
       <div class="v3-rev-card-top">
         <div class="v3-rev-av" style="background:linear-gradient(135deg,var(--v3-accent,#e8a83c),#c76b2a)">Y</div>
         <span class="v3-rev-name">You</span>
+        <span class="v3-rev-acts">
+          <span class="v3-rev-likes">♥ 0</span>
+          <span class="v3-rev-likes">💬 0</span>
+        </span>
         <span class="v3-rev-time">just now</span>
       </div>
       <div class="v3-rev-meta">
         ${halfStars(rating, 10)}
-        <span class="v3-rev-likes">♥ 0</span>
-        <span class="v3-rev-likes">💬 0</span>
+        <span class="v3-rev-score">${rating.toFixed(1)}</span>
       </div>
       <div class="v3-rev-text">${text}</div>`;
     list.insertBefore(card, list.firstChild);
@@ -825,7 +1215,8 @@ function populateSongList(scr) {
   const a = scr._album || window.featuredAlbum;
   if (!a) { wrap.innerHTML = ''; return; }
   const songs = songsFor(a);
-  wrap.classList.toggle('v3-rev-songs--scroll', songs.length > 8);
+  // Every track is listed — the list used to cap at ~8.5 rows and scroll inside
+  // itself, which hid the back half of a long album behind a nested scroller.
   wrap.innerHTML = `<div class="v3-rev-songs-scroll">` + songs.map(s => `
     <button class="v3-song-row" onclick="event.stopPropagation(); openSongLog(this)" data-title="${s.title}">
       <span class="v3-song-title">${s.title}</span>
@@ -920,12 +1311,15 @@ function populateReviewList(scr, filter) {
         <div class="v3-rev-av" style="background:${pin.grad || '#555'}">${pin.init || '?'}</div>
         <span class="v3-rev-name">${pin.name || 'Listener'}</span>
         <span class="v3-rev-pin-chip">from your feed</span>
+        <span class="v3-rev-acts">
+          ${upvoteHtml('pin::' + a.album + '::' + (pin.name || ''), pin.likes || revUpvotes(pin, 0), 'v3-up--sm')}
+          <span class="v3-rev-likes">💬 ${pin.comments || 0}</span>
+        </span>
         <span class="v3-rev-time">${pin.ago || ''}</span>
       </div>
       <div class="v3-rev-meta">
         ${halfStars(pin.rating || 4, 10)}
-        ${upvoteHtml('pin::' + a.album + '::' + (pin.name || ''), pin.likes || revUpvotes(pin, 0))}
-        <span class="v3-rev-likes">💬 ${pin.comments || 0}</span>
+        <span class="v3-rev-score">${(pin.rating || 4).toFixed(1)}</span>
       </div>
       <div class="v3-rev-text">${pin.text || ''}</div>
     </div>` : '';
@@ -941,12 +1335,15 @@ function populateReviewList(scr, filter) {
       <div class="v3-rev-card-top">
         <div class="v3-rev-av" style="background:${r.grad || '#555'}">${r.init || '?'}</div>
         <span class="v3-rev-name">${r.name || 'Listener'}</span>
+        <span class="v3-rev-acts">
+          ${upvoteHtml(a.album + '::' + (r.name || '') + '::' + i, revUpvotes(r, i), 'v3-up--sm')}
+          <span class="v3-rev-likes">💬 ${m.comments}</span>
+        </span>
         <span class="v3-rev-time">${m.ago}</span>
       </div>
       <div class="v3-rev-meta">
         ${halfStars(r.rating || 4, 10)}
-        ${upvoteHtml(a.album + '::' + (r.name || '') + '::' + i, revUpvotes(r, i))}
-        <span class="v3-rev-likes">💬 ${m.comments}</span>
+        <span class="v3-rev-score">${(r.rating || 4).toFixed(1)}</span>
       </div>
       <div class="v3-rev-text">${r.text || ''}</div>
     </div>`;
@@ -1199,8 +1596,9 @@ function albumSeq() {
 function applyAlbumIndex(screenEl, idx, animateMain, animateForYou, backward, animateText = animateMain) {
   const seq = albumSeq();
   if (!seq.length) return;
-  preloadColors(seq);
   idx = ((idx % seq.length) + seq.length) % seq.length;
+  preloadColors(seq, idx);   // this album + the next four
+
   screenEl._albumIdx = idx;
   setMainAlbum(screenEl, seq[idx], animateMain, animateText);
   const forSingle = screenEl.querySelector('.v3-for-single');
@@ -1214,9 +1612,15 @@ function applyAlbumIndex(screenEl, idx, animateMain, animateForYou, backward, an
 
 function populateHomeData(screenEl) {
   applyProfColors(screenEl);   // no-op unless this is the profile card
+  // Handle under the wordmark. Set here rather than in the markup because two of
+  // the three headers live in static templates (see the note in screens.js), and
+  // because this runs on every render — so it follows a persona switch.
+  const handleEl = screenEl.querySelector('.v3-header-handle');
+  if (handleEl) handleEl.textContent = '@' + ((window.PROFILE && window.PROFILE.handle) || 'you');
+
   const seq = albumSeq();
   if (!seq.length) return;
-  preloadColors(seq);
+  preloadColors(seq, screenEl._albumIdx || 0);
   // Fresh render: the markup is right-handed and the stored hand pref lands a
   // frame after first paint — freeze the For You geometry transition so the box
   // appears in its spot instead of sliding across (Eric's #1 pet peeve).
@@ -1774,8 +2178,23 @@ function computeAlbumColors(url) {
         const box1L = `linear-gradient(155deg,rgb(${cl(L1r+6)},${cl(L1g+6)},${cl(L1b+6)}),rgb(${cl(L1r-6)},${cl(L1g-6)},${cl(L1b-6)}))`;
         const box2L = `linear-gradient(155deg,rgb(${cl(L2r+5)},${cl(L2g+5)},${cl(L2b+7)}),rgb(${cl(L2r-4)},${cl(L2g-4)},${cl(L2b-2)}))`;
 
+        /* The RATING colour, separate from the bento accent. A greyscale or
+           black-dominant cover deliberately extracts to a neutral (the
+           darkFrac branch hard-codes #b9b9c1) — right for the box, dreadful for
+           the vinyls, which just go grey. So the star falls back to the house
+           gold whenever the accent has too little colour in it to read as a
+           deliberate choice. `accent` itself is left alone: the boxes still want
+           the neutral. */
+        const star = (() => {
+          const h = accent.replace('#', '');
+          const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+          const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+          const sat = mx ? (mx - mn) / mx : 0;
+          return sat < 0.22 ? '#e8a83c' : accent;
+        })();
+
         const colors = {
-          accent, box1, box2,
+          accent, star, box1, box2,
           box1color: `rgb(${cl(b1r)},${cl(b1g)},${cl(b1b)})`,
           box1L, box2L,
           box1colorL: `rgb(${L1r},${L1g},${L1b})`,
@@ -1784,6 +2203,14 @@ function computeAlbumColors(url) {
         resolve(colors);
       } catch (e) { resolve(null); /* CORS / tainted canvas — keep CSS defaults */ }
     };
+    /* Personas serve their covers from Deezer's CDN. Reading pixels back out of
+       a canvas that has drawn a cross-origin image throws SecurityError, so the
+       extraction silently failed and every persona album fell back to the
+       hard-coded flood colour. Request CORS for absolute URLs; the CDN sends
+       Access-Control-Allow-Origin. If it ever doesn't, the load errors and we
+       resolve(null) — the artwork itself still renders, because CSS
+       background-image never needed CORS in the first place. */
+    if (/^https?:/i.test(url)) img.crossOrigin = 'anonymous';
     img.src = url;
   });
   COLOR_PENDING.set(url, p);
@@ -1794,6 +2221,8 @@ function computeAlbumColors(url) {
 function applyColorVars(screenEl, c) {
   if (!screenEl || !c) return;
   screenEl.style.setProperty('--v3-accent', c.accent);
+  // Ratings read --v3-star, not --v3-accent — see the `star` note in computeAlbumColors.
+  screenEl.style.setProperty('--v3-star', c.star || c.accent);
   // Bento + fullscreen use the SAME album-derived color in both themes (dark values),
   // so the light theme no longer lightens the bento/review flood.
   screenEl.style.setProperty('--v3-box1-bg', c.box1);
@@ -1886,8 +2315,18 @@ function applyProfColors(screenEl) {
 }
 
 // Warm the palette cache for every album in the window (mirrors preloadForYou).
-function preloadColors(seq) {
-  (seq || []).forEach(a => { if (a && a.image) computeAlbumColors(a.image); });
+/* Extract the accent colour for a WINDOW of the sequence, not all of it.
+   Each call loads the image and runs it through a canvas; with a persona's
+   ~28 remote Deezer covers, doing the whole sequence on every swipe meant 28
+   fetches per index change. computeAlbumColors memoises, so a 5-wide window
+   walking forward still has every cover ready by the time you reach it. */
+function preloadColors(seq, fromIdx = 0, count = 5) {
+  const list = seq || [];
+  if (!list.length) return;
+  for (let i = 0; i < Math.min(count, list.length); i++) {
+    const a = list[(((fromIdx + i) % list.length) + list.length) % list.length];
+    if (a && a.image) computeAlbumColors(a.image);
+  }
 }
 
 function renderSingle() {
@@ -2028,9 +2467,13 @@ const NAV_PAGES = [
   { id: 'artist',     label: 'Artist Page',   flow: true },
   { id: 'song',       label: 'Song / Track'  },
   { id: 'review',     label: 'Review',        flow: true },
-  { id: 'profile',    label: 'Profile'       },
-  { id: 'playlists',  label: 'Playlists'     },
-  { id: 'playlist',   label: 'Playlist Page' },
+  { id: 'profile',      label: 'Profile'       },
+  { id: 'profile-edit', label: 'Edit Profile'  },
+  { id: 'playlists',    label: 'Playlists'     },
+  { id: 'playlist-new', label: 'New Playlist'  },
+  { id: 'playlist',     label: 'Playlist Page' },
+  { id: 'notifications',label: 'Notifications' },
+  { id: 'settings',     label: 'Settings'      },
 ];
 let activeNavId = 'home';
 
@@ -2112,7 +2555,8 @@ function goToScreen(idx) {
   if (viewMode === 'multi') viewMode = 'single';
   currentIdx = idx;
   activeNavId = SCREENS[idx] ? SCREENS[idx].id : activeNavId;
-  if (SCREENS[idx] && SCREENS[idx].id === 'profile') randomizeProfile();
+  // A persona has an AUTHORED profile — re-rolling the random one would wipe it.
+  if (SCREENS[idx] && SCREENS[idx].id === 'profile' && !window.ACTIVE_PERSONA) randomizeProfile();
   renderViewer();
 }
 
@@ -2134,16 +2578,7 @@ function setZoom(level) {
 }
 
 function shuffleAlbums() {
-  const arc = window.ARCHIVE;
-  if (!arc || arc.length < 6) return;
-  const idx = Math.floor(Math.random() * arc.length);
-  window.featuredAlbum = arc[idx];
-  const others = arc.filter((_, i) => i !== idx);
-  for (let i = others.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [others[i], others[j]] = [others[j], others[i]];
-  }
-  window.trendingAlbums = others.slice(0, 5);
+  reshuffleHome();
   renderViewer();
 }
 
@@ -2329,7 +2764,8 @@ window.navigate = function(targetId, direction) {
   const idx = SCREENS.findIndex(s => s.id === targetId);
   if (idx === -1) return;
   activeNavId = targetId;
-  if (targetId === 'profile') randomizeProfile();   // new personality each visit
+  // New personality on a fresh visit, but NOT when Back restores an earlier profile.
+  if (targetId === 'profile' && direction !== 'back' && !window.ACTIVE_PERSONA) randomizeProfile();
 
   if (isMobile) {
     if (mobileViewMode !== 'live') {
@@ -3237,59 +3673,664 @@ function randomizeProfile() {
 }
 randomizeProfile();
 
-let _profSlot = 0;
+/* ══════════════════════════════════════════════════════════════════════════
+   PERSONAS — the mockup, shown as four different people
+   ══════════════════════════════════════════════════════════════════════════
+   window.PERSONAS comes from personas.js, GENERATED by tools/build_personas.py
+   out of personas/personas.csv + personas/taste/*.csv. Each persona carries
+   its own catalogue (real albums + Deezer CDN artwork), its own profile, and a
+   skin. Switching one swaps ARCHIVE wholesale, so every screen — home bento,
+   wall, playlists, artist pages — re-derives from that person's taste.
 
-// ── Favourite-album picker (bottom sheet mounted in the tapped profile) ──
-window.openProfPicker = function (slot, btn) {
-  _profSlot = slot;
-  const host = (btn && btn.closest && btn.closest('.app-screen'))
-             || document.querySelector('.app-screen.s-prof2') || document.querySelector('.app-screen') || document.body;
+   `null` is a real state: the built-in data.js archive with the random persona,
+   i.e. the mockup as it was before any of this. The switcher calls it "Demo".  */
+
+const BASE_ARCHIVE = window.ARCHIVE;          // data.js's hand-authored catalogue
+const BASE_ARTIST_IMG = Object.assign({}, window.ARTIST_IMG || {});
+const BASE_FRIEND_ACTIVITY = (window.FRIEND_ACTIVITY || []).slice();
+window.ACTIVE_PERSONA = null;
+
+function personaById(id) {
+  return (window.PERSONAS || []).find(p => p.id === id) || null;
+}
+
+// One persona album → an ARCHIVE-shaped record. The build script already emits
+// rating/reviewCount/reviews in data.js's shape; this only fills the artist
+// blurbs, which Deezer has no field for.
+function personaAlbums(p) {
+  return p.albums.map(a => Object.assign({}, a, {
+    artistDesc: a.artistDesc || `${a.genre} artist`,
+    artistBio: a.artistBio ||
+      `${a.artist} is an artist working in ${String(a.genre).toLowerCase()}. ${a.album} came out in ${a.year || 'recent years'}.`,
+  }));
+}
+
+/* The skin. The app's screens were built on hard-coded hex, so a persona can't
+   simply re-declare a handful of tokens — it overrides the surfaces carrying
+   most of the look (page, cards, accent, type, corner radius) through one
+   injected stylesheet scoped to `.persona-<id>` on the screen. Deliberately a
+   broad first pass: enough that four personas read as four different apps,
+   with per-persona detailing still to come. */
+/* Elements a persona may re-ink: page CHROME only — headings and labels that sit
+   on the persona's own background.
+   ⚠️ Nothing from the bento stats block or the review panel belongs here
+   (`.v3-blue-album`, `.v3-blue-count`, `.v3-rev-name`, `.v3-rev-text`, …). Those
+   sit on the album's PROCEDURAL flood colour, which is dark in both themes, and
+   they already carry theming that accounts for it. Re-inking them from the
+   persona's light set put dark text on a dark album and made it unreadable. */
+const PERSONA_INK1 = ['.v3-brand-name', '.v3-rail-hd', '.wall2-title', '.pl2-title',
+  '.set-title', '.v3-aa-title'];
+const PERSONA_INK2 = ['.v3-brand-tag', '.wall2-sub'];
+
+function personaSkinCss(p) {
+  const s = p.skin, k = `.app-screen.persona-${p.id}`;
+  // A screen is the LIGHT variant when it carries --light (home-shell screens)
+  // or sd-theme-light (auth / onboarding / song). Both sets are emitted so the
+  // viewer's side-by-side Dark|Light pair stays a real comparison — a persona
+  // that declared one background painted both variants the same.
+  const darkBases = [k];
+  const lightBases = [`${k}.s-home-v3--light`, `${k}.sd-theme-light`];
+
+  // Each base selector needs its OWN descendant — "a, b .x" would only scope
+  // .x under b, silently dropping the rule for every light screen but the last.
+  const each = (bases, kids) => bases.flatMap(b => kids.map(c => `${b} ${c}`)).join(',\n');
+
+  /* ⚠️ NOT set here, deliberately:
+     - `--v3-accent` / `--v3-box*` — the accent is EXTRACTED FROM THE ALBUM ART
+       (`applyAlbumColors`). "Album art drives colour" is a core rule; a persona
+       tinting it would flatten every album to the same hue.
+     - `--star` — the rating gold now RESOLVES from `--v3-accent` first (see
+       app.css), so setting it here would pin the vinyls to one colour and stop
+       them following the album. The persona only supplies `--persona-accent`,
+       which is the fallback for screens that have no cover to extract from.
+     - `--text3` — the empty-vinyl grey, already themed per variant. */
+  const tokens = (t) => `
+  --persona-accent: ${t.accent};
+  --sd-bg: ${t.bg};     --sd-ink: ${t.ink};   --sd-ink2: ${t.ink2};
+  --sd-ink3: ${t.ink2}; --sd-card: ${t.card}; --sd-well: ${t.card};`;
+
+  /* The page fill, held OFF the review/album/artist states. Those flood the
+     screen with the album's procedural colour via `.s-home-v3--review`, which is
+     only (0,1,0) specificity — a plain `.app-screen.persona-x` rule is (0,2,0)
+     and silently beat it, killing the fullscreen fill. */
+  const bg = (bases, t) =>
+    bases.map(b => `${b}:not(.s-home-v3--review)`).join(',\n') + ` { background: ${t.bg}; }`;
+
+  const block = (bases, t) => `
+${each(bases, PERSONA_INK1)} { color: ${t.ink}; }
+${each(bases, PERSONA_INK2)} { color: ${t.ink2}; }`;
+
+  return `
+${k} {${tokens(s.dark)}
+  font-family: ${s.font}, var(--font-main), sans-serif;
+}
+${lightBases.join(',\n')} {${tokens(s.light)}}
+${bg(darkBases, s.dark)}
+${bg(lightBases, s.light)}
+${block(darkBases, s.dark)}
+${block(lightBases, s.light)}
+${each([k], ['.v3-album', '.wall2-art', '.pl2-card'])} { border-radius: ${s.radius}; }`;
+}
+
+function applyPersonaSkins() {
+  let el = document.getElementById('persona-skins');
+  if (!el) {
+    el = document.createElement('style');
+    el.id = 'persona-skins';
+    document.head.appendChild(el);
+  }
+  el.textContent = (window.PERSONAS || []).map(personaSkinCss).join('\n');
+}
+
+/* Swap the whole app over to one persona (or back to the demo data with null).
+   Order matters: ARCHIVE first, because featuredAlbum/trendingAlbums and the
+   profile are all derived FROM it. */
+window.applyPersona = function (id) {
+  const p = id ? personaById(id) : null;
+  window.ACTIVE_PERSONA = p ? p.id : null;
+  try { localStorage.setItem('spindeck-persona', p ? p.id : ''); } catch (e) {}
+
+  if (p && p.albums.length) {
+    window.ARCHIVE = personaAlbums(p);
+    window.ARTIST_IMG = Object.assign({}, BASE_ARTIST_IMG, p.artistImg || {});
+  } else {
+    window.ARCHIVE = BASE_ARCHIVE;
+    window.ARTIST_IMG = Object.assign({}, BASE_ARTIST_IMG);
+  }
+  const A = window.ARCHIVE;
+  window._pinnedReview = null;
+  if (p) {
+    /* A persona's identity is authored and fixed, so it can't get its variety
+       the way the demo does (randomizeProfile re-rolls a whole new person each
+       visit). It comes from the HOME instead: every switch — and every page
+       load, since initPersonas re-applies — deals a fresh featured album, swipe
+       queue, rails and feed. */
+    reshuffleHome();
+    personaProfile(p);
+  } else {
+    window.featuredAlbum = A[Math.floor(Date.now() / 86400000) % A.length];
+    window.trendingAlbums = A.filter(x => x !== window.featuredAlbum);
+    window.activeAlbum = window.featuredAlbum;
+    window.FRIEND_ACTIVITY = BASE_FRIEND_ACTIVITY.slice();
+    // knowPicks() memoises its shuffle into window._KNOW, which would otherwise
+    // keep serving the PREVIOUS persona's artists after the swap.
+    window._KNOW = null;
+    randomizeProfile();
+  }
+
+  applyPersonaClass();
+  renderPersonaBar();
+  renderViewer();
+};
+
+// Every screen instance carries the persona class so the skin sheet can bite.
+// Re-applied after each render, since renderViewer rebuilds the screens.
+function applyPersonaClass() {
+  const id = window.ACTIVE_PERSONA;
+  document.querySelectorAll('.app-screen').forEach(el => {
+    el.classList.forEach(c => { if (c.startsWith('persona-')) el.classList.remove(c); });
+    if (id) el.classList.add('persona-' + id);
+  });
+}
+
+function shuffled(arr) {
+  const c = arr.slice();
+  for (let i = c.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [c[i], c[j]] = [c[j], c[i]];
+  }
+  return c;
+}
+
+/* Re-deal the home page: featured album, the bento's swipe queue, the
+   you-may-know rails and (for a persona) the friend feed.
+   ⚠️ `trendingAlbums` gets the WHOLE remaining catalogue. It reads like it
+   should be five — the name says so and data.js's comment says so — but
+   `albumSeq()` is `featured + trendingAlbums`, so slicing it to five silently
+   shrinks the bento's swipe queue to six albums. */
+function reshuffleHome() {
+  const A = window.ARCHIVE;
+  if (!A || !A.length) return;
+  const order = shuffled(A);
+  window.featuredAlbum = order[0];
+  window.trendingAlbums = order.slice(1);
+  window.activeAlbum = window.featuredAlbum;
+  window._KNOW = null;            // knowPicks() re-picks the rails
+  const p = window.ACTIVE_PERSONA && personaById(window.ACTIVE_PERSONA);
+  if (p) window.FRIEND_ACTIVITY = personaFeed(p);
+}
+
+/* The home feed for a persona, generated fresh each deal.
+   data.js's FRIEND_ACTIVITY names demo albums by title, so under a persona
+   every card would point at a record no longer in ARCHIVE (broken art, dead
+   taps). Rather than remap it 1:1 — which produced the same feed every load —
+   this deals a new one: people from the demo's cast, albums drawn at random
+   from the persona's own shelf, and the QUOTE taken from that album's own
+   generated reviews, so the card and the album page agree with each other. */
+function personaFeed(p) {
+  const A = window.ARCHIVE;
+  if (!A.length) return [];
+  const cast = BASE_FRIEND_ACTIVITY;
+  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+  const ago = () => {
+    const h = 1 + Math.floor(Math.random() * 47);
+    return h < 24 ? `${h}h` : `${Math.round(h / 24)}d`;
+  };
+  return shuffled(A).slice(0, Math.min(cast.length, A.length)).map(a => {
+    const who = pick(cast);
+    const rev = (a.reviews && a.reviews.length) ? pick(a.reviews) : null;
+    return {
+      user: who.user, init: who.init, grad: who.grad,
+      album: a.album, artist: a.artist, year: a.year, image: a.image,
+      rating: rev ? rev.rating : a.rating,
+      quote: rev ? `"${rev.text}"` : '',
+      likes: 3 + Math.floor(Math.random() * 60),
+      comments: Math.floor(Math.random() * 14),
+      ago: ago(),
+    };
+  });
+}
+
+// The persona's profile: authored identity from the CSV, taste from their
+// catalogue — so the favourites shown are always albums they actually have.
+function personaProfile(p) {
+  const A = window.ARCHIVE, P = window.PROFILE;
+  Object.assign(P, p.profile);
+  P.pic = p.profile.pic || PROFILE_PHOTOS[
+    Math.abs([...p.id].reduce((h, c) => h * 31 + c.charCodeAt(0), 7)) % PROFILE_PHOTOS.length];
+  P.favs = A.slice(0, 5).map(a => a.album);
+  P.favArtists = [...new Set(A.map(a => a.artist))].slice(0, 4);
+  P.favSongs = A.slice(0, 5).map(a => ({
+    // favTrack is the CSV's `track` column when filled in; otherwise a
+    // deterministic stand-in from the same generator the tracklist uses.
+    title: a.favTrack || ((typeof songsFor === 'function') ? ((songsFor(a)[0] || {}).title || '') : '') || a.album,
+    artist: a.artist, album: a.album,
+  }));
+  P.socials = { instagram: p.profile.handle, x: p.profile.handle, soundcloud: p.profile.handle };
+  P.playlistNames = (typeof plLists === 'function') ? plLists().slice(0, 3).map(x => x.name) : [];
+  P.playlistCovers = A.slice(5, 8).map(a => a.image);
+  P.recent = A.slice(5, 9).map(a => a.album);
+}
+
+/* The switcher. Two presentations of one list:
+   - desktop toolbar: a segmented control, all options visible at once;
+   - mobile bar: a <select>, because five names will not fit beside the
+     Single/Multi/Flow/Live segment on a phone. */
+function renderPersonaBar() {
+  const list = window.PERSONAS || [];
+  if (!list.length) return;
+  const opts = [{ id: '', name: 'Demo' }].concat(list.map(p => ({ id: p.id, name: p.profile.name })));
+  const active = window.ACTIVE_PERSONA || '';
+
+  const bar = document.getElementById('persona-bar');
+  if (bar) {
+    bar.innerHTML = opts.map(o =>
+      `<button class="tb-pers${active === o.id ? ' active' : ''}"` +
+      ` onclick="applyPersona('${o.id}')"` +
+      ` title="${o.id || 'The original random-persona demo data'}">${o.name}</button>`).join('');
+  }
+
+  const mb = document.getElementById('persona-bar-mb');
+  if (mb) {
+    mb.innerHTML = `<select class="tb-pers-sel" aria-label="Persona"
+        onchange="applyPersona(this.value)">${opts.map(o =>
+      `<option value="${o.id}"${active === o.id ? ' selected' : ''}>${o.name}</option>`).join('')}</select>`;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   DEV BOX — tune the compact bento's two info lines, then copy the CSS
+   ══════════════════════════════════════════════════════════════════════════
+   Sliders write a <style> block; the SAME string is what "Copy CSS" hands over,
+   so what you see is exactly what you paste. Rules are scoped
+   `.s-home-v3:not(.s-home-v3--review)` — (0,2,0), which beats the base
+   `.v3-blue-info-row` declarations without touching the review/album state.
+   Defaults below are the CURRENT values in app.css, so an untouched panel emits
+   the layout as it already stands. */
+
+const DEVBOX_FIELDS = [
+  { grp: 'Block' },
+  { k: 'gap',  label: 'Gap',   min: 0,   max: 24, step: 0.5, def: 3 },
+  { k: 'padT', label: 'Pad T', min: 0,   max: 24, step: 0.5, def: 9 },
+  { k: 'padL', label: 'Pad L', min: 0,   max: 32, step: 0.5, def: 12 },
+  { grp: 'Line 1 — album · artist' },
+  { k: 'l1x', label: 'X',     min: -20, max: 20, step: 0.5, def: 0 },
+  { k: 'l1y', label: 'Y',     min: -20, max: 20, step: 0.5, def: -2.5 },
+  { k: 'l1s', label: 'Size',  min: 0.6, max: 1.8, step: 0.01, def: 1 },
+  { grp: 'Line 2 — rating' },
+  { k: 'l2x', label: 'X',     min: -20, max: 20, step: 0.5, def: 0 },
+  { k: 'l2y', label: 'Y',     min: -20, max: 20, step: 0.5, def: -0.5 },
+  { k: 'l2s', label: 'Size',  min: 0.6, max: 1.8, step: 0.01, def: 1 },
+];
+
+const DEVBOX = {};
+DEVBOX_FIELDS.forEach(f => { if (f.k) DEVBOX[f.k] = f.def; });
+
+function devBoxCss() {
+  const d = DEVBOX, n = v => (Math.round(v * 100) / 100);
+  return `/* Compact bento info box — tuned in the dev box */
+.s-home-v3:not(.s-home-v3--review) .v3-blue {
+  gap: ${n(d.gap)}px;
+  padding: ${n(d.padT)}px ${n(d.padL)}px 8px;
+}
+.s-home-v3:not(.s-home-v3--review) .v3-blue-info-row {
+  left: ${n(d.l1x)}px;
+  top: ${n(d.l1y)}px;
+  transform: scale(${n(d.l1s)});
+  transform-origin: left center;
+}
+.s-home-v3:not(.s-home-v3--review) .v3-blue-stars-row {
+  left: ${n(d.l2x)}px;
+  top: ${n(d.l2y)}px;
+  transform: scale(${n(d.l2s)});
+  transform-origin: left center;
+}`;
+}
+
+function devBoxApply() {
+  let el = document.getElementById('devbox-live');
+  if (!el) {
+    el = document.createElement('style');
+    el.id = 'devbox-live';
+    document.head.appendChild(el);   // last in head → wins ties with app.css
+  }
+  const css = devBoxCss();
+  el.textContent = css;
+  const out = document.getElementById('db-out');
+  if (out) out.value = css;
+  document.querySelectorAll('#db-body input[type=range]').forEach(inp => {
+    const lbl = inp.parentElement.querySelector('.db-val');
+    if (lbl) lbl.textContent = DEVBOX[inp.dataset.k];
+  });
+}
+
+function initDevBox() {
+  const body = document.getElementById('db-body');
+  if (!body) return;
+  body.innerHTML = DEVBOX_FIELDS.map(f => f.grp
+    ? `<div class="db-grp">${f.grp}</div>`
+    : `<label class="db-row"><span>${f.label}</span>
+         <input type="range" data-k="${f.k}" min="${f.min}" max="${f.max}" step="${f.step}" value="${f.def}">
+         <span class="db-val">${f.def}</span></label>`).join('');
+  body.addEventListener('input', e => {
+    const inp = e.target.closest('input[type=range]');
+    if (!inp) return;
+    DEVBOX[inp.dataset.k] = parseFloat(inp.value);
+    devBoxApply();
+  });
+  devBoxApply();
+}
+
+window.toggleDevBox = function () {
+  const el = document.getElementById('devbox');
+  if (el) el.hidden = !el.hidden;
+};
+
+window.devBoxReset = function () {
+  DEVBOX_FIELDS.forEach(f => { if (f.k) DEVBOX[f.k] = f.def; });
+  document.querySelectorAll('#db-body input[type=range]').forEach(inp => {
+    inp.value = DEVBOX[inp.dataset.k];
+  });
+  devBoxApply();
+};
+
+window.devBoxCopy = function (btn) {
+  const css = devBoxCss();
+  const done = () => {
+    const was = btn.textContent;
+    btn.textContent = 'Copied ✓';
+    setTimeout(() => { btn.textContent = was; }, 1200);
+  };
+  // The textarea is the fallback path when the clipboard API is unavailable
+  // (it is, on file:// in some browsers) — select it so Ctrl+C still works.
+  const out = document.getElementById('db-out');
+  if (navigator.clipboard) navigator.clipboard.writeText(css).then(done, () => { if (out) out.select(); });
+  else if (out) { out.select(); document.execCommand('copy'); done(); }
+};
+
+// Boot: restore the last-used persona, else stay on the demo data.
+function initPersonas() {
+  if (!(window.PERSONAS || []).length) return;
+  applyPersonaSkins();
+  let saved = '';
+  try { saved = localStorage.getItem('spindeck-persona') || ''; } catch (e) {}
+  if (saved && personaById(saved)) applyPersona(saved);
+  else renderPersonaBar();
+}
+
+/* ── The category-aware content editor ────────────────────────
+   ONE bottom sheet behind every "+" / slot on the profile. What it searches is
+   decided by the KIND it's opened with, so filling an album disc, a playlist
+   row, a favourite song, the photo or a text field all use the same popup:
+
+     album | song | playlist | photo   → a searchable grid
+     name  | text                      → a small form (the only non-search kinds)
+
+   Everything writes through profFavTarget(), which is the Edit Profile DRAFT
+   when that page is open and PROFILE otherwise — so an unsaved change on the
+   edit page can still be thrown away by Cancel.
+   ───────────────────────────────────────────────────────────── */
+const PFE_TEXT = {
+  bio:        { label: 'Bio',        ph: 'Tell people what you are into.', max: 240, multi: true },
+  location:   { label: 'Location',   ph: 'Country or city', max: 30 },
+  occupation: { label: 'Occupation', ph: 'What you do',     max: 30 },
+};
+const PFE_KIND = {
+  album:    { title: 'Choose an album',   ph: 'Search albums' },
+  song:     { title: 'Choose a song',     ph: 'Search songs, albums, artists' },
+  playlist: { title: 'Choose a playlist', ph: 'Search your playlists' },
+  photo:    { title: 'Choose a photo',    ph: '' },
+};
+let _profSlot = 0;
+let _profKind = 'album';
+
+window.openProfEditor = function (kind, slot) {
+  _profKind = kind || 'album';
+  _profSlot = (slot == null) ? 0 : (isNaN(slot) ? slot : Number(slot));
+  const host = document.querySelector('.app-screen.s-pfedit')
+            || document.querySelector('.app-screen.s-prof2')
+            || document.querySelector('.app-screen') || document.body;
   const ov = ensureProfPicker();
   host.appendChild(ov);   // inherits the panel/home palette vars from .s-prof2
-  const inp = ov.querySelector('.pp-input'); if (inp) inp.value = '';
-  profPickerRender('');
-  requestAnimationFrame(() => { ov.classList.add('open'); setTimeout(() => inp && inp.focus(), 80); });
+  profPickerBuild();
+  requestAnimationFrame(() => {
+    ov.classList.add('open');
+    const f = ov.querySelector('.pp-input, .pp-text');
+    setTimeout(() => f && f.focus(), 80);
+  });
 };
+// Back-compat: the profile card's album discs still call openProfPicker(slot).
+window.openProfPicker = function (slot) { openProfEditor('album', slot); };
+
 function ensureProfPicker() {
   let ov = document.getElementById('prof-picker');
   if (ov) return ov;
   ov = document.createElement('div');
   ov.id = 'prof-picker';
   ov.className = 'prof-picker';
-  ov.innerHTML = `
-    <div class="pp-sheet">
-      <div class="pp-handle-bar"></div>
-      <div class="pp-top">
-        <div class="pp-title">Choose a favourite</div>
-        <button class="pp-close" onclick="closeProfPicker()" aria-label="Close">×</button>
-      </div>
-      <div class="pp-searchbar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
-        <input class="pp-input" type="text" placeholder="Search albums" autocomplete="off" spellcheck="false" oninput="profPickerRender(this.value)">
-      </div>
-      <div class="pp-grid"></div>
-    </div>`;
   ov.addEventListener('click', e => { if (e.target === ov) closeProfPicker(); });
   return ov;
 }
+
+// Build the sheet for the current kind — search kinds get a searchbar + grid,
+// the text kinds get a small form — then fill it.
+function profPickerBuild() {
+  const ov = document.getElementById('prof-picker'); if (!ov) return;
+  const T = profFavTarget();
+  const isText = _profKind === 'name' || _profKind === 'text';
+  let body;
+  if (_profKind === 'name') {
+    body = `
+      <div class="pp-form">
+        <label class="pp-flabel">Display name</label>
+        <input class="pp-text" type="text" maxlength="24" value="${obEsc(T.name || '')}" placeholder="Your name" spellcheck="false">
+        <label class="pp-flabel">Handle</label>
+        <div class="pp-handle"><span>@</span><input class="pp-text pp-text2" type="text" maxlength="20" value="${obEsc(T.handle || '')}" placeholder="handle" spellcheck="false"></div>
+        <button class="pp-done" onclick="profTextDone()">Done</button>
+      </div>`;
+  } else if (_profKind === 'text') {
+    const cfg = PFE_TEXT[_profSlot] || { label: _profSlot, ph: '', max: 120 };
+    body = `
+      <div class="pp-form">
+        <label class="pp-flabel">${cfg.label}</label>
+        ${cfg.multi
+          ? `<textarea class="pp-text pp-textarea" rows="5" maxlength="${cfg.max}" placeholder="${cfg.ph}" spellcheck="false">${obEsc(T[_profSlot] || '')}</textarea>`
+          : `<input class="pp-text" type="text" maxlength="${cfg.max}" value="${obEsc(T[_profSlot] || '')}" placeholder="${cfg.ph}" spellcheck="false">`}
+        <button class="pp-done" onclick="profTextDone()">Done</button>
+      </div>`;
+  } else {
+    const k = PFE_KIND[_profKind] || PFE_KIND.album;
+    body = `
+      ${_profKind === 'photo' ? `
+      <label class="pp-upload">
+        <input type="file" accept="image/*" onchange="profPhotoUpload(this)">
+        Upload your own
+      </label>` : `
+      <div class="pp-searchbar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+        <input class="pp-input" type="text" placeholder="${k.ph}" autocomplete="off" spellcheck="false" oninput="profPickerRender(this.value)">
+      </div>`}
+      <div class="pp-grid"></div>`;
+  }
+  const title = isText
+    ? (_profKind === 'name' ? 'Name & handle' : ((PFE_TEXT[_profSlot] || {}).label || 'Edit'))
+    : (PFE_KIND[_profKind] || PFE_KIND.album).title;
+  ov.innerHTML = `
+    <div class="pp-sheet${isText ? ' pp-sheet--form' : ''}">
+      <div class="pp-handle-bar"></div>
+      <div class="pp-top">
+        <div class="pp-title">${title}</div>
+        <button class="pp-close" onclick="closeProfPicker()" aria-label="Close">×</button>
+      </div>
+      ${body}
+    </div>`;
+  if (!isText) profPickerRender('');
+}
+
+// The searchable kinds, normalised to one row shape.
+function profPickerItems(q) {
+  q = String(q || '').toLowerCase();
+  const T = profFavTarget();
+  if (_profKind === 'album') {
+    const cur = (T.favs || [])[_profSlot];
+    return (window.ARCHIVE || [])
+      .filter(a => !q || a.album.toLowerCase().includes(q) || a.artist.toLowerCase().includes(q))
+      .slice(0, 60)
+      .map(a => ({ img: a.image, t: a.album, s: a.artist, on: a.album === cur, pick: `profPick('${obOc(a.album)}')` }));
+  }
+  if (_profKind === 'song') {
+    const cur = (T.favSongs || [])[_profSlot];
+    return plnewPool()
+      .filter(x => !q || x.title.toLowerCase().includes(q) || x.album.toLowerCase().includes(q) || x.artist.toLowerCase().includes(q))
+      .slice(0, 60)
+      .map(x => ({ img: x.image, t: x.title, s: x.album + ' · ' + x.artist,
+                   on: !!cur && cur.title === x.title && cur.album === x.album,
+                   pick: `profPickSong('${obOc(x.key)}')` }));
+  }
+  if (_profKind === 'playlist') {
+    const cur = (T.playlistNames || [])[_profSlot];
+    return plLists()
+      .filter(p => !q || p.name.toLowerCase().includes(q) || String(p.creator).toLowerCase().includes(q))
+      .map(p => ({ img: p.image, t: p.name, s: p.tracks + ' songs', on: p.name === cur,
+                   pick: `profPickPlaylist('${obOc(p.name)}')` }));
+  }
+  // photo
+  return PROFILE_PHOTOS.map(src => ({ img: src, t: '', s: '', on: src === T.pic, pick: `profPickPhoto('${src}')` }));
+}
+
 function profPickerRender(q) {
   const ov = document.getElementById('prof-picker'); if (!ov) return;
-  q = String(q || '').toLowerCase();
-  const cur = (window.PROFILE.favs || [])[_profSlot];
-  const list = (window.ARCHIVE || []).filter(a => !q || a.album.toLowerCase().includes(q) || a.artist.toLowerCase().includes(q));
-  ov.querySelector('.pp-grid').innerHTML = list.slice(0, 60).map(a => `
-    <button class="pp-item${a.album === cur ? ' pp-item--on' : ''}" onclick="profPick('${obOc(a.album)}')">
-      <span class="pp-img" style="background-image:url('${a.image}')"></span>
-      <span class="pp-t">${obEsc(a.album)}</span>
-      <span class="pp-s">${obEsc(a.artist)}</span>
-    </button>`).join('') || `<div class="pp-empty">No albums match “${obEsc(q)}”.</div>`;
+  const grid = ov.querySelector('.pp-grid'); if (!grid) return;
+  const items = profPickerItems(q);
+  grid.className = 'pp-grid' + (_profKind === 'photo' ? ' pp-grid--photo' : '');
+  grid.innerHTML = items.map(it => `
+    <button class="pp-item${it.on ? ' pp-item--on' : ''}" onclick="${it.pick}">
+      <span class="pp-img" style="background-image:url('${it.img}')"></span>
+      ${it.t ? `<span class="pp-t">${obEsc(it.t)}</span>` : ''}
+      ${it.s ? `<span class="pp-s">${obEsc(it.s)}</span>` : ''}
+    </button>`).join('') || `<div class="pp-empty">Nothing matches “${obEsc(q)}”.</div>`;
 }
+
+// On the Edit Profile page everything edits the DRAFT, so an unsaved change can
+// still be thrown away by Cancel; elsewhere it edits PROFILE directly.
+function profFavTarget() { return window.PFEDIT || window.PROFILE; }
+function profAfterPick() { closeProfPicker(); renderViewer(); }
+
 window.profPick = function (name) {
-  if (!window.PROFILE.favs) window.PROFILE.favs = [];
-  window.PROFILE.favs[_profSlot] = name;
-  closeProfPicker();
-  renderViewer();
+  const T = profFavTarget();
+  if (!T.favs) T.favs = [];
+  T.favs[_profSlot] = name;
+  profAfterPick();
 };
+window.profPickSong = function (key) {
+  const t = plnewPool().find(x => x.key === key); if (!t) return;
+  const T = profFavTarget();
+  if (!T.favSongs) T.favSongs = [];
+  T.favSongs[_profSlot] = { title: t.title, album: t.album, artist: t.artist };
+  profAfterPick();
+};
+window.profPickPlaylist = function (name) {
+  const T = profFavTarget();
+  if (!T.playlistNames || !T.playlistNames.length) {
+    // Seed from what the profile is currently showing, so replacing one slot
+    // doesn't silently drop the other two.
+    T.playlistNames = plLists().filter(p => p.creator === 'you')
+      .sort((a, b) => b.favs - a.favs).slice(0, 3).map(p => p.name);
+  }
+  T.playlistNames[_profSlot] = name;
+  profAfterPick();
+};
+window.profPickPhoto = function (src) {
+  profFavTarget().pic = src;
+  profAfterPick();
+};
+window.profPhotoUpload = function (input) {
+  const f = input && input.files && input.files[0]; if (!f) return;
+  const T = profFavTarget();
+  const fr = new FileReader();
+  fr.onload = () => { T.pic = fr.result; profAfterPick(); };
+  fr.readAsDataURL(f);
+};
+window.profTextDone = function () {
+  const ov = document.getElementById('prof-picker'); if (!ov) return;
+  const T = profFavTarget();
+  if (_profKind === 'name') {
+    const [a, b] = ov.querySelectorAll('.pp-text');
+    if (a) T.name = a.value.trim() || T.name;
+    if (b) T.handle = b.value.trim().replace(/^@/, '') || T.handle;
+  } else {
+    const el = ov.querySelector('.pp-text');
+    if (el) T[_profSlot] = el.value;
+  }
+  profAfterPick();
+};
+
+/* ============================================================
+   EDIT PROFILE — the customising page behind the card's pencil
+   ------------------------------------------------------------
+   PFEDIT is a DRAFT copied from PROFILE when the page opens, so Cancel can
+   genuinely throw the changes away and Save is the only thing that commits.
+
+   There is deliberately NO form on the page and no sync layer: every edit goes
+   through the content editor popup (openProfEditor), which writes into the draft
+   and then re-renders. Nothing is being typed into on the page itself, so a full
+   re-render can't steal a caret — the only inputs live inside the popup, which
+   survives because it's rebuilt only when it opens.
+   ============================================================ */
+window.PFEDIT = null;
+
+// Seed the draft on demand, so the screen also works when it's opened straight
+// from the viewer's left rail rather than through the pencil.
+window.pfeditDraft = function () {
+  if (!window.PFEDIT) {
+    const P = window.PROFILE || {};
+    window.PFEDIT = { ...P, socials: { ...(P.socials || {}) }, favs: (P.favs || []).slice() };
+  }
+  return window.PFEDIT;
+};
+
+window.openProfileEdit = function () {
+  window.PFEDIT = null;
+  pfeditDraft();
+  backStack.push(captureLocation());
+  navigate('profile-edit');
+};
+
+window.pfeditCancel = function () {
+  window.PFEDIT = null;          // draft dies here — PROFILE was never touched
+  goBack('profile');
+};
+
+window.pfeditSave = function () {
+  const D = pfeditDraft();
+  // Commit only the fields this page owns; the stats and generated persona bits
+  // on PROFILE are left alone.
+  Object.assign(window.PROFILE, {
+    name: (D.name || '').trim() || window.PROFILE.name,
+    handle: (D.handle || '').trim().replace(/^@/, '') || window.PROFILE.handle,
+    bio: D.bio,
+    location: (D.location || '').trim(),
+    occupation: (D.occupation || '').trim(),
+    pic: D.pic,
+    favs: (D.favs || []).slice(),
+    socials: { ...(D.socials || {}) },
+    // The slots below the card. These MUST be listed here — the page edits them
+    // on the draft, so anything missing from this whitelist is silently dropped
+    // on save even though the edit page showed it working.
+    favSongs: (D.favSongs || []).slice(),
+    playlistNames: (D.playlistNames || []).slice(),
+    playlistCovers: (D.playlistCovers || []).slice(),
+  });
+  window.PFEDIT = null;
+  if (window.__sdToast) window.__sdToast('Profile updated');
+  // NOT goBack(): the snapshot it pops holds a copy of PROFILE from before the
+  // edit and goBack Object.assign()s it back, which would silently revert the
+  // save. Drop that snapshot and go forward-as-back instead — the 'back'
+  // direction is what stops navigate() from re-rolling the random persona.
+  backStack.pop();
+  navigate('profile', 'back');
+};
+
 window.closeProfPicker = function () {
   const ov = document.getElementById('prof-picker'); if (!ov) return;
   ov.classList.remove('open');
