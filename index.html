@@ -13,6 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;0,9..40,800;1,9..40,400&family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Roboto+Flex:opsz,wdth,wght@8..144,25..151,100..900&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=SUSE+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css?v=147">
   <link rel="stylesheet" href="app.css?v=231">
+  <link rel="stylesheet" href="roadmap.css?v=1">
 </head>
 <body>
 
@@ -44,6 +45,7 @@
           <button class="tb-act tb-zoom-btn" id="btn-zoom-in" title="Zoom in">+</button>
         </div>
         <button class="tb-act" id="btn-devbox" onclick="toggleDevBox()" title="Tune the compact bento info box">⚙ Dev</button>
+        <button class="tb-act" id="btn-roadmap" onclick="toggleRoadmap()" title="Project roadmap — editable, autosaves">🗺 Roadmap</button>
         <button class="tb-act" id="btn-shuffle" title="Shuffle featured album">⟳ Shuffle</button>
         <button class="tb-act" id="btn-export" title="Export current screen as PNG">⬇ PNG</button>
         <a class="tb-act" href="flowchart.html" target="_blank">Page Map ↗</a>
@@ -67,6 +69,54 @@
         </div>
         <textarea class="db-out" id="db-out" readonly spellcheck="false"></textarea>
       </aside>
+
+      <!-- Roadmap: editable planning board behind the toolbar's Roadmap button.
+           Inside #stage (already position:relative) so it covers the phones but
+           leaves the toolbar reachable. Built by rmInit() in roadmap.js on first
+           open; desktop viewer only. -->
+      <section id="roadmap" hidden>
+        <header class="rm-hd">
+          <span class="rm-hd-title">Spindeck — Roadmap</span>
+          <span class="rm-hd-sub">Aug 17 – Dec 14 2026 · 18 weeks · click any line to edit</span>
+          <span class="rm-hd-spacer"></span>
+          <button class="rm-btn" onclick="rmReset()">Reset</button>
+          <button class="rm-btn" onclick="rmDownload(this)">Download .md</button>
+          <button class="rm-btn rm-btn--go" onclick="rmCopy(this)">Copy Markdown</button>
+          <button class="rm-btn rm-btn--x" onclick="toggleRoadmap()" title="Close (Esc)">×</button>
+        </header>
+
+        <div class="rm-grid">
+          <div class="rm-col">
+            <div class="rm-card">
+              <div class="rm-card-hd">
+                <span class="rm-card-title">Timeline</span>
+                <span class="rm-card-sub">chips cycle: track · status</span>
+              </div>
+              <div class="rm-card-body" id="rm-timeline"></div>
+            </div>
+          </div>
+
+          <div class="rm-col">
+            <div class="rm-card">
+              <div class="rm-card-hd">
+                <span class="rm-card-title">Goals</span>
+                <span class="rm-card-sub">short · medium · long term</span>
+              </div>
+              <div class="rm-card-body" id="rm-goals"></div>
+            </div>
+            <div class="rm-card rm-card--notes">
+              <div class="rm-card-hd">
+                <span class="rm-card-title">Meeting notes</span>
+                <span class="rm-card-sub">saved in this browser — export to share</span>
+              </div>
+              <div class="rm-card-body">
+                <textarea class="rm-notes" id="rm-notes" spellcheck="false"
+                          placeholder="Notes, decisions, questions…"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
     </main>
 
     <nav id="thumb-tray" aria-label="Screen thumbnails"></nav>
@@ -123,5 +173,8 @@
   <script src="personas.js?v=6"></script>
   <script src="screens.js?v=200"></script>
   <script src="app.js?v=213"></script>
+  <!-- Roadmap overlay. Independent of the prototype — loads last, touches
+       nothing in app.js, and only runs when the toolbar button is pressed. -->
+  <script src="roadmap.js?v=1"></script>
 </body>
 </html>

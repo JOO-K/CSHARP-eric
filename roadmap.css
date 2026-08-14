@@ -1,0 +1,266 @@
+/* ============================================================
+   ROADMAP — planning overlay behind the toolbar's "Roadmap" button.
+   Desktop viewer only (it lives inside #viewer, which the mobile
+   prototype hides wholesale — same containment rule as the rec box).
+
+   Everything the user types is contenteditable and autosaves to
+   localStorage; Export copies the whole thing back out as Markdown.
+   See roadmap.js for the state model.
+   ============================================================ */
+
+#roadmap {
+  position: absolute;
+  inset: 0;
+  z-index: 90;                    /* over #stage, under nothing else in the viewer */
+  display: flex;
+  flex-direction: column;
+  background: var(--vbg);
+  font-family: 'DM Sans', system-ui, sans-serif;
+  color: var(--vtext);
+}
+#roadmap[hidden] { display: none; }
+
+/* The overlay sits inside #stage, so the tray and the rec strip below it stay
+   on screen unless we hide them. Set by toggleRoadmap(). */
+#viewer.rm-open #thumb-tray,
+#viewer.rm-open #recbox { display: none; }
+
+/* ── Header ─────────────────────────────────────────────── */
+.rm-hd {
+  flex-shrink: 0;
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--vborder);
+  background: var(--vsurface);
+}
+.rm-hd-title { font-size: 14px; font-weight: 700; letter-spacing: -0.01em; }
+.rm-hd-sub {
+  font-family: 'SUSE Mono', ui-monospace, monospace;
+  font-size: 10.5px; color: var(--vdim);
+}
+.rm-hd-spacer { flex: 1; }
+
+.rm-btn {
+  background: none;
+  border: 1px solid var(--vborder);
+  color: var(--vdim);
+  font-family: inherit;
+  font-size: 11px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color .1s, border-color .1s, background .1s;
+}
+.rm-btn:hover { color: var(--vtext); border-color: #404040; }
+.rm-btn--go { color: #e8a83c; border-color: rgba(232,168,60,0.4); }
+.rm-btn--go:hover { color: #f5c069; border-color: #e8a83c; background: rgba(232,168,60,0.08); }
+.rm-btn--x { font-size: 15px; line-height: 1; padding: 4px 9px; }
+
+/* Saved / copied flash on the header buttons */
+.rm-btn.is-ok { color: #6fcf8f; border-color: rgba(111,207,143,0.5); }
+
+/* ── Body: timeline left · goals + notes right ───────────── */
+.rm-grid {
+  flex: 1;
+  min-height: 0;                  /* lets the children scroll instead of the page */
+  display: grid;
+  grid-template-columns: minmax(360px, 1fr) minmax(400px, 1.05fr);
+  gap: 12px;
+  padding: 12px 16px 16px;
+}
+.rm-col { min-height: 0; display: flex; flex-direction: column; gap: 12px; }
+
+.rm-card {
+  min-height: 0;
+  display: flex; flex-direction: column;
+  background: var(--vsurface);
+  border: 1px solid var(--vborder);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.rm-card-hd {
+  flex-shrink: 0;
+  display: flex; align-items: baseline; gap: 8px;
+  padding: 10px 13px;
+  border-bottom: 1px solid var(--vborder);
+}
+.rm-card-title { font-size: 12px; font-weight: 700; }
+.rm-card-sub {
+  font-family: 'SUSE Mono', ui-monospace, monospace;
+  font-size: 9.5px; color: var(--vdim);
+}
+.rm-card-body { flex: 1; min-height: 0; overflow-y: auto; padding: 8px 13px 13px; }
+
+/* ── Timeline (left) ────────────────────────────────────── */
+.rm-week {
+  position: relative;
+  display: grid;
+  grid-template-columns: 74px 1fr auto;
+  align-items: start;
+  gap: 9px;
+  padding: 7px 0 7px 14px;
+}
+/* The spine + node. Drawn on the row so it can't drift out of sync
+   with the list the way a separate absolutely-positioned rail would. */
+.rm-week::before {
+  content: '';
+  position: absolute;
+  left: 4px; top: 0; bottom: 0;
+  width: 1px;
+  background: var(--vborder);
+}
+.rm-week:first-child::before { top: 15px; }
+.rm-week:last-child::before  { bottom: calc(100% - 15px); }
+.rm-week::after {
+  content: '';
+  position: absolute;
+  left: 1px; top: 12px;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--vbg);
+  border: 1.5px solid var(--vdim);
+}
+
+.rm-week-lbl {
+  font-family: 'SUSE Mono', ui-monospace, monospace;
+  font-size: 10px;
+  line-height: 1.45;
+  color: var(--vdim);
+  padding-top: 3px;
+  user-select: none;
+}
+.rm-week-no { color: var(--vtext); font-weight: 500; }
+
+/* A month's first week gets a heading rule above it */
+.rm-month {
+  display: flex; align-items: center; gap: 8px;
+  margin: 14px 0 2px; padding-left: 14px;
+  font-family: 'SUSE Mono', ui-monospace, monospace;
+  font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--vaccent);
+}
+.rm-month:first-child { margin-top: 2px; }
+.rm-month::after { content: ''; flex: 1; height: 1px; background: var(--vborder); }
+
+/* Status — the node and the text both take the colour */
+.rm-week[data-st="doing"]::after { border-color: #e8a83c; background: #e8a83c; }
+.rm-week[data-st="done"]::after  { border-color: #6fcf8f; background: #6fcf8f; }
+.rm-week[data-st="risk"]::after  { border-color: #e0645c; background: #e0645c; }
+.rm-week[data-st="done"] .rm-week-text { color: var(--vdim); text-decoration: line-through; }
+
+.rm-week-text {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--vtext);
+  padding: 2px 4px;
+  border-radius: 4px;
+  outline: none;
+  min-height: 20px;
+}
+.rm-week-text:hover  { background: rgba(255,255,255,0.03); }
+.rm-week-text:focus  { background: rgba(255,255,255,0.06); box-shadow: inset 0 0 0 1px var(--vborder); }
+
+/* Empty-state hint — :empty only matches with no child nodes at all,
+   which plaintext-only contenteditable preserves. */
+[data-ph]:empty::before {
+  content: attr(data-ph);
+  color: var(--vdim);
+  font-style: italic;
+  pointer-events: none;
+}
+
+.rm-week-side { display: flex; align-items: center; gap: 5px; padding-top: 2px; }
+
+.rm-chip {
+  font-family: 'SUSE Mono', ui-monospace, monospace;
+  font-size: 8.5px; letter-spacing: 0.04em; text-transform: uppercase;
+  padding: 3px 6px;
+  border-radius: 999px;
+  border: 1px solid var(--vborder);
+  background: none;
+  color: var(--vdim);
+  cursor: pointer;
+  white-space: nowrap;
+  font-weight: 500;
+}
+.rm-chip:hover { border-color: #404040; color: var(--vtext); }
+.rm-chip[data-track="mockup"] { color: #8fb8e0; border-color: rgba(143,184,224,0.35); }
+.rm-chip[data-track="web"]    { color: #c79ae0; border-color: rgba(199,154,224,0.35); }
+.rm-chip[data-track="both"]   { color: #e8a83c; border-color: rgba(232,168,60,0.35); }
+
+.rm-st { width: 20px; text-align: center; padding: 3px 0; }
+
+/* ── Goals (right, top) ─────────────────────────────────── */
+.rm-term + .rm-term { margin-top: 14px; }
+.rm-term-hd {
+  display: flex; align-items: baseline; gap: 7px;
+  margin-bottom: 5px;
+}
+.rm-term-name { font-size: 11.5px; font-weight: 700; }
+.rm-term-when {
+  font-family: 'SUSE Mono', ui-monospace, monospace;
+  font-size: 9.5px; color: var(--vdim);
+}
+.rm-term[data-term="short"]  .rm-term-name { color: #6fcf8f; }
+.rm-term[data-term="medium"] .rm-term-name { color: #e8a83c; }
+.rm-term[data-term="long"]   .rm-term-name { color: #8fb8e0; }
+
+.rm-goal {
+  display: grid;
+  grid-template-columns: 12px 1fr 18px;
+  align-items: start;
+  gap: 7px;
+  padding: 3px 0;
+}
+.rm-goal-dot { color: var(--vdim); font-size: 12px; line-height: 1.55; user-select: none; }
+.rm-goal-text {
+  font-size: 12px; line-height: 1.55;
+  padding: 2px 4px; border-radius: 4px; outline: none; min-height: 20px;
+}
+.rm-goal-text:hover { background: rgba(255,255,255,0.03); }
+.rm-goal-text:focus { background: rgba(255,255,255,0.06); box-shadow: inset 0 0 0 1px var(--vborder); }
+
+.rm-del {
+  background: none; border: none; cursor: pointer;
+  color: transparent;                 /* revealed on row hover */
+  font-size: 13px; line-height: 1.4; padding: 0;
+  transition: color .1s;
+}
+.rm-goal:hover .rm-del { color: var(--vdim); }
+.rm-del:hover { color: #e0645c; }
+
+.rm-add {
+  margin-top: 5px; margin-left: 19px;
+  background: none; border: 1px dashed var(--vborder);
+  color: var(--vdim);
+  font-family: inherit; font-size: 10.5px;
+  padding: 3px 9px; border-radius: 6px; cursor: pointer;
+}
+.rm-add:hover { color: var(--vtext); border-color: #404040; }
+
+/* ── Meeting notes (right, bottom) ──────────────────────── */
+.rm-card--notes { flex: 0 0 34%; }
+.rm-notes {
+  width: 100%; height: 100%;
+  background: none; border: none; outline: none; resize: none;
+  color: var(--vtext);
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 12px; line-height: 1.6;
+}
+.rm-notes::placeholder { color: var(--vdim); font-style: italic; }
+
+/* ── Scrollbars — match the viewer's understated chrome ─── */
+.rm-card-body::-webkit-scrollbar { width: 9px; }
+.rm-card-body::-webkit-scrollbar-track { background: none; }
+.rm-card-body::-webkit-scrollbar-thumb {
+  background: var(--vborder); border-radius: 5px;
+  border: 3px solid var(--vsurface);
+}
+.rm-card-body::-webkit-scrollbar-thumb:hover { background: #383838; }
+
+/* Narrow viewports: stack instead of letting the columns crush */
+@media (max-width: 1080px) {
+  .rm-grid { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
+  .rm-card--notes { flex: 0 0 150px; }
+}

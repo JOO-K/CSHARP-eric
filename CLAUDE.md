@@ -19,6 +19,8 @@
 | `app.js` | Viewer logic, navigation, color extraction, fillet processing, mobile engine |
 | `app.css` | App UI styles (screens, components, palette) |
 | `style.css` | Desktop viewer chrome (toolbar, phone frame, variant tray) |
+| `roadmap.js` | Roadmap board — state, render, export (desktop viewer only) |
+| `roadmap.css` | Roadmap board styles |
 | `flowchart.html` | Page map / user flow diagram |
 | `archive.csv` | Source of truth for artist/album metadata |
 | `images/` | Album art (~146 albums, `album-artistslug-albumslug.ext`), playlist covers (`playlist-*.jpg`), and `profile-skin-01.png` (profile theme 01 skin) |
@@ -98,6 +100,44 @@ the markup and the typewriter in app.js remain and just paint into a hidden
 node, so deleting that one rule brings it back. With two lines instead of three,
 `.v3-blue` moved off `space-between` (which would shove them to the far top and
 bottom of the box) onto a centred stack.
+
+## Roadmap (`roadmap.js` + `roadmap.css`, `#roadmap` in index.html)
+
+The planning board behind the toolbar's **🗺 Roadmap** button — an editable
+4-month plan meant to be opened live in a meeting. **Left:** an 18-week vertical
+timeline (Aug 17 → Dec 14 2026, month rules between). **Right top:** short /
+medium / long term goals. **Right bottom:** meeting notes.
+
+- **Self-contained.** Two new files, loaded last in `index.html`; it imports
+  nothing from app.js and app.js knows nothing about it. `rmInit()` runs on the
+  **first open**, not at load, so it costs nothing until pressed.
+- Lives inside **`#stage`** (already `position: relative`) at `z-index: 90` —
+  above the dev box's 60 — so it covers the phones but leaves the toolbar
+  reachable. `toggleRoadmap` also sets `.rm-open` on `#viewer`, which hides
+  `#thumb-tray` and `#recbox`; without it both sit visible *below* the overlay.
+- **Editing is contenteditable + one delegated `input` listener** on `#roadmap`,
+  because `rmRender()` rebuilds the rows and per-node listeners would leak on
+  every structural change. Fields are `plaintext-only` and Enter blurs rather
+  than inserting a `<br>` — a `<br>` would defeat the `:empty::before`
+  placeholder.
+- ⚠️ **Same rendering discipline as `PLNEW`:** input handlers write state and
+  **must not re-render** (it destroys the caret mid-keystroke). Only structural
+  changes — `rmCycle` / `rmAddGoal` / `rmDelGoal` — call `rmRender()`, and those
+  restore both card bodies' `scrollTop` so the reader isn't thrown to the top.
+- **State** is one object in `localStorage` under `spindeck-roadmap-v1`, saved
+  debounced at 250ms. `RM_WEEKS` (the date labels) is **static and separate from
+  the stored state**, which holds only `{t, track, st}` per index — so editing
+  the week list re-labels the board instead of orphaning someone's notes
+  (`rmLoad` pads/truncates to match).
+- ⚠️ **localStorage is per-browser, so a reader's notes never come back on their
+  own.** That is what **Copy Markdown** / **Download .md** are for; `rmMarkdown()`
+  emits goals + a timeline table (blank weeks omitted, typed `|` escaped) +
+  notes. Say this out loud before handing the link over.
+- Chips cycle on click: track (Mockup · Website · Both) and status (`–` planned ·
+  `▸` doing · `✓` done · `!` at risk, which also colours the spine node).
+- The seeded content is a **draft to argue with**, taken from the open threads
+  recorded in this file. `rmSeed()` is the single place to change it; **Reset**
+  restores it and drops the reader's edits (behind a `confirm`).
 
 ## Personas (`personas/` → `personas.js` → `applyPersona` in app.js)
 
@@ -994,7 +1034,7 @@ On mobile (`≤767px`): Single / Multi / Flow / Live modes via header segmented 
 
 GitHub Pages from `main` branch root:
 ```
-git add app.css app.js screens.js style.css index.html data.js flowchart.html CLAUDE.md
+git add app.css app.js screens.js style.css index.html data.js flowchart.html CLAUDE.md roadmap.js roadmap.css
 git commit -m "description"
 git push
 ```
