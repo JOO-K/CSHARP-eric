@@ -2531,26 +2531,135 @@
 .v3-body::-webkit-scrollbar { display: none; }
 
 /* NOW-PLAYING TICKER — glossy "bubble" pill above the bento ──── */
+/* The now-playing / friends ticker fills the bump. Its inset matches the
+   plateau in BOTTOM_NAV_FULL_INDENT.svg — x 98.5→480.7 of 576 is 17.1%→83.5% — plus a
+   little breathing room each side. `bottom` centres it in the plateau band: the
+   bar is 68px tall docked at 0 and its shoulder is at 47.3%, so that band runs
+   from 36px to 68px up and its middle is ~52px. */
 .v3-nowbar {
   position: absolute;
-  left: 50%; transform: translateX(-50%);   /* centered, filling the console's top indent */
-  bottom: 65px;
+  left: 19%; right: 18.5%;
+  bottom: 39.5px;
   z-index: 6;
-  width: 54%;
-  height: 22px;
+  height: 20px;
   display: flex;
   align-items: center;
+  /* Text + waveform ride together, centred in the bump. `.v3-now-text` is
+     `flex: 0 1 auto` (not `1`) so the pair stays glued instead of the text
+     eating the bar and pushing the bars to the far edge — centring only reads
+     as centred because of that. Padding is symmetric for the same reason. */
+  justify-content: center;
   gap: 7px;
-  padding: 0 7px 0 10px;
+  padding: 0 8px;
   overflow: hidden;
   /* no background of its own — it sits inside the glass console indent */
   background: none;
   border: none;
 }
+/* ── Nav backdrop blur ────────────────────────────────────────
+   The glass's own `backdrop-filter` is masked to the BAR shape, so it stops
+   dead at the scoop and at the corners beside the bump — content passing behind
+   those regions was never blurred, only (meant to be) covered. This is an
+   UNMASKED blur across the nav's whole box, sitting under everything, so
+   nothing behind the bar can ever read as sharp text no matter what happens at
+   the mask seams. No colour of its own — purely a blur. */
+.v3-nav-blur {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  width: 100%;
+  aspect-ratio: 576 / 93;   /* same box as the nav */
+  z-index: 3;               /* under the plug (4), the nav (5), everything */
+  pointer-events: none;
+  -webkit-backdrop-filter: blur(22px) saturate(175%);
+          backdrop-filter: blur(22px) saturate(175%);
+}
+
+/* ── The scoop fill ("the nest") ──────────────────────────────
+   The scoop is a real hole in the bar, so feed content scrolling behind the nav
+   used to show through it sharp and unblurred, right under the pet. This plugs
+   it with the screen's own colour, masked to exactly the scoop path.
+
+   ⚠️ `background-color: inherit` is doing the work. The screen background comes
+   from SIX places — the dark base, the light variant, the review flood, the
+   artist override, and the persona skins — and mirroring all of those into a
+   variable would rot the first time a seventh appears. Inheriting from the
+   shell tracks whatever is actually painted, including the album flood's
+   transition. It only works because this is a DIRECT child of .s-home-v3. */
+.v3-nav-nest {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  width: 100%;
+  aspect-ratio: 576 / 93;      /* same box as the nav, so the mask lines up */
+  z-index: 4;                  /* over content, under the nav (5) and the pet */
+  pointer-events: none;
+  background-color: inherit;
+  /* ⚠️ The mask is the NEGATIVE of the bar — an enclosing rect MINUS the bar
+     path, via `fill-rule='evenodd'` — not just the scoop. So this plugs the
+     scoop AND the two corner gaps either side of the bump, and by construction
+     every pixel inside the nav's box is covered by either the glass or this.
+     That is the point: the artifacts were feed text leaking through sub-pixel
+     seams wherever the bar's fill ended and nothing else began. Patching the
+     scoop alone left the corners, which is why text still peeked along the
+     fillets. The path is also STROKED, dilating the plug 1 unit into the bar so
+     the two overlap rather than butting edge-to-edge. */
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 576 93' preserveAspectRatio='none'%3E%3Cpath d='M-12 -12H588V105H-12ZM-8 101V34.1217H64.8923C73.1451 34.1217 79.8353 27.4315 79.8353 19.1787C79.8353 8.86277 88.198 0.5 98.514 0.5L480.656 0.5C490.972 0.5 499.335 8.86277 499.335 19.1788C499.335 27.4316 506.025 34.1218 514.278 34.1218H584V101H375.209V94.0125C373.667 94.0125 372.433 92.7335 372.488 91.1928L372.792 82.7034C373.566 61.0759 356.243 43.1217 334.602 43.1217H232.378C210.707 43.1217 193.328 61.0425 193.994 82.7034L194.232 90.4501C194.292 92.3996 192.728 94.0125 190.777 94.0125V101H-8Z' fill='%23fff' fill-rule='evenodd' stroke='%23fff' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center / 100% 100%;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 576 93' preserveAspectRatio='none'%3E%3Cpath d='M-12 -12H588V105H-12ZM-8 101V34.1217H64.8923C73.1451 34.1217 79.8353 27.4315 79.8353 19.1787C79.8353 8.86277 88.198 0.5 98.514 0.5L480.656 0.5C490.972 0.5 499.335 8.86277 499.335 19.1788C499.335 27.4316 506.025 34.1218 514.278 34.1218H584V101H375.209V94.0125C373.667 94.0125 372.433 92.7335 372.488 91.1928L372.792 82.7034C373.566 61.0759 356.243 43.1217 334.602 43.1217H232.378C210.707 43.1217 193.328 61.0425 193.994 82.7034L194.232 90.4501C194.292 92.3996 192.728 94.0125 190.777 94.0125V101H-8Z' fill='%23fff' fill-rule='evenodd' stroke='%23fff' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center / 100% 100%;
+}
+
+/* ── Bottom fade ──────────────────────────────────────────────
+   Content shouldn't look chopped off by the nav — it should run out of road.
+   Same inherit trick: a solid block of the screen colour, faded in by a MASK
+   rather than a colour-stop gradient, because a gradient can't say "whatever
+   the background happens to be".
+   The corner gaps either side of the bump are plugged by `.v3-nav-nest` now (it
+   masks the whole negative of the bar), so this no longer has to. What it DOES
+   have to do is stay fully opaque up to the nav's top edge — 46% of its height
+   lands at ~63px, just past the 62px bar. Stop the opaque band short and content
+   steps from part-faded straight to the plug's flat colour, drawing a visible
+   line along the top of the bar in those corners. */
+.v3-bottom-fade {
+  position: absolute;
+  left: 0; right: 0;
+  bottom: 39px; height: 52px;
+  z-index: 4;
+  pointer-events: none;
+  background-color: inherit;
+  -webkit-mask-image: linear-gradient(to top, #000 0%, #000 46%, transparent 100%);
+          mask-image: linear-gradient(to top, #000 0%, #000 46%, transparent 100%);
+}
+
+/* ── The scene — the face cradled in the nav's scoop ────────────
+   Positioned in the notch cut out of the bar's bottom edge (the notch exists to
+   cradle it). Absolute against `.v3-bottom-nav` rather than being a flex item,
+   so it lands on the scoop's own centre — which is 49.1%, NOT 50%: the notch in
+   BOTTOM_NAV_FULL_INDENT.svg sits a few units left of centre.
+   Holds the smile / lofi-kid frames painted by paintScene() (app.js). Takes the
+   accent, so it re-tints with the album like every other dot asset. */
+.sd-scene {
+  position: absolute;
+  left: 49.1%; transform: translateX(-50%);
+  bottom: 2px;   /* the notch is only ~33px deep and the grid is 30 — barely any slack */
+  z-index: 7;    /* above .v3-nav-emboss (6), which would otherwise cover it */
+  /* 21×10 cells at ~3px pitch. ⚠️ 30px of the scoop's ~33px depth and 63 of its
+     68px FLAT TOP (not its 123px opening — the notch narrows as it rises, so
+     anything filling the depth has to fit the narrow end). Wide and short is
+     the shape available, which is why the smile's mouth runs nearly the full
+     width and the kid gets room for his headphones and a couple of notes. */
+  width: 63px; height: 30px;
+  pointer-events: none;
+  color: var(--star, #e8a83c);
+}
+/* Each frame is an SD_DOTS svg, swapped wholesale by paintScene(). Dots fill
+   with currentColor, so the scene tints from the rule above. */
+.sd-scene svg { display: block; width: 100%; height: 100%; }
+
 /* now shown in every state, including the fullscreen review (album / artist) view —
    the friends-listening ticker stays visible above the nav at all times */
 .v3-now-text {
-  flex: 1;
+  /* `flex: 1` made this eat the whole bar and shove the waveform to the far
+     right; `0 1 auto` lets it take only what it needs so the bars sit with the
+     text, and it still shrinks + ellipses on a long line. */
+  flex: 0 1 auto;
   min-width: 0;
   display: flex;
   align-items: baseline;
@@ -2607,79 +2716,48 @@
 
 /* SCROLL AREA ──────────────────────────────────────────────── */
 .v3-scroll-area {
-  padding: 30px 12px 88px;   /* bottom clears the nav/nowbar overlay so nothing is cut off */
+  /* Matches .ntf-scroll — the feed inside is the inbox's row list, and the old
+     30px top gap left the first sticky group header floating well below the
+     bento. Bottom clears the nav/nowbar overlay so nothing is cut off. */
+  padding: 10px 12px 75px;
 }
-
-/* ── "You may know" rails ──────────────────────────────────────
-   Two horizontal strips between the bento and the friend feed. */
-.v3-rail-sec { margin: 0 0 16px; }
-.v3-rail-hd {
-  padding: 0 2px 8px;
-  font-family: var(--font-mono);
-  font-size: 10px; font-weight: 700;
-  letter-spacing: 0.8px; text-transform: uppercase;
-  color: rgba(232,226,214,0.4);
-}
-.v3-rail {
-  display: flex; gap: 10px;
-  overflow-x: auto; scrollbar-width: none;
-  /* Axis lock: pan-x hands horizontal drags to the rail and stops them bleeding
-     into the page's vertical scroll — the declarative twin of the album swipe's
-     touchAction='pan-y' + dominant-axis check in setupAlbumSwipe. */
-  touch-action: pan-x;
-  /* Bleed into .v3-scroll-area's 12px inset so cards scroll out under the fade
-     at the true screen edge, while the first card still lines up with the copy. */
-  margin: 0 -12px;
-  padding: 2px 12px 4px;
-  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 34px), transparent);
-  mask-image: linear-gradient(to right, #000 calc(100% - 34px), transparent);
-}
-.v3-rail::-webkit-scrollbar { display: none; }
-.v3-kcard {
-  flex-shrink: 0; width: 84px;
-  display: flex; flex-direction: column; gap: 1px;
-  padding: 0; border: none; background: none; cursor: pointer; text-align: left;
-}
-.v3-kcard--artist { width: 68px; text-align: center; align-items: center; }
-.v3-kart {
-  width: 84px; height: 84px; border-radius: 8px; margin-bottom: 6px;
-  background: rgba(255,255,255,0.06) center/cover no-repeat;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.42);
-  transition: transform .16s;
-}
-.v3-kart--round { width: 64px; height: 64px; border-radius: 50%; }
-.v3-kcard:hover .v3-kart { transform: translateY(-2px); }
-/* album = regular, artist = bold — the app-wide album/artist convention */
-.v3-kname {
-  max-width: 100%;
-  font-size: 10.5px; font-weight: 400; color: #e8e2d6;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.v3-kcard--artist .v3-kname { font-weight: 700; }
-.v3-ksub {
-  max-width: 100%;
-  font-size: 9px; font-weight: 700; color: rgba(232,226,214,0.45);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.v3-kcard--artist .v3-ksub { font-weight: 400; font-family: var(--font-mono); font-size: 8.5px; }
 
 /* ── Review upvote pill (thumbs up + count) ───────────────────
    Replaces the old static "♥ n" on review cards and friend-feed cards.
    State lives in REV_VOTES (app.js) so it survives re-renders. */
+/* The like / comment pill. ⚠️ Every caller uses `--sm`, so THAT is the size
+   that ships — the base is the reference. Both were bumped a step: at 9px with
+   a 10px glyph they read as decoration rather than as controls you can hit. */
 .v3-up {
-  display: inline-flex; align-items: center; gap: 4px;
-  padding: 2px 7px 2px 5px; border-radius: 999px;
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px 4px 8px; border-radius: 999px;
   border: none; background: rgba(255,255,255,0.06);
   color: rgba(232,226,214,0.5);
-  font-family: var(--font-mono); font-size: 9.5px; font-weight: 700;
+  font-family: var(--font-mono); font-size: 11px; font-weight: 700;
   line-height: 1; cursor: pointer;
   transition: background .14s, color .14s;
 }
-.v3-up svg { width: 11px; height: 11px; flex-shrink: 0; }
-.v3-up--sm { font-size: 9px; padding: 2px 6px 2px 4px; }
-.v3-up--sm svg { width: 10px; height: 10px; }
+.v3-up svg { width: 14px; height: 14px; flex-shrink: 0; }
+.v3-up--sm { font-size: 10.5px; padding: 4px 9px 4px 7px; }
+.v3-up--sm svg { width: 13px; height: 13px; }
 .v3-up:hover { background: rgba(255,255,255,0.11); color: #e8e2d6; }
 .v3-up.is-on { background: rgba(232,168,60,0.16); color: var(--star); }
+/* The comment pill is the same object as the upvote pill, so the pair reads as
+   one control. `is-open` means its thread is showing below. */
+.v3-cmt-btn.is-open { background: rgba(232,168,60,0.16); color: var(--star); }
+
+/* ⚠️ `.v3-up`'s own colours are hard-coded for a DARK surface, because every
+   other place it appears — the review cards — sits on the album's procedural
+   colour, which is dark in BOTH themes. The home feed sits on the SCREEN bg,
+   which is cream in the light theme, so its pills re-declare themselves off the
+   shared --sd-* tokens. Same trap as --vinyl-empty: the value follows the
+   surface, not the theme. */
+.v3-up--feed {
+  background: var(--sd-pill);
+  color: var(--sd-ink3);
+}
+.v3-up--feed:hover { background: var(--sd-pill-hi); color: var(--sd-ink); }
+.v3-up--feed.is-on { background: rgba(232,168,60,0.18); color: var(--star); }
 .v3-up.is-on svg { fill: rgba(232,168,60,0.22); }
 .v3-brand-row {
   display: flex;
@@ -2721,104 +2799,51 @@
   font-family: var(--font-main);
   padding: 0;
 }
-.v3-friend-card {
-  display: flex;
-  gap: 9px;
-  padding: 6px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
-  cursor: pointer;
-}
-.v3-friend-card:last-child { border-bottom: none; }
-.v3-friend-art {
-  width: 60px; height: 60px;   /* larger square — reads as full-height vs the old 44px */
-  align-self: center;
-  border-radius: 7px;
-  background-size: cover;
-  background-position: center;
-  flex-shrink: 0;
-}
-.v3-friend-body { flex: 1; min-width: 0; }
-.v3-friend-who {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  margin-bottom: 1px;
-}
-.v3-friend-av {
-  width: 16px; height: 16px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 7px; font-weight: 700; color: white; flex-shrink: 0;
-}
-.v3-friend-name {
-  font-size: 11px; font-weight: 600;
-  color: rgba(232,226,214,0.8);
-}
-.v3-friend-time {
-  font-size: 10px;
-  color: rgba(232,226,214,0.22);
-  margin-left: auto;
-}
-/* Same type scheme as the compact bento's info row: Roboto Flex, ALBUM bold and
-   bright, artist light and recessive. Sizes stay smaller so the pair still fits
-   the feed card's one line beside the 60px art. */
-.v3-friend-meta {
-  display: flex; align-items: baseline; gap: 4px;
-  min-width: 0; margin-bottom: 1px;
-  font-family: 'Roboto Flex', var(--font-main);
-}
-.v3-friend-album {
-  font-size: 12px; font-weight: 700;
-  color: rgba(232,226,214,0.88);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  flex: 0 1 auto; min-width: 0;
-}
-.v3-friend-sep {
-  font-size: 9px; color: rgba(232,226,214,0.28); flex-shrink: 0;
-}
-/* Shrinkable too — with the album now the wide bold element, a long artist that
-   refused to shrink pushed the year past the card's right edge. */
-.v3-friend-artist {
-  font-size: 11px; font-weight: 400;
-  color: rgba(232,226,214,0.55);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  flex: 0 1 auto; min-width: 0;
-}
-.v3-friend-date {
-  font-size: 10px; font-weight: 400;
-  color: rgba(232,226,214,0.3);
-  flex-shrink: 0;
-}
-.v3-friend-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 2px;
-}
-.v3-friend-quote {
-  font-size: 10.5px;
-  color: rgba(232,226,214,0.45);
-  line-height: 1.3;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  margin-bottom: 0;
-}
-.v3-friend-likes {
-  font-size: 9.5px;
-  color: rgba(232,226,214,0.25);
-}
+/* ── Home activity feed ───────────────────────────────────────
+   Deliberately NOT styled here. The feed IS the notifications component —
+   `.ntf-group` / `.ntf-row` / `.ntf-ava` / … , further down — and the home shell
+   now carries the same `--sd-*` tokens, so it inherits the inbox's look whole.
+   Adding home-only rules here is what made the two screens diverge the first
+   time; if a row needs to change, change `.ntf-row` and let both screens move
+   together. (The old `.v3-friend-card` feed this replaced is gone.) */
 
-/* BOTTOM NAV — floating glass "console" ─────────────────────────
-   A wide rounded bar with a raised center hump (holds the now-playing bubble) and
-   4 buttons in the lower bar. Floats centered, ~10px off the bottom, over the content;
-   the frosted-glass fill obscures whatever scrolls behind it. */
+/* BOTTOM NAV — glass shelf, docked to the bottom edge ───────────
+   Full-bleed and flush: flat bottom, flat sides, and a raised centre plateau
+   that holds the now-playing ticker. 4 buttons sit in the lower bar. The
+   frosted fill obscures whatever scrolls behind it.
+
+   It used to float — 72% wide, centred, 24px off the bottom, with every corner
+   rounded (BOTTOM_NAV.svg, viewBox 553×126).
+
+   Silhouette is images/BOTTOM_NAV_FULL_INDENT.svg — viewBox 576×93, ~62px tall
+   at the 385px mockup. Two shaped features, both centred:
+     · the raised PLATEAU on the top edge (x 17.1%→83.4%) holding the ticker
+     · the SCOOP cut out of the bottom edge (x 31.2%→67.2%) cradling the pet
+   The shoulder — the level the flat runs sit at — is y=34.12 (36.7%), and the
+   scoop's flat top reaches exactly the same line.
+
+   ⚠️ The scoop is NOT centred at 50%: it spans 179.9→387.1 of 576, so its
+   centre is 49.13%. `.sd-scene` is placed on that, not on the middle of the bar.
+
+   ⚠️ The path inlined here is a BLED variant of the .svg: left, right and the
+   two outer bottom segments are pushed 8 units outside the viewBox (x -8→584,
+   bottom y 101), and the SCOOP is shifted down 2 units with them (its mouth
+   sits at y=94, past the clip). Without that shift the path has to jog up from
+   the bled bottom to the scoop's drawn mouth at y=92.01, and the last ~1 unit
+   of that jog lands inside the viewBox — which paints a 1px vertical tick at
+   each bottom corner of the scoop. It is small but very visible against the
+   plug. The <svg> and the mask both clip to the viewBox, so those
+   strokes are cut away and only the shaped contour — shoulders, plateau and
+   scoop — is outlined. Pull them back inside and a hairline reappears down both
+   screen edges. The .svg file itself is kept exactly as drawn. */
 .v3-bottom-nav {
   position: absolute;
-  left: 50%; transform: translateX(-50%);   /* centered */
-  bottom: 24px;                              /* floating off the bottom */
-  width: 72%;                                /* the only scale lever — keeps proportions */
-  aspect-ratio: 553 / 126;                   /* never distort the SVG; scale uniformly via width */
+  left: 0; right: 0; bottom: 0;              /* docked, not floating */
+  width: 100%;
+  /* Keeps the fillet curves undistorted — height follows the screen width
+     (~62px at the 385px mockup). Don't swap this for a fixed height: the SVG is
+     preserveAspectRatio="none" and WILL stretch. */
+  aspect-ratio: 576 / 93;
   z-index: 5;
 }
 /* Frosted-glass fill, clipped to the console shape */
@@ -2828,9 +2853,11 @@
   background: rgba(26,26,32,0.42);
   -webkit-backdrop-filter: blur(22px) saturate(175%);
           backdrop-filter: blur(22px) saturate(175%);
-  box-shadow: 0 10px 34px rgba(0,0,0,0.42);
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 553 126' preserveAspectRatio='none'%3E%3Cpath d='M517.5 125H35.5C16.17 125 0.5 109.33 0.5 90V79.7942C0.5 60.4642 16.17 44.7942 35.5 44.7942L47.3137 44.7942C58.1862 44.7942 67 35.9803 67 25.1079C67 11.5173 78.0173 0.5 91.6079 0.5L460.892 0.500022C474.483 0.500023 485.5 11.5174 485.5 25.1079C485.5 35.9804 494.314 44.7942 505.186 44.7942H517.5C536.83 44.7942 552.5 60.4642 552.5 79.7942V90C552.5 109.33 536.83 125 517.5 125Z' fill='%23fff'/%3E%3C/svg%3E") no-repeat center / 100% 100%;
-          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 553 126' preserveAspectRatio='none'%3E%3Cpath d='M517.5 125H35.5C16.17 125 0.5 109.33 0.5 90V79.7942C0.5 60.4642 16.17 44.7942 35.5 44.7942L47.3137 44.7942C58.1862 44.7942 67 35.9803 67 25.1079C67 11.5173 78.0173 0.5 91.6079 0.5L460.892 0.500022C474.483 0.500023 485.5 11.5174 485.5 25.1079C485.5 35.9804 494.314 44.7942 505.186 44.7942H517.5C536.83 44.7942 552.5 60.4642 552.5 79.7942V90C552.5 109.33 536.83 125 517.5 125Z' fill='%23fff'/%3E%3C/svg%3E") no-repeat center / 100% 100%;
+  /* Shadow casts UPWARD now — the bar is docked, so there's nothing below it. */
+  box-shadow: 0 -8px 28px rgba(0,0,0,0.38);
+  /* ⚠️ Same path as the .v3-nav-shape <svg> in bottomNav(). Change both. */
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 576 93' preserveAspectRatio='none'%3E%3Cpath d='M-8 101V34.1217H64.8923C73.1451 34.1217 79.8353 27.4315 79.8353 19.1787C79.8353 8.86277 88.198 0.5 98.514 0.5L480.656 0.5C490.972 0.5 499.335 8.86277 499.335 19.1788C499.335 27.4316 506.025 34.1218 514.278 34.1218H584V101H375.209V94.0125C373.667 94.0125 372.433 92.7335 372.488 91.1928L372.792 82.7034C373.566 61.0759 356.243 43.1217 334.602 43.1217H232.378C210.707 43.1217 193.328 61.0425 193.994 82.7034L194.232 90.4501C194.292 92.3996 192.728 94.0125 190.777 94.0125V101H-8Z' fill='%23fff'/%3E%3C/svg%3E") no-repeat center / 100% 100%;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 576 93' preserveAspectRatio='none'%3E%3Cpath d='M-8 101V34.1217H64.8923C73.1451 34.1217 79.8353 27.4315 79.8353 19.1787C79.8353 8.86277 88.198 0.5 98.514 0.5L480.656 0.5C490.972 0.5 499.335 8.86277 499.335 19.1788C499.335 27.4316 506.025 34.1218 514.278 34.1218H584V101H375.209V94.0125C373.667 94.0125 372.433 92.7335 372.488 91.1928L372.792 82.7034C373.566 61.0759 356.243 43.1217 334.602 43.1217H232.378C210.707 43.1217 193.328 61.0425 193.994 82.7034L194.232 90.4501C194.292 92.3996 192.728 94.0125 190.777 94.0125V101H-8Z' fill='%23fff'/%3E%3C/svg%3E") no-repeat center / 100% 100%;
 }
 /* Hairline outline over the glass */
 .v3-nav-shape {
@@ -2844,13 +2871,80 @@
   stroke-width: 1;
   vector-effect: non-scaling-stroke;
 }
-/* 4 buttons — spread across the lower bar (below the center hump) */
+
+/* ── Scoop emboss ─────────────────────────────────────────────
+   Makes the cradle read as RAISED — the same neumorphic recipe as
+   `.plp-back-pill` (light top-left, shadow bottom-right), applied to the scoop
+   SHAPE rather than to a line.
+
+   ⚠️ Why the two-element dance: `filter` is applied BEFORE `mask`, so a
+   drop-shadow on a masked element gets clipped away by that same mask (verified
+   in-page). The shadow has to come from a PARENT of the masked element.
+   ⚠️ Why the wrapper is 0-height: it needs `background-color: inherit` so the
+   fill can inherit the screen colour through it — the same trick `.v3-nav-nest`
+   uses, and the reason both must be direct children of `.s-home-v3`. A
+   zero-height box resolves that colour but paints nothing itself.
+   ⚠️ z-6, ABOVE the nav: the highlight falls outside the scoop, onto the bar,
+   so it has to draw over the glass. That is also why `.sd-scene` moved out of
+   `<nav>` and sits at z-7 — otherwise this would cover the creature. */
+.v3-nav-emboss {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 0;
+  z-index: 6;
+  pointer-events: none;
+  background-color: inherit;
+  /* Even halo, not a directional light: zero offset on both axes so the shading
+     wraps the whole scoop instead of pooling top-left. On dark that reads as a
+     soft light rim; on light it has to be a SHADOW (a white halo is invisible
+     against cream), which is why the two themes use opposite colours here. */
+  filter: drop-shadow(0 0 7px rgba(255,255,255,0.10));
+}
+.v3-nav-emboss > i {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  display: block;
+  aspect-ratio: 576 / 93;          /* same box as the nav */
+  background-color: inherit;
+  /* ⚠️ Mask path STROKED as well as filled — same 1-unit dilation as
+     `.v3-nav-nest`. This is the TOPMOST layer over the scoop, so its edge is the
+     visible boundary; butted exactly against the bar it leaves a sub-pixel seam
+     and feed text peeks through along the outline. Overlap, don't abut. */
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 576 93' preserveAspectRatio='none'%3E%3Cpath d='M375.209 101V94.0125C373.667 94.0125 372.433 92.7335 372.488 91.1928L372.792 82.7034C373.566 61.0759 356.243 43.1217 334.602 43.1217H232.378C210.707 43.1217 193.328 61.0425 193.994 82.7034L194.232 90.4501C194.292 92.3996 192.728 94.0125 190.777 94.0125V101Z' fill='%23fff' stroke='%23fff' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center / 100% 100%;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 576 93' preserveAspectRatio='none'%3E%3Cpath d='M375.209 101V94.0125C373.667 94.0125 372.433 92.7335 372.488 91.1928L372.792 82.7034C373.566 61.0759 356.243 43.1217 334.602 43.1217H232.378C210.707 43.1217 193.328 61.0425 193.994 82.7034L194.232 90.4501C194.292 92.3996 192.728 94.0125 190.777 94.0125V101Z' fill='%23fff' stroke='%23fff' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center / 100% 100%;
+}
+.s-home-v3--light .v3-nav-emboss {
+  filter: drop-shadow(0 0 7px rgba(116,150,179,0.32));
+}
+/* 4 buttons — spread across the lower bar (below the centre plateau).
+   The shoulder sits at y=34.12 of 93 = 36.7%, so the lower band starts there.
+   Bottom padding keeps the icons off the screen edge now that the bar is docked
+   — with the old floating bar its own 24px gap did that job. */
 .v3-nav-items {
-  position: absolute; left: 0; right: 0; top: 40%; bottom: 0;
+  position: absolute; left: 0; right: 0; top: 36.7%; bottom: 0;
   display: flex; align-items: center; justify-content: space-around;
-  transform: translateY(-3px);   /* lift icons off the low edge of the shelf */
+  /* Vertical nudge lives in the transform, NOT in padding-bottom. With
+     `align-items: center`, trimming Npx of bottom padding only moves the icons
+     down N/2 — which is why the earlier "3px" pass landed at 1.5px. This is the
+     one lever, and it means what it says. */
+  padding-bottom: 0;
+  transform: translateY(0.5px);
   z-index: 2;
 }
+/* Reserves the scoop so the four icons stay on the solid bar either side of it.
+   32% is the notch's opening (x 190.8→375.2 of 576); the buttons are `flex: 1`
+   and split the remaining 68%, which lands their centres at
+   8.5 / 25.5 / 74.5 / 91.5% — all clear of the notch edges at 33.1% and 65.1%.
+   Resize the notch in the SVG and this has to follow, or the middle two icons
+   hang over the hole. */
+.v3-nav-gap { flex: 0 0 32%; }
+
+/* Push the two icons flanking the scoop away from it — the cradle wants air.
+   Order is fixed by bottomNav()'s markup: item · item · GAP · item · item, so
+   nth-child 2 is Trending and 4 is Playlists.
+   ⚠️ Uses the independent `translate` property, not `transform`: `.v3-nav-item:active`
+   sets `transform: scale(.92)`, and a transform here would overwrite it and kill
+   the press animation on exactly these two buttons. `translate` composes — the
+   same reason the live-pill dots use it for their idle drift. */
+.v3-nav-items > .v3-nav-item:nth-child(2) { translate: -8px 0; }
+.v3-nav-items > .v3-nav-item:nth-child(4) { translate:  8px 0; }
 .v3-nav-item {
   flex: 1; height: 100%;
   background: none; border: none; cursor: pointer;
@@ -2927,7 +3021,17 @@
   background-size: cover;
   background-position: center;
   cursor: pointer;
-  border-radius: 10px 10px 10px 0;
+  /* ⚠️ The radius has to be a PERCENTAGE, not px. Every other number on this
+     element is a % of the 689×638 viewBox, so the box rescales with the phone
+     while a px radius stays put — it can only be correct at one width. The
+     frame's corner is 20 units; at the 365px bento that's 10.60px, and the 10px
+     this used to carry left a 0.6px crescent of the box1 fill showing at the
+     top-left, top-right and bottom-right. That is the corner "gap".
+     20 units ÷ 537.49 wide = 3.721%, ÷ 534.01 tall = 3.7451% — the `/` form is
+     what keeps the corner CIRCULAR on a box that isn't square (one percentage
+     resolves against width on one axis and height on the other, i.e. an
+     ellipse). Bottom-left stays square: it's the step junction. */
+  border-radius: 3.721% 3.721% 3.721% 0 / 3.7451% 3.7451% 3.7451% 0;
   overflow: hidden;
   z-index: 1;
 }
@@ -3027,7 +3131,13 @@
   left: 80.84%; top: 16.46%; width: 16.40%; height: 65.05%;
   background-size: cover; background-position: center;
   background-color: #2a2520;
-  border-radius: 11px;
+  /* ⚠️ Percentage, same reason as .v3-album — and this one was the loud gap:
+     the For-You panels round at 15 units (7.95px at the 365px bento) and this
+     carried 11px, so the art curved away 3px before the frame did on all four
+     corners. 15 ÷ 112.99 wide = 13.2748%, 15 ÷ 415.02 tall = 3.6143%; the two
+     axes differ this much because the box is tall and narrow, and the `/` form
+     is the only way to get a circular corner out of it. */
+  border-radius: 13.2748% / 3.6143%;
   overflow: hidden;
   cursor: pointer;
   z-index: 2;
@@ -3302,7 +3412,8 @@
 /* Album art — mirror to the right side; notch corner flips to bottom-right */
 .s-home-v3--left .v3-album {
   left: 21.92%;
-  border-radius: 10px 10px 0 10px;
+  /* Same radii as the right-hand rule, square corner flipped to bottom-right. */
+  border-radius: 3.721% 3.721% 0 3.721% / 3.7451% 3.7451% 0 3.7451%;
 }
 /* Stats strip — mirror under the album; text stays LEFT-aligned (like album title) */
 .s-home-v3--left .v3-blue { left: 21.85%; }
@@ -3451,35 +3562,9 @@
 .v3-ring--cd .v3-ring-dot:nth-child(5) { transform: translate(3px, 0); }
 .v3-ring--cd .v3-ring-dot:nth-child(6) { transform: translate(3px, 4px); }
 
-/* ── Formation: SMILEY — the mascot face. Two eyes + a four-dot smile arc.
-   Flashed on the playlist page's back pill when you favorite a playlist, and
-   intermittently on a timer (plRingSmile in app.js) for personality. ── */
-.v3-ring--smile .v3-ring-dot { animation: none; translate: 0 0; }
-.v3-ring--smile .v3-ring-dot:nth-child(1) { transform: translate(-3.5px, -4px); }  /* left eye */
-.v3-ring--smile .v3-ring-dot:nth-child(2) { transform: translate(3.5px, -4px); }   /* right eye */
-.v3-ring--smile .v3-ring-dot:nth-child(3) { transform: translate(-5.5px, 1.5px); } /* smile — left corner */
-.v3-ring--smile .v3-ring-dot:nth-child(4) { transform: translate(-2px, 4px); }
-.v3-ring--smile .v3-ring-dot:nth-child(5) { transform: translate(2px, 4px); }
-.v3-ring--smile .v3-ring-dot:nth-child(6) { transform: translate(5.5px, 1.5px); }  /* smile — right corner */
-
-/* ── Wink — the right eye squints shut and pops back open while the mouth
-   corners lift into a bigger grin. Layered on top of --smile (greetRing adds
-   it near the end of the home-load greeting, just before the arrow morph). ── */
-.v3-ring--wink .v3-ring-dot:nth-child(2) { animation: v3-wink 1s ease-in-out; }
-.v3-ring--wink .v3-ring-dot:nth-child(3) { animation: v3-wink-corner-l 1s ease-in-out; }
-.v3-ring--wink .v3-ring-dot:nth-child(6) { animation: v3-wink-corner-r 1s ease-in-out; }
-@keyframes v3-wink {
-  0%, 100% { transform: translate(3.5px, -4px) scale(1); }
-  35%, 65% { transform: translate(3.5px, -3.2px) scale(1.2, 0.2); }
-}
-@keyframes v3-wink-corner-l {
-  0%, 100% { transform: translate(-5.5px, 1.5px); }
-  35%, 65% { transform: translate(-5.8px, 0.6px); }
-}
-@keyframes v3-wink-corner-r {
-  0%, 100% { transform: translate(5.5px, 1.5px); }
-  35%, 65% { transform: translate(5.8px, 0.6px); }
-}
+/* The dot face is retired — no more smile/wink formations or their keyframes.
+   The nav's pet carries the app's personality now; these dots keep only the
+   arrow and the swipe / For-You / CD reactions. */
 
 /* Swipe rotation is driven live from the drag (see setupAlbumSwipe): partial turn while
    dragging, completing a full spin on commit — so it feels tactile. */
@@ -3737,6 +3822,25 @@
 .s-home-v3--light.s-home-v3--artist .v3-rev-time,
 .s-home-v3--light.s-home-v3--artist .v3-rev-likes { color: rgba(26,18,8,0.3); }
 .s-home-v3--light.s-home-v3--artist .v3-rev-empty { color: rgba(26,18,8,0.4); }
+/* Comment thread, re-inked for the artist page's cream panel (see the ⚠️ on
+   `.v3-cmt-*` — every rule there needs one of these). */
+.s-home-v3--light.s-home-v3--artist .v3-cmt-kids { border-left-color: rgba(26,18,8,0.14); }
+.s-home-v3--light.s-home-v3--artist .v3-cmt-av { background-color: rgba(26,18,8,0.08); }
+.s-home-v3--light.s-home-v3--artist .v3-cmt-user { color: rgba(26,18,8,0.8); }
+.s-home-v3--light.s-home-v3--artist .v3-cmt-text { color: rgba(26,18,8,0.55); }
+.s-home-v3--light.s-home-v3--artist .v3-cmt-ago,
+.s-home-v3--light.s-home-v3--artist .v3-cmt-like,
+.s-home-v3--light.s-home-v3--artist .v3-cmt-reply { color: rgba(26,18,8,0.32); }
+.s-home-v3--light.s-home-v3--artist .v3-cmt-like:hover,
+.s-home-v3--light.s-home-v3--artist .v3-cmt-reply:hover { color: rgba(26,18,8,0.75); }
+.s-home-v3--light.s-home-v3--artist .v3-cmt-like.is-on { color: #b06a2a; }
+.s-home-v3--light.s-home-v3--artist .v3-cmt-more { color: rgba(26,18,8,0.42); }
+.s-home-v3--light.s-home-v3--artist .v3-cmt-none { color: rgba(26,18,8,0.4); }
+.s-home-v3--light.s-home-v3--artist .v3-cmt-input {
+  color: #1a1208; background: rgba(26,18,8,0.05); border-color: rgba(26,18,8,0.14);
+}
+.s-home-v3--light.s-home-v3--artist .v3-cmt-input::placeholder { color: rgba(26,18,8,0.3); }
+.s-home-v3--light.s-home-v3--artist .v3-cmt-to { background: rgba(176,106,42,0.16); color: #b06a2a; }
 
 /* ── Artist albums — only shown on the artist page ────────────────
    Replaces the rating histogram. A section head with a row/grid toggle, then
@@ -3933,7 +4037,12 @@
 .s-home-v3--light .v3-rev-photo { background-color: rgba(232,226,214,0.06); }
 
 /* Tracklist — full-width, rate individual songs. Scrolls after ~8 rows. */
-.v3-rev-songs { width: 100%; box-sizing: border-box; margin: 10px 0 2px; }
+.v3-rev-songs {
+  width: 100%; box-sizing: border-box; margin: 10px 0 2px;
+  /* Tracklist column widths — read by both the rows and the header labels. */
+  --song-dur-w: 42px;
+  --song-rate-w: 42px;
+}
 
 /* Review-spread histogram — 10 buckets (½★ … 5★), between the CTA and the tracklist */
 /* Negative top pulls the histogram (and the tracklist below it) up beside the taller
@@ -4018,14 +4127,33 @@
   color: rgba(232,226,214,0.4); font-size: 9.5px; font-family: var(--font-mono);
 }
 .v3-song-title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* The two right-hand columns are a FIXED width, shared with the header labels
+   above them (--song-dur-w / --song-rate-w on .v3-rev-songs). Sized to the
+   labels, which are wider than the values they head — left to size themselves,
+   "LENGTH" and "RATING" would each be wider than the column and the header
+   would sit off its own list. */
 .v3-song-dur {
-  flex-shrink: 0; color: rgba(232,226,214,0.4);
+  flex-shrink: 0; width: var(--song-dur-w); text-align: right;
+  color: rgba(232,226,214,0.4);
   font-size: 10px; font-family: var(--font-mono);
 }
 .v3-song-rate {
   flex-shrink: 0; display: inline-flex; align-items: center;
-  min-width: 28px; justify-content: flex-end;
+  width: var(--song-rate-w); justify-content: flex-end;
   color: var(--star); font-size: 11.5px; font-weight: 700; font-family: var(--font-mono);
+}
+/* Column labels. Same flex row as .v3-song-row, reusing its three cell classes,
+   so the labels track the columns automatically — only the type is restyled. */
+.v3-song-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 12px 7px;
+  font-family: var(--font-mono); font-size: 8.5px;
+  text-transform: uppercase; letter-spacing: 0.12em;
+  color: rgba(232,226,214,0.3);
+}
+.v3-song-head .v3-song-dur,
+.v3-song-head .v3-song-rate {
+  font-size: inherit; font-weight: 400; color: inherit;
 }
 /* Friend-rec tag — social proof, so it sits with the REVIEWS (below the
    tracklist, directly above the filter tabs), not up by the CTA. It aligns to
@@ -4049,8 +4177,11 @@
 .s-home-v3--light .v3-rev-rec-name { color: #e8e2d6; }
 .s-home-v3--light .v3-song-row { color: #e8e2d6; border-top-color: rgba(232,226,214,0.07); }
 .s-home-v3--light .v3-song-row:hover { background: rgba(232,226,214,0.04); }
+/* Light theme keeps LIGHT ink here: the album page floods with the album's
+   procedural colour, which is dark in both variants. */
 .s-home-v3--light .v3-song-num,
 .s-home-v3--light .v3-song-dur { color: rgba(232,226,214,0.45); }
+.s-home-v3--light .v3-song-head { color: rgba(232,226,214,0.36); }
 
 /* Filters — text tabs, not pills; full-width with a divider above */
 .v3-rev-filters {
@@ -4075,12 +4206,20 @@
 .v3-rev-list { display: flex; flex-direction: column; margin: 0 12px; }
 .v3-rev-card { padding: 9px 0; border-bottom: 1px solid rgba(232,226,214,0.08); }
 .v3-rev-card:last-child { border-bottom: none; }
-/* The review you tapped in the home feed, pinned atop the list */
+/* The review you tapped in the home feed, pinned atop the list.
+   ⚠️ It is a HIGHLIGHTED ROW, not a card in a box. The outlined, inset,
+   rounded version read as stifled — a panel sitting on top of the list rather
+   than the first item in it. So the tint bleeds past the list's 12px gutter
+   while the padding puts the text back on the same left edge as every other
+   review: it reads as one continuous list with one row lit up. Its own
+   `.v3-rev-pin-chip` says why it's lit, so it needs no border to explain
+   itself.
+   The negative margin has to match `.v3-rev-list`'s gutter — change one and
+   change the other, or the band goes lopsided. */
 .v3-rev-card--pinned {
-  padding: 9px 10px;
-  margin-bottom: 4px;
-  border: 1px solid var(--star); border-radius: 10px;
-  background: rgba(232,168,60,0.06);
+  margin-left: -12px; margin-right: -12px;
+  padding-left: 12px; padding-right: 12px;
+  background: rgba(232,168,60,0.07);
 }
 .v3-rev-pin-chip {
   font-family: var(--font-mono); font-size: 7.5px; letter-spacing: 0.3px;
@@ -4097,16 +4236,29 @@
 .v3-rev-name {
   font-size: 11px; font-weight: 600;
   color: rgba(232,226,214,0.8);
+  /* ⚠️ The name is the only elastic thing in this row. The pills grew a step,
+     and on the PINNED card they share the line with the "from your feed" chip
+     and the timestamp — without this a long handle pushes the timestamp off the
+     card instead of ellipsing itself. */
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 /* Upvote + comments ride in the card's TOP-RIGHT, with the timestamp hard right.
    They used to sit in the meta row beside the rating vinyls, crowding them. */
-.v3-rev-acts { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+.v3-rev-acts { display: flex; align-items: center; gap: 6px; margin-left: auto; flex-shrink: 0; }
 .v3-rev-time {
   font-size: 10px; color: rgba(232,226,214,0.22);
   flex-shrink: 0;   /* .v3-rev-acts carries the auto margin now — time stays last */
 }
 /* The meta row is the rating alone: vinyls + the score, the app's usual pairing */
+/* Reads DOWN as one sentence: the name is the subject, this row is the verb and
+   its object, the text below is what they said. The verb is what turns a bare
+   row of vinyls into something you read rather than decode. */
 .v3-rev-meta { display: flex; align-items: center; gap: 5px; margin-bottom: 3px; }
+.v3-rev-verb {
+  font-size: 9.5px; color: rgba(232,226,214,0.38);
+  margin-right: 1px;
+}
+.s-home-v3--light .v3-rev-verb { color: rgba(26,18,8,0.42); }
 .v3-rev-score {
   font-family: var(--font-mono); font-size: 9.5px; font-weight: 700;
   color: rgba(232,226,214,0.5);
@@ -4120,6 +4272,105 @@
   padding: 34px 0; text-align: center;
   font-size: 12px; color: rgba(232,226,214,0.35);
 }
+
+/* ── Review comments — the threaded replies under a review ─────
+   ⚠️ The indent is REAL NESTING, not a depth class: `.v3-cmt-kids` wraps a
+   comment's children and carries the offset and the rail, so a child of a child
+   indents twice because it sits inside two wrappers. Nothing computes a depth,
+   and adding a level needs no new rule.
+   These sit on the album page's review panel, which keeps the album's dark
+   procedural colour in BOTH themes — hence hard-coded warm-white ink, like
+   every `.v3-rev-*` around them. ⚠️ The ARTIST page forces the cream bg
+   instead, so each of these needs a `--light.--artist` counterpart below. */
+.v3-cmt-wrap:empty { display: none; }
+.v3-cmt-thread { padding: 5px 0 2px; }
+.v3-cmt-kids {
+  margin-left: 7px;
+  padding-left: 10px;
+  border-left: 1px solid rgba(232,226,214,0.13);
+}
+/* ⚠️ Type here runs a step LARGER than the review card above it. The thread
+   started at the card's own scale (10px body, 8.5px actions) and once you are
+   reading a conversation rather than scanning a list, that is too small to
+   follow — the card is a summary, the thread is the thing you came for. */
+.v3-cmt { display: flex; align-items: flex-start; gap: 8px; padding: 5px 0; }
+.v3-cmt-av {
+  width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0;
+  margin-top: 1px;
+  background-size: cover; background-position: center;
+  background-color: rgba(255,255,255,0.08);
+}
+.v3-cmt-main { flex: 1; min-width: 0; }
+.v3-cmt-hd { display: flex; align-items: baseline; gap: 6px; }
+.v3-cmt-user { font-size: 10.5px; font-weight: 700; color: rgba(232,226,214,0.75); }
+.v3-cmt-ago {
+  font-family: var(--font-mono); font-size: 9px;
+  color: rgba(232,226,214,0.24);
+}
+.v3-cmt-text {
+  font-size: 11.5px; line-height: 1.4;
+  color: rgba(232,226,214,0.56);
+  margin: 2px 0 3px;
+  overflow-wrap: anywhere;   /* a pasted handle shouldn't widen the card */
+}
+.v3-cmt--mine .v3-cmt-user { color: var(--star); }
+.v3-cmt-acts { display: flex; align-items: center; gap: 13px; }
+.v3-cmt-like, .v3-cmt-reply {
+  border: none; background: none; padding: 0; cursor: pointer;
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: .02em;
+  color: rgba(232,226,214,0.32);
+  transition: color .14s;
+}
+.v3-cmt-like:hover, .v3-cmt-reply:hover { color: rgba(232,226,214,0.72); }
+.v3-cmt-like.is-on { color: var(--star); }
+
+/* Default is CMT_DEFAULT threads; the rest hide behind this, and the count it
+   promises includes the replies that go down with them. */
+.v3-cmt-more {
+  display: block; width: 100%; text-align: left;
+  border: none; background: none; cursor: pointer;
+  padding: 7px 0 5px 26px;
+  font-family: var(--font-mono); font-size: 10.5px;
+  color: rgba(232,226,214,0.45);
+  transition: color .14s;
+}
+.v3-cmt-more:hover { color: var(--star); }
+.v3-cmt-none { font-size: 11px; color: rgba(232,226,214,0.32); padding: 3px 0; }
+
+/* Column, not a row: the reply chip stacks above the input line. */
+.v3-cmt-add { display: flex; flex-direction: column; gap: 5px; margin-top: 8px; }
+.v3-cmt-add-row { display: flex; align-items: center; gap: 6px; }
+/* Says where the next post will land — and is the way back out of reply mode. */
+.v3-cmt-to {
+  align-self: flex-start;
+  display: inline-flex; align-items: center; gap: 7px;
+  border: none; border-radius: 999px; cursor: pointer;
+  padding: 3px 9px;
+  background: rgba(232,168,60,0.14); color: var(--star);
+  font-family: var(--font-mono); font-size: 9.5px;
+  transition: background .14s;
+}
+.v3-cmt-to span { opacity: .65; font-size: 10px; }
+.v3-cmt-to:hover { background: rgba(232,168,60,0.24); }
+.v3-cmt-input {
+  flex: 1; min-width: 0;
+  padding: 6px 11px; border-radius: 999px;
+  border: 1px solid rgba(232,226,214,0.13);
+  background: rgba(0,0,0,0.2);
+  font-family: var(--font-main); font-size: 11px;
+  color: rgba(232,226,214,0.88);
+}
+.v3-cmt-input::placeholder { color: rgba(232,226,214,0.3); }
+.v3-cmt-input:focus { outline: none; border-color: var(--star); }
+.v3-cmt-post {
+  flex-shrink: 0;
+  border: none; border-radius: 999px; cursor: pointer;
+  padding: 6px 12px;
+  background: rgba(232,168,60,0.16); color: var(--star);
+  font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+  transition: background .14s, color .14s;
+}
+.v3-cmt-post:hover { background: var(--star); color: #16130d; }
 
 /* Light theme */
 .s-home-v3--light .v3-rev-mine-hd { color: rgba(232,226,214,0.42); }
@@ -4257,11 +4508,8 @@
   --text3: rgba(26,18,8,0.15);
 }
 .s-home-v3--light .v3-topbar-wordmark { color: rgba(26,18,8,0.9); }
-/* "You may know" rails + upvote pill — light theme */
-.s-home-v3--light .v3-rail-hd { color: rgba(26,18,8,0.45); }
-.s-home-v3--light .v3-kart { background-color: rgba(26,18,8,0.06); box-shadow: 0 4px 12px rgba(30,20,10,0.16); }
-.s-home-v3--light .v3-kname { color: #1a1208; }
-.s-home-v3--light .v3-ksub { color: rgba(26,18,8,0.5); }
+/* Upvote pill — light theme. (The activity feed needs nothing here: it is the
+   `.ntf-*` row, which re-themes through the one `--sd-*` block.) */
 .s-home-v3--light .v3-up { background: rgba(26,18,8,0.07); color: rgba(26,18,8,0.5); }
 .s-home-v3--light .v3-up:hover { background: rgba(26,18,8,0.12); color: #1a1208; }
 .s-home-v3--light .v3-up.is-on { background: rgba(176,106,42,0.15); color: #b06a2a; }
@@ -4269,15 +4517,6 @@
 .s-home-v3--light .v3-brand-name { color: rgba(26,18,8,0.88); }
 .s-home-v3--light .v3-brand-sub { color: rgba(26,18,8,0.28); }
 .s-home-v3--light .v3-feed-title { color: rgba(26,18,8,0.32); }
-.s-home-v3--light .v3-friend-card { border-bottom-color: rgba(26,18,8,0.07); }
-.s-home-v3--light .v3-friend-album { color: #1a1208; }
-.s-home-v3--light .v3-friend-name { color: rgba(26,18,8,0.8); }
-.s-home-v3--light .v3-friend-time { color: rgba(26,18,8,0.22); }
-.s-home-v3--light .v3-friend-artist { color: rgba(26,18,8,0.55); }
-.s-home-v3--light .v3-friend-sep { color: rgba(26,18,8,0.28); }
-.s-home-v3--light .v3-friend-date { color: rgba(26,18,8,0.3); }
-.s-home-v3--light .v3-friend-quote { color: rgba(26,18,8,0.5); }
-.s-home-v3--light .v3-friend-likes { color: rgba(26,18,8,0.28); }
 .s-home-v3--light .v3-nav-item {
   color: rgba(26,18,8,0.4);
 }
@@ -4340,12 +4579,68 @@
 .v3-rev-cta svg { width: 16px; height: 16px; flex-shrink: 0; }
 .v3-rev-cta:hover  { filter: brightness(1.12); }
 .v3-rev-cta:active { transform: scale(0.985); }
-.s-home-v3--light .v3-rev-cta {
+
+/* ── CTA + quick-log squares ──────────────────────────────────
+   One cascading control: the squares carry a -1px left margin so they share a
+   border with the CTA and with each other instead of drawing two, and only the
+   outer corners are rounded. `align-items: stretch` is what makes them square —
+   they take their height from the CTA rather than hard-coding one, so changing
+   the button's padding can't leave the squares short.
+   The margins here are the breathing room above and below the whole row; the
+   histogram below adds its own 10px on top of the bottom one. */
+.v3-rev-cta-row {
+  display: flex; align-items: stretch;
+  max-width: 100%;
+  margin: 16px 0 20px;
+}
+.v3-rev-cta-row .v3-rev-cta { border-radius: 7px 0 0 7px; }
+.v3-rev-quick { display: flex; align-items: stretch; }
+/* Icon stacked over a tiny label, the same arrangement as the log sheet's own
+   `.sd-log-opt` — the glyphs alone were guesswork at this size. The label is
+   what sets the width: "LISTENED" / "FAVORITE" are 8 mono characters, so the
+   width is whatever those need at the label size (50px at 7.5px type) — the
+   whole row is still only ~250px of the ~310px available, so this is sized for
+   legibility rather than squeezed. All three share that width rather than
+   sizing to content, so the control stays an even cascade. */
+.v3-rev-q {
+  flex-shrink: 0; width: 50px; padding: 0 3px;
+  display: inline-flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 3px;
+  margin-left: -1px;                 /* collapse the shared border */
+  background: var(--v3-box1-color, rgba(232,226,214,0.08));
+  color: rgba(232,226,214,0.6);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 0;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+  transition: color .15s, filter .15s, transform .06s;
+}
+.v3-rev-q:last-child { border-radius: 0 7px 7px 0; }
+.v3-rev-q svg { width: 14px; height: 14px; }
+.v3-rev-q-lbl {
+  font-family: var(--font-mono); font-size: 7.5px;
+  text-transform: uppercase; letter-spacing: 0.02em;
+  line-height: 1; white-space: nowrap;
+  opacity: 0.85;
+}
+.v3-rev-q:hover  { filter: brightness(1.14); color: #e8e2d6; }
+.v3-rev-q:active { transform: scale(0.94); }
+/* On-state matches the log sheet's options: accent for listened/later, pink for
+   favourite (`.sd-log-opt.on` / `[data-k="fav"].on`). */
+.v3-rev-q.on { color: var(--star, #e8a83c); }
+.v3-rev-q[data-k="fav"].on { color: #ff5c8a; }
+.s-home-v3--light .v3-rev-cta,
+.s-home-v3--light .v3-rev-q {
   background: rgba(232,226,214,0.05);   /* fixed neutral — don't track the album's procedural tint */
   color: #e8e2d6;
   border-color: rgba(232,226,214,0.14);
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
 }
+/* The square's resting ink is dimmer than the CTA's label, and the on-states
+   still win (they come later in the cascade at equal specificity). */
+.s-home-v3--light .v3-rev-q { color: rgba(232,226,214,0.6); }
+.s-home-v3--light .v3-rev-q.on { color: var(--star, #e8a83c); }
+.s-home-v3--light .v3-rev-q[data-k="fav"].on { color: #ff5c8a; }
 
 /* Overlay: scoped to the phone screen it's mounted in (.app-screen is relative) */
 .sd-log-overlay {
@@ -4453,16 +4748,21 @@
 }
 .sd-log-songs-sub { font-size: 10px; font-weight: 500; color: rgba(232,226,214,0.4); }
 .sd-log-songs-list { display: flex; flex-direction: column; }
+/* Title starts at the sheet's own left margin — there is no track-number
+   column any more, and the old 8px inset left the list looking indented
+   against everything above it. */
 .sd-log-song {
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-  padding: 7px 8px; border-radius: 9px;
+  padding: 7px 8px 7px 0; border-radius: 9px;
   border-left: 2px solid transparent;
   transition: background .15s, border-color .15s;
 }
-.sd-log-song.is-logged { background: rgba(232,168,60,0.08); border-left-color: var(--star, #e8a83c); }
-.sd-log-song-num {
-  width: 16px; flex-shrink: 0; text-align: right;
-  font-size: 10px; font-family: var(--font-mono); color: rgba(232,226,214,0.4);
+/* ⚠️ With no left padding the accent rail would print over the first glyph, so
+   the logged state pads the text across rather than drawing on top of it. */
+.sd-log-song.is-logged {
+  background: rgba(232,168,60,0.08);
+  border-left-color: var(--star, #e8a83c);
+  padding-left: 7px;
 }
 .sd-log-song-title {
   flex: 1; min-width: 0; font-size: 12.5px; color: #e8e2d6;
@@ -4497,16 +4797,84 @@
 .sd-log-song.open-note .sd-log-song-note { display: block; }
 
 /* Save — always available, in the sheet footer */
+/* No Save button — the sheet autosaves, and this line is the only feedback that
+   it did. It reads "Saves as you type" at rest and swaps to a green "Draft
+   saved" for ~1.5s on each write, so the reassurance is there without a
+   toast. Both labels are stacked in the same grid cell so the swap can't
+   reflow the footer. */
 .sd-log-foot { display: flex; justify-content: flex-end; padding-top: 14px; }
-.sd-log-save {
-  padding: 9px 20px;
-  background: var(--star, #e8a83c); color: #1a1208;
-  border: none; border-radius: 999px;
-  font-family: inherit; font-weight: 700; font-size: 12.5px;
-  cursor: pointer; transition: filter .15s;
+.sd-log-status {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--font-mono); font-size: 9.5px;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  color: rgba(232,226,214,0.3);
+  transition: color .2s;
 }
-.sd-log-save:hover  { filter: brightness(1.06); }
-.sd-log-save:active { filter: brightness(1.1); }
+.sd-log-status svg {
+  width: 11px; height: 11px;
+  opacity: 0; transition: opacity .2s;
+}
+/* The wording is swapped by flashLogSaved(); the class only carries the colour
+   and the tick, so there is no second label to keep in step. */
+.sd-log-status.on { color: #7fcf9e; }
+.sd-log-status.on svg { opacity: 1; }
+
+/* ── Quick share ──────────────────────────────────────────────
+   The log sheet's footer button, the share control on YOUR review card, and the
+   preview sheet. The sheet reuses `.sd-log-overlay` / `.sd-log-sheet` so it
+   inherits the log sheet's geometry and open/close transition. */
+/* Sits in the sheet's HEADER, beside the close button — sharing is a top-level
+   action on the record, not a footnote after the form. `flex-shrink: 0` so the
+   album title's ellipsis gives way before this does. */
+.sd-log-share {
+  flex-shrink: 0;
+  padding: 6px 13px; border-radius: 999px;
+  border: 1px solid var(--sd-line); background: none;
+  font-family: var(--font-main); font-size: 11.5px; font-weight: 700;
+  color: var(--sd-ink); cursor: pointer;
+  transition: background .15s, border-color .15s, color .15s;
+}
+.sd-log-share:hover { background: var(--star); border-color: var(--star); color: #16130d; }
+.sd-log-share[hidden] { display: none; }
+
+/* On the review card the share sits in `.v3-rev-acts`, where the upvote pill
+   lives on everyone else's cards — same slot, so the row doesn't reflow. */
+.v3-rev-share {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 2px 9px 2px 6px; border-radius: 999px;
+  border: none; background: rgba(255,255,255,0.07);
+  color: rgba(232,226,214,0.62);
+  font-family: var(--font-mono); font-size: 9.5px; font-weight: 700;
+  line-height: 1; cursor: pointer;
+  transition: background .14s, color .14s;
+}
+.v3-rev-share svg { width: 12px; height: 12px; }
+.v3-rev-share:hover { background: rgba(232,168,60,0.18); color: var(--star); }
+
+.sd-share-sheet { max-width: none; }
+.sd-share-sub { font-size: 11px; }
+.sd-share-preview {
+  margin: 4px 0 14px;
+  border-radius: 12px; overflow: hidden;
+  background: rgba(0,0,0,0.3);
+}
+/* The canvas is 1080×1350; let it scale to the sheet and keep its ratio. */
+.sd-share-preview canvas { display: block; width: 100%; height: auto; }
+.sd-share-foot { display: flex; gap: 10px; }
+.sd-share-foot button {
+  flex: 1; padding: 11px 0; border-radius: 999px;
+  font-family: var(--font-main); font-size: 12.5px; font-weight: 700;
+  cursor: pointer; transition: filter .15s, opacity .15s;
+}
+.sd-share-save { border: 1px solid var(--sd-line); background: none; color: var(--sd-ink); }
+.sd-share-go   { border: none; background: var(--star, #e8a83c); color: #1a1208; }
+.sd-share-foot button:disabled { opacity: .4; cursor: default; }
+.sd-share-foot button:not(:disabled):hover { filter: brightness(1.08); }
+.sd-share-note {
+  padding-top: 9px; text-align: center;
+  font-family: var(--font-mono); font-size: 9.5px; line-height: 1.5;
+  color: var(--sd-ink3);
+}
 
 /* Previews disabled for now — hide the speaker arm/disarm control */
 .v3-preview-btn { display: none !important; }
@@ -4517,7 +4885,7 @@
    only the scroll content below is wall-specific.
    ============================================================ */
 .wall2-scroll {
-  padding: 4px 12px 96px;   /* .v3-body is the scroller; bottom clears the nowbar/nav overlay */
+  padding: 4px 12px 75px;   /* .v3-body is the scroller; bottom clears the nowbar/nav overlay */
 }
 .wall2-hd {
   display: flex; align-items: baseline; gap: 8px;
@@ -4663,7 +5031,7 @@
    sections client-side via plTab(); all data comes from ARCHIVE.
    ============================================================ */
 .pl2-scroll {
-  padding: 4px 12px 96px;   /* .v3-body is the scroller; bottom clears the nowbar/nav overlay */
+  padding: 4px 12px 75px;   /* .v3-body is the scroller; bottom clears the nowbar/nav overlay */
 }
 /* Top bar — category pills + the "+" (new playlist) button on the right.
    No page title; the pills ARE the header. Pills scroll horizontally and
@@ -4857,9 +5225,9 @@
    via CSS so both themes work. The CD seats in the panel's carved
    swoop and overflows below it, like the drawing.
    ============================================================ */
-.plp-scroll { padding: 4px 12px 96px; }
+.plp-scroll { padding: 4px 12px 75px; }
 /* Back pill — same dot-ring as the home live pill; the arrow (idle formation)
-   points left = back. Morphs into the smiley face via .v3-ring--smile. */
+   points left = back. */
 /* Same emboss as the home live pill (.v3-search-pill) — solid bg + neu shadow */
 .plp-back-pill {
   display: inline-flex; align-items: center; justify-content: center;
@@ -4993,7 +5361,7 @@
    .plp-shape-panel / .plp-cd) so the form IS a preview of the page being
    built; only the editable bits and the pickers below are new here.
    ============================================================ */
-.plnew-scroll { padding: 4px 12px 96px; }
+.plnew-scroll { padding: 4px 12px 75px; }
 
 /* — cover well: the detail page's image panel as a real upload target. It's a
    <label> wrapping a hidden file input, so the whole panel opens the picker. — */
@@ -5680,7 +6048,7 @@
 }
 
 /* Scroll area inside v3-body — matches the homepage bento's ~10px side margins */
-.prof2-scroll { padding: 6px 12px 96px; }
+.prof2-scroll { padding: 6px 12px 75px; }
 
 
 /* ── Profile card — traced from ProfileTheme_Regular4.svg (690×466) ──
@@ -5791,7 +6159,7 @@
 
 /* Dot-mascot Follow button — seats in the pill notch at the card's bottom-right
    (traced from ProfileTheme_Regular.svg). Reuses the homepage .v3-ring dots in
-   the smiley formation; toggles to a filled "Following" state. */
+   the arrow formation; toggles to a filled "Following" state. */
 .prof-follow {
   position: absolute; z-index: 4; left: 75.5%; top: 54.32%; width: 21%; height: 11.37%;
   display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 6px;
@@ -5930,7 +6298,7 @@
    .pfe-slot (tap to swap) or, when empty, a .pfe-add "+" tile.
    Both open the category-aware popup (#prof-picker).
    ============================================================ */
-.pfe-scroll { padding-bottom: 96px; }
+.pfe-scroll { padding-bottom: 75px; }
 
 /* top bar — back pill on the left, Save on the right */
 .pfe-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
@@ -6073,7 +6441,14 @@
    a single variable block per screen instead of a parallel rule tree.
    They also reuse existing furniture: .plp-back-pill for the back
    control and .wall2-cat pills for the notification filters. */
-.s-ntf, .s-set {
+/* Scoped to `.s-home-v3` rather than just the two screens that started with it:
+   the home activity feed reuses the `.ntf-*` row, so the whole home shell needs
+   the tokens. `--sd-bg` is already exactly the home shell's own background in
+   both themes (#111116 / #f0ece3), which is what lets the badge's punch-through
+   ring read as a clean cut-out on all three screens.
+   `.s-ntf` / `.s-set` are themselves `.s-home-v3`, so they are kept only to hold
+   the more specific light block below. */
+.s-home-v3, .s-ntf, .s-set {
   --sd-bg:      #111116;                      /* screen bg — badge rings punch through to it */
   --sd-ink:     #e8e2d6;
   --sd-ink2:    rgba(232,226,214,0.55);
@@ -6083,8 +6458,12 @@
   --sd-line:    rgba(232,226,214,0.09);
   --sd-well:    rgba(0,0,0,0.38);             /* recessed track (switch/segment) */
   --sd-hover:   rgba(255,255,255,0.04);
+  /* Pill fill for controls that sit ON a row. ⚠️ Deliberately stronger than
+     --sd-card: an unread row IS --sd-card, so a pill using it vanishes there. */
+  --sd-pill:    rgba(255,255,255,0.09);
+  --sd-pill-hi: rgba(255,255,255,0.16);
 }
-.s-ntf.s-home-v3--light, .s-set.s-home-v3--light {
+.s-home-v3--light, .s-ntf.s-home-v3--light, .s-set.s-home-v3--light {
   --sd-bg:      #f0ece3;
   --sd-ink:     #1a1208;
   --sd-ink2:    rgba(26,18,8,0.55);
@@ -6094,10 +6473,12 @@
   --sd-line:    rgba(26,18,8,0.1);
   --sd-well:    rgba(120,102,72,0.2);
   --sd-hover:   rgba(26,18,8,0.05);
+  --sd-pill:    rgba(26,18,8,0.07);
+  --sd-pill-hi: rgba(26,18,8,0.14);
 }
 
 /* ── NOTIFICATIONS ────────────────────────────────────────── */
-.ntf-scroll { padding: 4px 12px 96px; }   /* bottom clears the nowbar/nav overlay */
+.ntf-scroll { padding: 4px 12px 75px; }   /* bottom clears the nowbar/nav overlay */
 .ntf-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
 .ntf-top-r { display: flex; align-items: center; gap: 9px; }
 .ntf-readall {
@@ -6152,14 +6533,39 @@
 }
 .ntf-row[hidden] { display: none; }
 
+/* Timestamp + (on the feed's review rows) the like/comment pills, on one line.
+   ⚠️ With no pills this is a flex row of ONE child, so it changes nothing for
+   the inbox — which is the point: the engagement controls are an addition to
+   the shared row, not a home-only restyling of it. The inbox's own like and
+   comment rows can adopt `.ntf-acts` as-is when they want the same affordance.
+   See the ⚠️ in renderFriendFeed for why the feed diverges here at all. */
+/* ⚠️ The 5px lift moves from `.ntf-time` to the row: as a flex item the time's
+   own margin-top survives, and `align-items: center` would then centre the
+   pills against its margin-BOX — leaving them sitting a couple of px low. */
+.ntf-foot { display: flex; align-items: center; gap: 10px; margin-top: 5px; }
+.ntf-foot .ntf-time { margin-top: 0; }
+.ntf-acts { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+
+/* ⚠️ SHAPE CARRIES MEANING on these rows, and the rule is app-wide: a circle is
+   a PERSON, a rounded square is a RECORD. Every row is literally a sentence —
+   round subject on the left, verb in the copy, square object on the right — so
+   you can tell who did what to what before reading a word.
+   The two exceptions both follow the rule rather than break it: a follow row's
+   trailing art is the ARTIST's photo, so it goes round (`--round`), and a
+   milestone row has no person at all, so the album cover stands in as the
+   subject and stays square (`--art`). */
 .ntf-ava {
   position: relative; flex-shrink: 0;
-  width: 44px; height: 44px; border-radius: 10px;
+  width: 44px; height: 44px; border-radius: 50%;
   background-size: cover; background-position: center;
   background-color: var(--sd-card);
 }
+.ntf-ava--art { border-radius: 9px; }   /* subject is a record, not a person */
+.ntf-ava--art .ntf-badge { right: -5px; bottom: -5px; }
 .ntf-badge {
-  position: absolute; right: -5px; bottom: -5px;
+  /* Pulled in from the -5px a square corner wanted: a circle's bottom-right
+     sits ~6px further in, so the old offset left the badge visibly detached. */
+  position: absolute; right: -2px; bottom: -2px;
   width: 20px; height: 20px; border-radius: 50%;
   display: grid; place-items: center;
   border: 2px solid var(--sd-bg);
@@ -6172,6 +6578,19 @@
 .ntf-badge--release   { background: #c9a7f0; }
 .ntf-badge--milestone { background: var(--star); }
 .ntf-badge--playlist  { background: #f0a77f; }
+/* Home-feed-only kinds — the things a friend DID. The review badge takes the
+   accent so the rows the app is actually about catch the eye in a scroll; a
+   rating is the same event minus the words, so it gets the same gold, muted.
+   The last three mirror the log sheet's own toggles.
+   ⚠️ `.ntf-badge--release` is now inbox-only, and `--trending` is gone with the
+   feed's systemic rows. */
+.ntf-badge--review    { background: var(--star); }
+.ntf-badge--rating    { background: #b99a5e; }
+.ntf-badge--fav       { background: #ff5c8a; }
+.ntf-badge--listened  { background: #7fcf9e; }
+.ntf-badge--later     { background: #8fb8d8; }
+/* An artist photo, not a cover — rounded like every other artist thumb. */
+.ntf-art--round { border-radius: 50%; }
 
 .ntf-body { flex: 1; min-width: 0; padding-right: 4px; }
 /* album = regular weight, artist/person = bold — the app-wide convention */
@@ -6212,7 +6631,7 @@
 }
 
 /* ── SETTINGS ─────────────────────────────────────────────── */
-.set-scroll { padding: 4px 12px 96px; }
+.set-scroll { padding: 4px 12px 75px; }
 .set-title {
   margin: 4px 0 13px; font-size: 26px; font-weight: 800;
   letter-spacing: -0.7px; color: var(--sd-ink);

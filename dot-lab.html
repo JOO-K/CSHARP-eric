@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spindeck · dot lab</title>
+<!-- ============================================================
+     DOT LAB — standalone playground for the Spindeck dot language
+     (rounded-square dot matrix: dot = 56% of cell, corner = 14% of
+     dot). NOT part of the mockup — a design tool. Opened from the
+     toolbar's "◌ Dots" button, or directly.
+
+     ⚠️ The generator is LOADED from dots.js, not copied in here, so
+     there is exactly one SD_DOTS to maintain. (The marketing site's
+     copy of this lab inlines it instead, because that page has to
+     work standalone; this one sits next to dots.js.)
+
+     · Paint: click/drag toggles cells.
+     · Links: toggle "link" mode, then click the handles that appear
+       between neighbouring dots (orthogonal + diagonal) to melt that
+       pair together with a surface-tension bridge. Per-pair — you
+       choose which connect and which stay separate.
+     · Spacing: pitch multiplier — adds air between dots without
+       changing dot size.
+     · Save: named assets in localStorage (chips below the export
+       panel — click to load, × to delete). Work-in-progress is
+       autosaved and restored on reopen.
+     · Export: Copy SVG (drop into markup) or Copy call (a ready
+       SD_DOTS.svg([...], {...}) snippet for the mockup).
+     ============================================================ -->
+<style>
+  :root{
+    --bg:#111116; --panel:#1a1a22; --ink:#e8e2d6; --ink-dim:rgba(232,226,214,.55);
+    --gold:#e8a83c; --hair:rgba(232,226,214,.14);
+    --mono:"Space Mono","Cascadia Mono",Consolas,monospace;
+    --sans:"DM Sans",system-ui,sans-serif;
+  }
+  *{ box-sizing:border-box; margin:0; }
+  body{
+    background:var(--bg); color:var(--ink); font-family:var(--sans);
+    min-height:100vh; padding:28px 32px; display:flex; flex-direction:column; gap:18px;
+  }
+  header{ display:flex; align-items:baseline; gap:14px; }
+  h1{ font-size:18px; letter-spacing:.02em; }
+  .eyebrow{ font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:.14em; color:var(--gold); }
+  .back{
+    margin-left:auto; font-family:var(--mono); font-size:11px; text-decoration:none;
+    color:var(--ink-dim); border:1px solid var(--hair); border-radius:9px; padding:6px 12px;
+    transition:color .15s, border-color .15s;
+  }
+  .back:hover{ color:var(--gold); border-color:var(--gold); }
+  .lab{ display:flex; gap:26px; flex-wrap:wrap; align-items:flex-start; }
+  .col{ display:flex; flex-direction:column; gap:12px; }
+
+  /* ── paint grid ── */
+  .grid-wrap{ background:var(--panel); border:1px solid var(--hair); border-radius:14px; padding:14px; }
+  #grid{ position:relative; display:grid; gap:2px; user-select:none; touch-action:none; width:max-content; }
+  #grid .c{
+    width:22px; height:22px; border-radius:4px; cursor:crosshair;
+    background:rgba(232,226,214,.07);
+  }
+  #grid .c.on{ background:var(--gold); border-radius:3px; }
+  #grid.linking .c{ cursor:default; }
+  #grid.linking .c.on{ background:rgba(232,168,60,.45); }   /* dim dots → handles pop */
+  .h{
+    position:absolute; width:12px; height:12px; border-radius:50%;
+    transform:translate(-50%,-50%); z-index:2; cursor:pointer;
+    border:1.5px solid rgba(232,168,60,.45); background:rgba(17,17,22,.75);
+  }
+  .h:hover{ border-color:var(--gold); }
+  .h.on{ background:var(--gold); border-color:var(--gold); }
+  .link-layer{ position:absolute; left:0; top:0; pointer-events:none; z-index:1; overflow:visible; }
+  .link-layer line{ stroke:rgba(232,168,60,.5); stroke-width:7; stroke-linecap:round; }
+  .grid-tools{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+
+  /* ── controls ── */
+  .panel{ background:var(--panel); border:1px solid var(--hair); border-radius:14px; padding:14px 16px; display:flex; flex-direction:column; gap:10px; min-width:250px; }
+  label{ font-family:var(--mono); font-size:11px; color:var(--ink-dim); display:flex; align-items:center; gap:8px; justify-content:space-between; }
+  label b{ color:var(--ink); font-weight:400; min-width:4ch; text-align:right; }
+  input[type=range]{ width:130px; accent-color:var(--gold); }
+  input[type=number]{ width:56px; background:var(--bg); color:var(--ink); border:1px solid var(--hair); border-radius:7px; padding:3px 6px; font-family:var(--mono); font-size:12px; }
+  input[type=text]{ flex:1; background:var(--bg); color:var(--ink); border:1px solid var(--hair); border-radius:7px; padding:5px 9px; font-family:var(--mono); font-size:12px; min-width:0; }
+  button, select{
+    font-family:var(--mono); font-size:12px; color:var(--ink); background:var(--bg);
+    border:1px solid var(--hair); border-radius:9px; padding:6px 12px; cursor:pointer;
+  }
+  button:hover{ border-color:var(--gold); color:var(--gold); }
+  button.primary{ border-color:var(--gold); color:var(--gold); }
+  button.toggled{ background:var(--gold); border-color:var(--gold); color:#1a1208; }
+  textarea{
+    background:var(--bg); color:var(--ink); border:1px solid var(--hair); border-radius:10px;
+    font-family:var(--mono); font-size:12px; line-height:1.5; letter-spacing:.35em;
+    padding:10px 12px; min-width:250px; resize:both; white-space:pre;
+  }
+
+  /* ── library ── */
+  .lib{ display:flex; flex-wrap:wrap; gap:6px; }
+  .chip{
+    display:inline-flex; align-items:center; gap:2px;
+    border:1px solid var(--hair); border-radius:999px; overflow:hidden;
+  }
+  .chip button{ border:none; border-radius:0; background:none; padding:4px 4px 4px 12px; }
+  .chip .del{ padding:4px 10px 4px 4px; color:var(--ink-dim); }
+  .chip .del:hover{ color:#e6484d; }
+  .lib-empty{ font-family:var(--mono); font-size:10.5px; color:var(--ink-dim); }
+
+  /* ── previews ── */
+  .previews{ display:flex; flex-direction:column; gap:14px; }
+  .stage{ background:var(--panel); border:1px solid var(--hair); border-radius:14px; padding:18px; display:flex; align-items:center; gap:26px; color:var(--gold); }
+  .stage svg{ display:block; }
+  .stage .big svg{ width:180px; height:auto; }
+  .stage .mid svg{ width:64px;  height:auto; }
+  .stage .tiny svg{ width:26px; height:auto; }
+  .stage-note{ font-family:var(--mono); font-size:10.5px; color:var(--ink-dim); }
+  .onlight{ background:#e8e2d6; color:#1a1208; }
+  .msg{ font-family:var(--mono); font-size:11px; color:var(--gold); min-height:1.2em; }
+</style>
+</head>
+<body>
+<header>
+  <span class="eyebrow">spindeck · dot lab</span>
+  <h1>rounded-square dot assets</h1>
+  <!-- The toolbar opens this in a new tab, but the lab is just as often reached
+       directly — without this there's no way back to the mockup. Closes the tab
+       when it WAS opened from there (window.opener set), otherwise navigates. -->
+  <a class="back" href="index.html" id="back">← back to mockup</a>
+</header>
+
+<div class="lab">
+
+  <!-- paint grid -->
+  <div class="col">
+    <div class="grid-wrap"><div id="grid"></div></div>
+    <div class="grid-tools">
+      <button id="linkMode" title="click the handles between neighbouring dots to melt them together">link</button>
+      <label>cols <input type="number" id="cols" min="1" max="32" value="12"></label>
+      <label>rows <input type="number" id="rows" min="1" max="32" value="8"></label>
+      <button id="clear">clear</button>
+      <button id="shiftL">←</button><button id="shiftR">→</button>
+      <button id="shiftU">↑</button><button id="shiftD">↓</button>
+      <button id="flipX">flip ↔</button>
+      <!-- Options are filled from PRESETS at boot — don't hardcode them here or
+           the list silently drifts from the object. -->
+      <select id="preset">
+        <option value="">presets…</option>
+      </select>
+    </div>
+    <textarea id="pattern" rows="10" cols="18" spellcheck="false"></textarea>
+  </div>
+
+  <!-- geometry + export + library -->
+  <div class="col">
+    <div class="panel">
+      <label>dotFrac <input type="range" id="dotFrac" min="0.2" max="1" step="0.02" value="0.56"><b id="dotFracV">0.56</b></label>
+      <label>cornerFrac <input type="range" id="cornerFrac" min="0" max="0.5" step="0.02" value="0.14"><b id="cornerFracV">0.14</b></label>
+      <label>spacing <input type="range" id="spacing" min="1" max="3" step="0.05" value="1.4"><b id="spacingV">1.40</b></label>
+      <div class="grid-tools">
+        <button class="primary" id="copySvg">Copy SVG</button>
+        <button class="primary" id="copyPat">Copy call</button>
+      </div>
+      <div class="msg" id="msg"></div>
+    </div>
+    <div class="panel">
+      <div class="grid-tools" style="flex-wrap:nowrap">
+        <input type="text" id="assetName" placeholder="asset name…" spellcheck="false">
+        <button class="primary" id="saveBtn">Save</button>
+      </div>
+      <div class="lib" id="library"></div>
+    </div>
+  </div>
+
+  <!-- live previews -->
+  <div class="col previews">
+    <div class="stage">
+      <span class="big"  id="pvBig"></span>
+      <span class="mid"  id="pvMid"></span>
+      <span class="tiny" id="pvTiny"></span>
+      <span class="stage-note">output — what Copy SVG exports · 180 / 64 / 26 px</span>
+    </div>
+    <div class="stage onlight">
+      <span class="mid" id="pvLight"></span>
+      <span class="stage-note">same output on light (the bento's light state)</span>
+    </div>
+  </div>
+
+</div>
+
+<script src="dots.js"></script>
+<script>
+/* SD_DOTS comes from dots.js (loaded above) — one generator, no copy to drift. */
+
+/* A preset is either a bare pattern (array of rows) or a full asset object
+   { pattern, links, spacing, dotFrac, cornerFrac } — same shape the library
+   saves — so a preset can carry its melted links and geometry, not just dots. */
+const PRESETS = {
+  /* The bottom nav's scoop — the smile and the lofi kid, frame by frame. These
+     mirror SCENE_FRAMES in app.js: redraw one here, paste the rows back. Every
+     frame must stay 10 rows of 21. */
+  'scene · smile' : ['.....................','.....xx.......xx.....','.....xx.......xx.....','.....................','..x...............x..','...x.............x...','....x...........x....','.....xx........xx....','.......xxxxxxxx......','.....................'],
+  'scene · blink' : ['.....................','.....................','.....xx.......xx.....','.....................','..x...............x..','...x.............x...','....x...........x....','.....xx........xx....','.......xxxxxxxx......','.....................'],
+  'scene · wink'  : ['.....................','.....xx..............','.....xx.......xx.....','.....................','..x...............x..','...x.............x...','....x...........x....','.....xx........xx....','.......xxxxxxxx......','.....................'],
+  'scene · kid'   : ['..................x..','..x...............x..','..x..xxxxxxxxxxx.xx..','.xx..x.xxxxxxx.x.....','.....x.xx.x.xx.x.....','.......xxx.xxx.......','........xxxxx........','.........xxx.........','......xxxxxxxxx......','.....xxxxxxxxxxx.....'],
+  'scene · kidbob': ['.................x...','.................x...','..x..............xx..','.xx..xxxxxxxxxxx.....','.....x.xxxxxxx.x.....','.....x.xx.x.xx.x.....','.......xxx.xxx.......','........xxxxx........','......xxxxxxxxx......','.....xxxxxxxxxxx.....'],
+  arrow: {
+    // the marketing site's bento-note arrow: horizontal tail → 45° elbow (melted by
+    // the links into one continuous shaft) → solid head. Keep in sync with the
+    // SD_DOTS.svg([...]) call on the site's bento notes.
+    pattern: [
+      '......xxxxxx',
+      '.....x......',
+      '....x.......',
+      '...x........',
+      'x.x.........',
+      'xx..........',
+      'xxx.........',
+    ],
+    links: [[6,0,5,1],[5,1,4,2],[4,2,3,3],[3,3,2,4],[2,4,1,5]],
+    spacing: 1.4,
+  },
+  smile: [
+    '.......',
+    '.x...x.',
+    '.......',
+    'x.....x',
+    '.x...x.',
+    '..xxx..',
+  ],
+  play: [
+    'x....',
+    'xxx..',
+    'xxxxx',
+    'xxx..',
+    'x....',
+  ],
+  heart: [
+    '.xx.xx.',
+    'xxxxxxx',
+    'xxxxxxx',
+    '.xxxxx.',
+    '..xxx..',
+    '...x...',
+  ],
+  star: [
+    '....x....',
+    '...xxx...',
+    'xxxxxxxxx',
+    '.xxxxxxx.',
+    '..xx.xx..',
+    '.x.....x.',
+  ],
+};
+
+const LS_ASSETS  = 'sdDotLab.assets.v1';
+const LS_CURRENT = 'sdDotLab.current.v1';
+/* editor grid geometry — the gap mirrors the spacing slider so the paint grid
+   shows the real pitch (22px cell + 2px at spacing 1, wider as spacing grows) */
+const CELL = 22;
+const gapPx  = () => 2 + CELL * ((+$('spacing').value || 1) - 1);
+const pitchPx = () => CELL + gapPx();
+
+const $ = id => document.getElementById(id);
+let cols = 12, rows = 8;
+let cells = [];              // rows × cols booleans
+let links = new Set();       // 'x1,y1|x2,y2' (normalized: top-left-most endpoint first)
+let linking = false;
+let painting = false, paintTo = true;
+
+/* ── link keys ── */
+const linkKey = (x1,y1,x2,y2) =>
+  (y2 < y1 || (y2 === y1 && x2 < x1)) ? `${x2},${y2}|${x1},${y1}` : `${x1},${y1}|${x2},${y2}`;
+const linkArr = () => [...links].map(k => k.split(/[|,]/).map(Number));
+const adjacent = (x1,y1,x2,y2) => Math.abs(x1-x2) <= 1 && Math.abs(y1-y2) <= 1 && !(x1===x2 && y1===y2);
+function pruneLinks(){
+  links = new Set([...links].filter(k => {
+    const [x1,y1,x2,y2] = k.split(/[|,]/).map(Number);
+    return cells[y1] && cells[y1][x1] && cells[y2] && cells[y2][x2] && adjacent(x1,y1,x2,y2);
+  }));
+}
+function remapLinks(fn){   // fn([x,y]) → [x,y] | null
+  const next = new Set();
+  for(const k of links){
+    const [x1,y1,x2,y2] = k.split(/[|,]/).map(Number);
+    const a = fn([x1,y1]), b = fn([x2,y2]);
+    if(a && b) next.add(linkKey(a[0],a[1],b[0],b[1]));
+  }
+  links = next;
+}
+
+/* ── grid editor ── */
+function blank(){ cells = Array.from({length:rows}, () => Array(cols).fill(false)); links = new Set(); }
+function buildGrid(){
+  const g = $('grid');
+  g.style.gridTemplateColumns = `repeat(${cols}, ${CELL}px)`;
+  g.style.gap = gapPx() + 'px';
+  g.innerHTML = '';
+  for(let y = 0; y < rows; y++) for(let x = 0; x < cols; x++){
+    const c = document.createElement('div');
+    c.className = 'c' + (cells[y][x] ? ' on' : '');
+    c.dataset.x = x; c.dataset.y = y;
+    g.appendChild(c);
+  }
+  buildHandles();
+}
+function buildLinkLayer(){
+  // always-on view of the made links: a soft gold thread between linked cells
+  const g = $('grid');
+  const old = g.querySelector('.link-layer'); if(old) old.remove();
+  if(!links.size) return;
+  const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  s.setAttribute('class', 'link-layer');
+  s.setAttribute('width',  cols*pitchPx() - gapPx());
+  s.setAttribute('height', rows*pitchPx() - gapPx());
+  s.innerHTML = linkArr().map(([x1,y1,x2,y2]) =>
+    `<line x1="${x1*pitchPx()+CELL/2}" y1="${y1*pitchPx()+CELL/2}" x2="${x2*pitchPx()+CELL/2}" y2="${y2*pitchPx()+CELL/2}"/>`
+  ).join('');
+  g.appendChild(s);
+}
+function buildHandles(){
+  buildLinkLayer();
+  document.querySelectorAll('#grid .h').forEach(h => h.remove());
+  if(!linking) return;
+  const g = $('grid');
+  const DIRS = [[1,0],[0,1],[1,1],[-1,1]];   // E, S, SE, SW — covers every pair once
+  for(let y = 0; y < rows; y++) for(let x = 0; x < cols; x++){
+    if(!cells[y][x]) continue;
+    for(const [dx,dy] of DIRS){
+      const nx = x+dx, ny = y+dy;
+      if(nx < 0 || nx >= cols || ny >= rows || !cells[ny] || !cells[ny][nx]) continue;
+      const h = document.createElement('div');
+      const key = linkKey(x,y,nx,ny);
+      h.className = 'h' + (links.has(key) ? ' on' : '');
+      h.style.left = ((x+nx)/2*pitchPx() + CELL/2) + 'px';
+      h.style.top  = ((y+ny)/2*pitchPx() + CELL/2) + 'px';
+      h.addEventListener('click', () => {
+        links.has(key) ? links.delete(key) : links.add(key);
+        h.classList.toggle('on');
+        sync();
+      });
+      g.appendChild(h);
+    }
+  }
+}
+function setCell(el, on){
+  const {x, y} = el.dataset;
+  cells[+y][+x] = on;
+  el.classList.toggle('on', on);
+  if(!on) pruneLinks();
+}
+$('grid').addEventListener('pointerdown', e => {
+  if(linking) return;
+  const c = e.target.closest('.c'); if(!c) return;
+  painting = true; paintTo = !cells[+c.dataset.y][+c.dataset.x];
+  setCell(c, paintTo); sync();
+});
+$('grid').addEventListener('pointerover', e => {
+  if(!painting || linking) return;
+  const c = e.target.closest('.c'); if(!c) return;
+  setCell(c, paintTo); sync();
+});
+addEventListener('pointerup', () => painting = false);
+
+$('linkMode').addEventListener('click', () => {
+  linking = !linking;
+  $('linkMode').classList.toggle('toggled', linking);
+  $('grid').classList.toggle('linking', linking);
+  buildHandles();
+});
+
+/* ── pattern text ⇄ grid ── */
+function toPattern(){ return cells.map(r => r.map(b => b ? 'x' : '.').join('')); }
+function fromPattern(lines){
+  const rowsIn = lines.filter(l => l.length);
+  if(!rowsIn.length) return;
+  rows = rowsIn.length; cols = Math.max(...rowsIn.map(l => l.length));
+  cells = rowsIn.map(l => Array.from({length:cols}, (_, x) => l[x] === 'x' || l[x] === '#'));
+  pruneLinks();
+  $('rows').value = rows; $('cols').value = cols;
+  buildGrid();
+}
+$('pattern').addEventListener('input', () => { fromPattern($('pattern').value.split('\n')); render(); persist(); });
+
+/* ── render ── */
+function opts(){
+  return {
+    dotFrac:    +$('dotFrac').value,
+    cornerFrac: +$('cornerFrac').value,
+    spacing:    +$('spacing').value,
+    links:      links.size ? linkArr() : null,
+  };
+}
+function render(){
+  const svg = SD_DOTS.svg(toPattern(), opts());
+  for(const id of ['pvBig','pvMid','pvTiny','pvLight']) $(id).innerHTML = svg;
+  $('dotFracV').textContent = (+$('dotFrac').value).toFixed(2);
+  $('cornerFracV').textContent = (+$('cornerFrac').value).toFixed(2);
+  $('spacingV').textContent = (+$('spacing').value).toFixed(2);
+}
+function sync(){ $('pattern').value = toPattern().join('\n'); buildHandles(); render(); persist(); }
+for(const id of ['dotFrac','cornerFrac'])
+  $(id).addEventListener('input', () => { render(); persist(); });
+$('spacing').addEventListener('input', () => {
+  $('grid').style.gap = gapPx() + 'px';   // the paint grid breathes with the slider
+  buildHandles();                          // handle midpoints move with the pitch
+  render(); persist();
+});
+
+/* ── tools ── */
+$('cols').addEventListener('change', () => resize(+$('cols').value, rows));
+$('rows').addEventListener('change', () => resize(cols, +$('rows').value));
+function resize(nc, nr){
+  nc = Math.max(1, Math.min(32, nc)); nr = Math.max(1, Math.min(32, nr));
+  cells = Array.from({length:nr}, (_, y) => Array.from({length:nc}, (_, x) => (cells[y] && cells[y][x]) || false));
+  cols = nc; rows = nr; pruneLinks(); buildGrid(); sync();
+}
+$('clear').addEventListener('click', () => { blank(); buildGrid(); sync(); });
+function shift(dx, dy){
+  cells = cells.map((r, y) => r.map((_, x) => {
+    const sy = y + dy, sx = x + dx;
+    return (cells[sy] && cells[sy][sx]) || false;
+  }));
+  remapLinks(([x,y]) => {
+    const p = [x - dx, y - dy];
+    return (p[0] >= 0 && p[0] < cols && p[1] >= 0 && p[1] < rows) ? p : null;
+  });
+  buildGrid(); sync();
+}
+$('shiftL').addEventListener('click', () => shift( 1, 0));
+$('shiftR').addEventListener('click', () => shift(-1, 0));
+$('shiftU').addEventListener('click', () => shift( 0, 1));
+$('shiftD').addEventListener('click', () => shift( 0,-1));
+$('flipX').addEventListener('click', () => {
+  cells = cells.map(r => [...r].reverse());
+  remapLinks(([x,y]) => [cols-1-x, y]);
+  buildGrid(); sync();
+});
+$('preset').addEventListener('change', e => {
+  const p = PRESETS[e.target.value];
+  if(!p) return;
+  links = new Set();
+  // bare-pattern presets keep whatever geometry the sliders are on; object
+  // presets bring their own (restore() only overwrites the keys they define)
+  restore(Array.isArray(p) ? { pattern:p } : p);
+  $('assetName').value = e.target.value;
+  e.target.value = '';
+});
+
+/* ── save / load library (localStorage) ── */
+const loadAssets = () => { try { return JSON.parse(localStorage.getItem(LS_ASSETS)) || {}; } catch(_){ return {}; } };
+const storeAssets = a => localStorage.setItem(LS_ASSETS, JSON.stringify(a));
+function snapshot(){
+  return {
+    pattern: toPattern(),
+    links: linkArr(),
+    dotFrac: +$('dotFrac').value, cornerFrac: +$('cornerFrac').value, spacing: +$('spacing').value,
+  };
+}
+function restore(s){
+  if(!s || !s.pattern) return false;
+  fromPattern(s.pattern);
+  links = new Set((s.links || []).map(a => linkKey(...a)));
+  pruneLinks();
+  if(s.dotFrac)    $('dotFrac').value = s.dotFrac;
+  if(s.cornerFrac != null) $('cornerFrac').value = s.cornerFrac;
+  if(s.spacing)    $('spacing').value = s.spacing;
+  sync();
+  return true;
+}
+function persist(){ localStorage.setItem(LS_CURRENT, JSON.stringify({ ...snapshot(), name: $('assetName').value })); }
+$('assetName').addEventListener('input', persist);
+
+$('saveBtn').addEventListener('click', () => {
+  const name = $('assetName').value.trim() || 'untitled';
+  const assets = loadAssets();
+  assets[name] = snapshot();
+  storeAssets(assets);
+  $('assetName').value = name;
+  buildLibrary();
+  flash(`saved “${name}”`);
+});
+function buildLibrary(){
+  const assets = loadAssets(), lib = $('library');
+  const names = Object.keys(assets).sort();
+  lib.innerHTML = names.length ? '' : '<span class="lib-empty">no saved assets yet — paint one and Save</span>';
+  for(const name of names){
+    const chip = document.createElement('span'); chip.className = 'chip';
+    const load = document.createElement('button'); load.textContent = name; load.title = 'load';
+    load.addEventListener('click', () => { restore(assets[name]); $('assetName').value = name; persist(); flash(`loaded “${name}”`); });
+    const del = document.createElement('button'); del.className = 'del'; del.textContent = '×'; del.title = 'delete';
+    del.addEventListener('click', () => { delete assets[name]; storeAssets(assets); buildLibrary(); flash(`deleted “${name}”`); });
+    chip.append(load, del); lib.appendChild(chip);
+  }
+}
+
+/* ── export ── */
+function callSnippet(){
+  const pat = toPattern().map(l => `  '${l}',`).join('\n');
+  const o = opts(), extra = [];
+  if(o.spacing !== SD_DOTS.DEF.spacing)       extra.push(`spacing:${o.spacing}`);
+  if(o.dotFrac !== SD_DOTS.DEF.dotFrac)       extra.push(`dotFrac:${o.dotFrac}`);
+  if(o.cornerFrac !== SD_DOTS.DEF.cornerFrac) extra.push(`cornerFrac:${o.cornerFrac}`);
+  if(o.links)                                 extra.push(`links:[${o.links.map(a => `[${a.join(',')}]`).join(',')}]`);
+  return `SD_DOTS.svg([\n${pat}\n]${extra.length ? `, { ${extra.join(', ')} }` : ''})`;
+}
+function flash(text){ $('msg').textContent = text; clearTimeout(flash._t); flash._t = setTimeout(() => $('msg').textContent = '', 2000); }
+function copy(text, okMsg){
+  const done = () => flash(okMsg);
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done, fallback);
+  } else fallback();
+  function fallback(){
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); ta.remove(); done();
+  }
+}
+$('copySvg').addEventListener('click', () => copy(SD_DOTS.svg(toPattern(), opts()), 'SVG copied'));
+$('copyPat').addEventListener('click', () => copy(callSnippet(), 'SD_DOTS call copied'));
+
+/* Back link: if the toolbar opened us in a new tab, closing it returns you to
+   the mockup you were already looking at. Opened directly, fall through to the
+   href. Esc does the same thing. */
+function leaveLab(e){
+  if(window.opener && !window.opener.closed){ if(e) e.preventDefault(); window.close(); }
+}
+$('back').addEventListener('click', leaveLab);
+addEventListener('keydown', e => {
+  if(e.key !== 'Escape') return;
+  if(document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) {
+    document.activeElement.blur(); return;      // first Esc just leaves the field
+  }
+  if(window.opener && !window.opener.closed) window.close();
+  else location.href = 'index.html';
+});
+
+/* Fill the preset dropdown from PRESETS itself — a hardcoded <option> list is
+   how the pet poses went missing from it the first time. */
+Object.keys(PRESETS).forEach(k => {
+  const o = document.createElement('option');
+  o.value = k; o.textContent = k;
+  $('preset').appendChild(o);
+});
+
+/* ── boot: restore work-in-progress, else start on the arrow ── */
+blank();
+let booted = false;
+try { booted = restore(JSON.parse(localStorage.getItem(LS_CURRENT))); } catch(_){}
+if(booted){
+  try { $('assetName').value = JSON.parse(localStorage.getItem(LS_CURRENT)).name || ''; } catch(_){}
+} else {
+  restore(PRESETS.arrow);
+  $('assetName').value = 'arrow';
+}
+buildLibrary();
+</script>
+</body>
+</html>

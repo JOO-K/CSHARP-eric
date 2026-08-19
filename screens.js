@@ -2,6 +2,33 @@
 //  SCREENS
 // ============================================================
 
+/* The three log toggles — listened · listen later · favourite.
+   Defined HERE, not in app.js, because the home screen's `html:` is a static
+   template literal evaluated while screens.js parses; app.js hasn't run yet, so
+   anything it defines is unavailable to it. app.js's SDLOG_ICONS aliases this,
+   which is what keeps the album page's quick buttons and the log sheet's own
+   options drawing the same glyphs. */
+const SD_ICONS = {
+  ear:   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 8a5 5 0 0 1 10 0c0 3-2.2 4.1-3.4 5.3-.8.8-1.2 1.5-1.2 2.7A2.4 2.4 0 0 1 7.6 17"/><path d="M9.6 8.5a2.6 2.6 0 0 1 4.9-.6"/></svg>`,
+  clock: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 1.8"/></svg>`,
+  heart: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7.5-4.9-9.5-9C1 8.5 3 5 6.5 5 9 5 12 8 12 8s3-3 5.5-3C21 5 23 8.5 21.5 12c-2 4.1-9.5 9-9.5 9z"/></svg>`,
+};
+
+/* The scene's host — the face cradled in the bottom bar's scoop.
+   The app's smile, which now and then becomes a kid with headphones on nodding
+   to something. Painted per frame in app.js (SCENE_FRAMES / paintScene) and
+   drawn with SD_DOTS, so it is the same rounded-square pixel as every other
+   brand asset.
+
+   ⚠️ Declared up here for the same reason as SD_ICONS: the home screen's `html:`
+   is a static template literal evaluated while this file parses, and it calls
+   sdScene() inline. Declared below the SCREENS array, the `const` would still be
+   in its temporal dead zone at that moment. */
+function sdScene() {
+  // Empty host — paintScene() fills it with an SD_DOTS svg per frame.
+  return `<div class="sd-scene" aria-hidden="true"></div>`;
+}
+
 const SCREENS = [
 
   // ── 1. AUTH ─────────────────────────────────────────────────
@@ -96,9 +123,9 @@ const SCREENS = [
                  style="background-image:url('images/album-crystalcastles1.png')"></div>
 
             <!-- Stats strip: expanded to top 77% h 22.92% to fit album/artist name -->
-            <div class="v3-blue" onclick="event.stopPropagation(); enterReview(this.closest('.s-home-v3'))">
+            <div class="v3-blue" onclick="event.stopPropagation(); enterAlbumPage(this.closest('.s-home-v3'))">
               <div class="v3-blue-info-row">
-                <span class="v3-blue-title"><span class="v3-blue-album" onclick="event.stopPropagation(); onAlbumTitle(this)"></span><span class="v3-blue-date v3-blue-date--fs"></span></span>
+                <span class="v3-blue-title"><span class="v3-blue-album"></span><span class="v3-blue-date v3-blue-date--fs"></span></span>
                 <span class="v3-blue-sep">·</span>
                 <span class="v3-blue-artist" onclick="event.stopPropagation(); onArtistName(this)"></span>
                 <span class="v3-blue-date v3-blue-date--inline"></span>
@@ -160,18 +187,9 @@ const SCREENS = [
 
           </div>
 
-          <!-- SCROLL: discovery rails + friends feed -->
+          <!-- SCROLL: activity feed — notification-style rows, filled by
+               renderFriendFeed(). The "you may know" rails used to sit above it. -->
           <div class="v3-scroll-area">
-
-            <!-- Filled by renderKnowRails() — horizontal, axis-locked -->
-            <div class="v3-rail-sec">
-              <div class="v3-rail-hd">Artists you may know</div>
-              <div class="v3-rail v3-rail--artists"></div>
-            </div>
-            <div class="v3-rail-sec">
-              <div class="v3-rail-hd">Albums you may know</div>
-              <div class="v3-rail v3-rail--albums"></div>
-            </div>
 
             <div class="v3-feed-items"></div>
 
@@ -185,12 +203,24 @@ const SCREENS = [
                  Uses the bento's 78/22 split so it mirrors with the hand layout. -->
             <div class="v3-rev-top">
 
-              <!-- Your rating + written review + submit — aligned to the stats text -->
+              <!-- Your rating + written review + submit — aligned to the stats text.
+                   The three squares butt straight onto the CTA and each other
+                   (shared borders, no gap) so the four read as one cascading
+                   control. They are the same three toggles the log sheet opens
+                   with — the point is that marking something listened / later /
+                   favourite costs one tap instead of opening the sheet. -->
               <div class="v3-rev-mine">
-                <button class="v3-rev-cta" onclick="event.stopPropagation(); openLogSheet(this);">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
-                  <span>Review, rate, log</span>
-                </button>
+                <div class="v3-rev-cta-row">
+                  <button class="v3-rev-cta" onclick="event.stopPropagation(); openLogSheet(this);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+                    <span>Review, rate, log</span>
+                  </button>
+                  <div class="v3-rev-quick">
+                    <button class="v3-rev-q" data-k="listened" title="Listened" onclick="toggleRevAction(this, event)">${SD_ICONS.ear}<span class="v3-rev-q-lbl">Listened</span></button>
+                    <button class="v3-rev-q" data-k="later" title="Listen later" onclick="toggleRevAction(this, event)">${SD_ICONS.clock}<span class="v3-rev-q-lbl">Later</span></button>
+                    <button class="v3-rev-q" data-k="fav" title="Favorite" onclick="toggleRevAction(this, event)">${SD_ICONS.heart}<span class="v3-rev-q-lbl">Favorite</span></button>
+                  </div>
+                </div>
               </div>
 
             </div><!-- /v3-rev-top -->
@@ -364,9 +394,9 @@ const SCREENS = [
                  style="background-image:url('images/album-crystalcastles1.png')"></div>
 
             <!-- Stats strip -->
-            <div class="v3-blue" onclick="event.stopPropagation(); enterReview(this.closest('.s-home-v3'))">
+            <div class="v3-blue" onclick="event.stopPropagation(); enterAlbumPage(this.closest('.s-home-v3'))">
               <div class="v3-blue-info-row">
-                <span class="v3-blue-title"><span class="v3-blue-album" onclick="event.stopPropagation(); onAlbumTitle(this)"></span><span class="v3-blue-date v3-blue-date--fs"></span></span>
+                <span class="v3-blue-title"><span class="v3-blue-album"></span><span class="v3-blue-date v3-blue-date--fs"></span></span>
                 <span class="v3-blue-sep">·</span>
                 <span class="v3-blue-artist" onclick="event.stopPropagation(); onArtistName(this)"></span>
                 <span class="v3-blue-date v3-blue-date--inline"></span>
@@ -428,18 +458,9 @@ const SCREENS = [
 
           </div>
 
-          <!-- SCROLL: discovery rails + friends feed -->
+          <!-- SCROLL: activity feed — notification-style rows, filled by
+               renderFriendFeed(). The "you may know" rails used to sit above it. -->
           <div class="v3-scroll-area">
-
-            <!-- Filled by renderKnowRails() — horizontal, axis-locked -->
-            <div class="v3-rail-sec">
-              <div class="v3-rail-hd">Artists you may know</div>
-              <div class="v3-rail v3-rail--artists"></div>
-            </div>
-            <div class="v3-rail-sec">
-              <div class="v3-rail-hd">Albums you may know</div>
-              <div class="v3-rail v3-rail--albums"></div>
-            </div>
 
             <div class="v3-feed-items"></div>
 
@@ -453,12 +474,24 @@ const SCREENS = [
                  Uses the bento's 78/22 split so it mirrors with the hand layout. -->
             <div class="v3-rev-top">
 
-              <!-- Your rating + written review + submit — aligned to the stats text -->
+              <!-- Your rating + written review + submit — aligned to the stats text.
+                   The three squares butt straight onto the CTA and each other
+                   (shared borders, no gap) so the four read as one cascading
+                   control. They are the same three toggles the log sheet opens
+                   with — the point is that marking something listened / later /
+                   favourite costs one tap instead of opening the sheet. -->
               <div class="v3-rev-mine">
-                <button class="v3-rev-cta" onclick="event.stopPropagation(); openLogSheet(this);">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
-                  <span>Review, rate, log</span>
-                </button>
+                <div class="v3-rev-cta-row">
+                  <button class="v3-rev-cta" onclick="event.stopPropagation(); openLogSheet(this);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+                    <span>Review, rate, log</span>
+                  </button>
+                  <div class="v3-rev-quick">
+                    <button class="v3-rev-q" data-k="listened" title="Listened" onclick="toggleRevAction(this, event)">${SD_ICONS.ear}<span class="v3-rev-q-lbl">Listened</span></button>
+                    <button class="v3-rev-q" data-k="later" title="Listen later" onclick="toggleRevAction(this, event)">${SD_ICONS.clock}<span class="v3-rev-q-lbl">Later</span></button>
+                    <button class="v3-rev-q" data-k="fav" title="Favorite" onclick="toggleRevAction(this, event)">${SD_ICONS.heart}<span class="v3-rev-q-lbl">Favorite</span></button>
+                  </div>
+                </div>
               </div>
 
             </div><!-- /v3-rev-top -->
@@ -1625,7 +1658,12 @@ function playlistPageHtml(light) {
 // Bottom nav — glass "console" bar: raised center hump (holds the now-playing bubble)
 // with 4 buttons in the lower bar. Floats centered, off the bottom, over the content.
 /* ============================================================
-   NOTIFICATIONS  (`s-ntf`) — behind the header's bell bubble
+   NOTIFICATIONS  (`s-ntf`)
+   ⚠️ EVERY row is about YOU — someone liked/replied to your review, followed
+   you, touched your playlist, or one of your things hit a milestone. That is
+   the line between this and the home feed: the inbox is your interactions, the
+   feed is what other people did. New-release announcements used to sit here and
+   were about nobody, so they went. — behind the header's bell bubble
    ============================================================
    An activity inbox on the standard home shell. One flat list of rows;
    the filter pills (All / Social / Reviews / Releases) hide rows by
@@ -1663,10 +1701,10 @@ function ntfItems() {
     { type:'comment',   tab:'social',   user:'staticfog',   bucket:'today', unread:true,
       text:'replied to your review of', album:'Punisher', time:'1h',
       quote:'ok but you gave this a 4.5 and Blonde a 4.0? explain yourself' },
-    { type:'release',   tab:'releases', bucket:'today',     unread:true,
-      text:'is out now', album:'Blackstar', artistLine:true, time:'3h' },
+    { type:'like',      tab:'social',   user:'velvetblast', bucket:'today', unread:true,
+      text:'favourited your playlist', playlist:'desert island picks ✧', time:'3h' },
     { type:'milestone', tab:'reviews',  bucket:'today',     unread:true,
-      text:'Your review of', album:'Untrue', tail:'passed 100 upvotes', time:'5h' },
+      subj:'Your review', link:'of', album:'Untrue', tail:'passed 100 upvotes', time:'5h' },
 
     { type:'like',      tab:'reviews',  user:'echoplex',    bucket:'week',
       text:'liked your review of', album:'Blonde', time:'1d' },
@@ -1677,13 +1715,13 @@ function ntfItems() {
     { type:'comment',   tab:'social',   user:'glassmoth',   bucket:'week',
       text:'replied to your review of', album:'Mezzanine', time:'4d',
       quote:'the Angel take is correct and you should say it louder' },
-    { type:'release',   tab:'releases', bucket:'week',
-      text:'is out now', album:'Titanic Rising', artistLine:true, time:'5d' },
+    { type:'milestone', tab:'reviews',  bucket:'week',
+      subj:'Your review', link:'of', album:'Mezzanine', tail:'is the top review this week', time:'5d' },
 
     { type:'like',      tab:'reviews',  user:'moonwire',    bucket:'earlier',
       text:'liked your review of', album:'To Pimp a Butterfly', time:'1w' },
     { type:'milestone', tab:'reviews',  bucket:'earlier',
-      text:'Your playlist', playlist:'desert island picks ✧', tail:'hit 87 favorites', time:'2w' },
+      subj:'Your playlist', playlist:'desert island picks ✧', tail:'hit 87 favorites', time:'2w' },
     { type:'follow',    tab:'social',   user:'velvetblast', bucket:'earlier',
       text:'started following you', time:'3w' },
   ];
@@ -1720,16 +1758,22 @@ function notificationsHtml(light) {
     return '';
   };
 
-  // Copy line. Person rows lead with the handle; system rows lead with the
-  // sentence. The object (album / playlist) is optional — a follow has none.
+  /* Copy line — every row is SUBJECT · VERB · OBJECT, in that order, so the
+     screen reads as sentences instead of as a log. The subject is bold and
+     matches the avatar beside it; the object is the record or playlist.
+     ⚠️ A milestone has no person, so the subject is a THING you own ("Your
+     review", "Your playlist") — which is exactly why its avatar is square. It
+     used to render that subject unstyled while the album took the emphasis,
+     so the row read object-first and broke the pattern. The object (album /
+     playlist) is optional: a follow row has none. */
   const line = it => {
     if (it.type === 'release') {
       const a = albOf(it.album);
-      return `<b>${a.artist || ''}</b> — <i>${it.album}</i> ${it.text}`;
+      return `<b>${a.artist || ''}</b> released <i>${it.album}</i>`;
     }
-    if (it.type === 'milestone')
-      return `${it.text} <i>${it.album || it.playlist}</i> ${it.tail}`;
     const obj = it.playlist || it.album;
+    if (it.type === 'milestone')
+      return `<b>${it.subj}</b>${it.link ? ` ${it.link}` : ''} <i>${obj}</i> ${it.tail}`;
     return `<b>${it.user}</b> ${it.text}${obj ? ` <i>${obj}</i>` : ''}`;
   };
 
@@ -1748,7 +1792,7 @@ function notificationsHtml(light) {
       : `style="background-image:url('${pics[it.user] || ''}')"`;
     return `
               <div class="ntf-row${it.unread ? ' ntf-row--new' : ''}" data-tab="${it.tab}" onclick="${go(it)}">
-                <div class="ntf-ava" ${face}>
+                <div class="ntf-ava${isSys(it) ? ' ntf-ava--art' : ''}" ${face}>
                   <span class="ntf-badge ntf-badge--${it.type}">
                     <svg viewBox="0 0 24 24" fill="currentColor">${BADGES[it.type]}</svg>
                   </span>
@@ -1918,15 +1962,39 @@ function settingsHtml(light) {
 
 function bottomNav(active = 'home') {
   const on = id => active === id ? ' active' : '';
+  // ⚠️ The fade and the nest are SIBLINGS of the nav, not children: both fill
+  // with `background-color: inherit`, which only resolves to the screen colour
+  // when the parent is the shell itself. Inside the nav they'd inherit its
+  // transparent background instead.
   return `
+          <div class="v3-bottom-fade" aria-hidden="true"></div>
+          <!-- Backdrop blur for the WHOLE nav box, scoop included. The glass's
+               own blur is masked to the bar shape, so it stops at the scoop —
+               anything showing there came through sharp. -->
+          <div class="v3-nav-blur" aria-hidden="true"></div>
+          <div class="v3-nav-nest" aria-hidden="true"></div>
           <nav class="v3-bottom-nav">
             <div class="v3-nav-glass" aria-hidden="true"></div>
-            <svg class="v3-nav-shape" viewBox="0 0 553 126" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><path d="M517.5 125H35.5C16.17 125 0.5 109.33 0.5 90V79.7942C0.5 60.4642 16.17 44.7942 35.5 44.7942L47.3137 44.7942C58.1862 44.7942 67 35.9803 67 25.1079C67 11.5173 78.0173 0.5 91.6079 0.5L460.892 0.500022C474.483 0.500023 485.5 11.5174 485.5 25.1079C485.5 35.9804 494.314 44.7942 505.186 44.7942H517.5C536.83 44.7942 552.5 60.4642 552.5 79.7942V90C552.5 109.33 536.83 125 517.5 125Z"/></svg>
+            <!-- OUTLINE ONLY — the bar's top contour, as an OPEN path (no Z).
+                 ⚠️ Deliberately does NOT include the scoop: the scoop is a hole in
+                 the FILL (see the .v3-nav-glass mask in app.css, which does carry
+                 it) but is left unstroked, so the cradle reads as an opening
+                 rather than an outlined cut-out. Sides and outer bottom run
+                 outside the viewBox so their stroke clips away. -->
+            <svg class="v3-nav-shape" viewBox="0 0 576 93" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><path d="M-8 101V34.1217H64.8923C73.1451 34.1217 79.8353 27.4315 79.8353 19.1787C79.8353 8.86277 88.198 0.5 98.514 0.5L480.656 0.5C490.972 0.5 499.335 8.86277 499.335 19.1788C499.335 27.4316 506.025 34.1218 514.278 34.1218H584V101"/></svg>
             <div class="v3-nav-items">
               <button class="v3-nav-item${on('home')}" onclick="navigate('home')" title="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/></svg></button>
               <button class="v3-nav-item${on('wall')}" onclick="navigate('wall')" title="Trending"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="2.5" y="2.5" width="5" height="5" rx="1.2"/><rect x="9.5" y="2.5" width="5" height="5" rx="1.2"/><rect x="16.5" y="2.5" width="5" height="5" rx="1.2"/><rect x="2.5" y="9.5" width="5" height="5" rx="1.2"/><rect x="9.5" y="9.5" width="5" height="5" rx="1.2"/><rect x="16.5" y="9.5" width="5" height="5" rx="1.2"/><rect x="2.5" y="16.5" width="5" height="5" rx="1.2"/><rect x="9.5" y="16.5" width="5" height="5" rx="1.2"/><rect x="16.5" y="16.5" width="5" height="5" rx="1.2"/></svg></button>
+              <span class="v3-nav-gap" aria-hidden="true"></span>
               <button class="v3-nav-item${on('playlists')}" onclick="navigate('playlists')" title="Playlists"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></button>
               <button class="v3-nav-item${on('profile')}" onclick="navigate('profile')" title="Profile"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></button>
             </div>
-          </nav>`;
+          </nav>
+          <!-- Scoop EMBOSS. The 0-height wrapper paints nothing itself, but
+               background-color:inherit on it resolves the screen colour for the
+               fill inside, and its filter applies to that fill AFTER masking —
+               the only way to get a drop-shadow that follows a mask.
+               The scene moved out of the nav so it can sit ABOVE this. -->
+          <div class="v3-nav-emboss" aria-hidden="true"><i></i></div>
+          ${sdScene()}`;
 }
