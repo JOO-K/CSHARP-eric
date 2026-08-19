@@ -3017,7 +3017,12 @@
 /* z-index hierarchy: 0 bg-fill · 1 album/blue · 2 for-single · 3 cd · 5 master-frame */
 .v3-album {
   position: absolute;
-  left: 0.07%; top: 0.08%; width: 78.01%; height: 83.70%;
+  /* Derived, not eyeballed. The shell's album region is x 0.5→538.5,
+     y 0.5→534.52 (`.v3-bg-fill`'s bg-right path; the bottom is where
+     `.v3-blue` starts at 83.78%). So: 0.5/689, 0.5/638, 538/689, 534.02/638.
+     The old 0.07 / 0.08 / 78.01 / 83.70 left the cover ~0.5 units short on the
+     right, i.e. a half-pixel crescent of shell down that edge. */
+  left: 0.0726%; top: 0.0784%; width: 78.0842%; height: 83.7022%;
   background-size: cover;
   background-position: center;
   cursor: pointer;
@@ -3031,10 +3036,40 @@
      what keeps the corner CIRCULAR on a box that isn't square (one percentage
      resolves against width on one axis and height on the other, i.e. an
      ellipse). Bottom-left stays square: it's the step junction. */
-  border-radius: 3.721% 3.721% 3.721% 0 / 3.7451% 3.7451% 3.7451% 0;
+  border-radius: 3.71747% 3.71747% 3.71747% 0 / 3.74499% 3.74499% 3.74499% 0;
   overflow: hidden;
   z-index: 1;
+  transform: translate(var(--album-dx, 0%), var(--album-dy, 0%));
 }
+/* ── Optical nudge ────────────────────────────────────────────
+   The box above is DERIVED — it lands on the shell's edges to the unit. This
+   is the eyeball correction on top, because the arithmetic and the eye don't
+   agree at this size: the two shapes are antialiased curves painted by
+   different rasterisers (an SVG path fill vs. a CSS border-radius), so where
+   they *look* flush isn't where they *are* flush.
+
+   ⚠️ **Percentages, not px** — and that is the whole point of this block.
+   Settled by eye at -0.5px / -0.2px on the 385px mockup, then converted, so
+   the correction is a PROPORTION of the cover and holds at every phone width
+   instead of only that one. Same rule as the radii above: a px offset here is
+   correct at exactly one size and wrong everywhere else.
+   ⚠️ **`translate()` percentages resolve against the ELEMENT, not the parent**
+   — so these are % of the cover's own 538.0 × 534.02 units, not of the 689×638
+   viewBox. That's what makes the conversion asymmetric.
+
+   Turning it by eye — at the 385px mockup 1 phone px is:
+     horizontal  0.35087%   (1.8877 units ÷ 538.00)
+     vertical    0.35348%   (1.8877 units ÷ 534.02)
+   so the current values are exactly -0.5px and -0.2px. Negative = left / up.
+
+   It stays a transform rather than being folded into `left`/`top` so the box
+   above remains a clean derivation and this remains the one thing to turn. */
+.s-home-v3 {
+  --album-dx: -0.175434%;   /* -0.5px */
+  --album-dy: -0.070697%;   /* -0.2px */
+}
+/* Fullscreen cover butts against nothing, so it wants no correction. */
+.s-home-v3--review .v3-album { --album-dx: 0%; --album-dy: 0%; }
 
 /* Right column wrapper: search corner on top, red box below */
 .v3-right-col {
@@ -3411,9 +3446,12 @@
 
 /* Album art — mirror to the right side; notch corner flips to bottom-right */
 .s-home-v3--left .v3-album {
-  left: 21.92%;
+  /* bg-left puts the album region's left edge at x=150.5 → 150.5/689. The old
+     21.92% resolved to 151.03, half a unit inboard, so the shell showed as a
+     hairline down the left edge and thickened into the corners. */
+  left: 21.84325%;
   /* Same radii as the right-hand rule, square corner flipped to bottom-right. */
-  border-radius: 3.721% 3.721% 0 3.721% / 3.7451% 3.7451% 0 3.7451%;
+  border-radius: 3.71747% 3.71747% 0 3.71747% / 3.74499% 3.74499% 0 3.74499%;
 }
 /* Stats strip — mirror under the album; text stays LEFT-aligned (like album title) */
 .s-home-v3--left .v3-blue { left: 21.85%; }
@@ -4204,7 +4242,10 @@
 
 /* Review cards — styled to match the homepage friend-feed cards (compact) */
 .v3-rev-list { display: flex; flex-direction: column; margin: 0 12px; }
-.v3-rev-card { padding: 9px 0; border-bottom: 1px solid rgba(232,226,214,0.08); }
+/* The whole card is the "read the comments" target — see cmtCardTap. The pill
+   in its corner is for WRITING one, and stops propagation so the two don't
+   fight; so does `.v3-cmt-wrap`, or reading a thread would collapse it. */
+.v3-rev-card { padding: 9px 0; border-bottom: 1px solid rgba(232,226,214,0.08); cursor: pointer; }
 .v3-rev-card:last-child { border-bottom: none; }
 /* The review you tapped in the home feed, pinned atop the list.
    ⚠️ It is a HIGHLIGHTED ROW, not a card in a box. The outlined, inset,
@@ -6611,6 +6652,24 @@
   border-radius: 5px; margin-top: 2px;
   background-size: cover; background-position: center;
   background-color: var(--sd-card);
+}
+/* The row's object: the cover, with the score a friend gave it UNDER it.
+   Stacking costs the copy column no width — a score parked beside the thumb
+   took ~35px off a row that already wraps. See the ⚠️ in renderFriendFeed for
+   which rows get a number at all. */
+.ntf-obj {
+  flex-shrink: 0;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+}
+.ntf-score {
+  font-family: var(--font-mono); font-size: 12px; font-weight: 700;
+  line-height: 1;
+  /* ⚠️ The row's own ink, NOT `--star`. The gold read as an alert on a row
+     whose whole job is to be scanned past, and it also collides with the
+     upvote pill's `is-on` gold in the same row. `--sd-ink` is literally black
+     (#1a1208) in the light theme and its off-white counterpart on dark — the
+     value follows the surface, so it stays legible on both. */
+  color: var(--sd-ink);
 }
 .ntf-follow {
   flex-shrink: 0; margin-top: 4px;

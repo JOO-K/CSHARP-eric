@@ -268,6 +268,19 @@ the last. That's what the `each(bases, kids)` cross-product in
 > set. Per-persona detail work is open — starting with the header wordmark and
 > icons washing out on the light backgrounds.
 
+⚠️ **`s.radius` must never touch `.v3-album`.** It did, and `eric`'s `15px`
+rendered the cover's corner at ~27 units against the shell's 20 — a visible
+crescent of shell colour at all three corners, and the reason the album "didn't
+match the bento". Two things make it wrong: the album's corner is
+**structural** (it sits flush inside the silhouette, whose corner is a fixed 20
+units of the viewBox and so scales with the phone), and `radius` is a **px**
+value, which is the exact trap the comment on `.v3-album` in app.css warns
+about — correct at one width, wrong everywhere else. The token still skins
+`.wall2-art` and `.pl2-card`, which are free-floating cards.
+⚠️ **The lesson generalises: nothing that lines up with a path is a persona
+knob.** Before adding a selector to a skin rule, check whether the element
+butts against the bento silhouette or the nav.
+
 ## Recommendations + search fallback — Deezer at runtime (`app.js`)
 
 A persona ships ~30 albums and the bento cycles the **whole** catalogue, so home
@@ -293,9 +306,21 @@ new albums between two consecutive loads**.
   reviews come from `dzSeed`/`dzReviews`, a **port of the generator in
   tools/build_personas.py** — same pool, same seeding, so a fetched album is
   indistinguishable from a built one and never changes its numbers.
-- `dzAdopt` **appends** to `trendingAlbums` rather than re-shuffling it: the
-  queue is indexed by position and the user may be mid-swipe. It also nulls
-  `window.SEARCH_INDEX`, which is memoised and would otherwise never see them.
+- `dzAdopt` re-deals the queue round-robin by artist so recs interleave with
+  your own records instead of stacking behind all ~30 of them — but **only from
+  `dzQueueFloor()` onward**, and that boundary is load-bearing. ⚠️ This
+  function runs **once per artist per seed — several dozen times** while a deal
+  streams in, and it used to re-spread the WHOLE of `trendingAlbums` on every
+  call. `_albumIdx` is a *position*, so two bugs fell out of that, both the same
+  bug: the **For-You panel lied** (it painted `seq[idx+1]`, the array was
+  re-dealt underneath, and the swipe landed on a different record), and the
+  queue seemed to **repeat** — swiping never made progress, because each
+  re-deal re-randomised the positions just ahead. Simulated over 400 runs of a
+  streaming deal: 1.17 repeats and 13.8/15 broken previews before, 0 and 0
+  after. The floor is `maxIdx + 3` — the album on screen, the For-You promise,
+  and one spare for `albumSeq()` prepending `featuredAlbum`.
+  `dzAdopt` also nulls `window.SEARCH_INDEX`, which is memoised and would
+  otherwise never see the new albums.
 - Personas carry **`artistId`** (added to `build_personas.py` for this) so the
   seeds need no name lookup.
 
@@ -476,8 +501,31 @@ Grid children (in order): `.v3-album`, `.v3-right-col` (spans row 1 only), `.v3-
   *width* horizontally and *height* vertically, so on a non-square box it draws
   an **ellipse** — which is why `.v3-for-single` (tall and narrow) needs
   `13.2748% / 3.6143%` to describe one circular 15-unit corner.
-- `.v3-album` — `3.721% … / 3.7451% …` (20 units), **bottom-left** square (the
+- `.v3-album` — `3.71747% … / 3.74499% …` (20 units), **bottom-left** square (the
   step junction; the `--left` hand mirror flips that to bottom-right)
+  ⚠️ **Its box is derived, not eyeballed**, and every number is now exact: the
+  shell's album region is x 0.5→538.5, y 0.5→534.52 (bg-right; the bottom is
+  where `.v3-blue` starts), so `left/top/width/height` are `0.5/689`, `0.5/638`,
+  `538/689`, `534.02/638` — and `--left`'s `left` is `150.5/689`. The old
+  round numbers (78.01%, 21.92%) left the cover half a unit short of the shell,
+  which showed as a hairline down one edge. **Change any of these four and the
+  two radius percentages have to be recomputed with them** (20 ÷ the box's own
+  unit width and height), since a % radius resolves against the box, not the
+  viewBox. ⚠️ See also the persona note: `s.radius` must not restyle this.
+- **The optical nudge** (`--album-dx` / `--album-dy`, applied as a `transform`
+  on `.v3-album`). The derived box lands on the shell's edges to the unit, but
+  the two shapes are antialiased curves drawn by different rasterisers — an SVG
+  path fill vs. a CSS border-radius — so where they *look* flush isn't where
+  they *are* flush. The correction was settled by eye at **-0.5px / -0.2px** on
+  the 385px mockup and then **converted to percentages**, so it's a proportion
+  of the cover and holds at every phone width. ⚠️ Don't put px back: same trap
+  as the radii — right at one size, wrong everywhere else. ⚠️ `translate()`
+  percentages resolve against the **element**, not the parent, so these are % of
+  the cover's own 538.0 × 534.02, which is why the two axes differ. To turn it
+  by eye, 1 phone px = **0.35087%** horizontal / **0.35348%** vertical. It stays
+  a transform rather than being folded into `left`/`top` so the box above
+  remains a clean derivation and this remains the one thing to turn. Zeroed in
+  the `--review` state, where the cover butts against nothing.
 - `position: relative; z-index: 1`
 - Light theme: `box-shadow: 0 8px 16px rgba(30,20,10,0.18), 0 20px 48px rgba(30,20,10,0.28)`
 
@@ -551,6 +599,7 @@ Fillet positions:
 **The one sanctioned divergence: engagement pills on review rows.** A feed row for a `review`/`rating` now carries a like pill and a comment pill, because the feed's job is other people's reviews and you should be able to see that one has traction — and add to it — without leaving home. It is built from the **shared** vocabulary and changes nothing about the row's anatomy: `.ntf-foot` holds the timestamp and the pills on one line, and with no pills it is a flex row of one child, so an inbox row that adopts it looks exactly as it does now. That's the difference from the attempt this warning was written about, which also added a star line and its own spacing. **The inbox's own like/comment rows can take `.ntf-acts` as-is** when they want the same affordance.
 - The like pill uses **`feedRevKey(e)`**, the same key the album page's pinned card uses — so liking in the feed and liking on the album page are one act, not two counters. ⚠️ Change one and the other has to follow.
 - The comment pill calls `feedOpen(n)` like the row does; it exists for the **count** and the affordance. `openFriendReview` opens that review's thread on the way in, so you land on the album page with the comments already cascading.
+- **The score goes UNDER the cover** — `.ntf-obj` stacks `.ntf-art` over `.ntf-score`, so the row's object is one unit. Parking the number *beside* the thumb was tried first and cost the copy column ~35px on a row that already wraps; below it costs nothing and reads quieter. ⚠️ Only review/rating rows get a number: `FRIEND_ACTIVITY` hands every row a `rating` whether its verb earned one or not, so printing it on all of them would claim a friend rated something they only bookmarked. ⚠️ It takes **`--sd-ink`, not `--star`** — the gold read as an alert on a row whose job is to be scanned past, and collided with the upvote pill's `is-on` gold in the same row. There is **no vinyl** beside it; the avatar's badge already says the act was a review.
 - ⚠️ **`.v3-up--feed` re-declares the pill's colours off the `--sd-*` tokens.** Plain `.v3-up` is hard-coded for a dark surface, which is right everywhere else it appears (review cards sit on the album's procedural colour, dark in both themes) and wrong here — the feed sits on the screen bg, which is cream in the light theme. Same trap as `--vinyl-empty`: the value follows the **surface**, not the theme.
 
 The two **"you may know" rails** (`renderKnowRails`, `.v3-rail` / `.v3-kcard`, memoised into `_KNOW`) used to sit above the feed. They're deleted — markup, CSS and JS.
@@ -1153,6 +1202,13 @@ Home. Shares its scoped colour tokens with Settings (see below).
   The object (album / playlist) is still optional — a follow row has none, so
   `line()` must not interpolate it blindly. Album names render regular weight,
   people/artists bold, per the app-wide convention.
+- **The home feed names the object in full — "*album* by **artist**"**
+  (`rec(e)` in `renderFriendFeed`), album first and in the two weights
+  `.ntf-text i` / `.ntf-text b` already carry. ⚠️ Guarded twice: a row can
+  arrive with no artist ("by undefined"), and a self-titled record would
+  otherwise read "Weezer by Weezer" — which nobody says out loud either.
+  ⚠️ **Playlist rows are exempt**: they already name two things (the record and
+  the playlist) and a third proper noun makes the line unreadable.
 - **No page title and no filter pills** — both were removed; the rows start
   straight under the top row (back pill · unread chip · Mark all read), which is
   what the screen looked best as. `ntfTab` (the pill handler) and the rows'
@@ -1398,7 +1454,19 @@ One card = `.v3-rev-card-top` (avatar · name · **`.v3-rev-acts`** · time) the
 Every review card carries a **threaded comment section**, collapsed behind the
 comment pill in `.v3-rev-acts` and expanded under `.v3-rev-text`. Replies nest
 Reddit-style; **`CMT_DEFAULT` (3)** top-level threads show, the rest sit behind
-*"View n more comments"*. There's a like on every comment and one composer per
+*"View n more comments"*.
+
+⚠️ **Two gestures, two verbs.** Tapping the **card** (`cmtCardTap`) opens the
+comments to READ them — reading shouldn't cost a trip to a button — and taps
+again to put them away. Tapping the **pill** (`cmtCompose`) starts WRITING one:
+it opens the thread if shut and focuses the composer, and it deliberately does
+**not** toggle, because "comment" is the wrong label for a button that hides the
+comments and toggling it shut mid-sentence threw away what you'd typed.
+⚠️ Everything clickable inside the card must `stopPropagation` or it collapses
+the thread on its way up: the upvote pill, the comment pill, the share button,
+and **`.v3-cmt-wrap` itself** — without that last one, clicking a comment (or
+the space beside one) closes the thread you're reading. All four builders wire
+`data-k` + `onclick` on the card; the inline-composer one does it in JS. There's a like on every comment and one composer per
 thread — **Reply aims that composer at a comment** (`CMT_REPLY_TO`) so the post
 nests under it; posting with nothing aimed lands at the **base** of the thread.
 The gold *"replying to @handle ✕"* chip is the only thing that says which, so

@@ -1068,6 +1068,8 @@ window.submitReview = function (btn) {
     const myKey = 'mine::' + (alb.album || '');
     const card = document.createElement('div');
     card.className = 'v3-rev-card v3-rev-card--mine';
+    card.dataset.k = myKey;                     // the 4th card builder — tap opens its thread
+    card.onclick = () => cmtCardTap(card);
     card.innerHTML = `
       <div class="v3-rev-card-top">
         <div class="v3-rev-av" style="background:linear-gradient(135deg,var(--v3-accent,#e8a83c),#c76b2a)">Y</div>
@@ -1483,14 +1485,18 @@ function cmtFind(key, id) {
 
 const CMT_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 11.6a8 8 0 0 1-8.6 8 9 9 0 0 1-3.2-.6L3.5 20.5l1.7-4.4a7.9 7.9 0 0 1-1.7-4.5 8 8 0 0 1 8.6-8 8 8 0 0 1 8.4 8Z"/></svg>`;
 
-// The comment pill. Same object as the upvote pill (`.v3-up`) so the pair reads
-// as one control; this one toggles the thread under the card.
+/* The comment pill. Same object as the upvote pill (`.v3-up`) so the pair reads
+   as one control.
+   ⚠️ Two gestures, two verbs: tapping the CARD opens the comments to READ
+   them, tapping this pill starts WRITING one. The pill used to toggle, which
+   made "comment" the button you pressed to hide the comments — and pressing it
+   mid-sentence threw away what you'd typed. */
 function cmtBtnHtml(key, total, extraClass = '') {
   const open = !!CMT_OPEN[key];
   return `<button class="v3-up v3-cmt-btn${extraClass ? ' ' + extraClass : ''}${open ? ' is-open' : ''}"
     type="button" data-k="${_revAttr(key)}" data-n="${Math.max(0, Number(total) || 0)}"
-    aria-expanded="${open}" aria-label="Comments"
-    onclick="event.stopPropagation(); cmtToggle(this)">${CMT_SVG}<span class="v3-up-n">${cmtCount(key, total)}</span></button>`;
+    aria-expanded="${open}" aria-label="Write a comment"
+    onclick="event.stopPropagation(); cmtCompose(this)">${CMT_SVG}<span class="v3-up-n">${cmtCount(key, total)}</span></button>`;
 }
 
 /* One comment. ⚠️ The indent is REAL NESTING — `.v3-cmt-kids` wraps a node's
@@ -1552,10 +1558,15 @@ function cmtThreadHtml(key, total) {
       </div>`;
 }
 
-// The slot a thread renders into. Always emitted (and empty while collapsed) so
-// re-rendering never has to touch the card around it.
+/* The slot a thread renders into. Always emitted (and empty while collapsed) so
+   re-rendering never has to touch the card around it.
+   ⚠️ It swallows clicks. The thread lives INSIDE the review card, and the card
+   now toggles the thread — so without this, clicking a comment, or just the
+   space beside one, would bubble up and collapse the whole thread you were
+   reading. */
 function cmtWrapHtml(key, total) {
-  return `<div class="v3-cmt-wrap" data-cmt="${_revAttr(key)}" data-n="${Math.max(0, Number(total) || 0)}">${cmtThreadHtml(key, total)}</div>`;
+  return `<div class="v3-cmt-wrap" data-cmt="${_revAttr(key)}" data-n="${Math.max(0, Number(total) || 0)}"
+    onclick="event.stopPropagation()">${cmtThreadHtml(key, total)}</div>`;
 }
 
 /* ⚠️ Repaint EVERY wrap carrying this key, not the one that was clicked. The
@@ -1577,11 +1588,32 @@ function cmtRender(key) {
   });
 }
 
-window.cmtToggle = function (btn) {
-  const k = btn.dataset.k;
+/* Tapping the review body opens its comments — reading them shouldn't cost a
+   trip to a button. Toggles, so the same tap puts them away. */
+window.cmtCardTap = function (card) {
+  const k = card.dataset.k;
+  if (!k) return;
   CMT_OPEN[k] = !CMT_OPEN[k];
-  if (!CMT_OPEN[k]) CMT_ALL[k] = false;   // collapsing resets the expansion
+  if (!CMT_OPEN[k]) {                     // collapsing resets the thread's state
+    CMT_ALL[k] = false;
+    delete CMT_REPLY_TO[k];
+  }
   cmtRender(k);
+};
+
+/* The pill starts a comment: opens the thread if it's shut, then puts the
+   cursor in the composer.
+   ⚠️ It does NOT toggle. "Comment" is the wrong label for a button that hides
+   the comments, and toggling it shut mid-sentence threw away what you'd typed.
+   ⚠️ Hold the WRAP across the render — cmtRender replaces the thread markup,
+   so an input reference taken before it is stale, but the wrap survives. */
+window.cmtCompose = function (btn) {
+  const k = btn.dataset.k;
+  const card = btn.closest('.v3-rev-card');
+  const wrap = card && card.querySelector('.v3-cmt-wrap');
+  if (!CMT_OPEN[k]) { CMT_OPEN[k] = true; cmtRender(k); }
+  const input = wrap && wrap.querySelector('.v3-cmt-input');
+  if (input) input.focus();
 };
 window.cmtMore = function (btn) {
   CMT_ALL[btn.dataset.k] = true;
@@ -1664,7 +1696,7 @@ function populateReviewList(scr, filter) {
   // like are the same act, and its comment button opens THIS thread.
   const pinKey = 'pin::' + a.album + '::' + (pin ? pin.name || '' : '');
   const pinHtml = pin ? `
-    <div class="v3-rev-card v3-rev-card--pinned">
+    <div class="v3-rev-card v3-rev-card--pinned" data-k="${_revAttr(pinKey)}" onclick="cmtCardTap(this)">
       <div class="v3-rev-card-top">
         <div class="v3-rev-av" style="background:${pin.grad || '#555'}">${pin.init || '?'}</div>
         <span class="v3-rev-name">${pin.name || 'Listener'}</span>
@@ -1693,7 +1725,7 @@ function populateReviewList(scr, filter) {
   const myText = (mine.text || '').trim();
   const myKey = 'mine::' + a.album;
   const mineHtml = (mine.rating || myText) ? `
-    <div class="v3-rev-card v3-rev-card--mine">
+    <div class="v3-rev-card v3-rev-card--mine" data-k="${_revAttr(myKey)}" onclick="cmtCardTap(this)">
       <div class="v3-rev-card-top">
         <div class="v3-rev-av" style="background:linear-gradient(135deg,var(--v3-accent,#e8a83c),#c76b2a)">Y</div>
         <span class="v3-rev-name">You</span>
@@ -1722,7 +1754,7 @@ function populateReviewList(scr, filter) {
     const m = revMeta(r, i);
     const key = a.album + '::' + (r.name || '') + '::' + i;
     return `
-    <div class="v3-rev-card">
+    <div class="v3-rev-card" data-k="${_revAttr(key)}" onclick="cmtCardTap(this)">
       <div class="v3-rev-card-top">
         <div class="v3-rev-av" style="background:${r.grad || '#555'}">${r.init || '?'}</div>
         <span class="v3-rev-name">${r.name || 'Listener'}</span>
@@ -1931,14 +1963,26 @@ function renderFriendFeed(screenEl) {
      an object-first line ("Loveless was rated by…") breaks the scan even though
      it says the same thing. Album regular weight, people/artists bold, per the
      app-wide convention. */
+  /* "<album> by <artist>" — the object of the sentence, named in full. Album
+     regular weight, artist bold, album first: the app-wide convention, and
+     `.ntf-text i` / `.ntf-text b` already carry exactly those two weights.
+     ⚠️ Guarded twice. A row can arrive with no artist at all, and "by
+     undefined" reads as a bug — but so does "Weezer by Weezer", and self-titled
+     records are common enough to hit. Nobody says the artist twice out loud
+     either, so the guard matches how the line would be spoken. */
+  const rec = e => `<i>${e.album}</i>` +
+    (e.artist && e.artist !== e.album ? ` by <b>${e.artist}</b>` : '');
+
   const line = e => {
     if (e.type === 'follow')   return `<b>${e.user}</b> started following <b>${e.artist}</b>`;
+    // ⚠️ Playlist rows stay short. They already name TWO things (the record and
+    // the playlist), and a third proper noun makes the line unreadable.
     if (e.type === 'playlist') return `<b>${e.user}</b> added <i>${e.album}</i> to <i>${e.playlist}</i>`;
-    if (e.type === 'rating')   return `<b>${e.user}</b> rated <i>${e.album}</i>`;
-    if (e.type === 'fav')      return `<b>${e.user}</b> favourited <i>${e.album}</i>`;
-    if (e.type === 'listened') return `<b>${e.user}</b> logged <i>${e.album}</i>`;
-    if (e.type === 'later')    return `<b>${e.user}</b> saved <i>${e.album}</i> for later`;
-    return `<b>${e.user}</b> reviewed <i>${e.album}</i>`;
+    if (e.type === 'rating')   return `<b>${e.user}</b> rated ${rec(e)}`;
+    if (e.type === 'fav')      return `<b>${e.user}</b> favourited ${rec(e)}`;
+    if (e.type === 'listened') return `<b>${e.user}</b> logged ${rec(e)}`;
+    if (e.type === 'later')    return `<b>${e.user}</b> saved ${rec(e)} for later`;
+    return `<b>${e.user}</b> reviewed ${rec(e)}`;
   };
 
   /* Engagement, on the row itself. ⚠️ This is the ONE place a feed row diverges
@@ -1959,6 +2003,23 @@ function renderFriendFeed(screenEl) {
                         onclick="event.stopPropagation(); feedOpen(${n})">${CMT_SVG}<span class="v3-up-n">${e.comments || 0}</span></button>
                     </div>`;
   };
+
+  /* The object of the sentence: the record, with what they gave it UNDER it.
+     A number tucked below the cover is quieter than one parked beside it and
+     costs the copy column no width at all — the two read as one object either
+     way, which is the point.
+     ⚠️ Only review/rating rows carry a score. A favourite or a "saved for
+     later" isn't one, and `FRIEND_ACTIVITY` hands every row a `rating` whether
+     the verb earned it or not — printing it on all of them would claim a friend
+     rated something they only bookmarked. */
+  const obj = (e, n) => `
+                <div class="ntf-obj">
+                  <div class="ntf-art${e.type === 'follow' ? ' ntf-art--round' : ''}"
+                       style="background-image:url('${e.thumb}')"
+                       onclick="event.stopPropagation(); feedOpenArt(${n})"></div>
+                  ${(e.type === 'review' || e.type === 'rating') && e.rating
+                    ? `<div class="ntf-score">${Number(e.rating).toFixed(1)}</div>` : ''}
+                </div>`;
 
   /* Row anatomy is the inbox's — avatar + badge · copy · time · trailing thumb.
      `.ntf-foot` holds the timestamp and (on review rows) the pills on one line;
@@ -1981,7 +2042,7 @@ function renderFriendFeed(screenEl) {
                     ${acts(e, n)}
                   </div>
                 </div>
-                ${`<div class="ntf-art${e.type === 'follow' ? ' ntf-art--round' : ''}" style="background-image:url('${e.thumb}')" onclick="event.stopPropagation(); feedOpenArt(${n})"></div>`}
+                ${obj(e, n)}
               </div>`;
   };
 
@@ -4568,6 +4629,15 @@ function personaSkinCss(p) {
 ${each(bases, PERSONA_INK1)} { color: ${t.ink}; }
 ${each(bases, PERSONA_INK2)} { color: ${t.ink2}; }`;
 
+  /* ⚠️ `.v3-album` is NOT in the radius rule, and must not be added back.
+     Its corner is STRUCTURAL: it sits flush inside the bento silhouette, whose
+     corner is a fixed 20 units of the 689×638 viewBox and therefore scales
+     with the phone. `s.radius` is a px value, so it can only be correct at one
+     width — the exact trap the comment on `.v3-album` in app.css warns about —
+     and a persona has no business restyling a corner that has to line up with
+     a path. `eric`'s 15px rendered the cover at ~27 units against the shell's
+     20, leaving a visible crescent of shell colour at all three corners.
+     `.wall2-art` and `.pl2-card` are free-floating cards; they keep it. */
   return `
 ${k} {${tokens(s.dark)}
   font-family: ${s.font}, var(--font-main), sans-serif;
@@ -4577,7 +4647,7 @@ ${bg(darkBases, s.dark)}
 ${bg(lightBases, s.light)}
 ${block(darkBases, s.dark)}
 ${block(lightBases, s.light)}
-${each([k], ['.v3-album', '.wall2-art', '.pl2-card'])} { border-radius: ${s.radius}; }`;
+${each([k], ['.wall2-art', '.pl2-card'])} { border-radius: ${s.radius}; }`;
 }
 
 function applyPersonaSkins() {
@@ -5429,9 +5499,35 @@ function dzSpread(list) {
   return out;
 }
 
-/* Fold new albums into ARCHIVE + the bento queue. APPENDS to trendingAlbums
-   rather than re-shuffling it — the queue is indexed by position and the user
-   may be part-way through swiping it. */
+/* How much of the queue is already SPOKEN FOR and must not be re-ordered.
+
+   ⚠️ `_albumIdx` is a POSITION, not an album, and the For-You panel is already
+   showing the album at `idx + 1` — a promise about what the next swipe lands
+   on. Re-dealing either of those swaps the record out from under the user:
+   For You offers one album and you get a different one. `+2` covers the album
+   on screen and that promise; the extra 1 absorbs `albumSeq()` prepending
+   `featuredAlbum` (so a seq index runs one ahead of a trending index). */
+function dzQueueFloor() {
+  let maxIdx = 0;
+  homeShells().forEach(function (s) {
+    if (typeof s._albumIdx === 'number') maxIdx = Math.max(maxIdx, s._albumIdx);
+  });
+  return maxIdx + 3;
+}
+
+/* Fold new albums into ARCHIVE + the bento queue.
+
+   ⚠️ Only the part of the queue the user has NOT reached is re-dealt. This
+   function runs once per artist per seed — several DOZEN times while a deal
+   streams in — and it used to re-spread the whole of `trendingAlbums` on every
+   one of them. Two bugs fell out of that, and they were the same bug:
+   the For-You preview lied (it painted `seq[idx+1]`, the array was re-dealt
+   underneath, and the swipe landed somewhere else), and the queue appeared to
+   REPEAT — swiping never made progress through the catalogue because each
+   re-deal re-randomised the positions just ahead, so albums came back around.
+   Re-dealing only the tail keeps the interleaving this was added for (recs
+   mixed through your own records rather than stacked behind all ~30 of them)
+   without moving anything already on screen or already promised. */
 function dzAdopt(records) {
   const A = window.ARCHIVE || [];
   const have = new Set(A.map(function (a) { return dzKey(a.artist, a.album); }));
@@ -5443,14 +5539,17 @@ function dzAdopt(records) {
   });
   if (!fresh.length) return 0;
   window.ARCHIVE = A.concat(fresh);
-  /* Re-deal the WHOLE queue round-robin by artist — the persona's own records
-     and the fetched ones together, not recs appended behind them. Appending
-     meant swiping all ~30 of your own albums before a single recommendation
-     appeared, which is the same wall of familiar covers this feature was
-     meant to break up. Round-robin also keeps two records by one act apart;
-     they arrive grouped, one artist's batch at a time. */
-  const queue = (window.trendingAlbums || []).concat(fresh);
-  window.trendingAlbums = dzSpread(queue);
+  /* Re-deal round-robin by artist — the persona's own records and the fetched
+     ones together, not recs appended behind them. Appending meant swiping all
+     ~30 of your own albums before a single recommendation appeared, which is
+     the same wall of familiar covers this feature exists to break up.
+     Round-robin also keeps two records by one act apart; they arrive grouped,
+     one artist's batch at a time.
+     ⚠️ From `dzQueueFloor()` onward ONLY — see the note above. */
+  const queue = window.trendingAlbums || [];
+  const floor = Math.min(dzQueueFloor(), queue.length);
+  window.trendingAlbums = queue.slice(0, floor)
+    .concat(dzSpread(queue.slice(floor).concat(fresh)));
   window.SEARCH_INDEX = null;   // memoised — must be dropped or search misses them
   return fresh.length;
 }
