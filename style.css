@@ -234,6 +234,43 @@ body {
   overflow: hidden;
 }
 #devbox[hidden] { display: none; }
+
+/* ── Pet box — the nav pet's whole vocabulary, looping ────────────────────
+   Same chrome as #devbox (it reuses every .db-* class), one column to the left
+   so both can be open at once and you can watch the pet while tuning. */
+#petbox {
+  position: absolute; top: 14px; right: 268px; z-index: 60;
+  width: 242px; max-height: calc(100% - 28px);
+  display: flex; flex-direction: column;
+  background: var(--vsurface);
+  border: 1px solid var(--vborder); border-radius: 10px;
+  box-shadow: 0 10px 34px rgba(0,0,0,0.45);
+  font-size: 11px; color: var(--vtext);
+  overflow: hidden;
+}
+#petbox[hidden] { display: none; }
+/* ⚠️ `overflow-x: hidden` and `min-width: 0` together. The stage is a fixed
+   63px and the trigger captions are long, so without them the grid's `1fr`
+   tracks resolve against content and the panel grows a horizontal scrollbar. */
+#petbox .db-body { overflow-x: hidden; }
+.pet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.pet-cell {
+  min-width: 0;
+  background: #111116; border: 1px solid var(--vborder); border-radius: 8px;
+  padding: 8px 4px 6px; cursor: pointer; text-align: center;
+  transition: border-color .15s ease, background .15s ease;
+}
+.pet-cell:hover { border-color: var(--vaccent); background: #16161c; }
+/* ⚠️ The stage is NOT `.sd-scene`. The shared clock repaints every element with
+   that class, so a preview wearing it gets overwritten with the live frame and
+   the whole grid shows one pose. It only needs the box the face scales into. */
+.pet-stage {
+  position: relative; width: 63px; height: 30px; margin: 0 auto;
+  color: var(--star, #e8a83c);
+}
+.pet-name { margin-top: 5px; font-weight: 600; letter-spacing: .2px; }
+.pet-trig { color: var(--vdim); font-size: 9.5px; line-height: 1.25; margin-top: 1px; }
+.pet-hint { color: var(--vdim); font-size: 10px; }
 .db-hd {
   display: flex; align-items: center; justify-content: space-between;
   padding: 8px 10px; border-bottom: 1px solid var(--vborder);

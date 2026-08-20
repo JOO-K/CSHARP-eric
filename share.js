@@ -318,7 +318,11 @@ async function buildShareCard(album, review) {
      .v3-blue-album`). Type is sized in phone px, like the stylesheet. */
   const rating = Math.max(0, Math.min(5, Number(review.rating) || 0));
   const S = BENTO_STRIP, padX = S.x + 12 * U;
-  const f1 = 10.5 * U, f2 = 13 * U, f3 = 9.5 * U;
+  // ⚠️ These are the compact bento's app.css px — album/artist, score, count —
+  // with the dev box's row scales FOLDED IN, because the card has no transform
+  // to inherit them from: 10.5 × 1.13, and 13 / 9.5 × 1.12. Re-tune the rows and
+  // these have to be re-multiplied, or the card stops being a picture of the app.
+  const f1 = 11.9 * U, f2 = 14.5 * U, f3 = 10.5 * U;
   const top = S.y + (S.h - (f1 + 3 * U + f2)) / 2;
   const y1  = top + f1 * 0.80;
   const y2  = top + f1 + 3 * U + f2 * 0.80;
@@ -342,20 +346,24 @@ async function buildShareCard(album, review) {
     g.fillText(SEP + album.year, tx, y1);
   }
 
+  // MAIN, not MONO — the score is the headline and the count beside it is
+  // metadata; see the note on `.v3-blue-score` in app.css for why they differ.
   g.font = '800 ' + f2.toFixed(2) + 'px ' + MAIN;
   g.fillStyle = 'rgba(232,226,214,0.82)';
   const scoreTxt = rating ? rating.toFixed(1) : '—';
   g.fillText(scoreTxt, padX, y2);
-  // `.hstar` is a 12px box, `.hstars` gaps 2px, and the disc fills 91% of the box
-  const vr = 6 * U * 0.91, vstep = 12 * U + 2 * U;
-  let vx = padX + g.measureText(scoreTxt).width + 7 * U + 6 * U;
+  // `.hstar` is a 10px box × the row's 1.12 scale, `.hstars` gaps 2px, and the
+  // disc fills 91% of the box. The 8 is `.v3-blue-stars-row`'s 7px gap scaled;
+  // 5.5 is half a box.
+  const vr = 5.5 * U * 0.91, vstep = 11 * U + 2 * U;
+  let vx = padX + g.measureText(scoreTxt).width + 8 * U + 5.5 * U;
   for (let i = 0; i < 5; i++) {
     shVinyl(g, vx, y2 - f2 * 0.30, vr, gold, empty, box1, rating - i);
     vx += vstep;
   }
   g.font = '400 ' + f3.toFixed(2) + 'px ' + MONO;
   g.fillStyle = faint;
-  g.fillText('your rating', vx - vstep + 13 * U, y2);   // past the last disc's edge
+  g.fillText('your rating', vx - vstep + 12 * U, y2);   // past the last disc's edge (5.5 + 6.5)
 
   g.restore();
 

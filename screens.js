@@ -14,19 +14,27 @@ const SD_ICONS = {
   heart: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7.5-4.9-9.5-9C1 8.5 3 5 6.5 5 9 5 12 8 12 8s3-3 5.5-3C21 5 23 8.5 21.5 12c-2 4.1-9.5 9-9.5 9z"/></svg>`,
 };
 
-/* The scene's host — the face cradled in the bottom bar's scoop.
-   The app's smile, which now and then becomes a kid with headphones on nodding
-   to something. Painted per frame in app.js (SCENE_FRAMES / paintScene) and
-   drawn with SD_DOTS, so it is the same rounded-square pixel as every other
-   brand asset.
+/* The pet — the face cradled in the bottom bar's scoop.
+   SIX DOTS, the same six the live pill's arrow is made of: two eyes and a
+   four-dot mouth arc. It reacts to what you do — favourite, rate, listen, save
+   for later — by moving those six into a different formation.
+
+   ⚠️ Six dots and a CSS transform each, NOT an SD_DOTS pixel grid. The grid
+   swaps a whole sprite per frame, so every change is a cut; these dots inherit
+   `.v3-ring-dot`'s 0.4s spring transition, so a reaction MORPHS out of the
+   smile and settles back into it. The morph is the character. It also means a
+   new reaction is six numbers, not a hand-drawn 21×10 sprite.
+   ⚠️ Only six. A reaction that can't be said in six dots doesn't go in — that
+   constraint is what keeps this legible at 63×30px, where a cat mascot and a
+   whole landscape both died.
 
    ⚠️ Declared up here for the same reason as SD_ICONS: the home screen's `html:`
    is a static template literal evaluated while this file parses, and it calls
    sdScene() inline. Declared below the SCREENS array, the `const` would still be
    in its temporal dead zone at that moment. */
 function sdScene() {
-  // Empty host — paintScene() fills it with an SD_DOTS svg per frame.
-  return `<div class="sd-scene" aria-hidden="true"></div>`;
+  return `<div class="sd-scene" aria-hidden="true"><span class="sd-face sd-face--smile">${
+    '<i class="sd-face-dot"></i>'.repeat(6)}</span></div>`;
 }
 
 const SCREENS = [

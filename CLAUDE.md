@@ -85,8 +85,9 @@ centers in the true middle of the viewport (`#phone-container` fills full width)
 
 A tuning panel floating on the right of `#stage`, behind the toolbar's **⚙ Dev**
 button. Desktop viewer only. It live-tunes the **compact bento's info box** —
-block gap/padding, plus X · Y · Size for each of the two lines — and prints the
-CSS.
+the block's column gap + padding, plus X · Y · Size · Row gap for each of the
+two columns — and prints the CSS. ("Line 1" and "Line 2" are the left and right
+COLUMNS since the two-column rebuild; the labels kept their old names.)
 
 - The sliders write a `<style id="devbox-live">` appended to `<head>`, and
   **`devBoxCss()` produces both that and the Copy CSS output**, so what's on
@@ -98,9 +99,23 @@ CSS.
   the current layout rather than resetting it. If you change those declarations
   in app.css, update `DEVBOX_FIELDS[].def` to match or the panel will silently
   disagree with the stylesheet.
-- Size is a `scale()` on the row (with `transform-origin: left center`), not a
-  font-size — the children carry fixed px sizes, so scaling the row is the lever
-  that doesn't require converting all of them to `em`.
+- ⚠️ **`<style id="devbox-live">` is injected AT LOAD, not when the panel
+  opens**, and it's appended to `<head>` — so at equal specificity it beats
+  app.css for every selector it names. **If an edit to the bento info box
+  appears to do nothing, look at `devBoxCss()` first.** The two-column rebuild
+  spent a full round looking "ignored" because this style was quietly
+  re-applying the old `scale()` on top of it.
+- ⚠️ **Size is a font-size in px, NOT a `scale()`.** It used to be a scale,
+  which worked while the box was two stacked full-width lines. It cannot be one
+  now: a transform on a **grid item** is paint-only, so the track is sized from
+  the untransformed box and the scaled result spills out of `.v3-blue`
+  (`overflow: hidden`) — measured at 11.6px of album title hanging past the
+  right edge. Line 1's size rides on `.v3-blue-info-row` with the album/artist
+  inheriting it as `1em`; line 2's rides on `.v3-blue-score`.
+- **The dev box's output goes into app.css verbatim.** That's the panel's whole
+  point — the tune is settled by eye against the live screen, so retyping it as
+  "equivalent" numbers changes the thing that was approved. If the output can't
+  be shipped as-is, the panel is what needs fixing.
 
 **The sample-review quote is gone from the bento** (`.v3-blue-quote { display:
 none }`). It was already hidden in review mode, so this retires it everywhere;
@@ -108,6 +123,23 @@ the markup and the typewriter in app.js remain and just paint into a hidden
 node, so deleting that one rule brings it back. With two lines instead of three,
 `.v3-blue` moved off `space-between` (which would shove them to the far top and
 bottom of the box) onto a centred stack.
+
+## Pet Box (`initPetBox` in app.js, `#petbox` in index.html)
+
+The nav pet's whole vocabulary, behind the toolbar's **☺ Pet** button. Desktop
+viewer only. One cell per entry in `SCENE_REACTIONS`, each **looping its real
+sequence** with the reaction's name and the action that fires it
+(`PET_TRIGGERS`). Click a cell to play it on the phone.
+
+- **Sequences, not stills.** These reactions only read as themselves in motion —
+  a single frame of `music` is six bars at arbitrary heights and says nothing.
+- ⚠️ **Preview cells must NOT carry `.sd-scene`.** `sceneTick` repaints
+  everything with that class, so a preview wearing it gets stamped with the live
+  frame and the whole grid collapses to one pose. `.pet-stage` exists to be the
+  box the face scales into without being picked up by the clock.
+- Reuses the dev box's `.db-*` chrome and sits one column to its left, so both
+  can be open at once — you can watch the pet while tuning the bento.
+- The preview clock only runs while the panel is open.
 
 ## Roadmap (`roadmap.js` + `roadmap.css`, `#roadmap` in index.html)
 
@@ -542,10 +574,56 @@ Grid children (in order): `.v3-album`, `.v3-right-col` (spans row 1 only), `.v3-
 - Contains: 2 small square album thumbnails (`.v3-red-thumbs` / `.v3-red-thumb`) at top with 9px margin + 5px gap, then one full-width featured album image (`.v3-red-next-img`) filling the rest with 9px margin and 11px border-radius
 
 ### Cell: Blue Box / Reviews (bottom-left)
+**The compact bento runs this cell as TWO COLUMNS** (`.s-home-v3:not(--review)`):
+album · year over the artist on one side, the score at 27px with the vinyls
+under it on the other. **The rating always takes the side away from the CD** —
+so it is on the RIGHT in left-hand mode and on the LEFT in right-hand mode,
+which is why the mirrored arrangement rides `:not(--left)` and the base block is
+the left-hand one. Parking the big number beside the CD read as crowded. In the
+mirrored arrangement the text is right-aligned and **the year leads the album**,
+a deliberate exception to the app's album-before-year convention so the ragged
+edge faces the rating.
+
+The **review count shares row 2 with the vinyls**, on their far side — outward
+in the left-hand layout, inward in the right-hand one — in the same faint mono
+as before. It is a **bare "12.5k"** in the bento (beside a row of discs the
+number reads as a count on its own) and **"12.5k reviews"** on the album page.
+⚠️ The word is a `.v3-rc-long` span the state hides, with its leading space
+*inside* it so nothing trails when it goes. Branching on `.s-home-v3--review`
+in `setMainAlbum` looks equivalent and is **not**: the stars row is painted once
+per album while that class is added and removed underneath it, so the text keeps
+whichever state it was written in — reproducibly "81k revs" on the album page.
+
+The rating column is therefore a 2×2 grid, not a flex column: DOM order is
+score → vinyls → count, and the count has to land *beside* the discs.
+- ⚠️ **Done entirely in CSS, on purpose.** These children are shared with the
+  fullscreen review state, which stacks the same elements in one column, and
+  the artist page sits on top of that — re-nesting them in screens.js means
+  re-deriving both. Everything is scoped `:not(--review)`.
+- ⚠️ **`grid-row: 1` on both items is load-bearing.** With only a column named,
+  sparse auto-placement puts the DOM-first item (the info row, column 2 in the
+  mirrored layout) ahead of the cursor, so the stars row — asking for column 1 —
+  gets pushed to a *second row*. That is the "rating stacked under the title"
+  bug.
+- ⚠️ **Line 1 is three tracks: album, year, and an empty `1fr`.** Two
+  content-sized tracks across a `width: 100%` row both stretch, which parks the
+  year at the far edge with a hole between it and the title. The flexible track
+  also absorbs the artist's span contribution, which would otherwise widen the
+  first two tracks and reopen the same hole.
+- ⚠️ In the mirrored layout `.v3-blue-title` needs `justify-self: stretch` to
+  beat the row's `justify-items: end`. An `end`-aligned grid item is sized to
+  its content, so a long album ran left out of its track and over the year
+  ("2009 · Man On The Moon…" rendered as "2Man On The Moon…"); stretched, the
+  ellipsis in `.v3-blue-album` finally has a box to bite on.
+- `.v3-blue-date:empty` is hidden — the year's `·` lives in a `::before`, and
+  albums fetched from Deezer arrive `_lite` with no year, which left the dot
+  dangling.
+
+Historic geometry, still true of the review state:
 - `padding: 17px 12px`
 - `border-radius: 0 0 15px 15px`
 - Background: `--v3-box2-bg`
-- Contains: `.v3-blue-stars-row` with `align-items: baseline` — score number (16px, 800 weight) + `halfStars(rating, 16)` + review count (9.5px mono)
+- Contains: `.v3-blue-stars-row` with `align-items: baseline` — score number + `halfStars(rating, …)` + review count. Base sizes are score 13px · discs 10px · count 9.5px, with the compact bento scaling the whole row 1.12 (see *Dev Box*). ⚠️ **The two numbers on this line use different families on purpose**: the score is `--font-main` 800 (the headline) and the count is `--font-mono` (metadata). Making them match was tried and flattened the row into one undifferentiated string of digits. `.v3-blue-score` now says `font-family` explicitly rather than inheriting it, so it doesn't read as an oversight.
 - `::before` pseudo-element fills the negative space behind the album's bottom-right rounded corner — extends `top: -17px; height: 17px; right: -2px` to close sub-pixel gaps
 
 ### Cell: Corner Gap (bottom-right)
@@ -656,7 +734,48 @@ cradles the pet. Silhouette is `images/BOTTOM_NAV_FULL_INDENT.svg` (viewBox
   8.5 / 25.5 / 74.5 / 91.5%. ⚠️ Resize the scoop in the SVG and this has to
   follow, or the middle two icons hang over the hole.
 
-### The scene — the face in the notch (`sdScene()` · `paintScene()`)
+### The pet — the face in the notch (`sdScene()` · `paintScene()` · `sceneReact()`)
+
+**Six dots**, the same six the live pill's arrow is made of, at the same offsets
+the retired `.v3-ring--smile` used (they still live in the website proto's
+`bento.css` — that is the reference copy). Two eyes over a four-dot mouth arc.
+It **reacts to what you do**: favourite, rate, listen, save for later, like,
+follow, add to a playlist.
+
+- ⚠️ **Formations, not sprites.** This replaced an SD_DOTS pixel grid that
+  swapped a whole 21×10 SVG per frame. A sprite swap is a CUT; these dots
+  inherit `.v3-ring-dot`'s 0.4s spring, so a reaction MORPHS out of the smile
+  and settles back. A new reaction is six numbers in app.css plus one row in
+  `SCENE_REACTIONS` — no engine change.
+- ⚠️ **The dot must scale WITH the face.** The ring's look is a PROPORTION, not
+  a size: 3px of ink across an 11px mouth span, ~27%. Holding the dot at 4.2px
+  while scaling the offsets 2.4× dropped it to 16% and the face came out
+  spindly and visibly wrong *even though every coordinate was byte-identical to
+  the original*. `--sd-face-k` (2.1) scales the whole thing uniformly.
+- ⚠️ **Six dots can say EXPRESSIONS and BARS. Nothing else.** The first cut had
+  a heart for favourite and a six-point star for rated; on a contact sheet at
+  real size both are just a ring of dots — the identical mistake that killed the
+  cat mascot and the landscape. Every reaction is now the face emoting, and the
+  equaliser is the one object formation that survives. **Build a contact sheet
+  at 63×30 before wiring a new formation up**; on paper a heart is obviously fine.
+- ⚠️ **The log sheet covers the scoop completely** (hit-tested:
+  `elementFromPoint` at its centre returns `.sd-log-song`). Favourite, listen,
+  listen-later and the rating all live in there, so a reaction fired from the
+  sheet would animate behind it unseen. `sceneReact` therefore **queues when
+  covered and replays on close** — which is the better behaviour anyway: you log
+  a record, dismiss the sheet, and the pet is waiting to react. Visibility is
+  decided by STACKING, not a list of overlay classes: walk to the `.app-screen`
+  and compare the highest z-index against the scene's 7 (bare home tops out at
+  5, the log sheet at 200). Don't test `el.contains(elementFromPoint(...))` —
+  `.sd-scene` is `pointer-events: none`, so that is false even on an open home.
+- ⚠️ Anything with class `.sd-scene` gets repainted by the shared clock. A
+  static preview of several formations must use a different wrapper class or
+  the tick sets them all to the same frame.
+- ⚠️ `setLogRating` is called by `openLogSheet` to repaint a saved draft, so the
+  reaction there is guarded by `_sdlogRestoring` — otherwise the pet threw a
+  rating reaction every time you opened an album you'd already scored.
+
+### The retired sprite scene (`SCENE_FRAMES`)
 The scoop holds **two characters in one 21×10 dot grid**, drawn at 63×30px with
 SD_DOTS so they are the same rounded-square pixel as every other brand asset:
 
@@ -898,6 +1017,41 @@ generated versions were built, not this one. Edit the drawing, not the numbers.
   bar to catch a downward one any more.
 - Every screen's scroller clears it with `padding-bottom: 75px` (62px bar + 13).
   A new screen on this shell needs the same.
+
+### Progressive cover load (`sdCover` in app.js, `.sd-pix` in app.css)
+
+Covers resolve from big blocks into small ones while they're still on the wire —
+the brand's dot-matrix language applied to loading. Used by `setMainAlbum` (the
+hero and the CD), the For-You panel, and `slideIn`'s incoming swipe layer.
+
+- ⚠️ **It only runs when the image is actually slow.** Under `PIX_GRACE`
+  (190ms) — cache, wifi, a local file — the cover just appears. An effect on
+  every load is a gimmick, and on a fast connection it's *added latency*: half a
+  second watching pixels resolve over a picture that had already arrived.
+  `PIX_SEEN` makes a cover resolve at most once per session, so swiping back and
+  forth doesn't re-run it.
+- ⚠️ **The placeholder is a real low-resolution FETCH, not a blur of something
+  we already have.** Deezer serves every cover at any size off one path
+  (`…/<md5>/1000x1000-000000-80-0-0.jpg`), so `pixTinyUrl` rewrites that segment
+  for a 56px thumbnail — **1,190 bytes against 46,744**, measured. That is what
+  makes it *progressive* rather than decorative: there is genuinely more picture
+  on screen sooner, which is the entire point on 5G. All 158 remote covers
+  rewrite; the 145 local `images/album-*` files have no variant and never trip
+  the grace timer anyway.
+- ⚠️ **No `crossOrigin`, unlike `computeAlbumColors`.** That one needs it to
+  read pixels back; this one only ever *draws*, and a tainted canvas draws fine.
+  Setting it would make covers fail outright on any host without CORS headers.
+- ⚠️ **The backing store takes the ELEMENT's aspect, not the artwork's.**
+  `.v3-for-single` is 113×415 — stretching a square thumbnail across it smears
+  the blocks into tall rectangles — so the thumbnail is cover-cropped into a
+  canvas of the box's ratio, exactly like `background-size: cover`.
+- ⚠️ `image-rendering: pixelated` **is** the effect (a 5×5 store blown up to the
+  box), and `border-radius: inherit` is required: the canvas rides three
+  elements with three different corners, one of them the album's derived
+  two-axis radius, so any literal value would be wrong on at least two.
+- Steps are `PIX_STEPS` on an ease-in-out over `PIX_MS` — it holds the coarse
+  blocks a beat, then resolves in a rush — then cross-fades to the sharp image.
+  Reduced motion skips the whole thing.
 
 ### Procedural Color System
 `applyAlbumColors(screenEl)` in `app.js` runs after every render:

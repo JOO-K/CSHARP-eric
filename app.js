@@ -142,11 +142,124 @@ function reloadCD(cdEl, newUrl) {
   cdEl.style.transition = 'top 0.14s ease-in';
   cdEl.style.top = '62%';
   setTimeout(() => {
-    cdEl.style.backgroundImage = `url('${newUrl}')`;
+    sdCover(cdEl, newUrl);
     cdEl.style.transition = 'top 0.22s cubic-bezier(0.34,1.28,0.64,1)';
     cdEl.style.top = '87.62%';
     setTimeout(() => { cdEl.style.top = ''; cdEl.style.transition = ''; }, 230);
   }, 150);
+}
+
+/* ── Progressive cover load ────────────────────────────────────
+   Big pixels resolving into small ones while a cover is still on the wire.
+
+   ⚠️ **It only runs when the image is actually slow.** If the picture decodes
+   within `PIX_GRACE` — cache, wifi, a local file — the cover simply appears and
+   none of this happens. An effect that fires every time is a gimmick, and on a
+   fast connection it is worse than a gimmick: it is pure added latency, half a
+   second of watching pixels resolve over a picture that had already arrived.
+
+   ⚠️ **The placeholder is a real low-resolution FETCH, not a blur of something
+   we already have.** Deezer serves every cover at any size off the same path
+   (`…/<md5>/1000x1000-000000-80-0-0.jpg`), so rewriting that one segment gets a
+   ~2KB thumbnail that lands almost immediately on a bad connection. That is
+   what makes this progressive rather than decorative — there is genuinely more
+   picture on screen sooner, which is the whole point on 5G. Local
+   `images/album-*` files have no such variant; they also never trip the grace
+   timer, so they never need one.
+
+   ⚠️ **No `crossOrigin` here, deliberately** — unlike `computeAlbumColors`,
+   which needs it to read pixels back. We only ever DRAW, and a tainted canvas
+   draws fine. Setting it would make the cover fail outright on any host that
+   doesn't send CORS headers. */
+const PIX_GRACE = 190;                       // ms of patience before engaging at all
+const PIX_STEPS = [5, 8, 13, 21, 34, 56];    // canvas backing-store size, coarse → fine
+const PIX_MS    = 620;                       // time to walk the steps
+const PIX_TINY  = 56;                        // thumbnail we fetch (matches the last step)
+const PIX_SEEN  = new Set();                 // covers already resolved once — never again
+
+function pixTinyUrl(url) {
+  return /\/\d+x\d+-/.test(url)
+    ? url.replace(/\/\d+x\d+-/, '/' + PIX_TINY + 'x' + PIX_TINY + '-') : null;
+}
+
+function sdCover(el, url) {
+  if (!el || !url) return;
+  if (el._pixStop) el._pixStop();            // a swipe can outrun the last load
+  const paint = () => { el.style.backgroundImage = `url('${url}')`; };
+
+  // Seen it already, or the user asked for less motion → just show the picture.
+  if (PIX_SEEN.has(url) || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    PIX_SEEN.add(url); paint(); return;
+  }
+
+  let engaged = false, dead = false, cv = null, tiny = null, raf = 0, t0 = 0;
+  let timer = setTimeout(engage, PIX_GRACE);
+
+  const cleanup = () => {
+    clearTimeout(timer); cancelAnimationFrame(raf);
+    if (cv) { cv.remove(); cv = null; }
+    if (el._pixStop) el._pixStop = null;
+  };
+  el._pixStop = () => { dead = true; cleanup(); };
+
+  function draw(n) {
+    if (!cv || !tiny) return;
+    /* Match the ELEMENT's aspect, not the artwork's. `.v3-for-single` is 113×415
+       — stretching a square thumbnail across it would smear the pixels into
+       tall rectangles. So the backing store takes the box's ratio and the
+       thumbnail is cover-cropped into it, exactly like `background-size: cover`. */
+    const ratio = el.clientHeight / Math.max(el.clientWidth, 1) || 1;
+    const w = Math.max(2, n), h = Math.max(2, Math.round(n * ratio));
+    cv.width = w; cv.height = h;
+    const g = cv.getContext('2d');
+    g.imageSmoothingEnabled = false;
+    const s = Math.max(w / tiny.width, h / tiny.height);
+    const dw = tiny.width * s, dh = tiny.height * s;
+    g.drawImage(tiny, (w - dw) / 2, (h - dh) / 2, dw, dh);
+  }
+
+  function walk(ts) {
+    if (dead) return;
+    if (!t0) t0 = ts;
+    const p = Math.min(1, (ts - t0) / PIX_MS);
+    // ease-in-out: holds the coarse blocks a beat, then resolves in a rush
+    const e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+    draw(PIX_STEPS[Math.min(PIX_STEPS.length - 1, Math.floor(e * PIX_STEPS.length))]);
+    if (p < 1) raf = requestAnimationFrame(walk);
+  }
+
+  function engage() {
+    if (dead) return;
+    engaged = true;
+    const src = pixTinyUrl(url);
+    if (!src) return;                        // local file: no small variant, no effect
+    cv = document.createElement('canvas');
+    cv.className = 'sd-pix';
+    el.prepend(cv);                          // behind slideIn's layers and the CD's hole
+    const t = new Image();
+    t.onload = () => {
+      if (dead || !cv) return;
+      tiny = t;
+      draw(PIX_STEPS[0]);
+      requestAnimationFrame(() => { if (cv) cv.style.opacity = '1'; });   // fade in, don't pop
+      raf = requestAnimationFrame(walk);
+    };
+    t.src = src;
+  }
+
+  const full = new Image();
+  full.onload = () => {
+    if (dead) return;
+    PIX_SEEN.add(url);
+    if (!engaged || !cv) { cleanup(); paint(); return; }   // beat the grace timer
+    paint();                                 // sharp underneath, then dissolve the blocks
+    cv.style.transition = 'opacity .24s ease';
+    cv.style.opacity = '0';
+    const gone = cv;
+    setTimeout(() => { if (gone) gone.remove(); if (cv === gone) cv = null; cleanup(); }, 260);
+  };
+  full.onerror = () => { if (!dead) { cleanup(); paint(); } };
+  full.src = url;
 }
 
 function slideIn(el, newUrl, reverse) {
@@ -159,14 +272,22 @@ function slideIn(el, newUrl, reverse) {
   const old = document.createElement('div');
   old.style.cssText = `position:absolute;inset:0;background:${el.style.backgroundImage} center/cover no-repeat;z-index:1;transform:translateX(0);will-change:transform;transition:transform 0.42s cubic-bezier(0.4,0,0.2,1)`;
   const next = document.createElement('div');
-  next.style.cssText = `position:absolute;inset:0;background:url('${newUrl}') center/cover no-repeat;z-index:2;transform:translateX(${enterFrom});will-change:transform;transition:transform 0.42s cubic-bezier(0.4,0,0.2,1)`;
+  // The url is left OFF the shorthand (size/position stay) so the incoming panel
+  // can resolve progressively too — a swipe onto an unloaded cover is exactly
+  // when you're most likely to be staring at an empty box.
+  next.style.cssText = `position:absolute;inset:0;background:center/cover no-repeat;z-index:2;transform:translateX(${enterFrom});will-change:transform;transition:transform 0.42s cubic-bezier(0.4,0,0.2,1)`;
   el.appendChild(old);
   el.appendChild(next);
+  sdCover(next, newUrl);
   requestAnimationFrame(() => requestAnimationFrame(() => {
     old.style.transform = `translateX(${oldExit})`;
     next.style.transform = 'translateX(0)';
     next.addEventListener('transitionend', () => {
-      el.style.backgroundImage = `url('${newUrl}')`;
+      // Hands the cover to the real element. Usually instant — `next` has
+      // already resolved it, so PIX_SEEN short-circuits — but if the swipe
+      // outran the download this keeps the blocks going on `el` instead of
+      // snapping back to an empty box.
+      sdCover(el, newUrl);
       old.remove();
       next.remove();
     }, { once: true });
@@ -189,7 +310,7 @@ function setMainAlbum(screenEl, album, animate = false, animateText = animate) {
   const albumEl = screenEl.querySelector('.v3-album');
   if (albumEl) {
     if (animate) slideIn(albumEl, album.image);
-    else albumEl.style.backgroundImage = `url('${album.image}')`;
+    else sdCover(albumEl, album.image);
     albumEl.onclick = (e) => {
       if (albumEl._swiped) { if (e) e.stopPropagation(); return; }  // a swipe, not a tap
       if (e) e.stopPropagation();   // don't let the tap bubble and undo the fullscreen state
@@ -200,7 +321,7 @@ function setMainAlbum(screenEl, album, animate = false, animateText = animate) {
   const cdEl = screenEl.querySelector('.v3-cd');
   if (cdEl) {
     if (animate) reloadCD(cdEl, album.image);
-    else cdEl.style.backgroundImage = `url('${album.image}')`;
+    else sdCover(cdEl, album.image);
   }
 
   const infoRow = screenEl.querySelector('.v3-blue-info-row');
@@ -233,7 +354,16 @@ function setMainAlbum(screenEl, album, animate = false, animateText = animate) {
 
   const starsRow = screenEl.querySelector('.v3-blue-stars-row');
   if (starsRow) {
-    const html = `<span class="v3-blue-score">${album.rating.toFixed(1)}</span>${halfStars(album.rating, 14)}<span class="v3-blue-count">${window.fmtRc(album.reviewCount)} reviews</span>`;
+    // Just "12.5k" in the compact bento; "12.5k reviews" on the album page. The
+    // bento's count shares a line with the vinyls in a column ~60px wide, and
+    // beside a row of discs the bare number reads as a count on its own.
+    // ⚠️ The word is a SPAN that CSS hides, and the leading space lives inside
+    // it so nothing trails when it goes. Branching on the state class in JS
+    // looks equivalent and is not — this row is painted once per album, while
+    // `.s-home-v3--review` is added and removed under it, so the text would
+    // keep whichever state it happened to be written in.
+    const rc = `${window.fmtRc(album.reviewCount)}<span class="v3-rc-long"> reviews</span>`;
+    const html = `<span class="v3-blue-score">${album.rating.toFixed(1)}</span>${halfStars(album.rating, 14)}<span class="v3-blue-count">${rc}</span>`;
     if (animateText) {
       starsRow.style.cssText += ';transition:opacity 0.18s;opacity:0';
       setTimeout(() => { starsRow.innerHTML = html; starsRow.style.opacity = '1'; }, 200);
@@ -737,12 +867,14 @@ window.plnewCloseList = function ()     { PLNEW.libOpen = null; plnewSync(); };
 window.plnewAddAll = function (name) {
   const pl = plLists().find(l => l.name === name);
   if (!pl) return;
+  sceneReact('playlist');
   const have = new Set(PLNEW.songs.map(s => s.key));
   plTracksFor(pl).forEach(t => { if (!have.has(t.key)) { PLNEW.songs.push(t); have.add(t.key); } });
   plnewSync();
 };
 window.plnewAddSong = function (key) {
   if (PLNEW.songs.some(s => s.key === key)) return;
+  sceneReact('playlist');
   // The pool covers every archive track; a playlist row resolves there too,
   // since plTracksFor() builds its keys the same way.
   const t = plnewPool().find(s => s.key === key)
@@ -1319,6 +1451,7 @@ window.toggleRevUp = function (btn) {
   btn.setAttribute('aria-pressed', String(on));
   const n = btn.querySelector('.v3-up-n');
   if (n) n.textContent = window.fmtRc(base + (on ? 1 : 0));
+  sceneReact(on ? 'like' : 'undo');
 };
 
 /* ── Review comments ──────────────────────────────────────────
@@ -2068,137 +2201,237 @@ function renderFriendFeed(screenEl) {
   }).join('');
 }
 
-/* ── The scene — the face in the nav's scoop ────────────────
-   Two characters in one 21×10 dot grid, drawn with SD_DOTS so they are the same
-   rounded-square pixel as every other brand asset:
+/* ── The pet ─ six dots in the nav's scoop ────────────────────────
+   Two eyes and a four-dot mouth arc — the same six the live pill's arrow is made
+   of, and the same offsets the retired `.v3-ring--smile` used. It reacts to what
+   you DO: favourite, rate, listen, save for later, like, follow.
 
-     · **the smile** — the app's face, back from the retired `.v3-ring--smile`
-       dot formation. It is the resting state and what the scoop reads as at a
-       glance.
-     · **the kid** — headphones on, notes drifting off, nodding. A lofi-radio
-       nod. He is the PAYOFF, not the default: he surfaces for a few seconds at a
-       time and whenever something musical happens (`sceneCheer`).
+   ⚠️ Formations, not sprites. This replaced an SD_DOTS pixel grid that swapped a
+   whole 21×10 SVG per frame, and the difference is the point: a sprite swap is a
+   CUT, while these six dots inherit a 0.4s spring transition and MORPH between
+   formations. The morph is the character. A new reaction is now six numbers in
+   app.css plus one row in SCENE_REACTIONS — not a hand-drawn sprite.
+   ⚠️ The grid is still worth knowing about: it died because detail dies at
+   63×30px, which is also why the budget here is six dots and no more. A cat
+   mascot and a whole landscape were lost to that box before this.
+   ⚠️ Frames live in app.css as `.sd-face--<name>`. paintScene swaps ONE class,
+   so a name with no rule silently renders the previous formation. */
 
-   ⚠️ This replaced a cat mascot, which replaced a whole landscape. Both lost the
-   same way — too much detail for a 63×30px box. The smile survives because it is
-   three shapes; the kid survives because his eyes and mouth are unlit HOLES in a
-   filled head rather than drawn features.
-
-   ⚠️ Every frame must be 10 rows of 21 — paintScene() swaps the whole SVG per
-   frame and nothing re-measures. Design new ones in dot-lab.html (toolbar →
-   ◌ Dots); its `scene · *` presets carry these. */
-const SCENE_FRAMES = {
-  smile:   ['.....................',
-            '.....xx.......xx.....',
-            '.....xx.......xx.....',
-            '.....................',
-            '..x...............x..',
-            '...x.............x...',
-            '....x...........x....',
-            '.....xx........xx....',
-            '.......xxxxxxxx......',
-            '.....................'],
-  // eyes shut to a line
-  blink:   ['.....................',
-            '.....................',
-            '.....xx.......xx.....',
-            '.....................',
-            '..x...............x..',
-            '...x.............x...',
-            '....x...........x....',
-            '.....xx........xx....',
-            '.......xxxxxxxx......',
-            '.....................'],
-  // one eye — keeps the idle from being a two-state flicker
-  wink:    ['.....................',
-            '.....xx..............',
-            '.....xx.......xx.....',
-            '.....................',
-            '..x...............x..',
-            '...x.............x...',
-            '....x...........x....',
-            '.....xx........xx....',
-            '.......xxxxxxxx......',
-            '.....................'],
-  // The lofi kid: headphones on, notes drifting off. ⚠️ The head is 7 wide
-  // so the eyes and mouth can be unlit HOLES in a filled shape — drawn
-  // detail does not survive a 3px dot.
-  kid:     ['..................x..',
-            '..x...............x..',
-            '..x..xxxxxxxxxxx.xx..',
-            '.xx..x.xxxxxxx.x.....',
-            '.....x.xx.x.xx.x.....',
-            '.......xxx.xxx.......',
-            '........xxxxx........',
-            '.........xxx.........',
-            '......xxxxxxxxx......',
-            '.....xxxxxxxxxxx.....'],
-  // …and the nod. The head drops a row and the neck goes with it.
-  kidbob:  ['.................x...',
-            '.................x...',
-            '..x..............xx..',
-            '.xx..xxxxxxxxxxx.....',
-            '.....x.xxxxxxx.x.....',
-            '.....x.xx.x.xx.x.....',
-            '.......xxx.xxx.......',
-            '........xxxxx........',
-            '......xxxxxxxxx......',
-            '.....xxxxxxxxxxx.....'],
-};
-
-/* Above the brand default of 0.56: at ~3px a cell, 0.56 gives sub-2px dots and
-   the face reads as a smudge. Retune in dot-lab.html and paste back. */
-const SCENE_OPTS = { cell: 8, dotFrac: 0.74, cornerFrac: 0.14, cls: 'sd-scene-svg' };
-
-/* The idle rhythm. Mostly the smile, blinking now and then, and every third
-   pass or so the kid puts his headphones on and nods for a few beats before the
-   smile comes back. A face that moves constantly reads as broken rather than
-   alive, so the still frames are long and the moving ones are short. */
+/* The idle rhythm. Mostly the smile, blinking now and then, and every few passes
+   it hums along to itself for a beat or two before settling back.
+   ⚠️ A face that moves constantly reads as broken rather than alive, so the
+   still frames are long and the moving ones are short. */
 const SCENE_LOOP = [
   ['smile', 3200], ['blink', 170], ['smile', 2600], ['wink', 260], ['smile', 3000],
   ['blink', 170], ['blink', 150], ['smile', 2400],
-  // …and he tunes in
-  ['kid', 620], ['kidbob', 300], ['kid', 560], ['kidbob', 300], ['kid', 620],
-  ['kidbob', 300], ['kid', 700],
+  // …and it hums along
+  ['music', 320], ['music2', 320], ['music', 300], ['music2', 320], ['music', 300],
+  ['music2', 320], ['smile', 260],
   ['smile', 3400], ['blink', 170], ['smile', 2800], ['wink', 260],
 ];
-let _sceneStep = 0, _sceneT = null, _sceneBop = 0;
 
+/* ── What the pet reacts to ────────────────────────────────────────────────
+   One entry per thing you can DO. `seq` is cycled for `ms`, then the idle loop
+   picks up where it left off. Adding a reaction is adding a row here plus one
+   `sceneReact('…')` call at the site — no engine changes.
+   ⚠️ Keep every sequence at least two frames. A single held frame reads as the
+   face having got stuck, not as a reaction. */
+const SCENE_REACTIONS = {
+  music:    { seq: [['music', 300], ['music2', 300]],  ms: 1800 },  // swipe · CD · For You
+  listened: { seq: [['music', 300], ['music2', 300]],  ms: 2000 },
+  fav:      { seq: [['love', 420], ['love2', 300]],    ms: 1900 },
+  later:    { seq: [['sleep', 720], ['blink', 420]],   ms: 2000 },
+  rate:     { seq: [['star', 380], ['star2', 320]],    ms: 1800 },
+  like:     { seq: [['yes', 520], ['smile', 260]],     ms: 1500 },
+  comment:  { seq: [['yes', 420], ['wink', 300]],      ms: 1500 },
+  follow:   { seq: [['yes', 420], ['wink', 320]],      ms: 1600 },
+  playlist: { seq: [['star', 340], ['yes', 420]],      ms: 1600 },
+  // Turning something back OFF. Deliberately small — an undo shouldn't
+  // celebrate, it should just acknowledge.
+  undo:     { seq: [['blink', 220], ['smile', 440]],   ms: 900 },
+};
+
+let _sceneStep = 0, _sceneT = null, _sceneRx = null, _sceneQ = [], _sceneQT = null;
+
+/* One class swap. The dots' own transition does the animating, so this is the
+   whole renderer — there is no canvas, no SVG rebuild, and nothing to measure. */
 function paintScene(el, frame) {
-  if (!window.SD_DOTS) return;
-  el.innerHTML = SD_DOTS.svg(SCENE_FRAMES[frame] || SCENE_FRAMES.smile, SCENE_OPTS);
+  const face = el.querySelector('.sd-face');
+  if (!face) return;
+  face.className = 'sd-face sd-face--' + frame;
 }
 
-/* One shared clock paints every scene on screen — the viewer shows the dark and
+/* One shared clock paints every face on screen — the viewer shows the dark and
    light shells side by side and two timers would visibly drift apart. */
 function sceneTick() {
   clearTimeout(_sceneT);
   let frame, hold;
-  if (Date.now() < _sceneBop) {
-    // Reacting: hold the kid and alternate the nod, ignoring the loop's place.
-    frame = (_sceneStep++ % 2) ? 'kidbob' : 'kid';
-    hold = 260;
+  if (_sceneRx && Date.now() < _sceneRx.until) {
+    [frame, hold] = _sceneRx.seq[_sceneRx.i++ % _sceneRx.seq.length];
   } else {
+    _sceneRx = null;
     [frame, hold] = SCENE_LOOP[_sceneStep++ % SCENE_LOOP.length];
   }
   document.querySelectorAll('.sd-scene').forEach(el => paintScene(el, frame));
   _sceneT = setTimeout(sceneTick, Math.max(hold, 120));
 }
 
-/* Something musical happened (album swiped, CD tapped, For You picked) — the kid
-   tunes in for a moment. Fired from reactRing, so the scoop reacts to exactly
-   the same events as the live pill. The window is a TIMESTAMP the tick checks,
-   so nothing has to clean it up. */
-window.sceneCheer = function () {
-  const first = Date.now() >= _sceneBop;
-  _sceneBop = Date.now() + 1600;
-  if (first) { _sceneStep = 0; sceneTick(); }   // cut to him now, don't wait out the current hold
+/* ⚠️ Is the pet actually on screen? The log sheet — where favourite, listen,
+   listen-later and the rating all live — covers the scoop COMPLETELY (verified
+   by hit-test: elementFromPoint at the scoop's centre returns `.sd-log-song`).
+   Reacting there would animate behind the sheet and be seen by nobody, so a
+   covered reaction is QUEUED and replayed when the pet comes back into view.
+   That is also the better behaviour: you log a record, dismiss the sheet, and
+   the pet is waiting to react to what you just did. */
+const SCENE_Z = 7;   // .sd-scene's z-index — keep in step with app.css
+
+function sceneVisible() {
+  const el = document.querySelector('.sd-scene');
+  if (!el) return false;
+  const r = el.getBoundingClientRect();
+  if (!r.width || !r.height) return false;
+  const host = el.closest('.app-screen');
+  const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+  if (!top || !host || !host.contains(top)) return false;
+  /* ⚠️ Don't test `el.contains(top)` — `.sd-scene` is `pointer-events: none`, so
+     the probe always lands on whatever is UNDER it and that test is false even
+     on a wide-open home screen. Compare STACKING instead: walk to the shell and
+     take the highest z-index on the way. Anything covering the pet has to
+     out-stack the nav to do it, so this needs no list of overlay class names —
+     measured, the bare home screen tops out at 5 (`.v3-bottom-nav`) and the log
+     sheet at 200 (`.sd-log-overlay`). */
+  let n = top, z = 0;
+  while (n && n !== host) {
+    const cs = getComputedStyle(n);
+    if (cs.position !== 'static') {
+      const v = parseInt(cs.zIndex, 10);
+      if (!isNaN(v)) z = Math.max(z, v);
+    }
+    n = n.parentElement;
+  }
+  return z <= SCENE_Z;
+}
+
+function sceneFlush() {
+  if (!_sceneQ.length) return;
+  if (!sceneVisible()) {
+    // Poll rather than hooking every overlay's close — one 400ms timer that
+    // only exists while something is waiting, and it works for any sheet.
+    if (!_sceneQT) _sceneQT = setInterval(sceneFlush, 400);
+    return;
+  }
+  clearInterval(_sceneQT); _sceneQT = null;
+  const kind = _sceneQ.shift();
+  scenePlay(kind);
+  // Anything still queued goes after this one finishes, so reactions to a
+  // multi-toggle log read as a little sequence instead of all at once.
+  if (_sceneQ.length) setTimeout(sceneFlush, (SCENE_REACTIONS[kind] || {}).ms || 1200);
+}
+
+function scenePlay(kind) {
+  const rx = SCENE_REACTIONS[kind] || SCENE_REACTIONS.music;
+  // Re-firing the SAME reaction extends it instead of restarting it — otherwise
+  // dragging across the rating track would reset the twinkle on every half-star
+  // and the face would never actually animate.
+  if (_sceneRx && _sceneRx.seq === rx.seq && Date.now() < _sceneRx.until) {
+    _sceneRx.until = Date.now() + rx.ms;
+    return;
+  }
+  _sceneRx = { until: Date.now() + rx.ms, seq: rx.seq, i: 0 };
+  sceneTick();                     // cut to it now, don't wait out the current hold
+}
+
+/* The one entry point. Call it from anywhere the user does a thing. */
+window.sceneReact = function (kind) {
+  if (!SCENE_REACTIONS[kind]) return;
+  if (!sceneVisible()) {
+    if (_sceneQ[_sceneQ.length - 1] !== kind) _sceneQ.push(kind);
+    if (_sceneQ.length > 3) _sceneQ.shift();   // a queue, not a parade
+    if (!_sceneQT) _sceneQT = setInterval(sceneFlush, 400);
+    return;
+  }
+  scenePlay(kind);
+};
+/* Legacy name — reactRing still calls this for swipe / CD / For You. */
+window.sceneCheer = function () { sceneReact('music'); };
+
+/* ══════════════════════════════════════════════════════════════════════════
+   PET BOX — every reaction the pet can play, looping, with what fires it
+   ══════════════════════════════════════════════════════════════════════════
+   Desktop viewer only, behind the toolbar's ☺ Pet button. Each cell runs the
+   REAL `SCENE_REACTIONS` sequence rather than a still, because these reactions
+   only read as themselves in motion — a single frame of `music` is six bars at
+   arbitrary heights and tells you nothing.
+   ⚠️ Cells must not carry `.sd-scene`: `sceneTick` repaints everything with
+   that class, so a preview wearing it gets stamped with the live frame and the
+   grid collapses to one pose. Found the hard way. */
+const PET_TRIGGERS = {
+  music:    'album swipe · CD · For You',
+  listened: 'log sheet → Listened',
+  fav:      'log sheet → Favorite',
+  later:    'log sheet → Listen later',
+  rate:     'log sheet → rating',
+  like:     'thumbs-up a review',
+  comment:  'comment on a review',
+  follow:   'follow an artist',
+  playlist: 'add to a playlist',
+  undo:     'un-toggling any of the above',
+};
+let _petT = null;
+
+function initPetBox() {
+  const body = document.getElementById('pet-body');
+  if (!body || body._built) return;
+  body._built = true;
+  const keys = Object.keys(SCENE_REACTIONS);
+  body.innerHTML = `<div class="pet-grid">${keys.map(k => `
+    <div class="pet-cell" data-k="${k}" title="Play on the phone">
+      <div class="pet-stage"><span class="sd-face sd-face--smile">${
+        '<i class="sd-face-dot"></i>'.repeat(6)}</span></div>
+      <div class="pet-name">${k}</div>
+      <div class="pet-trig">${PET_TRIGGERS[k] || ''}</div>
+    </div>`).join('')}</div>`;
+  // One delegated listener — the grid is rebuilt only once, but this keeps the
+  // cells free of inline handlers like the rest of the viewer's panels.
+  body.addEventListener('click', e => {
+    const cell = e.target.closest('.pet-cell');
+    if (cell) sceneReact(cell.dataset.k);
+  });
+}
+
+/* One clock for the whole grid, stepping each cell through its own sequence.
+   Each cell keeps its own index so sequences of different lengths stay in step
+   with themselves rather than with each other. */
+function petBoxTick() {
+  const body = document.getElementById('pet-body');
+  if (!body) return;
+  body.querySelectorAll('.pet-cell').forEach(cell => {
+    const rx = SCENE_REACTIONS[cell.dataset.k];
+    if (!rx) return;
+    const now = Date.now();
+    if (!cell._next || now >= cell._next) {
+      const [frame, hold] = rx.seq[(cell._i = (cell._i || 0) + 1) % rx.seq.length];
+      cell.querySelector('.sd-face').className = 'sd-face sd-face--' + frame;
+      cell._next = now + hold;
+    }
+  });
+  _petT = setTimeout(petBoxTick, 90);
+}
+
+window.togglePetBox = function () {
+  const box = document.getElementById('petbox');
+  if (!box) return;
+  const open = box.hidden;
+  box.hidden = !open;
+  document.getElementById('btn-petbox')?.classList.toggle('on', open);
+  if (open) { initPetBox(); clearTimeout(_petT); petBoxTick(); }
+  else { clearTimeout(_petT); _petT = null; }   // costs nothing while closed
 };
 
 function initScenes() {
   const els = document.querySelectorAll('.sd-scene');
   if (!els.length) return;
-  els.forEach(el => paintScene(el, 'smile'));   // paint at once — never a blank box
+  els.forEach(el => paintScene(el, 'smile'));   // never a blank box
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   if (!_sceneT) sceneTick();
 }
@@ -2326,7 +2559,7 @@ function applyAlbumIndex(screenEl, idx, animateMain, animateForYou, backward, an
   if (forSingle) {
     const nextIdx = (idx + 1) % seq.length;
     if (animateForYou) slideIn(forSingle, seq[nextIdx].image, backward);
-    else forSingle.style.backgroundImage = `url('${seq[nextIdx].image}')`;
+    else sdCover(forSingle, seq[nextIdx].image);
     preloadForYou(seq, nextIdx);
   }
 }
@@ -2360,7 +2593,7 @@ function populateHomeData(screenEl) {
   const forSingle = screenEl.querySelector('.v3-for-single');
   if (forSingle) {
     const nextIdx = (idx + 1) % seq.length;
-    forSingle.style.backgroundImage = `url('${seq[nextIdx].image}')`;
+    sdCover(forSingle, seq[nextIdx].image);
     preloadForYou(seq, nextIdx);
     // Tapping For You promotes the queued album — same as swiping forward
     forSingle.onclick = (e) => { e.stopPropagation(); reactRing(screenEl, 'foryou'); applyAlbumIndex(screenEl, (screenEl._albumIdx || 0) + 1, true, true); };
@@ -3874,6 +4107,11 @@ function setLogRating(v) {
   ov.querySelector('.sd-log-stars-fill').style.width = (v / 5 * 100) + '%';
   ov.querySelector('.sd-log-rate-val').textContent = v ? String(v).replace(/\.0$/, '') : '';
   saveLog(true);          // a tap, not typing — no reason to debounce it
+  // ⚠️ Only for a real tap. openLogSheet() calls this to REPAINT a saved draft,
+  // so without the guard the pet threw a rating reaction every time the sheet
+  // opened on an album you'd already scored — the same reason saveLog() checks
+  // this flag two lines up.
+  if (!_sdlogRestoring) sceneReact('rate');
 }
 
 function toggleLogOpt(k, btn) {
@@ -3881,6 +4119,8 @@ function toggleLogOpt(k, btn) {
   SDLOG[k] = !SDLOG[k];
   btn.classList.toggle('on', SDLOG[k]);
   saveLog(true);
+  // The pet is behind the sheet right now, so this queues and plays on close.
+  sceneReact(SDLOG[k] ? k : 'undo');
 }
 
 /* ============================================================
@@ -4832,21 +5072,39 @@ function renderPersonaBar() {
    `.s-home-v3:not(.s-home-v3--review)` — (0,2,0), which beats the base
    `.v3-blue-info-row` declarations without touching the review/album state.
    Defaults below are the CURRENT values in app.css, so an untouched panel emits
-   the layout as it already stands. */
+   the layout as it already stands.
+   ⚠️ This panel writes a <style> that is injected AT LOAD, not when the panel
+   opens — and it is appended to <head>, so at equal specificity it beats
+   app.css. Anything it emits therefore silently overrides the stylesheet for
+   the same selector. If a change to app.css appears to do nothing in the bento
+   info box, look here first; that is exactly how the two-column rebuild spent a
+   round being "ignored".
+
+   ⚠️ The box is now TWO COLUMNS (album·year over artist on one side, the score
+   with the vinyls under it on the other), so "Line 1" and "Line 2" are really
+   the left and right columns. **Size is a font-size in px, no longer a
+   `scale()`** — a transform on a grid item is paint-only, so the track is sized
+   from the untransformed box and the scaled result spills out of `.v3-blue`,
+   which clips. Line 1's size rides on `.v3-blue-info-row` and the album/artist
+   inherit it as `1em`; line 2's rides on `.v3-blue-score`. */
 
 const DEVBOX_FIELDS = [
   { grp: 'Block' },
-  { k: 'gap',  label: 'Gap',   min: 0,   max: 24, step: 0.5, def: 3 },
+  { k: 'gap',  label: 'Col gap', min: 0, max: 40, step: 0.5, def: 10 },
   { k: 'padT', label: 'Pad T', min: 0,   max: 24, step: 0.5, def: 9 },
   { k: 'padL', label: 'Pad L', min: 0,   max: 32, step: 0.5, def: 12 },
-  { grp: 'Line 1 — album · artist' },
-  { k: 'l1x', label: 'X',     min: -20, max: 20, step: 0.5, def: 0 },
-  { k: 'l1y', label: 'Y',     min: -20, max: 20, step: 0.5, def: -4.5 },
-  { k: 'l1s', label: 'Size',  min: 0.6, max: 1.8, step: 0.01, def: 1 },
+  { grp: 'Line 1 — album · year / artist' },
+  { k: 'l1x', label: 'X',       min: -20, max: 20, step: 0.5, def: 0 },
+  { k: 'l1y', label: 'Y',       min: -20, max: 20, step: 0.5, def: -1.5 },
+  { k: 'l1s', label: 'Size',    min: 7,   max: 20, step: 0.1, def: 13 },
+  { k: 'l1g', label: 'Row gap', min: 0,   max: 12, step: 0.5, def: 5 },
   { grp: 'Line 2 — rating' },
-  { k: 'l2x', label: 'X',     min: -20, max: 20, step: 0.5, def: 0 },
-  { k: 'l2y', label: 'Y',     min: -20, max: 20, step: 0.5, def: -0.5 },
-  { k: 'l2s', label: 'Size',  min: 0.6, max: 1.8, step: 0.01, def: 1 },
+  { k: 'l2x', label: 'X',       min: -20, max: 20, step: 0.5, def: 0 },
+  { k: 'l2y', label: 'Y',       min: -20, max: 20, step: 0.5, def: -3.5 },
+  { k: 'l2s', label: 'Size',    min: 12,  max: 44, step: 0.5, def: 22.5 },
+  { k: 'l2g', label: 'Row gap', min: 0,   max: 12, step: 0.5, def: 1 },
+  // Count ↔ vinyls, which share row 2 of the rating column.
+  { k: 'l2cg', label: 'Revs gap', min: 0, max: 20, step: 0.5, def: 5 },
 ];
 
 const DEVBOX = {};
@@ -4856,20 +5114,23 @@ function devBoxCss() {
   const d = DEVBOX, n = v => (Math.round(v * 100) / 100);
   return `/* Compact bento info box — tuned in the dev box */
 .s-home-v3:not(.s-home-v3--review) .v3-blue {
-  gap: ${n(d.gap)}px;
+  column-gap: ${n(d.gap)}px;
   padding: ${n(d.padT)}px ${n(d.padL)}px 8px;
 }
 .s-home-v3:not(.s-home-v3--review) .v3-blue-info-row {
   left: ${n(d.l1x)}px;
   top: ${n(d.l1y)}px;
-  transform: scale(${n(d.l1s)});
-  transform-origin: left center;
+  font-size: ${n(d.l1s)}px;
+  row-gap: ${n(d.l1g)}px;
 }
 .s-home-v3:not(.s-home-v3--review) .v3-blue-stars-row {
   left: ${n(d.l2x)}px;
   top: ${n(d.l2y)}px;
-  transform: scale(${n(d.l2s)});
-  transform-origin: left center;
+  row-gap: ${n(d.l2g)}px;
+  column-gap: ${n(d.l2cg)}px;
+}
+.s-home-v3:not(.s-home-v3--review) .v3-blue-score {
+  font-size: ${n(d.l2s)}px;
 }`;
 }
 
@@ -5325,6 +5586,7 @@ window.toggleProfFollow = function (btn) {
   btn.setAttribute('aria-pressed', on ? 'true' : 'false');
   const lbl = btn.querySelector('.prof-follow-lbl');
   if (lbl) lbl.textContent = on ? 'Following' : 'Follow';
+  sceneReact(on ? 'follow' : 'undo');
 };
 
 /* ══════════════════════════════════════════════════════════════════════════

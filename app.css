@@ -2649,9 +2649,141 @@
   pointer-events: none;
   color: var(--star, #e8a83c);
 }
-/* Each frame is an SD_DOTS svg, swapped wholesale by paintScene(). Dots fill
-   with currentColor, so the scene tints from the rule above. */
-.sd-scene svg { display: block; width: 100%; height: 100%; }
+/* ══ The pet — six dots, one formation per reaction ═══════════════════════
+   The same six the live pill's arrow is made of. Formation classes below move
+   each dot; `.sd-face-dot`'s transition does the rest, so a reaction MORPHS out
+   of the smile and settles back rather than cutting to a new sprite.
+
+   ⚠️ Every offset is a multiple of the 20×20 ring the numbers were authored in,
+   then scaled by `--sd-face-k` on the host — so the face can be resized without
+   retyping 60 transforms. Keep new formations in those same units.
+   ⚠️ Six dots is the budget. Reactions that need a seventh get cut, not
+   squeezed: this box is 63×30px and detail is what killed the two mascots
+   before it. Dots 1–2 are the eyes, 3–6 the mouth arc, left to right. */
+.sd-face {
+  /* ⚠️ 2.4, measured, not guessed: the formation's ink is 12.3 × 9.7px at k=1
+     and the scoop gives it 55 × 26, so HEIGHT is the binding constraint
+     (2.4 fills it; fitting the width instead would want 4.1 and overflow the
+     notch). The first pass shipped 1.35 and the face read as a small ring
+     floating in the bar rather than a character sitting in it. */
+  --sd-face-k: 2.1;
+  position: absolute; inset: 0;
+  transform: scale(var(--sd-face-k));   /* offsets are authored at the 20×20 ring */
+  transform-origin: center center;
+}
+.sd-face-dot {
+  position: absolute; top: 50%; left: 50%;
+  /* ⚠️ 3px, and it must scale WITH the face — do not counter-scale it to keep
+     the dots small. The ring's look is a proportion, not a size: 3px of ink
+     across an 11px mouth span, ~27%. Holding the dot at 4.2px while the offsets
+     grew 2.4× dropped that to 16% and the face came out spindly and wrong even
+     though every coordinate was byte-identical to the original. */
+  width: 3px; height: 3px; margin: -1.5px;
+  border-radius: 50%;
+  background: currentColor;
+  /* The same spring the pill's dots morph on — this IS the brand's motion. */
+  transition: transform 0.4s cubic-bezier(0.34, 1.45, 0.5, 1), opacity 0.25s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sd-face-dot { transition: none; }
+}
+
+/* Rest — two eyes over a four-dot smile. Recovered verbatim from the retired
+   `.v3-ring--smile`, so the pet is the face the app already had. */
+.sd-face--smile .sd-face-dot:nth-child(1) { transform: translate(-3.5px, -4px); }
+.sd-face--smile .sd-face-dot:nth-child(2) { transform: translate( 3.5px, -4px); }
+.sd-face--smile .sd-face-dot:nth-child(3) { transform: translate(-5.5px, 1.5px); }
+.sd-face--smile .sd-face-dot:nth-child(4) { transform: translate(-2px,   4px); }
+.sd-face--smile .sd-face-dot:nth-child(5) { transform: translate( 2px,   4px); }
+.sd-face--smile .sd-face-dot:nth-child(6) { transform: translate( 5.5px, 1.5px); }
+
+/* Blink — the eyes drop onto the brow line. Two dots move, four hold. */
+.sd-face--blink .sd-face-dot:nth-child(1) { transform: translate(-3.5px, -2.4px) scaleY(0.4); }
+.sd-face--blink .sd-face-dot:nth-child(2) { transform: translate( 3.5px, -2.4px) scaleY(0.4); }
+.sd-face--blink .sd-face-dot:nth-child(3) { transform: translate(-5.5px, 1.5px); }
+.sd-face--blink .sd-face-dot:nth-child(4) { transform: translate(-2px,   4px); }
+.sd-face--blink .sd-face-dot:nth-child(5) { transform: translate( 2px,   4px); }
+.sd-face--blink .sd-face-dot:nth-child(6) { transform: translate( 5.5px, 1.5px); }
+
+/* Wink — one eye only, so the idle isn't a two-state flicker. */
+.sd-face--wink .sd-face-dot:nth-child(1) { transform: translate(-3.5px, -4px); }
+.sd-face--wink .sd-face-dot:nth-child(2) { transform: translate( 3.5px, -2.4px) scaleY(0.4); }
+.sd-face--wink .sd-face-dot:nth-child(3) { transform: translate(-5.5px, 1.5px); }
+.sd-face--wink .sd-face-dot:nth-child(4) { transform: translate(-2px,   4px); }
+.sd-face--wink .sd-face-dot:nth-child(5) { transform: translate( 2px,   4px); }
+.sd-face--wink .sd-face-dot:nth-child(6) { transform: translate( 5.5px, 1.5px); }
+
+/* ⚠️ These were a heart outline and a six-point star, and NEITHER READ. Six
+   4px dots cannot describe a shape you have to recognise — at 63×30px they are
+   just a ring of dots, which is the identical mistake that killed the cat
+   mascot and the landscape before it. What six dots CAN say is an EXPRESSION
+   (the mouth arc bends, the eyes change size) and BARS. So every reaction below
+   is the face emoting, and the equaliser is the one object formation that
+   survives. Judge a new formation on a contact sheet at real size before
+   wiring it up — on paper a heart is obviously fine, and it isn't.
+
+   FAVOURITE — beaming: eyes squeezed shut with joy over a deep wide smile… */
+.sd-face--love .sd-face-dot:nth-child(1) { transform: translate(-3.6px, -3.4px) scale(1.5, 0.4); }
+.sd-face--love .sd-face-dot:nth-child(2) { transform: translate( 3.6px, -3.4px) scale(1.5, 0.4); }
+.sd-face--love .sd-face-dot:nth-child(3) { transform: translate(-6.2px,  0.6px); }
+.sd-face--love .sd-face-dot:nth-child(4) { transform: translate(-2.2px,  5px); }
+.sd-face--love .sd-face-dot:nth-child(5) { transform: translate( 2.2px,  5px); }
+.sd-face--love .sd-face-dot:nth-child(6) { transform: translate( 6.2px,  0.6px); }
+/* …and open again, still grinning. Alternating the two is the delight. */
+.sd-face--love2 .sd-face-dot:nth-child(1) { transform: translate(-3.6px, -4.6px) scale(1.4); }
+.sd-face--love2 .sd-face-dot:nth-child(2) { transform: translate( 3.6px, -4.6px) scale(1.4); }
+.sd-face--love2 .sd-face-dot:nth-child(3) { transform: translate(-6.2px,  0.6px); }
+.sd-face--love2 .sd-face-dot:nth-child(4) { transform: translate(-2.2px,  5px); }
+.sd-face--love2 .sd-face-dot:nth-child(5) { transform: translate( 2.2px,  5px); }
+.sd-face--love2 .sd-face-dot:nth-child(6) { transform: translate( 6.2px,  0.6px); }
+
+/* RATED — impressed: eyes go wide and the mouth drops to a small open O. */
+.sd-face--star .sd-face-dot:nth-child(1) { transform: translate(-3.6px, -4.4px) scale(1.55); }
+.sd-face--star .sd-face-dot:nth-child(2) { transform: translate( 3.6px, -4.4px) scale(1.55); }
+.sd-face--star .sd-face-dot:nth-child(3) { transform: translate(-3px,   2.2px); }
+.sd-face--star .sd-face-dot:nth-child(4) { transform: translate(-1px,   5px); }
+.sd-face--star .sd-face-dot:nth-child(5) { transform: translate( 1px,   5px); }
+.sd-face--star .sd-face-dot:nth-child(6) { transform: translate( 3px,   2.2px); }
+/* …then it breaks into the widest grin it has. */
+.sd-face--star2 .sd-face-dot:nth-child(1) { transform: translate(-4px, -4.2px) scale(1.2); }
+.sd-face--star2 .sd-face-dot:nth-child(2) { transform: translate( 4px, -4.2px) scale(1.2); }
+.sd-face--star2 .sd-face-dot:nth-child(3) { transform: translate(-6.8px, 0.4px); }
+.sd-face--star2 .sd-face-dot:nth-child(4) { transform: translate(-2.4px, 5px); }
+.sd-face--star2 .sd-face-dot:nth-child(5) { transform: translate( 2.4px, 5px); }
+.sd-face--star2 .sd-face-dot:nth-child(6) { transform: translate( 6.8px, 0.4px); }
+
+/* LISTEN LATER — the face droops asleep: eyes shut, mouth flattens, and the
+   whole thing sinks a couple of px. Sleep is the absence of expression. */
+.sd-face--sleep .sd-face-dot:nth-child(1) { transform: translate(-3.5px, -1.6px) scaleY(0.4); }
+.sd-face--sleep .sd-face-dot:nth-child(2) { transform: translate( 3.5px, -1.6px) scaleY(0.4); }
+.sd-face--sleep .sd-face-dot:nth-child(3) { transform: translate(-4.5px,  4.2px); }
+.sd-face--sleep .sd-face-dot:nth-child(4) { transform: translate(-1.5px,  4.6px); }
+.sd-face--sleep .sd-face-dot:nth-child(5) { transform: translate( 1.5px,  4.6px); }
+.sd-face--sleep .sd-face-dot:nth-child(6) { transform: translate( 4.5px,  4.2px); }
+
+/* LISTENED / anything musical — the six stand up as an equaliser and bounce.
+   `music2` is the same bars at different heights; alternating the two is the
+   bounce, with no keyframes to keep in sync with the JS clock. */
+.sd-face--music .sd-face-dot:nth-child(1) { transform: translate(-7.5px,  2px) scaleY(3.2); }
+.sd-face--music .sd-face-dot:nth-child(2) { transform: translate(-4.5px, -1px) scaleY(5.4); }
+.sd-face--music .sd-face-dot:nth-child(3) { transform: translate(-1.5px,  3px) scaleY(2.2); }
+.sd-face--music .sd-face-dot:nth-child(4) { transform: translate( 1.5px, -2px) scaleY(6.2); }
+.sd-face--music .sd-face-dot:nth-child(5) { transform: translate( 4.5px,  2px) scaleY(3.2); }
+.sd-face--music .sd-face-dot:nth-child(6) { transform: translate( 7.5px,  0)   scaleY(4.4); }
+.sd-face--music2 .sd-face-dot:nth-child(1) { transform: translate(-7.5px, -1px) scaleY(5.2); }
+.sd-face--music2 .sd-face-dot:nth-child(2) { transform: translate(-4.5px,  3px) scaleY(2.2); }
+.sd-face--music2 .sd-face-dot:nth-child(3) { transform: translate(-1.5px, -2px) scaleY(6px); }
+.sd-face--music2 .sd-face-dot:nth-child(4) { transform: translate( 1.5px,  2.5px) scaleY(2.6); }
+.sd-face--music2 .sd-face-dot:nth-child(5) { transform: translate( 4.5px, -1.5px) scaleY(5.6); }
+.sd-face--music2 .sd-face-dot:nth-child(6) { transform: translate( 7.5px,  2.5px) scaleY(2.4); }
+
+/* LIKED / FOLLOWED / PLAYLISTED — the generic yes: a tick. */
+.sd-face--yes .sd-face-dot:nth-child(1) { transform: translate(-6px,  -0.5px); }
+.sd-face--yes .sd-face-dot:nth-child(2) { transform: translate(-3.5px, 2px); }
+.sd-face--yes .sd-face-dot:nth-child(3) { transform: translate(-1px,   4.4px); }
+.sd-face--yes .sd-face-dot:nth-child(4) { transform: translate( 1.6px, 1.4px); }
+.sd-face--yes .sd-face-dot:nth-child(5) { transform: translate( 4.2px,-1.8px); }
+.sd-face--yes .sd-face-dot:nth-child(6) { transform: translate( 6.8px,-5px); }
 
 /* now shown in every state, including the fullscreen review (album / artist) view —
    the friends-listening ticker stays visible above the nav at all times */
@@ -3304,11 +3436,203 @@
   font-weight: 400;
   color: rgba(232,226,214,0.55);
 }
-/* Sits 2px higher than the base -2.5px. Compact only — the review state stacks
-   this row into a column and wants the base offset.
-   ⚠️ Mirrored by DEVBOX_FIELDS l1y.def in app.js; change both or the dev box
-   silently emits the old position. */
-.s-home-v3:not(.s-home-v3--review) .v3-blue-info-row { top: -4.5px; }
+/* Compact bento info box — block metrics (the dev box's Gap / Pad T / Pad L).
+   ⚠️ Mirrored by DEVBOX_FIELDS in app.js; change both or the panel silently
+   emits the old numbers.
+   ⚠️ The X / Y / Size knobs are ZEROED here, and the Size one has to stay that
+   way: a `transform: scale()` on a grid item is a PAINT-time effect, so the
+   grid sizes the track from the item's untransformed box and the scaled result
+   spills outside it — measured at 11.6px of the album title hanging past the
+   right edge of `.v3-blue`, which clips. The old single-line layout had no
+   tracks to overflow, which is why the same numbers were fine there. Tune the
+   type sizes below instead. */
+.s-home-v3:not(.s-home-v3--review) .v3-blue {
+  padding: 9px 12px 8px;
+  column-gap: 10px;
+}
+
+/* ══ Compact bento info box — TWO COLUMNS ═══════════════════════════════════
+   ┌──────────────────────────┬──────────┐
+   │ Album · 2019             │          │
+   │                          │     4.4  │   ← score, ~1.5 text lines tall
+   │ Artist                   │  ●●●●◐   │
+   └──────────────────────────┴──────────┘
+   ⚠️ CSS only, and deliberately so. `.v3-blue`'s children are SHARED with the
+   fullscreen review state, which stacks the very same elements as artist /
+   album+year / stars in a single column — so re-nesting them in screens.js to
+   make two columns here would mean re-deriving that state as well, along with
+   the artist page that sits on top of it. Everything below is scoped
+   `:not(--review)` and both rows stay real elements, which also keeps the dev
+   box's X / Y / Size knobs pointed at something.
+   ⚠️ Specificity, not order, is what makes these win: `.v3-blue { gap: 3px }`
+   further down the file is (0,1,0) against this block's (0,3,0). Don't "tidy"
+   these into the plain `.v3-blue` rules. */
+.s-home-v3:not(.s-home-v3--review) .v3-blue {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto;
+  align-items: center;
+  gap: 0 10px;
+}
+/* ⚠️ `grid-row: 1` is load-bearing, not decoration. With only a column named,
+   auto-placement runs in sparse mode: the info row is first in the DOM, takes
+   column 2 in the mirrored layout, and leaves the cursor past column 1 — so the
+   stars row, asking for a column BEHIND the cursor, gets pushed to a second row.
+   That is what "two rows, 24px and 35px" was: the rating stacked under the
+   title instead of beside it, and the box overflowed by the difference. */
+.s-home-v3:not(.s-home-v3--review) .v3-blue-info-row,
+.s-home-v3:not(.s-home-v3--review) .v3-blue-stars-row {
+  grid-row: 1;
+  transform: none;   /* see the note on the dev box's Size knob above */
+  top: 0; left: 0;
+}
+.s-home-v3:not(.s-home-v3--review) .v3-blue-info-row  { grid-column: 1; }
+.s-home-v3:not(.s-home-v3--review) .v3-blue-stars-row { grid-column: 2; }
+
+/* Left column — album · year over the artist. A grid rather than two flex rows
+   so the year keeps its own track: the album can then ellipsize against
+   `minmax(0, auto)` without the year being pushed out of the box with it. */
+/* ⚠️ THREE tracks, and the third is the point: album, year, then an empty `1fr`
+   that eats the leftover width. Two `auto`/`max-content` tracks across a
+   `width: 100%` row both stretch instead, which parked the year at the far edge
+   with a hole between it and the title. The flexible track also absorbs the
+   artist's contribution — it spans all three, and without somewhere flexible to
+   put that excess it would widen the title/year tracks and reopen the hole. */
+.s-home-v3:not(.s-home-v3--review) .v3-blue-info-row {
+  display: grid;
+  grid-template-columns: minmax(0, max-content) max-content 1fr;
+  align-items: baseline;
+  column-gap: 0;      /* the year's ::before dot carries its own margin */
+  width: 100%;
+}
+.s-home-v3:not(.s-home-v3--review) .v3-blue-title        { grid-area: 1 / 1; min-width: 0; }
+.s-home-v3:not(.s-home-v3--review) .v3-blue-date--inline { grid-area: 1 / 2; }
+/* Spans every track so a long name uses the full column width, not just the
+   album's. nowrap + ellipsis because it can no longer share a line. */
+.s-home-v3:not(.s-home-v3--review) .v3-blue-artist {
+  grid-area: 2 / 1 / 3 / 4;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* The album/artist separator only made sense while they shared a line. */
+.s-home-v3:not(.s-home-v3--review) .v3-blue-sep { display: none; }
+/* ⚠️ The year's dot lives in a ::before, so a yearless album left it dangling
+   after the title. That is not an edge case here: albums pulled from Deezer at
+   runtime arrive `_lite` with no year at all (see the recs section in
+   CLAUDE.md), and setMainAlbum writes `album.year || ''` into this span. */
+.v3-blue-date:empty { display: none; }
+
+/* Right column — the score, with the review count and the vinyls sharing the
+   line beneath it. Two rows of a 2-track grid rather than a flex column,
+   because the count has to sit BESIDE the discs, not above or below them, and
+   the DOM order is score → vinyls → count. Grid placement reorders them
+   without touching screens.js (and so without touching the review state, which
+   keeps all three on one flex line). */
+.s-home-v3:not(.s-home-v3--review) .v3-blue-stars-row {
+  display: grid;
+  grid-template-columns: auto auto;
+  justify-content: end;     /* both tracks hug the outer edge */
+  align-items: baseline;
+}
+.s-home-v3:not(.s-home-v3--review) .v3-blue-score {
+  grid-area: 1 / 1 / 2 / 3;   /* spans the count + vinyls beneath it */
+  justify-self: end;
+  letter-spacing: -0.02em;    /* big digits open up; pull them back together */
+  line-height: 1;
+}
+.s-home-v3:not(.s-home-v3--review) .v3-blue-count  { grid-area: 2 / 1; }
+/* Bare "12.5k" here; "12.5k reviews" on the album page. The word is a span the
+   state hides — see the note in setMainAlbum for why this can't be a JS branch. */
+.s-home-v3:not(.s-home-v3--review) .v3-rc-long { display: none; }
+.s-home-v3:not(.s-home-v3--review) .v3-blue-stars-row .hstars { grid-area: 2 / 2; }
+/* ⚠️ The two children take `1em` rather than a number so the ROW's font-size is
+   the single lever, which is what the dev box's Line 1 Size slider turns.
+   Their base rules declare 10.5px outright, so this has to override them. */
+.s-home-v3:not(.s-home-v3--review) .v3-blue-album,
+.s-home-v3:not(.s-home-v3--review) .v3-blue-artist { font-size: 1em; }
+
+/* ── RIGHT-hand mode: the whole box mirrors ────────────────────────────────
+   Rating to the left, text to the right and right-aligned. ⚠️ And the YEAR
+   leads the album: it's the shorter, lighter token, so putting it on the
+   outside edge keeps the ragged edge next to the rating instead of a hard
+   column of two flush-right titles. It inverts the app's usual
+   album-before-year order — a deliberate, layout-only exception.
+   ⚠️ The rating always sits on the side AWAY FROM THE CD, which is why this
+   arrangement rides `:not(--left)` while the base block above is the left-hand
+   one. The CD is bottom-right in right-hand mode and bottom-left in left-hand
+   mode, and parking the big number next to it read as crowded. If the CD ever
+   moves, these two blocks swap selectors — nothing else about them changes. */
+.s-home-v3:not(.s-home-v3--left):not(.s-home-v3--review) .v3-blue {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+.s-home-v3:not(.s-home-v3--left):not(.s-home-v3--review) .v3-blue-info-row  { grid-column: 2; }
+.s-home-v3:not(.s-home-v3--left):not(.s-home-v3--review) .v3-blue-stars-row { grid-column: 1; }
+
+/* Same three tracks, reversed: the `1fr` leads so the pair is pushed against
+   the right edge, with the year on the outside. */
+.s-home-v3:not(.s-home-v3--left):not(.s-home-v3--review) .v3-blue-info-row {
+  grid-template-columns: 1fr max-content minmax(0, max-content);
+  justify-items: end;
+  text-align: right;
+}
+.s-home-v3:not(.s-home-v3--left):not(.s-home-v3--review) .v3-blue-date--inline { grid-area: 1 / 2; }
+/* ⚠️ `justify-self: stretch` overrides the row's `justify-items: end` for this
+   one item, and it is what makes the title ELLIPSISE instead of overflowing.
+   An `end`-aligned grid item is sized to its content, so a long album ran left
+   out of its track and straight over the year — "2009 · Man On The Moon…"
+   rendered as "2Man On The Moon…". Stretched, it fills the track and the
+   ellipsis inside `.v3-blue-album` finally has a box to bite on. */
+.s-home-v3:not(.s-home-v3--left):not(.s-home-v3--review) .v3-blue-title {
+  grid-area: 1 / 3;
+  justify-self: stretch;
+}
+/* The dot has to follow the year now instead of leading it. */
+.s-home-v3:not(.s-home-v3--left):not(.s-home-v3--review) .v3-blue-date--inline::before { content: none; }
+.s-home-v3:not(.s-home-v3--left):not(.s-home-v3--review) .v3-blue-date--inline::after {
+  content: '·'; margin-left: 4px;
+  font-size: 8px; color: rgba(232,226,214,0.22);
+}
+/* The rating column sits on the LEFT here, so everything in it flips: the
+   tracks hug the inner edge and the count moves to the far side of the discs,
+   keeping it against the text column rather than the screen edge. */
+.s-home-v3:not(.s-home-v3--left):not(.s-home-v3--review) .v3-blue-stars-row {
+  justify-content: start;
+}
+.s-home-v3:not(.s-home-v3--left):not(.s-home-v3--review) .v3-blue-score { justify-self: start; }
+.s-home-v3:not(.s-home-v3--left):not(.s-home-v3--review) .v3-blue-count { grid-area: 2 / 2; }
+.s-home-v3:not(.s-home-v3--left):not(.s-home-v3--review) .v3-blue-stars-row .hstars { grid-area: 2 / 1; }
+
+/* ══ Compact bento info box — tuned in the dev box, pasted verbatim ═════════
+   ⚠️ Mirrored by DEVBOX_FIELDS in app.js; change both or the panel silently
+   emits the old numbers — and since #devbox-live is injected at load and wins
+   ties, a mismatch means the panel overrides the stylesheet on every page view.
+   Kept LAST in this section so it wins the (0,3,0) ties against the layout
+   rules above, which is what makes it safe to paste straight from Copy CSS. */
+.s-home-v3:not(.s-home-v3--review) .v3-blue {
+  column-gap: 10px;
+  padding: 9px 12px 8px;
+}
+.s-home-v3:not(.s-home-v3--review) .v3-blue-info-row {
+  left: 0px;
+  top: -1.5px;
+  font-size: 13px;
+  row-gap: 5px;
+}
+/* ⚠️ One token changed from the pasted output: `gap: 1px` → `row-gap: 1px`.
+   The slider is labelled Row gap, but `gap` sets BOTH axes, which crushed the
+   count-to-vinyls spacing to 1px along with it. devBoxCss now emits the two
+   axes separately, so the next Copy CSS matches this as written. */
+.s-home-v3:not(.s-home-v3--review) .v3-blue-stars-row {
+  left: 0px;
+  top: -3.5px;
+  row-gap: 1px;
+  column-gap: 5px;
+}
+.s-home-v3:not(.s-home-v3--review) .v3-blue-score {
+  font-size: 22.5px;
+}
+
 /* Album title + (fullscreen) release-year wrapper.
    NOTE: no overflow:hidden here — on an inline-flex it moves the baseline to the box's
    bottom edge, which clips the album's descenders. The album ellipsizes itself. */
@@ -3326,8 +3650,17 @@
   display: flex; align-items: baseline; gap: 7px;
   position: relative; top: -0.5px;   /* was 2.5px — nudged the rating row up 3px */
 }
+/* ⚠️ DM Sans 800, DELIBERATELY not the mono the count beside it uses. The two
+   numbers on this line do different jobs: the score is the headline and wants
+   the sans's tighter, heavier digits, while the count is a quiet piece of
+   metadata and reads as one because it's mono. Matching them was tried and
+   flattened the line into a single undifferentiated string of numbers.
+   It's stated explicitly because `--font-main` here is inherited, not declared,
+   which makes it look like an oversight next to the count's explicit mono.
+   ⚠️ share.js draws this line too — `f2` and its MAIN font follow. */
 .v3-blue-score {
   font-size: 13px; font-weight: 800;
+  font-family: var(--font-main);
   color: rgba(232,226,214,0.82);
   letter-spacing: 0; line-height: 1;
 }
@@ -3397,6 +3730,26 @@
   width: 10px; height: 10px; border-radius: 50%;
   background: #111116;
   box-shadow: inset 0 1px 2px rgba(0,0,0,0.9);
+  z-index: 1;   /* over the .sd-pix block canvas while a cover is still loading */
+}
+
+/* Progressive cover load — the block canvas that covers a box while its picture
+   is still on the wire (`sdCover` in app.js).
+   ⚠️ `image-rendering: pixelated` IS the effect: the backing store is as small
+   as 5×5 and CSS blows it up to the whole box, so the browser must not
+   interpolate or you get a blur instead of blocks.
+   ⚠️ `border-radius: inherit` — the album's corner is a derived, non-uniform,
+   two-axis radius, and this canvas is used on three elements with three
+   different corners, so any literal value here would be wrong on at least two. */
+.sd-pix {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  border-radius: inherit;
+  image-rendering: pixelated;
+  opacity: 0;
+  transition: opacity .14s ease;
+  pointer-events: none;
+  z-index: 0;
 }
 @keyframes v3spin {
   from { transform: rotate(0deg); }
