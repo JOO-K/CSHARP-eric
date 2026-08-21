@@ -281,6 +281,27 @@ body {
   font-size: 16px; line-height: 1; cursor: pointer; padding: 0 2px;
 }
 .db-x:hover { color: var(--vtext); }
+/* Tab strip — one per DEVBOX_TABS entry. Reset and Copy CSS below act on the
+   ACTIVE tab, which is why the strip sits directly above the sliders. */
+.db-tabs {
+  display: flex; gap: 4px;
+  padding: 7px 8px 0;
+  border-bottom: 1px solid var(--vborder);
+}
+.db-tab {
+  flex: 1;
+  background: none; border: 1px solid transparent; border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  color: var(--vdim); font: inherit; font-size: 10.5px;
+  padding: 5px 6px; cursor: pointer;
+  margin-bottom: -1px;   /* sit the active tab's edge on the strip's border */
+}
+.db-tab:hover { color: var(--vtext); }
+.db-tab.on {
+  color: var(--vtext);
+  background: var(--vsurface);
+  border-color: var(--vborder);
+}
 .db-body { padding: 6px 10px 8px; overflow-y: auto; }
 .db-grp {
   margin-top: 8px; padding-top: 7px;

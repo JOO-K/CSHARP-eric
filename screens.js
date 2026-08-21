@@ -8,11 +8,85 @@
    anything it defines is unavailable to it. app.js's SDLOG_ICONS aliases this,
    which is what keeps the album page's quick buttons and the log sheet's own
    options drawing the same glyphs. */
-const SD_ICONS = {
-  ear:   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 8a5 5 0 0 1 10 0c0 3-2.2 4.1-3.4 5.3-.8.8-1.2 1.5-1.2 2.7A2.4 2.4 0 0 1 7.6 17"/><path d="M9.6 8.5a2.6 2.6 0 0 1 4.9-.6"/></svg>`,
-  clock: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 1.8"/></svg>`,
-  heart: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7.5-4.9-9.5-9C1 8.5 3 5 6.5 5 9 5 12 8 12 8s3-3 5.5-3C21 5 23 8.5 21.5 12c-2 4.1-9.5 9-9.5 9z"/></svg>`,
+/* The log controls' icons, drawn in the DOT SYSTEM (SD_DOTS) so the buttons you
+   press are the same material as the pet, the ticker and every generated asset —
+   rounded squares at 56% of the cell, 14% corner.
+
+   ⚠️ 5×5, not the 7×7 or 24×24 these replaced. They render at ~15px, so a 7-wide
+   grid puts each dot near 2px and the icon reads as grit. Five across is the
+   most a glyph this size can carry — the same budget that governs the nav pet.
+   ⚠️ Shapes chosen for what SURVIVES the grid, not for fidelity: "Listened" is
+   headphones rather than an ear (an ear is a curve with an inner curve, and at
+   5×5 that is two grey smudges), and the pencil is a plain 45° stroke because
+   the doc's rule is that a dot matrix only does right angles and 45° steps.
+   Redraw any of them in dot-lab.html and paste the rows back. */
+const SD_DOT_ICONS = {
+  // Pencil — a 45° stroke with a blunt tip at the bottom-left.
+  pencil: ['...xx',
+           '..xx.',
+           '.xx..',
+           'xx...',
+           'x....'],
+  // Headphones — the band over two ear cups. Reads where an ear doesn't.
+  ear:    ['.xxx.',
+           'x...x',
+           'x...x',
+           'x...x',
+           'xx.xx'],
+  // Clock — a ring with the hands meeting at the centre.
+  clock:  ['.xxx.',
+           'x.x.x',
+           'x.xxx',
+           'x...x',
+           '.xxx.'],
+  // Heart — two lobes, shoulders, point.
+  heart:  ['.x.x.',
+           'xxxxx',
+           'xxxxx',
+           '.xxx.',
+           '..x..'],
 };
+
+/* ⚠️ Built at parse time, which is why dots.js has to load before screens.js —
+   the same reason sdScene() is declared up here. */
+const SD_ICONS = Object.keys(SD_DOT_ICONS).reduce((out, k) => {
+  out[k] = SD_DOTS.svg(SD_DOT_ICONS[k], { cls: 'sd-dot-ico' });
+  return out;
+}, {});
+
+/* The log CTA's icon — a box with an ellipsis of dots inside, the three of them
+   breathing slowly. It says "there are words to write here" where a pencil said
+   "edit", and the motion is the only thing on the page that moves at rest, so
+   the button reads as the one you're meant to press.
+
+   ⚠️ Hand-built rather than `SD_DOTS.svg()`, because the generator has no way to
+   mark individual cells and the three inner dots need their own class to
+   animate. It emits the SAME geometry — cell 8, dot 56% of the cell, corner 14%
+   of the dot — so it stays the brand's dot; if `dots.js` ever changes those
+   fractions, this has to follow. 'o' marks an animated dot, 'x' a static one. */
+function sdBoxIcon() {
+  const CELL = 8, FRAC = 0.56, CORNER = 0.14;      // mirrors SD_DOTS' defaults
+  const d = +(CELL * FRAC).toFixed(2);
+  const rx = +(d * CORNER).toFixed(2);
+  const off = +((CELL - d) / 2).toFixed(2);
+  const rows = ['xxxxxxx',
+                'x.....x',
+                'x.ooo.x',
+                'x.....x',
+                'xxxxxxx'];
+  let n = 0, out = '';
+  rows.forEach((row, y) => [...row].forEach((ch, x) => {
+    if (ch === '.') return;
+    const live = ch === 'o';
+    // Staggered so they roll left-to-right instead of pulsing as one blob.
+    const delay = live ? ` style="animation-delay:${(n++ * 0.26).toFixed(2)}s"` : '';
+    out += `<rect x="${(x * CELL + off).toFixed(2)}" y="${(y * CELL + off).toFixed(2)}"`
+         + ` width="${d}" height="${d}" rx="${rx}" ry="${rx}"`
+         + ` fill="currentColor"${live ? ' class="sd-ico-live"' : ''}${delay}/>`;
+  }));
+  return `<svg viewBox="0 0 ${7 * CELL} ${5 * CELL}" class="sd-dot-ico sd-dot-ico--box">${out}</svg>`;
+}
+SD_ICONS.logbox = sdBoxIcon();
 
 /* The pet — the face cradled in the bottom bar's scoop.
    SIX DOTS, the same six the live pill's arrow is made of: two eyes and a
@@ -111,15 +185,15 @@ const SCREENS = [
 
             <!-- Background fill: paints album color inside the bento frame shape.
                  Two silhouettes (right/left hand) — CSS shows one via .s-home-v3--left -->
-            <svg class="v3-bg-fill" viewBox="0 0 689 638" xmlns="http://www.w3.org/2000/svg">
-              <path class="bg-right" fill="currentColor" d="M518.5 0.5H20.5C9.4543 0.5 0.5 9.4543 0.5 20.5V617.5C0.5 628.546 9.4543 637.5 20.5 637.5H518.5C529.546 637.5 538.5 628.546 538.5 617.5V609C538.5 570.34 569.84 539 608.5 539H668.5C679.546 539 688.5 530.046 688.5 519V107.5C688.5 96.4543 679.546 87.5 668.5 87.5H558.5C547.454 87.5 538.5 78.5457 538.5 67.5V20.5C538.5 9.45431 529.546 0.5 518.5 0.5Z"/>
-              <path class="bg-left" fill="currentColor" d="M170.5 0.5H668.5C679.546 0.5 688.5 9.4543 688.5 20.5V617.5C688.5 628.546 679.546 637.5 668.5 637.5H170.5C159.454 637.5 150.5 628.546 150.5 617.5V609C150.5 570.34 119.16 539 80.5 539H20.5C9.45428 539 0.5 530.046 0.5 519V107.5C0.5 96.4543 9.45428 87.5 20.5 87.5H130.5C141.546 87.5 150.5 78.5457 150.5 67.5V20.5C150.5 9.45431 159.454 0.5 170.5 0.5Z"/>
+            <svg class="v3-bg-fill" viewBox="0 0 689 730" xmlns="http://www.w3.org/2000/svg">
+              <path class="bg-right" fill="currentColor" d="M518.5 0.5H20.5C9.454 0.5 0.5 9.4543 0.5 20.5V709.147C0.5 720.192 9.454 729.147 20.5 729.147H518.5C529.546 729.147 538.5 720.192 538.5 709.147L538.5 609C538.5 570.34 569.84 539 608.5 539H668.5C679.546 539 688.5 530.046 688.5 519V107.5C688.5 96.4543 679.546 87.5 668.5 87.5H558.5C547.454 87.5 538.5 78.5457 538.5 67.5V20.5C538.5 9.4543 529.546 0.5 518.5 0.5Z"/>
+              <path class="bg-left" fill="currentColor" d="M170.5 0.5H668.5C679.546 0.5 688.5 9.45432 688.5 20.5V709.147C688.5 720.192 679.546 729.147 668.5 729.147H170.5C159.454 729.147 150.5 720.192 150.5 709.147L150.5 609C150.5 570.34 119.16 539 80.4999 539H20.4999C9.45422 539 0.499939 530.046 0.499939 519V107.5C0.499939 96.4543 9.45422 87.5 20.4999 87.5H130.5C141.546 87.5 150.5 78.5457 150.5 67.5V20.5C150.5 9.45431 159.454 0.5 170.5 0.5Z"/>
             </svg>
 
             <!-- Master SVG frame — viewBox matches bento aspect-ratio exactly -->
-            <svg class="v3-master-frame" viewBox="0 0 689 638" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg class="v3-master-frame" viewBox="0 0 689 730" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M518 0.5H21C9.9543 0.5 1 9.4543 1 20.5V534.5H518C529.046 534.5 538 525.546 538 514.5V451.927V73.4325V20.5C538 9.45431 529.046 0.5 518 0.5Z" stroke="currentColor" vector-effect="non-scaling-stroke"/>
-              <path d="M518.5 0.5H20.5C9.4543 0.5 0.5 9.4543 0.5 20.5V617.5C0.5 628.546 9.4543 637.5 20.5 637.5H518.5C529.546 637.5 538.5 628.546 538.5 617.5V609C538.5 570.34 569.84 539 608.5 539H668.5C679.546 539 688.5 530.046 688.5 519V107.5C688.5 96.4543 679.546 87.5 668.5 87.5H558.5C547.454 87.5 538.5 78.5457 538.5 67.5V20.5C538.5 9.45431 529.546 0.5 518.5 0.5Z" stroke="currentColor" vector-effect="non-scaling-stroke"/>
+              <path d="M518.5 0.5H20.5C9.454 0.5 0.5 9.4543 0.5 20.5V709.147C0.5 720.192 9.454 729.147 20.5 729.147H518.5C529.546 729.147 538.5 720.192 538.5 709.147L538.5 609C538.5 570.34 569.84 539 608.5 539H668.5C679.546 539 688.5 530.046 688.5 519V107.5C688.5 96.4543 679.546 87.5 668.5 87.5H558.5C547.454 87.5 538.5 78.5457 538.5 67.5V20.5C538.5 9.4543 529.546 0.5 518.5 0.5Z" stroke="currentColor" vector-effect="non-scaling-stroke"/>
               <path d="M654.409 517H571.806C563.403 517 556.64 510.098 556.81 501.697L558.617 412.351C558.703 408.077 560.609 404.044 563.855 401.263L654.756 323.394C661.282 317.804 671.354 322.504 671.261 331.097L669.408 502.162C669.319 510.383 662.63 517 654.409 517Z" stroke="currentColor" vector-effect="non-scaling-stroke"/>
               <path d="M664.035 291.857L569.72 373.062C564.534 377.527 556.5 373.843 556.5 367V123C556.5 114.716 563.216 108 571.5 108H654.247C662.532 108 669.247 114.716 669.247 123V280.49C669.247 284.857 667.344 289.007 664.035 291.857Z" stroke="currentColor" vector-effect="non-scaling-stroke"/>
               <circle cx="615.5" cy="614" r="55" stroke="currentColor" vector-effect="non-scaling-stroke"/>
@@ -144,6 +218,9 @@ const SCREENS = [
                 <span class="v3-blue-count">19,284 reviews</span>
               </div>
               <div class="v3-blue-quote"><span class="v3-blue-quote-text"></span></div>
+              <!-- Producer / engineering credits, filled by populateCredits() from
+                   MusicBrainz. Hidden until something comes back. -->
+              <div class="v3-blue-credits" hidden></div>
             </div>
 
             <!-- ForYou: single panel, cycles through trending albums on click -->
@@ -220,7 +297,7 @@ const SCREENS = [
               <div class="v3-rev-mine">
                 <div class="v3-rev-cta-row">
                   <button class="v3-rev-cta" onclick="event.stopPropagation(); openLogSheet(this);">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+                    ${SD_ICONS.logbox}
                     <span>Review, rate, log</span>
                   </button>
                   <div class="v3-rev-quick">
@@ -232,6 +309,14 @@ const SCREENS = [
               </div>
 
             </div><!-- /v3-rev-top -->
+
+            <!-- The album's score, large. The compact one-liner under the artist
+                 stays as it is — that one is a label on the record, this one is
+                 the headline for the ratings section it sits on top of. -->
+            <div class="v3-rev-score">
+              <span class="v3-rev-score-n"></span>
+              <span class="v3-rev-score-sub"></span>
+            </div>
 
             <!-- Rating distribution bars (header text removed, bars kept) -->
             <div class="v3-rev-hist">
@@ -382,15 +467,15 @@ const SCREENS = [
 
             <!-- Background fill: paints album color inside the bento frame shape.
                  Two silhouettes (right/left hand) — CSS shows one via .s-home-v3--left -->
-            <svg class="v3-bg-fill" viewBox="0 0 689 638" xmlns="http://www.w3.org/2000/svg">
-              <path class="bg-right" fill="currentColor" d="M518.5 0.5H20.5C9.4543 0.5 0.5 9.4543 0.5 20.5V617.5C0.5 628.546 9.4543 637.5 20.5 637.5H518.5C529.546 637.5 538.5 628.546 538.5 617.5V609C538.5 570.34 569.84 539 608.5 539H668.5C679.546 539 688.5 530.046 688.5 519V107.5C688.5 96.4543 679.546 87.5 668.5 87.5H558.5C547.454 87.5 538.5 78.5457 538.5 67.5V20.5C538.5 9.45431 529.546 0.5 518.5 0.5Z"/>
-              <path class="bg-left" fill="currentColor" d="M170.5 0.5H668.5C679.546 0.5 688.5 9.4543 688.5 20.5V617.5C688.5 628.546 679.546 637.5 668.5 637.5H170.5C159.454 637.5 150.5 628.546 150.5 617.5V609C150.5 570.34 119.16 539 80.5 539H20.5C9.45428 539 0.5 530.046 0.5 519V107.5C0.5 96.4543 9.45428 87.5 20.5 87.5H130.5C141.546 87.5 150.5 78.5457 150.5 67.5V20.5C150.5 9.45431 159.454 0.5 170.5 0.5Z"/>
+            <svg class="v3-bg-fill" viewBox="0 0 689 730" xmlns="http://www.w3.org/2000/svg">
+              <path class="bg-right" fill="currentColor" d="M518.5 0.5H20.5C9.454 0.5 0.5 9.4543 0.5 20.5V709.147C0.5 720.192 9.454 729.147 20.5 729.147H518.5C529.546 729.147 538.5 720.192 538.5 709.147L538.5 609C538.5 570.34 569.84 539 608.5 539H668.5C679.546 539 688.5 530.046 688.5 519V107.5C688.5 96.4543 679.546 87.5 668.5 87.5H558.5C547.454 87.5 538.5 78.5457 538.5 67.5V20.5C538.5 9.4543 529.546 0.5 518.5 0.5Z"/>
+              <path class="bg-left" fill="currentColor" d="M170.5 0.5H668.5C679.546 0.5 688.5 9.45432 688.5 20.5V709.147C688.5 720.192 679.546 729.147 668.5 729.147H170.5C159.454 729.147 150.5 720.192 150.5 709.147L150.5 609C150.5 570.34 119.16 539 80.4999 539H20.4999C9.45422 539 0.499939 530.046 0.499939 519V107.5C0.499939 96.4543 9.45422 87.5 20.4999 87.5H130.5C141.546 87.5 150.5 78.5457 150.5 67.5V20.5C150.5 9.45431 159.454 0.5 170.5 0.5Z"/>
             </svg>
 
             <!-- Master SVG frame — viewBox matches bento aspect-ratio exactly -->
-            <svg class="v3-master-frame" viewBox="0 0 689 638" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg class="v3-master-frame" viewBox="0 0 689 730" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M518 0.5H21C9.9543 0.5 1 9.4543 1 20.5V534.5H518C529.046 534.5 538 525.546 538 514.5V451.927V73.4325V20.5C538 9.45431 529.046 0.5 518 0.5Z" stroke="currentColor" vector-effect="non-scaling-stroke"/>
-              <path d="M518.5 0.5H20.5C9.4543 0.5 0.5 9.4543 0.5 20.5V617.5C0.5 628.546 9.4543 637.5 20.5 637.5H518.5C529.546 637.5 538.5 628.546 538.5 617.5V609C538.5 570.34 569.84 539 608.5 539H668.5C679.546 539 688.5 530.046 688.5 519V107.5C688.5 96.4543 679.546 87.5 668.5 87.5H558.5C547.454 87.5 538.5 78.5457 538.5 67.5V20.5C538.5 9.45431 529.546 0.5 518.5 0.5Z" stroke="currentColor" vector-effect="non-scaling-stroke"/>
+              <path d="M518.5 0.5H20.5C9.454 0.5 0.5 9.4543 0.5 20.5V709.147C0.5 720.192 9.454 729.147 20.5 729.147H518.5C529.546 729.147 538.5 720.192 538.5 709.147L538.5 609C538.5 570.34 569.84 539 608.5 539H668.5C679.546 539 688.5 530.046 688.5 519V107.5C688.5 96.4543 679.546 87.5 668.5 87.5H558.5C547.454 87.5 538.5 78.5457 538.5 67.5V20.5C538.5 9.4543 529.546 0.5 518.5 0.5Z" stroke="currentColor" vector-effect="non-scaling-stroke"/>
               <path d="M654.409 517H571.806C563.403 517 556.64 510.098 556.81 501.697L558.617 412.351C558.703 408.077 560.609 404.044 563.855 401.263L654.756 323.394C661.282 317.804 671.354 322.504 671.261 331.097L669.408 502.162C669.319 510.383 662.63 517 654.409 517Z" stroke="currentColor" vector-effect="non-scaling-stroke"/>
               <path d="M664.035 291.857L569.72 373.062C564.534 377.527 556.5 373.843 556.5 367V123C556.5 114.716 563.216 108 571.5 108H654.247C662.532 108 669.247 114.716 669.247 123V280.49C669.247 284.857 667.344 289.007 664.035 291.857Z" stroke="currentColor" vector-effect="non-scaling-stroke"/>
               <circle cx="615.5" cy="614" r="55" stroke="currentColor" vector-effect="non-scaling-stroke"/>
@@ -415,6 +500,9 @@ const SCREENS = [
                 <span class="v3-blue-count">19,284 reviews</span>
               </div>
               <div class="v3-blue-quote"><span class="v3-blue-quote-text"></span></div>
+              <!-- Producer / engineering credits, filled by populateCredits() from
+                   MusicBrainz. Hidden until something comes back. -->
+              <div class="v3-blue-credits" hidden></div>
             </div>
 
             <!-- ForYou: single panel, cycles through trending albums on click -->
@@ -491,7 +579,7 @@ const SCREENS = [
               <div class="v3-rev-mine">
                 <div class="v3-rev-cta-row">
                   <button class="v3-rev-cta" onclick="event.stopPropagation(); openLogSheet(this);">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+                    ${SD_ICONS.logbox}
                     <span>Review, rate, log</span>
                   </button>
                   <div class="v3-rev-quick">
@@ -503,6 +591,14 @@ const SCREENS = [
               </div>
 
             </div><!-- /v3-rev-top -->
+
+            <!-- The album's score, large. The compact one-liner under the artist
+                 stays as it is — that one is a label on the record, this one is
+                 the headline for the ratings section it sits on top of. -->
+            <div class="v3-rev-score">
+              <span class="v3-rev-score-n"></span>
+              <span class="v3-rev-score-sub"></span>
+            </div>
 
             <!-- Rating distribution bars (header text removed, bars kept) -->
             <div class="v3-rev-hist">
@@ -696,16 +792,22 @@ function topNav(active) {
   </div>`;
 }
 
-function halfStars(rating, size) {
+/* `cssSized` omits the inline width/height so a stylesheet can drive the disc
+   size instead. ⚠️ Needed because an inline style beats any rule short of
+   `!important`, which is what stops the dev box from tuning a vinyl row. Only
+   the album page's headline score passes it today; every other caller keeps the
+   inline sizing, which is also what keeps `sz` rounded to a whole pixel. */
+function halfStars(rating, size, cssSized) {
   // ×0.72 matches the old ★ glyph's footprint; ROUNDED because a fractional
   // size put every disc in the row on a different sub-pixel boundary, which
   // made them rasterise at visibly different weights (see .hstar in app.css).
   const sz = Math.round((size || 14) * 0.72);
+  const st = cssSized ? '' : ` style="width:${sz}px;height:${sz}px"`;
   let out = '';
   for (let i = 1; i <= 5; i++) {
-    if (rating >= i)            out += `<span class="hstar full"  style="width:${sz}px;height:${sz}px"></span>`;
-    else if (rating >= i - 0.5) out += `<span class="hstar half"  style="width:${sz}px;height:${sz}px"></span>`;
-    else                         out += `<span class="hstar empty" style="width:${sz}px;height:${sz}px"></span>`;
+    if (rating >= i)            out += `<span class="hstar full"${st}></span>`;
+    else if (rating >= i - 0.5) out += `<span class="hstar half"${st}></span>`;
+    else                         out += `<span class="hstar empty"${st}></span>`;
   }
   return `<span class="hstars">${out}</span>`;
 }
@@ -1322,15 +1424,74 @@ function profileEditHtml(light) {
 }
 
 // Album wall (Trending) — themed so it can render as a dark + light pair.
+/* Which way the wall is sorted. Read by `wallItems()` and stamped onto the two
+   sort chips, so the choice survives the re-render the viewer does on every
+   variant switch (both shells rebuild from this one value). */
+window.WALL_SORT = window.WALL_SORT || 'popular';
+
+/* ⚠️ "Controversial" is DISAGREEMENT, not a low score — an album everyone rates
+   2.0 is badly reviewed, not divisive. It reads the album's own rating
+   distribution, the same `ratingSpreadFor()` bell the histogram on the album
+   page draws, so the wall and that chart can't disagree about which records
+   split the room.
+
+   ⚠️ **THE MOCK DATA CONTAINS NO ACTUAL DISAGREEMENT**, so this is a stand-in
+   and should be replaced the moment real ratings exist. Two measurements, both
+   dead ends:
+     · `ratingSpreadFor()` — the histogram's bell — floors every bucket at 0.05
+       and suppresses low ratings outright, so the bottom tail is pinned at
+       exactly 0.20 for all 100 albums. Variance over it ranks the four
+       HIGHEST-rated records first (phantom ½★ weight sitting far from a high
+       mean), and min-of-tails collapses to `0.4 / total`, which just rewards
+       the narrowest bell. Both read as a broken filter.
+     · `album.reviews[]` — nearly every album is `[4.5, 4, 4]`; there are two
+       distinct spreads across the whole catalogue.
+   So it ranks by **proximity to the middle of the scale, weighted by volume**:
+   a record parked at 3.4 with 150k reviews is a fair guess at divisive, and a
+   4.9 consensus classic is not. `log10` on the count so volume tilts ties
+   without letting one blockbuster own the page.
+   ⚠️ Real data replaces this with the variance of actual user ratings — at
+   which point the wall and the album page's histogram agree by construction,
+   which is the whole point of the filter. */
+function wallItems() {
+  const all = (window.ARCHIVE || []).slice();
+  if (window.WALL_SORT !== 'controversial') return all.sort((a, b) => b.rating - a.rating);
+  const controversy = a => {
+    const mid = 1 - Math.min(1, Math.abs((+a.rating || 0) - 3.4) / 1.6);
+    return mid * Math.log10(Math.max(10, a.reviewCount || 0));
+  };
+  return all
+    .map(a => ({ a, v: controversy(a) }))
+    .sort((x, y) => (y.v - x.v) || ((y.a.reviewCount || 0) - (x.a.reviewCount || 0)))
+    .map(x => x.a);
+}
+
+/* The grid's cells, extracted so `pickWallSort()` can repaint them without
+   re-rendering the whole screen (which would drop the dropdowns and the scroll
+   position). Reads `wallItems()`, so it always reflects the active sort. */
+function wallGridHtml() {
+  return wallItems().slice(0, 24).map((a, i) => `
+              <div class="wall2-cell" onclick="openAlbumPage(ARCHIVE.find(x=>x.album==='${a.album.replace(/'/g, '\\\'')}')||ARCHIVE[0])">
+                <div class="wall2-art" style="background-image:url('${a.image}')">${i < 3 ? `<span class="wall2-rank">${i + 1}</span>` : ''}</div>
+                <div class="wall2-meta">
+                  <span class="wall2-album">${a.album}</span>
+                  <span class="wall2-artist">${a.artist}</span>
+                  <div class="wall2-rating">${halfStars(a.rating, 11)}<span class="wall2-score">${a.rating.toFixed(1)}</span></div>
+                </div>
+              </div>`).join('');
+}
+
 function wallHtml(light) {
-  const items = (window.ARCHIVE || []).slice().sort((a, b) => b.rating - a.rating);
   return `
       <div class="app-screen s-home-v3 s-wall2${light ? ' s-home-v3--light' : ''}">
         ${appHeader()}
         <div class="v3-body">
           <div class="wall2-scroll">
             <div class="wall2-bar">
-              <button class="wall2-cat active" onclick="event.stopPropagation()">Popular</button>
+              <button class="wall2-cat wall2-sort${WALL_SORT === 'popular' ? ' active' : ''}" data-sort="popular"
+                      onclick="event.stopPropagation(); pickWallSort(this)">Popular</button>
+              <button class="wall2-cat wall2-sort${WALL_SORT === 'controversial' ? ' active' : ''}" data-sort="controversial"
+                      onclick="event.stopPropagation(); pickWallSort(this)">Controversial</button>
               <div class="wall2-menuwrap">
                 <button class="wall2-cat wall2-drop-btn" onclick="event.stopPropagation(); toggleWallPanel(this)">Genres <span class="wall2-chev">▾</span></button>
                 <div class="wall2-menu wall2-menu--genres" hidden>
@@ -1343,7 +1504,7 @@ function wallHtml(light) {
                   <button class="wall2-menu-item" onclick="event.stopPropagation(); pickWallGenre(this)">Rock</button>
                 </div>
               </div>
-              <div class="wall2-menuwrap wall2-menuwrap--right">
+              <div class="wall2-menuwrap">
                 <button class="wall2-cat wall2-drop-btn" onclick="event.stopPropagation(); toggleWallPanel(this)"><span class="wall2-time-label">Week</span> <span class="wall2-chev">▾</span></button>
                 <div class="wall2-menu wall2-menu--time" hidden>
                   <button class="wall2-menu-item wall2-time-opt active" onclick="event.stopPropagation(); pickWallTime(this)">This Week</button>
@@ -1352,17 +1513,7 @@ function wallHtml(light) {
                 </div>
               </div>
             </div>
-            <div class="wall2-grid">
-              ${items.slice(0, 24).map((a, i) => `
-              <div class="wall2-cell" onclick="openAlbumPage(ARCHIVE.find(x=>x.album==='${a.album.replace(/'/g, '\\\'')}')||ARCHIVE[0])">
-                <div class="wall2-art" style="background-image:url('${a.image}')">${i < 3 ? `<span class="wall2-rank">${i + 1}</span>` : ''}</div>
-                <div class="wall2-meta">
-                  <span class="wall2-album">${a.album}</span>
-                  <span class="wall2-artist">${a.artist}</span>
-                  <div class="wall2-rating">${halfStars(a.rating, 11)}<span class="wall2-score">${a.rating.toFixed(1)}</span></div>
-                </div>
-              </div>`).join('')}
-            </div>
+            <div class="wall2-grid">${wallGridHtml()}</div>
           </div>
         </div>
         ${nowBar()}

@@ -81,7 +81,34 @@ centers in the true middle of the viewport (`#phone-container` fills full width)
 
 ---
 
-## Dev Box (`initDevBox` in app.js, `#devbox` in index.html)
+## Dev Box — TABBED (`DEVBOX_TABS` in app.js, `#devbox` in index.html)
+
+The panel is **tabbed**: one tab per thing you can tune, each owning its own
+`fields` and the `css(d)` block it emits. **Adding a tab is adding a row to
+`DEVBOX_TABS`** — the strip, the sliders, Reset and Copy CSS all derive from it.
+Today: **Bento info** (the compact stats strip) and **Album score** (the album
+page's headline number + its vinyls).
+
+- ⚠️ **Field keys share ONE namespace** — `DEVBOX` is flat across tabs. Prefix
+  new ones (the album-score tab uses `s*`) or two sliders will silently drive
+  one value.
+- **Injected: every tab. Shown and copied: the active tab.** All blocks have to
+  be in force at once (you can't tune the album score with the bento's block
+  switched off), but the textarea and Copy CSS give you just the block you're
+  pasting, so "what you see is what you paste" still holds per tab.
+- **Reset clears the ACTIVE tab only** — it sits under that tab's sliders, and
+  wiping a tune you can't see would be a nasty surprise.
+- Switching tabs re-renders the rows from `DEVBOX`, so a tune is never lost by
+  looking at something else. The `input` listener is delegated for the same
+  reason the roadmap's is: the rows are rebuilt on every switch.
+- ⚠️ **The album score's vinyls are sized in CSS, not inline.** `halfStars` grew
+  a third argument, `cssSized`, that omits the inline `width`/`height` — an
+  inline style beats any rule short of `!important`, which is exactly what stops
+  a vinyl row from being tunable. Only `populateBigScore` passes it; every other
+  caller keeps inline sizing, which is also what keeps the disc size a whole
+  pixel (see the `.hstar` rasterisation note).
+
+## Dev Box — the original notes (`initDevBox` in app.js)
 
 A tuning panel floating on the right of `#stage`, behind the toolbar's **⚙ Dev**
 button. Desktop viewer only. It live-tunes the **compact bento's info box** —
@@ -178,6 +205,39 @@ medium / long term goals. **Right bottom:** meeting notes.
 - The seeded content is a **draft to argue with**, taken from the open threads
   recorded in this file. `rmSeed()` is the single place to change it; **Reset**
   restores it and drops the reader's edits (behind a `confirm`).
+
+## Album Wall — the popular grid (`wallHtml` / `wallGridHtml` / `wallItems`)
+
+Four controls on one row: **Popular · Controversial · Genres ▾ · Week ▾**.
+Popular and Controversial are sort modes (`WALL_SORT`, stamped on the chips so
+the choice survives the viewer's re-render); Genres and Week are dropdowns.
+
+- ⚠️ **"Controversial" is a STAND-IN and should be replaced when real ratings
+  exist.** The mock data contains no disagreement to rank by, and two obvious
+  sources are dead ends: `ratingSpreadFor()` floors every bucket at 0.05 and
+  suppresses low ratings, so the bottom tail is pinned at exactly 0.20 for all
+  100 albums (variance over it ranks the highest-rated records first;
+  min-of-tails collapses to `0.4 / total` and rewards the narrowest bell —
+  both read as a broken filter), and `album.reviews[]` is `[4.5, 4, 4]` for
+  nearly everything, two distinct spreads across the catalogue. It currently
+  ranks by proximity to the middle of the scale × `log10(reviewCount)`. Real
+  data replaces it with the variance of actual user ratings, at which point the
+  wall and the album page's histogram agree by construction.
+- `pickWallSort` repaints `.wall2-grid` **in place** on both shells rather than
+  calling `renderViewer()`, which would rebuild everything and lose the
+  dropdowns' state and the scroll position. That's why `wallGridHtml()` exists
+  separately from `wallHtml()`.
+- ⚠️ The four chips are sized to FIT (10.5px type, 6px gap, 10px padding);
+  "Controversial" sets that budget. Week is no longer pinned right with
+  `margin-left: auto`, and `.wall2-menu--time` had to flip from `right: 0` to
+  `left: 0` — right-anchoring threw the popup across the screen once its button
+  stopped being the last thing on the row.
+- ⚠️ **`.wall2-art` is 3px and is NOT a persona knob.** It was in
+  `personaSkinCss`'s radius rule; eric's 15px made every cell float as a
+  separate card, and no edit to app.css could show otherwise because that rule
+  is (0,3,0) and wins. The wall is a dense 3-up grid meant to read as one
+  surface, so its corner is a layout decision. Same family of mistake as
+  `.v3-album`. `.pl2-card` keeps the token.
 
 ## Personas (`personas/` → `personas.js` → `applyPersona` in app.js)
 
@@ -476,6 +536,130 @@ of the app, this section is what changes.
 
 ---
 
+## ⚠️ The bento viewBox is 689 × 730 (was 689 × 638)
+
+`LeftBento_larger.svg` replaced the shell: the bottom edge moved **637.5 →
+729.147** and **nothing else changed** — the album region, the For-You column,
+the CD notch and the search corner are byte-identical between the two paths. The
+whole gain lands in the stats strip, which went from ~103 units tall to **194.6**.
+
+- ⚠️ **Every Y percentage in the bento is a fraction of 730 now.** X percentages
+  are untouched (the width never moved). The cells were re-derived from the
+  SVG's own numbers rather than rescaled: album `0.5 → 534.02`, strip
+  `534.5 → 729.147`, For-You `105 → 520`, CD `559.074 → 669.074`, pill
+  `3.19 → 68.19`. Verified in-page against those units.
+- The **strip no longer overshoots**. At 638 it was deliberately 17.5% —
+  past the shell's bottom edge, "dipping into the CD-gap below". The new shell
+  ends where the strip ends, so it's an exact 26.664%.
+- Four copies of the silhouette move together: `bg-left` / `bg-right` in
+  `.v3-bg-fill` **and** the same two outlines inside `.v3-master-frame` (painted
+  transparent, but they must stay coincident). The right-hand path is a pure
+  `x → 689 - x` mirror of the left, same command sequence — that is how the
+  original pair was built, so derive it mechanically rather than by eye.
+- `.v3-blue` uses `align-content: start`, so the title/rating row stays at the
+  top and the new room is one contiguous block underneath.
+- ⚠️ **`share.js` still draws the 638 shell.** `BENTO_SHELL` and the cell
+  constants it derives from app.css percentages are now wrong on both counts.
+
+## Credits in the bento (`creditsFor` / `populateCredits` in app.js)
+
+"Produced by / Mixed by" in the room the taller shell opened up.
+
+- ⚠️ **Deezer has NO credits.** Verified against the live album endpoint: the
+  only people in it are `contributors`, whose `role` is "Main" or "Featured" —
+  performers. What it does carry that's credit-adjacent is `label`,
+  `release_date` and **`upc`**.
+- **MusicBrainz has them, free and keyless**, and Deezer's `upc` matches its
+  `barcode` query EXACTLY — no fuzzy title guessing. Chain:
+  `dz('album/<deezerId>')` → upc → `release/?query=barcode:` → mbid →
+  `release/<mbid>?inc=recordings+artist-rels+recording-level-rels`.
+- ⚠️ **All three `inc` values are required.** `recording-level-rels` says WHERE
+  to apply relationship includes; `artist-rels` says WHICH kind. Drop the latter
+  and the request still returns **200** with every recording missing its
+  `relations` key — indistinguishable from "no credits" unless you read the
+  payload. Cost an hour.
+- ⚠️ **Producers live at RECORDING level, not release level.** Every release's
+  own `relations` array tested empty, so the heavy `recordings` include (~100KB)
+  is unavoidable — which is why this fetches only for the album on screen,
+  debounced 520ms, and re-checks the album before painting.
+- ⚠️ **Browser requests get load-shed.** Three identical fetches at 1.5s spacing
+  measured **200 / 503 / 200**, while the same URL from curl was 200 every time:
+  MusicBrainz squeezes anonymous cross-origin traffic and a browser cannot send
+  the descriptive User-Agent their policy asks for. `mb()` retries a 503 up to
+  three times (1.5s / 3s / 6s).
+- ⚠️ **Never cache a failed lookup.** `creditsFor` caches only definitive
+  answers — a 503 that outlived its retries is not "this record has no credits",
+  and caching it pins the album blank for the session. Exactly the trap `dz()`
+  already documents.
+- **Coverage is real but partial: 8 of 10 sampled albums** had producer credits
+  (the misses were indie releases — MusicBrainz is volunteer-entered). The row
+  stays `hidden` when there's nothing rather than printing an empty label.
+### Credits are BAKED — `tools/fetch_credits.py`
+
+```
+python tools/fetch_credits.py            # every album missing credits
+python tools/fetch_credits.py eric       # one persona
+python tools/fetch_credits.py --force    # refetch, including the empties
+python tools/fetch_credits.py --limit 20 # smoke test
+```
+
+Writes a `credits` array onto each album in `personas.js`; responses cache in
+`tools/.credits_cache.json` so a re-run is instant. Same shape as
+`build_personas.py` — public APIs, no keys, no scraping.
+
+- **This exists because the browser can't do it reliably** (the 503 measurement
+  above). A script sends the descriptive User-Agent MusicBrainz asks for and
+  paces at 1.1s, so the credits ship at zero runtime cost.
+- ⚠️ **`"credits": []` means "looked, found nothing" and is a real answer.**
+  `creditsFor` tests `Array.isArray`, not truthiness — otherwise every
+  credit-less album falls through and re-asks the network on every swipe, for a
+  question already settled at build time. It's also what makes a re-run skip
+  them instead of asking forever; `--force` retries those.
+- ⚠️ **A failed request is never recorded as `[]`** — `credits_for` returns
+  `None` on network failure and the album is left without the key, so a re-run
+  picks it up. Confusing the two bakes "no credits" into the repo permanently.
+- The runtime path in app.js now only serves albums the build never saw — the
+  recommendation pool Deezer hands us at load.
+- ⚠️ **Bump `personas.js?v=N` in index.html after every bake.** It's generated,
+  so it's easy to forget it obeys the same cache-busting rule as the hand-edited
+  files — the page will happily keep serving the pre-bake copy and every album
+  reads as having no credits.
+### The label fallback
+
+Credits when we have them, **`LABEL · <name>` when we don't** (`labelFor` in
+app.js). The label is one field of the SAME Deezer album call `creditsFor`
+already makes for the upc, so it costs nothing extra — and it is a real credit:
+for a small act "Independent" is itself the answer.
+
+- **Baked at 100%** — all 159 persona albums have a label, against 52% for
+  credits. Runtime recs resolve theirs from one cached `dz()` call (12/12 in a
+  sample). Net effect: the row is **never empty**, which is what it needs to be,
+  since an empty row in a fixed-height strip reads as a bug rather than as
+  absent data.
+- ⚠️ `album.label === ''` means "asked, Deezer had none" — `labelFor` tests
+  `typeof === 'string'`, not truthiness, for the same reason `credits: []` is a
+  real answer. Getting this wrong re-asks the network forever.
+- `fetch_credits.py` fills labels and credits **independently** (an album can
+  have one and not the other), so a label-only pass doesn't re-hit MusicBrainz
+  for credits already settled.
+
+- ⚠️ **In the bento the credits row is rare, and the bake is only half the
+  reason.** The swipe queue is the whole of ARCHIVE — 100 albums, of which only
+  **33 come from personas.js**. The other **67 are the runtime recommendation
+  pool** `expandRecs()` pulls from Deezer at load, which the bake has never seen
+  and can't (it's a fresh random deal every session). Measured on one load: 14
+  with credits, 19 baked-empty, 67 unbaked. So ~14% of what you swipe past shows
+  a credit line, and an album with none looks identical to a bug. The unbaked 67
+  fall through to the live lookup, which does work but takes ~5s and is
+  503-flaky — fine as a trickle, invisible as a feature.
+- **Measured coverage: 83 / 159 albums (52%)**, and it tracks how well
+  documented the music is rather than anything about the code — `oldies` 71%,
+  `kpop` 55%, `hyperpop` 48%, `thomas` 43%, `eric` 42%. ⚠️ Worth knowing before
+  leaning on this feature: MusicBrainz is volunteer-entered, so the credits are
+  thinnest for exactly the small and new artists a credits feature is most
+  meant to serve. Discogs (needs a token) is the database to add if that
+  matters — it also carries the artwork/design credits MusicBrainz mostly lacks.
+
 ## Home Screen v3 — Bento Hero Layout
 
 ```
@@ -573,6 +757,80 @@ Grid children (in order): `.v3-album`, `.v3-right-col` (spans row 1 only), `.v3-
 - `border-radius: 0 15px 15px 0`
 - Contains: 2 small square album thumbnails (`.v3-red-thumbs` / `.v3-red-thumb`) at top with 9px margin + 5px gap, then one full-width featured album image (`.v3-red-next-img`) filling the rest with 9px margin and 11px border-radius
 
+### The log control — CTA + three quick squares (`.v3-rev-cta-row`)
+
+- ⚠️ **It spans the ALBUM's width.** `.v3-rev-mine` used `align-items: center`
+  in the `--album` state, which left the control floating: 268.2px of button
+  inside 321.2px of album, 26.5px of air each side, while the cover, the
+  histogram and the tracklist all sat flush. It's `stretch` now, with
+  `.v3-rev-cta` on `flex: 1` and `width: auto` (it was `fit-content`, which is
+  what kept it text-sized) so the button absorbs whatever the three fixed 50px
+  squares don't. The base `margin-left: -2px` is zeroed here — an optical nudge
+  for a floating button just overhangs an aligned one.
+- **The three quick buttons are SQUARE**, and `--sd-q` on `.v3-rev-cta-row` is
+  one number doing two jobs: their width and the row's `min-height`.
+  `align-items: stretch` hands every child the row's height, so they're square
+  only while those two agree — two literals would drift apart.
+- **All four share one type treatment**: `--font-main` 600, differing only in
+  size (13px / 8px) and case. The captions were mono 400, which made the row
+  read as one bold button with three tag-alongs in a different voice.
+- **Icons are `SD_ICONS`, built from `SD_DOT_ICONS` through SD_DOTS** — the same
+  rounded squares as the pet and the ticker, filling with `currentColor` so they
+  inherit hover and `.on` state like a glyph. Don't add `stroke` rules; there's
+  nothing to stroke, and a stroke on the rects would fatten the dot off-grid.
+- **The CTA's icon is `sdBoxIcon()`** — a frame with an ellipsis of dots inside,
+  the three of them breathing on a staggered 2.8s loop. It says "there are words
+  to write here" where a pencil said "edit", and it is the only thing on the
+  page that moves at rest, which is what marks it as the button to press. Slow
+  and shallow on purpose: faster reads as a spinner, i.e. "busy".
+  - ⚠️ **Hand-built, not `SD_DOTS.svg()`** — the generator can't mark individual
+    cells and the inner dots need their own class. It re-derives the same
+    geometry (cell 8, dot 56%, corner 14%); if `dots.js` changes those, this
+    follows. `'o'` in its grid means an animated dot.
+  - ⚠️ **`transform-box: fill-box` is required** on `.sd-ico-live`. Without it an
+    SVG child transforms about the VIEWBOX origin, so `scale()` throws the dot
+    across the icon instead of growing it in place.
+  - It's 7×5 cells, so it takes an explicit 21×15px rather than the square rule
+    the other icons use — a square would squash it.
+- ⚠️ **The grids are 5×5.** They render at ~15px, so a 7-wide grid puts each dot
+  near 2px and the icon reads as grit — the same budget that governs the pet.
+  Shapes are chosen for what survives, not fidelity: **"Listened" is headphones,
+  not an ear** (an ear is a curve inside a curve; at 5×5 that's two smudges),
+  and the pencil is a plain 45° stroke because a dot matrix only does right
+  angles and 45° steps. Redraw them in `dot-lab.html` and paste the rows back.
+
+### Album page — the headline score (`.v3-rev-score`, `populateBigScore`)
+
+Below the "Review, rate, log" row, above the histogram: the album's rating as a
+big left-aligned number in **DM Sans 800 / 40px**, with the vinyls on its
+baseline.
+
+- ⚠️ **It is deliberately the SAME number as `.v3-blue-score` under the artist,
+  printed twice.** They aren't redundant: the one-liner is a label on the record
+  (album · year · artist · score), this one is the heading for the ratings
+  section beneath it. Keep both — the one-liner was explicitly kept when this
+  was added.
+- ⚠️ **The one-liner is GONE from the album page entirely** —
+  `.s-home-v3--review:not(.s-home-v3--artist) .v3-blue-stars-row { display: none }`.
+  The headline score says all of it, and printing the number twice made the page
+  read as having two different ratings. The info box here is just album · year
+  over the artist, which is why that pair stepped up to **22px / 14.5px** (year
+  14px) — it takes the room the row used to hold.
+  - ⚠️ **`:not(--artist)` is load-bearing.** The artist page has no score, so
+    this row is where its review COUNT lives — "the one stat". Drop the `:not()`
+    and the artist page loses it.
+  - The compact bento is untouched and keeps number, discs and count.
+- It shares its left edge with the **histogram and the tracklist** (the panel's
+  content column), not with the CTA button, which is inset inside
+  `.v3-rev-mine`. That's what makes the ratings section read as one block.
+- ⚠️ `font-family` is declared outright rather than inherited. In this box the
+  number under the artist is DM Sans by inheritance and the count beside it is
+  mono, so "which family is this?" is a live question — say it.
+- Hidden on the artist page, same reason `.v3-blue-score` is: an artist isn't a
+  thing you score.
+- Light ink in **both** themes, because the album page floods with the album's
+  procedural colour (dark in both) — see `applyColorVars`.
+
 ### Cell: Blue Box / Reviews (bottom-left)
 **The compact bento runs this cell as TWO COLUMNS** (`.s-home-v3:not(--review)`):
 album · year over the artist on one side, the score at 27px with the vinyls
@@ -605,6 +863,24 @@ score → vinyls → count, and the count has to land *beside* the discs.
   mirrored layout) ahead of the cursor, so the stars row — asking for column 1 —
   gets pushed to a *second row*. That is the "rating stacked under the title"
   bug.
+- ⚠️ **The title overhangs the rating column, and the artist gives the room
+  back.** The rating column's track is sized by its *widest* row — the count
+  plus the vinyls — but the title's only neighbour is the compact score above
+  them, so a strip beside the title was permanently dead (measured: a 71px
+  column against a 28px score). `--sd-title-extra`, set per album by
+  `sizeTitleExtra()`, becomes a negative margin on the info row and an equal
+  padding on `.v3-blue-artist`. Worth ~34px, a 25% longer title before the
+  ellipsis. It has to be measured, not hardcoded: the score is always "N.N" but
+  the count is what sets the column's width and it moves ("6k" vs "156k").
+  - ⚠️ **The compact row must be `width: auto`.** The base rule says
+    `width: 100%`, which resolves against the GRID AREA and pins the row to its
+    column — the negative margin then changes nothing and the title gains
+    exactly 0px. That was the first version of this fix, and it measured as
+    working (the var was set, the margin computed) while doing nothing at all.
+  - ⚠️ `sizeTitleExtra` measures **synchronously**, not in a `requestAnimationFrame`.
+    rAF doesn't fire in a background tab (same trap as `paintAfterRender`), so
+    the callback silently never ran and the title kept its old width. Reading a
+    rect forces layout on demand, so the frame bought nothing.
 - ⚠️ **Line 1 is three tracks: album, year, and an empty `1fr`.** Two
   content-sized tracks across a `width: 100%` row both stretch, which parks the
   year at the far edge with a hole between it and the title. The flexible track
@@ -747,6 +1023,24 @@ follow, add to a playlist.
   inherit `.v3-ring-dot`'s 0.4s spring, so a reaction MORPHS out of the smile
   and settles back. A new reaction is six numbers in app.css plus one row in
   `SCENE_REACTIONS` — no engine change.
+- ⚠️ **The dots are ROUNDED SQUARES, not circles** — `border-radius: 14%`,
+  which is SD_DOTS' `cornerFrac` (dot = 56% of the cell, corner = 14% of the
+  dot). They shipped as `50%` because they were copied from `.v3-ring-dot`,
+  which was itself circular; **both are now 14%**, so the pill / back-pill /
+  follow rings and the pet are the same dot as every generated asset. If the
+  rings should go back to circles, it's one declaration.
+- ⚠️ **`--sd-face-k` (1.85) is sized against the WORST formation, not the
+  resting face.** At 2.1 the smile was a comfortable 25.9 × 20.3 in a 55.4 ×
+  26.4 box while the equaliser hit **34.3 tall and broke 7.9px out of the
+  scoop**. Shrinking far enough to contain that alone would have left the face
+  tiny, so the bars were re-cut too. Measure every formation's ink against the
+  box after changing either — the resting face fitting proves nothing.
+- ⚠️ **The equaliser grows from a floor** (`transform-origin: center bottom`,
+  the one formation that overrides the default centre). Scaled about their
+  centres the bars grew in both directions at once — that's what pushed them out
+  of the notch, and it read as a bar chart rather than a meter. Every bar shares
+  one y and differs only in `scaleY`, so the ceiling is a single number: floor
+  4.5 + half-dot 1.5 − 3 × scaleY. **Cap is 4.0**; past that it leaves the notch.
 - ⚠️ **The dot must scale WITH the face.** The ring's look is a PROPORTION, not
   a size: 3px of ink across an 11px mouth span, ~27%. Holding the dot at 4.2px
   while scaling the offsets 2.4× dropped it to 16% and the face came out

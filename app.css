@@ -2666,7 +2666,12 @@
      (2.4 fills it; fitting the width instead would want 4.1 and overflow the
      notch). The first pass shipped 1.35 and the face read as a small ring
      floating in the bar rather than a character sitting in it. */
-  --sd-face-k: 2.1;
+  /* ⚠️ Sized against the WORST formation, not the resting face. Measured at
+     k=2.1 the smile was a comfortable 25.9×20.3 in a 55.4×26.4 box, but the
+     equaliser hit 34.3 tall and broke 7.9px out the top of the scoop. Shrinking
+     far enough to contain THAT would have left the face tiny, so the bars were
+     re-cut as well (see `--music` below) and this came down a step. */
+  --sd-face-k: 1.85;
   position: absolute; inset: 0;
   transform: scale(var(--sd-face-k));   /* offsets are authored at the 20×20 ring */
   transform-origin: center center;
@@ -2679,7 +2684,11 @@
      grew 2.4× dropped that to 16% and the face came out spindly and wrong even
      though every coordinate was byte-identical to the original. */
   width: 3px; height: 3px; margin: -1.5px;
-  border-radius: 50%;
+  /* ⚠️ ROUNDED SQUARE, not a circle — 14% of the dot, which is SD_DOTS'
+     `cornerFrac` and therefore the brand's dot. This shipped as `50%` because
+     it was copied from `.v3-ring-dot`, and a circle reads as a different
+     material next to every other dot asset in the app. */
+  border-radius: 14%;
   background: currentColor;
   /* The same spring the pill's dots morph on — this IS the brand's motion. */
   transition: transform 0.4s cubic-bezier(0.34, 1.45, 0.5, 1), opacity 0.25s ease;
@@ -2763,19 +2772,29 @@
 
 /* LISTENED / anything musical — the six stand up as an equaliser and bounce.
    `music2` is the same bars at different heights; alternating the two is the
-   bounce, with no keyframes to keep in sync with the JS clock. */
-.sd-face--music .sd-face-dot:nth-child(1) { transform: translate(-7.5px,  2px) scaleY(3.2); }
-.sd-face--music .sd-face-dot:nth-child(2) { transform: translate(-4.5px, -1px) scaleY(5.4); }
-.sd-face--music .sd-face-dot:nth-child(3) { transform: translate(-1.5px,  3px) scaleY(2.2); }
-.sd-face--music .sd-face-dot:nth-child(4) { transform: translate( 1.5px, -2px) scaleY(6.2); }
-.sd-face--music .sd-face-dot:nth-child(5) { transform: translate( 4.5px,  2px) scaleY(3.2); }
-.sd-face--music .sd-face-dot:nth-child(6) { transform: translate( 7.5px,  0)   scaleY(4.4); }
-.sd-face--music2 .sd-face-dot:nth-child(1) { transform: translate(-7.5px, -1px) scaleY(5.2); }
-.sd-face--music2 .sd-face-dot:nth-child(2) { transform: translate(-4.5px,  3px) scaleY(2.2); }
-.sd-face--music2 .sd-face-dot:nth-child(3) { transform: translate(-1.5px, -2px) scaleY(6px); }
-.sd-face--music2 .sd-face-dot:nth-child(4) { transform: translate( 1.5px,  2.5px) scaleY(2.6); }
-.sd-face--music2 .sd-face-dot:nth-child(5) { transform: translate( 4.5px, -1.5px) scaleY(5.6); }
-.sd-face--music2 .sd-face-dot:nth-child(6) { transform: translate( 7.5px,  2.5px) scaleY(2.4); }
+   bounce, with no keyframes to keep in sync with the JS clock.
+   ⚠️ `transform-origin: center bottom` — the ONE formation that overrides the
+   default centre. Bars have to grow up from a shared floor; scaled about their
+   centres they grew in both directions at once, which is what put the tallest
+   one 7.9px out of the scoop and read as a bar chart rather than a meter.
+   ⚠️ Every bar sits at the same y (the floor) and differs ONLY in scaleY, so
+   the ceiling is one number to reason about: floor 4.5 + half-dot 1.5, minus
+   3px × scaleY. At the cap of 4.0 that spans ±6 units, ≈22px at k=1.85, inside
+   a 26.4px box. Raise a bar past 4.0 and it leaves the notch again. */
+.sd-face--music .sd-face-dot,
+.sd-face--music2 .sd-face-dot { transform-origin: center bottom; }
+.sd-face--music .sd-face-dot:nth-child(1) { transform: translate(-7.5px, 4.5px) scaleY(2); }
+.sd-face--music .sd-face-dot:nth-child(2) { transform: translate(-4.5px, 4.5px) scaleY(3.4); }
+.sd-face--music .sd-face-dot:nth-child(3) { transform: translate(-1.5px, 4.5px) scaleY(1.3); }
+.sd-face--music .sd-face-dot:nth-child(4) { transform: translate( 1.5px, 4.5px) scaleY(4); }
+.sd-face--music .sd-face-dot:nth-child(5) { transform: translate( 4.5px, 4.5px) scaleY(2.2); }
+.sd-face--music .sd-face-dot:nth-child(6) { transform: translate( 7.5px, 4.5px) scaleY(3.1); }
+.sd-face--music2 .sd-face-dot:nth-child(1) { transform: translate(-7.5px, 4.5px) scaleY(3.4); }
+.sd-face--music2 .sd-face-dot:nth-child(2) { transform: translate(-4.5px, 4.5px) scaleY(1.4); }
+.sd-face--music2 .sd-face-dot:nth-child(3) { transform: translate(-1.5px, 4.5px) scaleY(3.9); }
+.sd-face--music2 .sd-face-dot:nth-child(4) { transform: translate( 1.5px, 4.5px) scaleY(1.7); }
+.sd-face--music2 .sd-face-dot:nth-child(5) { transform: translate( 4.5px, 4.5px) scaleY(3.6); }
+.sd-face--music2 .sd-face-dot:nth-child(6) { transform: translate( 7.5px, 4.5px) scaleY(1.5); }
 
 /* LIKED / FOLLOWED / PLAYLISTED — the generic yes: a tick. */
 .sd-face--yes .sd-face-dot:nth-child(1) { transform: translate(-6px,  -0.5px); }
@@ -3116,7 +3135,7 @@
 /* Bento: aspect-ratio matches SVG viewBox 690×670 so children can be % positioned */
 .v3-bento {
   position: relative;
-  aspect-ratio: 689 / 638;
+  aspect-ratio: 689 / 730;
   overflow: visible;
   flex-shrink: 0;
   margin: 10px 10px 22px;
@@ -3154,7 +3173,7 @@
      `.v3-blue` starts at 83.78%). So: 0.5/689, 0.5/638, 538/689, 534.02/638.
      The old 0.07 / 0.08 / 78.01 / 83.70 left the cover ~0.5 units short on the
      right, i.e. a half-pixel crescent of shell down that edge. */
-  left: 0.0726%; top: 0.0784%; width: 78.0842%; height: 83.7022%;
+  left: 0.0726%; top: 0.0685%; width: 78.0842%; height: 73.1534%;
   background-size: cover;
   background-position: center;
   cursor: pointer;
@@ -3295,7 +3314,7 @@
 .v3-for-single {
   position: absolute;
   /* Exact sizing from NewBentoSvgs For You box: x557–670, y105–520 in 689×638 space */
-  left: 80.84%; top: 16.46%; width: 16.40%; height: 65.05%;
+  left: 80.84%; top: 14.3836%; width: 16.40%; height: 56.8493%;
   background-size: cover; background-position: center;
   background-color: #2a2520;
   /* ⚠️ Percentage, same reason as .v3-album — and this one was the loud gap:
@@ -3377,7 +3396,7 @@
 /* Blue box: Reviews strip */
 .v3-blue {
   position: absolute;
-  left: 0.07%; top: 83.78%; width: 78.08%; height: 17.5%;   /* was 16.14% — dips into the CD-gap below */
+  left: 0.07%; top: 73.2192%; width: 78.08%; height: 26.664%;   /* was 16.14% — dips into the CD-gap below */
   background: transparent;
   padding: 9px 12px 8px;   /* bottom was 4px — extra clip room so the quote's descenders show */
   display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between;
@@ -3472,6 +3491,14 @@
   grid-template-columns: minmax(0, 1fr) auto;
   grid-template-rows: auto;
   align-items: center;
+  /* ⚠️ The strip is ~195 viewBox units tall since the shell grew (was ~103).
+     `space-between` pins the title/rating row to the TOP and the credits row to
+     the BOTTOM, with the new room as one gap between them — rather than packing
+     both to the top and leaving the slack dangling underneath.
+     ⚠️ It degrades correctly: the credits row is `hidden` (display: none) on
+     albums with no data, and with a single row `space-between` places it at the
+     start, so the box looks exactly as it did before credits existed. */
+  align-content: space-between;
   gap: 0 10px;
 }
 /* ⚠️ `grid-row: 1` is load-bearing, not decoration. With only a column named,
@@ -3498,12 +3525,28 @@
    with a hole between it and the title. The flexible track also absorbs the
    artist's contribution — it spans all three, and without somewhere flexible to
    put that excess it would widen the title/year tracks and reopen the hole. */
+/* ⚠️ The info row reaches INTO the rating column and the artist gives the room
+   back. The rating column's track is sized by its WIDEST row — the count plus
+   the vinyls — but the title only ever collides with the compact score sitting
+   above them, so a fixed strip beside the title was always dead: measured at a
+   71px column against a 28px score, 42.7px wasted, on a title that was only
+   119.6px. The row claims that strip with a negative margin and
+   `.v3-blue-artist` re-reserves it with padding, so line 2 still clears the
+   count and the discs. `--sd-title-extra` is measured per album in
+   `sizeTitleExtra()` — the count's width moves with the number ("6k" vs
+   "156k"), so it can't be a constant. */
 .s-home-v3:not(.s-home-v3--review) .v3-blue-info-row {
   display: grid;
   grid-template-columns: minmax(0, max-content) max-content 1fr;
   align-items: baseline;
   column-gap: 0;      /* the year's ::before dot carries its own margin */
-  width: 100%;
+  /* ⚠️ `width: auto`, overriding the base rule's `width: 100%`. An explicit
+     100% resolves against the GRID AREA, so it pins the row to its column and
+     the negative margin below changes nothing at all — the row simply refuses
+     to grow and the title gains 0px. `auto` lets `justify-self: stretch` size
+     it from the area, which the margin can then extend. */
+  width: auto;
+  margin-right: calc(-1 * var(--sd-title-extra, 0px));
 }
 .s-home-v3:not(.s-home-v3--review) .v3-blue-title        { grid-area: 1 / 1; min-width: 0; }
 .s-home-v3:not(.s-home-v3--review) .v3-blue-date--inline { grid-area: 1 / 2; }
@@ -3514,6 +3557,9 @@
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  /* Hands back exactly what the row above claimed — line 2 sits beside the
+     count and the vinyls, which are the wide part of the rating column. */
+  padding-right: var(--sd-title-extra, 0px);
 }
 /* The album/artist separator only made sense while they shared a line. */
 .s-home-v3:not(.s-home-v3--review) .v3-blue-sep { display: none; }
@@ -3545,6 +3591,39 @@
 /* Bare "12.5k" here; "12.5k reviews" on the album page. The word is a span the
    state hides — see the note in setMainAlbum for why this can't be a JS branch. */
 .s-home-v3:not(.s-home-v3--review) .v3-rc-long { display: none; }
+
+/* ── Credits, in the room the taller shell opened up ──────────────────────
+   Produced by / Mixed by, from MusicBrainz (see `creditsFor` in app.js).
+   ⚠️ Spans both columns on a second grid row — the title and the rating share
+   row 1, and this belongs under BOTH, not beside either.
+   ⚠️ It is `hidden` until data arrives and stays hidden when there is none.
+   Coverage is genuinely patchy (MusicBrainz is volunteer-entered), so the row
+   has to be invisible rather than show an empty label — "Produced by —" across
+   half the catalogue would read as broken rather than as missing data.
+   ⚠️ Compact bento only; the review state lays this box out differently. */
+.s-home-v3:not(.s-home-v3--review) .v3-blue-credits {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  align-self: end;
+  min-width: 0;
+  padding-top: 7px;
+}
+.v3-blue-credits[hidden] { display: none; }
+.v3-cred-row {
+  display: flex; align-items: baseline; gap: 5px;
+  min-width: 0; line-height: 1.3;
+}
+.v3-cred-lbl {
+  flex-shrink: 0;
+  font-family: var(--font-mono); font-size: 8px;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: rgba(232,226,214,0.35);
+}
+.v3-cred-names {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-family: var(--font-main); font-size: 10px; font-weight: 500;
+  color: rgba(232,226,214,0.62);
+}
 .s-home-v3:not(.s-home-v3--review) .v3-blue-stars-row .hstars { grid-area: 2 / 2; }
 /* ⚠️ The two children take `1em` rather than a number so the ROW's font-size is
    the single lever, which is what the dev box's Line 1 Size slider turns.
@@ -3575,6 +3654,14 @@
   grid-template-columns: 1fr max-content minmax(0, max-content);
   justify-items: end;
   text-align: right;
+  /* The rating column is on the LEFT here, so the dead strip above the score is
+     too — the overhang and the artist's reservation both swap sides. */
+  margin-right: 0;
+  margin-left: calc(-1 * var(--sd-title-extra, 0px));
+}
+.s-home-v3:not(.s-home-v3--left):not(.s-home-v3--review) .v3-blue-artist {
+  padding-right: 0;
+  padding-left: var(--sd-title-extra, 0px);
 }
 .s-home-v3:not(.s-home-v3--left):not(.s-home-v3--review) .v3-blue-date--inline { grid-area: 1 / 2; }
 /* ⚠️ `justify-self: stretch` overrides the row's `justify-items: end` for this
@@ -3615,9 +3702,9 @@
 }
 .s-home-v3:not(.s-home-v3--review) .v3-blue-info-row {
   left: 0px;
-  top: -1.5px;
-  font-size: 13px;
-  row-gap: 5px;
+  top: 4.5px;
+  font-size: 14px;
+  row-gap: 6px;
 }
 /* ⚠️ One token changed from the pasted output: `gap: 1px` → `row-gap: 1px`.
    The slider is labelled Row gap, but `gap` sets BOTH axes, which crushed the
@@ -3625,7 +3712,7 @@
    axes separately, so the next Copy CSS matches this as written. */
 .s-home-v3:not(.s-home-v3--review) .v3-blue-stars-row {
   left: 0px;
-  top: -3.5px;
+  top: 2px;
   row-gap: 1px;
   column-gap: 5px;
 }
@@ -3712,7 +3799,7 @@
 /* Spinning CD — positioned in bento coordinate space from SVG cx=615.5 cy=614 r=55 */
 .v3-cd {
   position: absolute;
-  left: 81.35%; top: 87.62%; width: 15.97%; height: 17.24%;
+  left: 81.35%; top: 76.5855%; width: 15.97%; height: 15.0685%;
   border-radius: 50%;
   overflow: hidden;
   background-size: cover; background-position: center;
@@ -3818,8 +3905,8 @@
    x556.5–688.5, y0.5–65.5 in the 689×638 coordinate space */
 .v3-live-pill {
   position: absolute;
-  left: 80.77%; top: 0.5%; right: auto;
-  width: 19.16%; height: 10.19%;
+  left: 80.77%; top: 0.437%; right: auto;
+  width: 19.16%; height: 8.9041%;
   min-width: 0;
   gap: 6px; padding: 0;
   border-radius: 999px;
@@ -3870,7 +3957,11 @@
 .v3-ring-dot {
   position: absolute; top: 50%; left: 50%;
   width: 3px; height: 3px; margin: -1.5px;   /* slightly smaller */
-  border-radius: 50%;                        /* circles */
+  /* ⚠️ Rounded SQUARE — 14% of the dot, matching SD_DOTS' `cornerFrac`, so the
+     pill/back-pill/follow rings are the same dot as every generated asset and
+     the nav pet. These were circles; that made the one dot shape the user sees
+     most often the only one that wasn't the brand's. */
+  border-radius: 14%;
   background: currentColor;
   transition: transform 0.4s cubic-bezier(0.34, 1.45, 0.5, 1);   /* the dots MORPH between formations */
   /* Idle emphasis: each dot eases OUTWARD from the arrow's centre, holds briefly, then
@@ -4091,9 +4182,11 @@
   overflow: visible;
 }
 .s-home-v3--review .v3-blue-sep { display: none; }
-.s-home-v3--review .v3-blue-artist { font-size: 12px; position: relative; top: 3.5px; }
+/* Larger since the rating line came out from under it — the info box is down to
+   two lines here, so the title pair can take the room the row used to hold. */
+.s-home-v3--review .v3-blue-artist { font-size: 14.5px; position: relative; top: 3.5px; }
 .s-home-v3--review .v3-blue-album {
-  font-size: 18px;
+  font-size: 22px;
   display: inline;              /* flow inline with the date + allow wrapping */
   white-space: normal;
   overflow: visible;
@@ -4115,12 +4208,23 @@
 .s-home-v3--review .v3-blue-date--inline { display: none; }
 .s-home-v3--review .v3-blue-date--fs {
   display: inline; margin-left: 6px;    /* was a flex gap; title is no longer flex */
-  font-size: 12px; font-weight: 300;
+  font-size: 14px; font-weight: 300;    /* tracks the album title's step up */
   color: rgba(232,226,214,0.5);
 }
 .s-home-v3--light.s-home-v3--review .v3-blue-date--fs { color: rgba(232,226,214,0.5); }
 /* Push the rest of the stats down ~1 line to make room */
 .s-home-v3--review .v3-blue-stars-row { margin-top: 7px; }
+/* ⚠️ The whole rating line is GONE from the album page — the headline score
+   below the CTA says all of it, and printing the number twice made the page
+   read as having two different ratings. The info box here is now just
+   album · year over the artist.
+   ⚠️ `:not(--artist)` is load-bearing. The artist page has no score, so this
+   row is where its review COUNT lives — "the one stat" (see the `--artist`
+   rules below, which hide the score and the discs but keep the count).
+   Dropping the `:not()` blanks that out.
+   ⚠️ The compact bento is untouched: it's the app's primary rating display and
+   keeps its number, discs and count. */
+.s-home-v3--review:not(.s-home-v3--artist) .v3-blue-stars-row { display: none; }
 
 /* Flood removes the bento margin visually, leaving dead space between the For You
    box and the screen edge. Grow it outward so its edge inset matches the back button. */
@@ -4160,6 +4264,43 @@
 .s-home-v3--artist .v3-rev-songs,
 .s-home-v3--artist .v3-rev-media,
 .s-home-v3--artist .v3-blue-date { display: none; }
+/* ══ Album page — the headline score above the histogram ═══════════════════
+   Big, left-aligned, DM Sans. It heads the ratings section (score → discs →
+   distribution → tracklist), which is why it takes the histogram's left edge
+   rather than the stats strip's.
+   ⚠️ `--font-main`, declared outright. The number under the artist is DM Sans
+   by inheritance and the count beside it is mono, so "which family is this?"
+   is a live question in this box — say it rather than leave it to the cascade.
+   ⚠️ Review state only. `.v3-rev-score` lives in the review panel, which the
+   compact bento never renders, but the scope keeps it honest. */
+/* ⚠️ These six declarations are mirrored by the dev box's "Album score" tab
+   (DEVBOX_TABS in app.js). Change one here and the panel's defaults have to
+   follow, or its live <style> — which is injected at load and wins ties —
+   silently reverts them on every page view. */
+.s-home-v3--review .v3-rev-score {
+  display: flex; align-items: baseline;
+  position: relative;
+  left: 15.5px;
+  top: 5.5px;
+  gap: 9px;
+  padding: 23px 0 2px;
+}
+.s-home-v3--review .v3-rev-score-n {
+  font-family: var(--font-main);
+  font-size: 51px; font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;   /* big digits open up; pull them back together */
+  color: rgba(232,226,214,0.92);
+}
+.s-home-v3--light.s-home-v3--review .v3-rev-score-n { color: rgba(232,226,214,0.92); }
+/* The discs sit on the number's baseline so the pair reads as one object. */
+.s-home-v3--review .v3-rev-score-sub { position: relative; top: -2px; }
+/* Sized here rather than inline (populateBigScore passes halfStars' `cssSized`)
+   so the dev box can turn it — an inline width would need !important to beat. */
+.s-home-v3--review .v3-rev-score-sub .hstar { width: 18px; height: 18px; }
+/* An artist has no score — same rule as the one-liner's. */
+.s-home-v3--artist .v3-rev-score { display: none; }
+
 /* No artist rating — an artist isn't a thing you score; their ALBUMS carry the
    ratings, in the grid below. The review count stays as the one stat. */
 .s-home-v3--artist .v3-blue-score,
@@ -4490,9 +4631,24 @@
 /* Album + artist pages: the CTA is centred under the full-width art rather than
    hung off the stats column (there's no CD column beside it in these states).
    --artist inherits this — it always carries --album too. */
+/* ⚠️ `stretch`, not `center`. Centring left the control floating inside its own
+   column — measured 268.2px of button inside 321.2px of album, i.e. 26.5px of
+   air on each side, while the histogram, the tracklist and the cover all sat
+   flush at the album's edges. The row is the only thing on this page that
+   wasn't on that grid. It now spans the album exactly; `.v3-rev-cta` grows to
+   fill whatever the three fixed squares don't take. */
 .s-home-v3--review.s-home-v3--album .v3-rev-mine {
-  align-items: center;
+  align-items: stretch;
   padding-left: 0; padding-right: 0;
+}
+.s-home-v3--review.s-home-v3--album .v3-rev-cta-row { width: 100%; }
+.s-home-v3--review.s-home-v3--album .v3-rev-cta {
+  flex: 1 1 auto;
+  width: auto;              /* was fit-content — that's what kept it text-sized */
+  justify-content: flex-start;
+  /* The base -2px optically nudged a floating button; flush against the album
+     it just hangs 2px past the edge the row is now aligned to. */
+  margin-left: 0;
 }
 .s-home-v3--review .v3-rev-hist { margin-top: 10px; }
 /* The full tracklist, in flow — it no longer caps its height and scrolls inside
@@ -4971,6 +5127,49 @@
   transition: filter .15s, transform .06s;
 }
 .v3-rev-cta svg { width: 16px; height: 16px; flex-shrink: 0; }
+/* ── The log control's shared identity ────────────────────────────────────
+   One dot-icon size and one type scale across the CTA and the three squares,
+   so the four read as one control rather than a button with three tag-alongs.
+   ⚠️ The dot icons are SD_DOTS grids: they fill with `currentColor` and carry
+   no strokes, so they inherit hover/`.on` colour like a glyph. Don't add
+   `stroke` rules — there is nothing to stroke, and a stroke on a rounded-square
+   rect would fatten the dot off the grid. */
+.sd-dot-ico { display: block; }
+.v3-rev-q   .sd-dot-ico { width: 15px; height: 15px; }
+/* The box icon is 7×5 cells, not 5×5, so it takes its own size — a square rule
+   would squash it. Wider on screen too: it carries three dots inside a frame
+   and needs the room to stay legible. */
+.v3-rev-cta .sd-dot-ico--box { width: 21px; height: 15px; }
+
+/* ⚠️ The three dots inside the box are the only thing on this page that moves
+   at rest — that is the point, it marks the button you're meant to press. Slow
+   and shallow on purpose: anything faster reads as a spinner (i.e. "busy"),
+   which is the opposite of an invitation.
+   ⚠️ `transform-box: fill-box` is required. Without it an SVG child transforms
+   about the VIEWBOX origin, so `scale()` throws the dot across the icon instead
+   of growing it in place. */
+@keyframes sd-ico-breathe {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.4); }
+}
+.sd-ico-live {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: sd-ico-breathe 2.8s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sd-ico-live { animation: none; }
+}
+
+/* ── One type treatment across all four ───────────────────────────────────
+   The CTA was DM Sans 600 and the three captions were mono 400, so the row read
+   as one bold button with three tag-alongs in a different voice. All four are
+   now `--font-main` 600 with the same tracking; only SIZE and case separate the
+   CTA from its captions, which is what makes them one control. */
+.v3-rev-cta {
+  font-family: var(--font-main);
+  font-size: 13px; font-weight: 600; letter-spacing: 0.01em;
+}
 .v3-rev-cta:hover  { filter: brightness(1.12); }
 .v3-rev-cta:active { transform: scale(0.985); }
 
@@ -4982,9 +5181,14 @@
    the button's padding can't leave the squares short.
    The margins here are the breathing room above and below the whole row; the
    histogram below adds its own 10px on top of the bottom one. */
+/* ⚠️ `--sd-q` is ONE number doing two jobs: the squares' width and the row's
+   height. `align-items: stretch` gives every child the row's height, so the
+   three buttons are only square while those agree — two literals would drift. */
 .v3-rev-cta-row {
+  --sd-q: 50px;
   display: flex; align-items: stretch;
   max-width: 100%;
+  min-height: var(--sd-q);
   margin: 16px 0 20px;
 }
 .v3-rev-cta-row .v3-rev-cta { border-radius: 7px 0 0 7px; }
@@ -4997,7 +5201,7 @@
    legibility rather than squeezed. All three share that width rather than
    sizing to content, so the control stays an even cascade. */
 .v3-rev-q {
-  flex-shrink: 0; width: 50px; padding: 0 3px;
+  flex-shrink: 0; width: var(--sd-q, 50px); padding: 0 3px;
   display: inline-flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 3px;
   margin-left: -1px;                 /* collapse the shared border */
@@ -5011,11 +5215,14 @@
 }
 .v3-rev-q:last-child { border-radius: 0 7px 7px 0; }
 .v3-rev-q svg { width: 14px; height: 14px; }
+/* ⚠️ `--font-main` 600, matching the CTA. These were mono 400, so the row read
+   as one bold button with three tag-alongs speaking in a different voice. Only
+   SIZE and case separate the CTA from its captions now. */
 .v3-rev-q-lbl {
-  font-family: var(--font-mono); font-size: 7.5px;
-  text-transform: uppercase; letter-spacing: 0.02em;
+  font-family: var(--font-main); font-size: 8px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.04em;
   line-height: 1; white-space: nowrap;
-  opacity: 0.85;
+  opacity: 0.9;
 }
 .v3-rev-q:hover  { filter: brightness(1.14); color: #e8e2d6; }
 .v3-rev-q:active { transform: scale(0.94); }
@@ -5293,13 +5500,19 @@
   font-family: var(--font-mono); font-size: 10px;
   color: rgba(232,226,214,0.34); letter-spacing: 0.2px;
 }
+/* ⚠️ FOUR chips share this row now — Popular · Controversial · Genres · Week —
+   so the type and padding are sized to fit them all across a ~310px screen
+   rather than to look comfortable on their own. "Controversial" is the one
+   that sets the budget; shortening the others buys nothing. `min-width: 0` +
+   the overflow guard keep a longer label from pushing Week off the edge. */
 .wall2-bar {
-  display: flex; align-items: center; gap: 12px;
+  display: flex; align-items: center; gap: 6px;
   padding-bottom: 12px;
+  min-width: 0;
 }
 .wall2-cat {
   flex-shrink: 0;
-  padding: 7px 15px; border-radius: 999px;
+  padding: 6px 10px; border-radius: 999px;
   background: #111116;
   border: none;
   box-shadow: -4px -4px 8px 0 rgba(255,255,255,0.07), 4px 4px 6px -1px rgba(0,0,0,0.5);
@@ -5310,6 +5523,8 @@
   transition: box-shadow .18s, color .18s, background .18s;
 }
 .wall2-cat:hover { background: #17171d; color: #e8e2d6; }
+/* Sized down from 11.5px to fit the fourth chip. */
+.wall2-cat { font-size: 10.5px; letter-spacing: -0.01em; }
 .wall2-cat.active {
   color: var(--star);
   box-shadow: inset 3px 3px 6px rgba(0,0,0,0.55), inset -3px -3px 6px rgba(255,255,255,0.05);
@@ -5320,7 +5535,10 @@
   box-shadow: inset 3px 3px 6px rgba(0,0,0,0.55), inset -3px -3px 6px rgba(255,255,255,0.05);
 }
 .wall2-menuwrap { position: relative; display: inline-flex; }
-.wall2-menuwrap--right { margin-left: auto; }   /* the time filter sits on the right */
+/* ⚠️ The time filter used to be pinned right with `margin-left: auto`. It sits
+   in the row with the other three now — they read as one set of controls, and a
+   lone chip across the gap read as a different kind of thing. The rule stays
+   because the class is gone from the markup, not because it's wanted. */
 /* Compact dropdown popup anchored to its button (left for genres, right for time) */
 .wall2-menu {
   position: absolute; top: calc(100% + 6px); z-index: 40;
@@ -5332,7 +5550,10 @@
 }
 .wall2-menu[hidden] { display: none; }
 .wall2-menu--genres { left: 0; }
-.wall2-menu--time { right: 0; }
+/* ⚠️ Anchored LEFT, like the genres menu. It was `right: 0` while its button
+   was the last thing on the row; now that Week sits mid-row, right-anchoring
+   threw the popup back across the screen, away from the chip that opened it. */
+.wall2-menu--time { left: 0; }
 .wall2-menu-item {
   padding: 8px 12px; border-radius: 7px; border: none; background: none;
   color: rgba(232,226,214,0.8);
@@ -5359,10 +5580,13 @@
   gap: 14px 8px;
 }
 .wall2-cell { cursor: pointer; min-width: 0; }
+/* ⚠️ 3px, deliberately tighter than the app's usual corner. This is a WALL —
+   the cells read as one dense surface, and a soft radius at 3-up made each one
+   float as a separate card. Shared with the artist page's album grid. */
 .wall2-art {
   position: relative;
   width: 100%; aspect-ratio: 1;
-  border-radius: 6px;
+  border-radius: 3px;
   background-size: cover; background-position: center;
   box-shadow: 0 6px 14px rgba(0,0,0,0.45), 0 2px 5px rgba(0,0,0,0.4);
   transition: transform .16s;

@@ -375,7 +375,9 @@ function setMainAlbum(screenEl, album, animate = false, animateText = animate) {
       window.activeAlbum = album;
       enterAlbumPage(screenEl);
     };
+    sizeTitleExtra(screenEl);
   }
+  populateCredits(screenEl, album);
 
   const quoteTextEl = screenEl.querySelector('.v3-blue-quote-text');
   if (quoteTextEl) {
@@ -673,6 +675,22 @@ window.toggleWallPanel = function (btn) {
   const wasOpen = menu && !menu.hidden;
   closeWallMenus(scr);
   if (menu && !wasOpen) { menu.hidden = false; btn.classList.add('open'); }
+};
+/* Popular ⇄ Controversial. Repaints the grid in place rather than re-rendering
+   the screen: `renderViewer()` would rebuild both shells and lose the dropdowns'
+   state along with the scroll position. Both shells are updated together — the
+   viewer shows dark and light side by side and they must agree. */
+window.pickWallSort = function (btn) {
+  const sort = btn.dataset.sort;
+  if (!sort || sort === window.WALL_SORT) return;
+  window.WALL_SORT = sort;
+  document.querySelectorAll('.s-wall2').forEach(scr => {
+    scr.querySelectorAll('.wall2-sort').forEach(b =>
+      b.classList.toggle('active', b.dataset.sort === sort));
+    const grid = scr.querySelector('.wall2-grid');
+    if (grid) grid.innerHTML = wallGridHtml();
+  });
+  closeWallMenus(btn.closest('.app-screen'));
 };
 window.pickWallGenre = function (el) {
   const menu = el.closest('.wall2-menu');
@@ -1105,6 +1123,36 @@ window.openAlbumPage = function (album, pinnedReview) {
   }));
 };
 
+/* How far the album title may overhang the rating column.
+   The rating column is as wide as its widest row — the review count plus the
+   vinyls — but the title's only neighbour is the compact score above them, so
+   the difference is dead space the title can have. Both figures are measured
+   rather than assumed: the score is always "N.N" and so effectively constant,
+   but the count is not ("6k" vs "156k"), and it is the count that sets the
+   column's width. app.css turns this into a negative margin on the info row and
+   an equal padding on the artist beneath it.
+   ⚠️ Compact bento only. The review state puts all three on one line, where
+   there is no strip to reclaim and an overhang would collide. */
+function sizeTitleExtra(screenEl) {
+  if (!screenEl || screenEl.classList.contains('s-home-v3--review')) return;
+  const row = screenEl.querySelector('.v3-blue-stars-row');
+  const score = screenEl.querySelector('.v3-blue-score');
+  if (!row || !score) return;
+  /* ⚠️ Measured SYNCHRONOUSLY, not in a requestAnimationFrame. rAF doesn't fire
+     in a background tab (same trap as paintAfterRender), so the callback simply
+     never ran and the title silently kept its old width — reproducibly, whenever
+     the tab wasn't focused. Reading a rect forces layout on demand, so waiting
+     for a frame bought nothing here in the first place.
+     ⚠️ No feedback loop: the rating column is `auto`, sized by this row, and the
+     margin below lands on the info row in the OTHER column. */
+  const rowW = row.getBoundingClientRect().width;
+  const scoreW = score.getBoundingClientRect().width;
+  if (!rowW || !scoreW) return;
+  // Leave a little air so the title never actually touches the score.
+  const extra = Math.max(0, rowW - scoreW - 6);
+  screenEl.style.setProperty('--sd-title-extra', extra.toFixed(1) + 'px');
+}
+
 // Live-pill ring reactions — swipe / For You / CD each fire a distinct animation;
 // idle it spins slowly. (Later this can become a real music visualizer.)
 function reactRing(screenEl, type) {
@@ -1359,6 +1407,25 @@ function populateHist(scr, album) {
   ).join('');
   const sub = box.querySelector('.v3-rev-hist-sub');
   if (sub) sub.textContent = (window.fmtRc ? fmtRc(album.reviewCount || 0) : (album.reviewCount || 0)) + ' reviews';
+  populateBigScore(scr, album);
+}
+
+/* The album page's headline score — the big number above the histogram.
+   ⚠️ Deliberately a SECOND printing of the same rating that `.v3-blue-score`
+   shows under the artist. They aren't redundant: the one-liner is a label on
+   the record (album · year · artist · score), while this one is the heading for
+   the ratings section beneath it, which is why it takes the histogram's
+   alignment and not the stats strip's.
+   ⚠️ Hidden on the artist page — an artist isn't a thing you score, same reason
+   `.v3-blue-score` is hidden there. */
+function populateBigScore(scr, album) {
+  const n = scr && scr.querySelector('.v3-rev-score-n');
+  if (!n || !album) return;
+  n.textContent = (album.rating || 0).toFixed(1);
+  // cssSized: the discs take their size from app.css so the dev box can tune
+  // them. An inline width/height would beat any rule short of !important.
+  const sub = scr.querySelector('.v3-rev-score-sub');
+  if (sub) sub.innerHTML = halfStars(album.rating, 13, true);
 }
 function populateSongList(scr) {
   const wrap = scr && scr.querySelector('.v3-rev-songs');
@@ -4877,7 +4944,14 @@ ${each(bases, PERSONA_INK2)} { color: ${t.ink2}; }`;
      and a persona has no business restyling a corner that has to line up with
      a path. `eric`'s 15px rendered the cover at ~27 units against the shell's
      20, leaving a visible crescent of shell colour at all three corners.
-     `.wall2-art` and `.pl2-card` are free-floating cards; they keep it. */
+     `.pl2-card` is a free-floating card; it keeps it.
+     ⚠️ `.wall2-art` came OUT of this list. The wall is a dense 3-up grid meant
+     to read as one surface, so its corner is a layout decision (3px, set in
+     app.css) rather than a persona flourish — with the token applied, eric's
+     15px made every cell float as a separate card and no amount of editing
+     app.css could show it, because this rule is (0,3,0) and wins. Same family
+     of mistake as `.v3-album`: if the shape is doing structural work, it is not
+     a persona knob. */
   return `
 ${k} {${tokens(s.dark)}
   font-family: ${s.font}, var(--font-main), sans-serif;
@@ -4887,7 +4961,7 @@ ${bg(darkBases, s.dark)}
 ${bg(lightBases, s.light)}
 ${block(darkBases, s.dark)}
 ${block(lightBases, s.light)}
-${each([k], ['.wall2-art', '.pl2-card'])} { border-radius: ${s.radius}; }`;
+${each([k], ['.pl2-card'])} { border-radius: ${s.radius}; }`;
 }
 
 function applyPersonaSkins() {
@@ -5088,50 +5162,112 @@ function renderPersonaBar() {
    which clips. Line 1's size rides on `.v3-blue-info-row` and the album/artist
    inherit it as `1em`; line 2's rides on `.v3-blue-score`. */
 
-const DEVBOX_FIELDS = [
-  { grp: 'Block' },
-  { k: 'gap',  label: 'Col gap', min: 0, max: 40, step: 0.5, def: 10 },
-  { k: 'padT', label: 'Pad T', min: 0,   max: 24, step: 0.5, def: 9 },
-  { k: 'padL', label: 'Pad L', min: 0,   max: 32, step: 0.5, def: 12 },
-  { grp: 'Line 1 — album · year / artist' },
-  { k: 'l1x', label: 'X',       min: -20, max: 20, step: 0.5, def: 0 },
-  { k: 'l1y', label: 'Y',       min: -20, max: 20, step: 0.5, def: -1.5 },
-  { k: 'l1s', label: 'Size',    min: 7,   max: 20, step: 0.1, def: 13 },
-  { k: 'l1g', label: 'Row gap', min: 0,   max: 12, step: 0.5, def: 5 },
-  { grp: 'Line 2 — rating' },
-  { k: 'l2x', label: 'X',       min: -20, max: 20, step: 0.5, def: 0 },
-  { k: 'l2y', label: 'Y',       min: -20, max: 20, step: 0.5, def: -3.5 },
-  { k: 'l2s', label: 'Size',    min: 12,  max: 44, step: 0.5, def: 22.5 },
-  { k: 'l2g', label: 'Row gap', min: 0,   max: 12, step: 0.5, def: 1 },
-  // Count ↔ vinyls, which share row 2 of the rating column.
-  { k: 'l2cg', label: 'Revs gap', min: 0, max: 20, step: 0.5, def: 5 },
+/* ── The panel's tabs ──────────────────────────────────────────────────────
+   One entry per thing you can tune. Each owns its FIELDS and the CSS block it
+   emits, so adding a tab is adding a row here — nothing else in the panel knows
+   how many there are.
+   ⚠️ Field keys are flat in DEVBOX and therefore share ONE namespace across
+   tabs. Prefix new ones (the album-score tab uses `s*`) or a collision will
+   silently drive two sliders from one value.
+   ⚠️ Every `def` must equal what app.css already declares. The live <style> is
+   injected at LOAD and wins ties, so a default that disagrees with the
+   stylesheet doesn't just mislead the panel — it overrides the real value on
+   every page view. */
+const DEVBOX_TABS = [
+  {
+    id: 'bento', label: 'Bento info',
+    fields: [
+      { grp: 'Block' },
+      { k: 'gap',  label: 'Col gap', min: 0, max: 40, step: 0.5, def: 10 },
+      { k: 'padT', label: 'Pad T', min: 0,   max: 24, step: 0.5, def: 9 },
+      { k: 'padL', label: 'Pad L', min: 0,   max: 32, step: 0.5, def: 12 },
+      { grp: 'Line 1 — album · year / artist' },
+      { k: 'l1x', label: 'X',       min: -20, max: 20, step: 0.5, def: 0 },
+      { k: 'l1y', label: 'Y',       min: -20, max: 20, step: 0.5, def: 4.5 },
+      { k: 'l1s', label: 'Size',    min: 7,   max: 20, step: 0.1, def: 14 },
+      { k: 'l1g', label: 'Row gap', min: 0,   max: 12, step: 0.5, def: 6 },
+      { grp: 'Line 2 — rating' },
+      { k: 'l2x', label: 'X',       min: -20, max: 20, step: 0.5, def: 0 },
+      { k: 'l2y', label: 'Y',       min: -20, max: 20, step: 0.5, def: 2 },
+      { k: 'l2s', label: 'Size',    min: 12,  max: 44, step: 0.5, def: 22.5 },
+      { k: 'l2g', label: 'Row gap', min: 0,   max: 12, step: 0.5, def: 1 },
+      { k: 'l2cg', label: 'Revs gap', min: 0, max: 20, step: 0.5, def: 5 },
+    ],
+    css: d => `.s-home-v3:not(.s-home-v3--review) .v3-blue {
+  column-gap: ${d.gap}px;
+  padding: ${d.padT}px ${d.padL}px 8px;
+}
+.s-home-v3:not(.s-home-v3--review) .v3-blue-info-row {
+  left: ${d.l1x}px;
+  top: ${d.l1y}px;
+  font-size: ${d.l1s}px;
+  row-gap: ${d.l1g}px;
+}
+.s-home-v3:not(.s-home-v3--review) .v3-blue-stars-row {
+  left: ${d.l2x}px;
+  top: ${d.l2y}px;
+  row-gap: ${d.l2g}px;
+  column-gap: ${d.l2cg}px;
+}
+.s-home-v3:not(.s-home-v3--review) .v3-blue-score {
+  font-size: ${d.l2s}px;
+}`,
+  },
+  {
+    id: 'score', label: 'Album score',
+    fields: [
+      { grp: 'Block' },
+      { k: 'sx',    label: 'X',      min: -40, max: 40, step: 0.5, def: 15.5 },
+      { k: 'sy',    label: 'Y',      min: -40, max: 40, step: 0.5, def: 5.5 },
+      { k: 'spadT', label: 'Pad T',  min: 0,   max: 48, step: 0.5, def: 23 },
+      { k: 'spadB', label: 'Pad B',  min: 0,   max: 48, step: 0.5, def: 2 },
+      { grp: 'Number' },
+      { k: 'ssz',   label: 'Size',   min: 16,  max: 84, step: 0.5, def: 51 },
+      { grp: 'Vinyls' },
+      { k: 'sgap',  label: 'Gap',    min: 0,   max: 40, step: 0.5, def: 9 },
+      { k: 'svz',   label: 'Size',   min: 4,   max: 28, step: 0.5, def: 18 },
+      { k: 'svy',   label: 'Y',      min: -20, max: 20, step: 0.5, def: -2 },
+    ],
+    css: d => `.s-home-v3--review .v3-rev-score {
+  left: ${d.sx}px;
+  top: ${d.sy}px;
+  gap: ${d.sgap}px;
+  padding: ${d.spadT}px 0 ${d.spadB}px;
+}
+.s-home-v3--review .v3-rev-score-n { font-size: ${d.ssz}px; }
+.s-home-v3--review .v3-rev-score-sub { top: ${d.svy}px; }
+.s-home-v3--review .v3-rev-score-sub .hstar { width: ${d.svz}px; height: ${d.svz}px; }`,
+  },
 ];
 
 const DEVBOX = {};
-DEVBOX_FIELDS.forEach(f => { if (f.k) DEVBOX[f.k] = f.def; });
+DEVBOX_TABS.forEach(t => t.fields.forEach(f => { if (f.k) DEVBOX[f.k] = f.def; }));
+let DEVBOX_TAB = DEVBOX_TABS[0].id;
 
+const devBoxTab = () => DEVBOX_TABS.find(t => t.id === DEVBOX_TAB) || DEVBOX_TABS[0];
+
+/* Rounded once, here, so the live style and the copied text can never disagree
+   about a value the way they would if each formatted its own numbers. */
+function devBoxVals() {
+  const n = v => (Math.round(v * 100) / 100);
+  const d = {};
+  Object.keys(DEVBOX).forEach(k => { d[k] = n(DEVBOX[k]); });
+  return d;
+}
+
+/* What gets INJECTED: every tab, because all of them have to be in force at
+   once — you can't tune the album score with the bento's block switched off. */
 function devBoxCss() {
-  const d = DEVBOX, n = v => (Math.round(v * 100) / 100);
-  return `/* Compact bento info box — tuned in the dev box */
-.s-home-v3:not(.s-home-v3--review) .v3-blue {
-  column-gap: ${n(d.gap)}px;
-  padding: ${n(d.padT)}px ${n(d.padL)}px 8px;
+  const d = devBoxVals();
+  return DEVBOX_TABS.map(t =>
+    `/* ${t.label} — tuned in the dev box */\n${t.css(d)}`).join('\n\n');
 }
-.s-home-v3:not(.s-home-v3--review) .v3-blue-info-row {
-  left: ${n(d.l1x)}px;
-  top: ${n(d.l1y)}px;
-  font-size: ${n(d.l1s)}px;
-  row-gap: ${n(d.l1g)}px;
-}
-.s-home-v3:not(.s-home-v3--review) .v3-blue-stars-row {
-  left: ${n(d.l2x)}px;
-  top: ${n(d.l2y)}px;
-  row-gap: ${n(d.l2g)}px;
-  column-gap: ${n(d.l2cg)}px;
-}
-.s-home-v3:not(.s-home-v3--review) .v3-blue-score {
-  font-size: ${n(d.l2s)}px;
-}`;
+
+/* What gets COPIED and shown in the textarea: the ACTIVE tab only, since that
+   is the block you are pasting into app.css. */
+function devBoxTabCss() {
+  const t = devBoxTab();
+  return `/* ${t.label} — tuned in the dev box */\n${t.css(devBoxVals())}`;
 }
 
 function devBoxApply() {
@@ -5141,24 +5277,55 @@ function devBoxApply() {
     el.id = 'devbox-live';
     document.head.appendChild(el);   // last in head → wins ties with app.css
   }
-  const css = devBoxCss();
-  el.textContent = css;
+  // Injected: every tab. Shown/copied: the active one — that's the block you
+  // paste into app.css, and it keeps "what you see is what you paste" per tab.
+  el.textContent = devBoxCss();
   const out = document.getElementById('db-out');
-  if (out) out.value = css;
+  if (out) out.value = devBoxTabCss();
   document.querySelectorAll('#db-body input[type=range]').forEach(inp => {
     const lbl = inp.parentElement.querySelector('.db-val');
     if (lbl) lbl.textContent = DEVBOX[inp.dataset.k];
   });
 }
 
+function devBoxRenderTabs() {
+  const strip = document.getElementById('db-tabs');
+  if (!strip) return;
+  strip.innerHTML = DEVBOX_TABS.map(t =>
+    `<button class="db-tab${t.id === DEVBOX_TAB ? ' on' : ''}" data-t="${t.id}">${t.label}</button>`
+  ).join('');
+}
+
+function devBoxRenderFields() {
+  const body = document.getElementById('db-body');
+  if (!body) return;
+  body.innerHTML = devBoxTab().fields.map(f => f.grp
+    ? `<div class="db-grp">${f.grp}</div>`
+    : `<label class="db-row"><span>${f.label}</span>
+         <input type="range" data-k="${f.k}" min="${f.min}" max="${f.max}" step="${f.step}" value="${DEVBOX[f.k]}">
+         <span class="db-val">${DEVBOX[f.k]}</span></label>`).join('');
+}
+
+window.devBoxPickTab = function (id) {
+  if (!DEVBOX_TABS.some(t => t.id === id)) return;
+  DEVBOX_TAB = id;
+  devBoxRenderTabs();
+  devBoxRenderFields();   // values come from DEVBOX, so a switch never loses a tune
+  devBoxApply();
+};
+
 function initDevBox() {
   const body = document.getElementById('db-body');
   if (!body) return;
-  body.innerHTML = DEVBOX_FIELDS.map(f => f.grp
-    ? `<div class="db-grp">${f.grp}</div>`
-    : `<label class="db-row"><span>${f.label}</span>
-         <input type="range" data-k="${f.k}" min="${f.min}" max="${f.max}" step="${f.step}" value="${f.def}">
-         <span class="db-val">${f.def}</span></label>`).join('');
+  devBoxRenderTabs();
+  devBoxRenderFields();
+  const strip = document.getElementById('db-tabs');
+  if (strip) strip.addEventListener('click', e => {
+    const b = e.target.closest('.db-tab');
+    if (b) devBoxPickTab(b.dataset.t);
+  });
+  // Delegated: devBoxRenderFields() rebuilds the rows on every tab switch, so
+  // per-input listeners would leak one set per switch.
   body.addEventListener('input', e => {
     const inp = e.target.closest('input[type=range]');
     if (!inp) return;
@@ -5173,16 +5340,16 @@ window.toggleDevBox = function () {
   if (el) el.hidden = !el.hidden;
 };
 
+/* Resets the ACTIVE tab only — the button sits under that tab's sliders, and
+   wiping a tune you can't currently see would be a nasty surprise. */
 window.devBoxReset = function () {
-  DEVBOX_FIELDS.forEach(f => { if (f.k) DEVBOX[f.k] = f.def; });
-  document.querySelectorAll('#db-body input[type=range]').forEach(inp => {
-    inp.value = DEVBOX[inp.dataset.k];
-  });
+  devBoxTab().fields.forEach(f => { if (f.k) DEVBOX[f.k] = f.def; });
+  devBoxRenderFields();
   devBoxApply();
 };
 
 window.devBoxCopy = function (btn) {
-  const css = devBoxCss();
+  const css = devBoxTabCss();
   const done = () => {
     const was = btn.textContent;
     btn.textContent = 'Copied ✓';
@@ -5648,6 +5815,185 @@ function dz(path, retry) {
       return dz(path, true);
     });
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   CREDITS — producer / mix / engineer, from MusicBrainz
+   ══════════════════════════════════════════════════════════════════════════
+   ⚠️ **Deezer does not carry credits.** Checked against the live album
+   endpoint: the only people in it are `contributors`, and their `role` is
+   "Main" or "Featured" — performers, not producers. What it does give that is
+   credit-adjacent is `label`, `release_date` and `upc`.
+
+   MusicBrainz has the rest, is free, needs no key, and — the part that makes
+   this reliable — matches EXACTLY on Deezer's `upc` via its `barcode` query, so
+   there is no fuzzy title guessing. The chain is three calls:
+     dz('album/<deezerId>')  →  upc          (JSONP; Deezer sends no CORS headers)
+     mb('release/?query=barcode:<upc>')  →  mbid
+     mb('release/<mbid>?inc=recordings+artist-rels+recording-level-rels')  →  credits
+
+   ⚠️ All THREE inc values are required. `recording-level-rels` only says
+   WHERE to apply relationship includes; `artist-rels` says WHICH kind. Without
+   the latter the request still returns 200 and every recording simply arrives
+   with no `relations` key — indistinguishable from "this album has no credits"
+   unless you look at the payload.
+   ⚠️ The producers live at RECORDING level, not release level — the release's
+   own `relations` array came back empty for every record tested, so the heavy
+   `recordings` include is unavoidable (~100KB). That is why this is fetched for
+   the ONE album on screen, debounced, and cached for the session.
+   ⚠️ MusicBrainz asks for ≤1 request/second. `MB_GAP` paces every call through
+   one queue, the same shape as `dz()`'s `DZ_GAP`. */
+const MB_CACHE = new Map();
+const MB_GAP = 1100;
+let MB_NEXT = 0;
+
+function mb(path, retry) {
+  if (MB_CACHE.has(path)) return Promise.resolve(MB_CACHE.get(path));
+  const url = 'https://musicbrainz.org/ws/2/' + path +
+              (path.indexOf('?') >= 0 ? '&' : '?') + 'fmt=json';
+  const now = Date.now();
+  const at = Math.max(now, MB_NEXT);
+  MB_NEXT = at + MB_GAP;
+  return new Promise(res => setTimeout(res, at - now))
+    .then(() => fetch(url))
+    .then(r => {
+      /* ⚠️ 503 means THROTTLED, not broken — "the web server is currently
+         busy". Measured from the page, three identical requests at 1.5s spacing
+         returned 200 / 503 / 200 while the same URL from curl was 200 every
+         time: MusicBrainz load-sheds anonymous CROSS-ORIGIN traffic, and a
+         browser cannot set the descriptive User-Agent their policy asks for.
+         Each album needs two calls, so a single retry still fails often —
+         hence up to three, backing off 1.5s / 3s / 6s. The first build treated
+         every 503 as "this album has no credits", which looked like patchy
+         coverage rather than a network problem.
+         ⚠️ This is why credits are BAKED AT BUILD TIME by
+         `tools/fetch_credits.py`, which can send a proper User-Agent and pace
+         itself. This runtime path only serves albums the build never saw —
+         i.e. the recommendation pool Deezer hands us at load. */
+      if (r.status === 503 && (retry || 0) < 3) {
+        MB_NEXT = Date.now() + 1500 * Math.pow(2, retry || 0);
+        return mb(path, (retry || 0) + 1);
+      }
+      return r.ok ? r.json() : null;
+    })
+    .then(d => { if (d) MB_CACHE.set(path, d); return d; })
+    .catch(() => null);          // credits are a bonus; never break the screen
+}
+
+/* Roles worth showing, in the order they're shown. Deliberately short — the
+   strip has room for a line or two, not a liner-notes dump. */
+const CREDIT_ROLES = [['producer', 'Produced by'], ['mix', 'Mixed by'], ['engineer', 'Engineered by']];
+
+function creditsFor(album) {
+  if (!album) return Promise.resolve(null);
+  /* ⚠️ Baked credits win, and an EMPTY array is an answer — `tools/fetch_credits.py`
+     writes `[]` for "looked, MusicBrainz has nothing", which is why this tests
+     for the property rather than for truthiness. Without that check every
+     credit-less album would fall through and re-ask the network on every swipe,
+     forever, for a question already answered at build time. */
+  if (Array.isArray(album.credits)) {
+    return Promise.resolve(album.credits.length ? album.credits : null);
+  }
+  const key = 'credits:' + (album.deezerId || album.album + '|' + album.artist);
+  if (MB_CACHE.has(key)) return Promise.resolve(MB_CACHE.get(key));
+  /* ⚠️ Only a DEFINITIVE answer is cached. `ok:false` means the network gave
+     up (a 503 that outlasted its retries), which is not the same as "this
+     record has no credits" — caching that pins the album to blank for the rest
+     of the session and looks exactly like missing data. This is the same trap
+     `dz()` documents: an earlier cut cached the null from a throttled call and
+     search silently returned nothing until reload. */
+  const finish = (v, ok) => { if (ok !== false) MB_CACHE.set(key, v); return v; };
+
+  const byBarcode = album.deezerId
+    ? dz('album/' + album.deezerId).then(d => (d && d.upc) || null)
+    : Promise.resolve(null);
+
+  return byBarcode
+    .then(upc => upc
+      ? mb('release/?query=barcode:' + encodeURIComponent(upc) + '&limit=1')
+      // No upc (a hand-authored album): fall back to an artist+title search.
+      : mb('release/?query=' + encodeURIComponent(
+            'release:"' + album.album + '" AND artist:"' + album.artist + '"') + '&limit=1'))
+    .then(r => {
+      if (!r) return finish(null, false);            // request failed, not "no credits"
+      const rel = r.releases && r.releases[0];
+      if (!rel) return finish(null);                 // genuinely unmatched
+
+      return mb('release/' + rel.id + '?inc=recordings+artist-rels+recording-level-rels')
+        .then(full => {
+          if (!full) return finish(null, false);       // request failed
+          const seen = {};
+          (full.media || []).forEach(m => (m.tracks || []).forEach(t =>
+            ((t.recording || {}).relations || []).forEach(rl => {
+              const name = (rl.artist || {}).name;
+              if (!name) return;
+              (seen[rl.type] = seen[rl.type] || []).indexOf(name) < 0 && seen[rl.type].push(name);
+            })));
+          const out = CREDIT_ROLES
+            .map(([k, label]) => (seen[k] && seen[k].length ? { label, names: seen[k] } : null))
+            .filter(Boolean);
+          return finish(out.length ? out : null);
+        });
+    })
+    .catch(() => finish(null, false));
+}
+
+/* The fallback line. ⚠️ Credits only exist for ~14% of what the bento cycles
+   (the bake covers personas.js; two thirds of ARCHIVE is the runtime rec pool),
+   so without this the new space is empty on most albums and reads as broken.
+   The label is one field of the SAME Deezer album call `creditsFor` already
+   makes for the upc, so it costs nothing extra, and it is a real credit — for
+   small artists "Independent" is itself the answer.
+   ⚠️ `album.label` is baked by tools/fetch_credits.py; `''` means "asked,
+   Deezer had none", which is why this tests for the property, not truthiness. */
+function labelFor(album) {
+  if (!album) return Promise.resolve(null);
+  if (typeof album.label === 'string') return Promise.resolve(album.label || null);
+  if (!album.deezerId) return Promise.resolve(null);
+  return dz('album/' + album.deezerId)
+    .then(d => {
+      const l = d && d.label ? String(d.label).trim() : '';
+      album.label = l;                 // cache on the record itself
+      return l || null;
+    })
+    .catch(() => null);
+}
+
+/* ⚠️ Debounced, and it re-checks the album before painting. The bento swipes
+   faster than three network calls resolve, so without both guards a slow lookup
+   would land on whatever record happened to be on screen by then — the same
+   class of bug as the For-You panel painting a stale index. */
+let _credT = null;
+function populateCredits(screenEl, album) {
+  const box = screenEl && screenEl.querySelector('.v3-blue-credits');
+  if (!box) return;
+  box.hidden = true;
+  box.innerHTML = '';
+  if (!album) return;
+  clearTimeout(_credT);
+  _credT = setTimeout(() => {
+    Promise.all([creditsFor(album), labelFor(album)]).then(([list, label]) => {
+      // Still the same record? Bail if the user swiped on.
+      if (currentBentoAlbum && currentBentoAlbum() !== album) return;
+      let rows = '';
+      if (list) {
+        rows = list.slice(0, 2).map(c =>
+          `<div class="v3-cred-row"><span class="v3-cred-lbl">${c.label}</span>` +
+          `<span class="v3-cred-names">${c.names.slice(0, 3).join(', ')}</span></div>`).join('');
+      } else if (label) {
+        rows = `<div class="v3-cred-row"><span class="v3-cred-lbl">Label</span>` +
+               `<span class="v3-cred-names">${label}</span></div>`;
+      }
+      if (!rows) return;
+      document.querySelectorAll('.s-home-v3').forEach(scr => {
+        const el = scr.querySelector('.v3-blue-credits');
+        if (!el || scr.classList.contains('s-home-v3--review')) return;
+        el.innerHTML = rows;
+        el.hidden = false;
+      });
+    });
+  }, 520);
+}
+window.populateCredits = populateCredits;
 
 // ── The generated-review algorithm, ported from tools/build_personas.py ──
 const DZ_QUOTES = [

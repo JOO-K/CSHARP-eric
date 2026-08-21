@@ -69,7 +69,9 @@ window.PERSONAS = [
     ],
     "deezerId": 104755862,
     "artistId": 6390014,
-    "favTrack": "Show Me How"
+    "favTrack": "Show Me How",
+    "credits": [],
+    "label": "Independent"
    },
    {
     "album": "Hyperdrama",
@@ -105,7 +107,33 @@ window.PERSONAS = [
     ],
     "deezerId": 526138472,
     "artistId": 6404,
-    "favTrack": "Genesis"
+    "favTrack": "Genesis",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Justice",
+       "Vincent Taurelle"
+      ]
+     },
+     {
+      "label": "Mixed by",
+      "names": [
+       "Justice",
+       "Vincent Taurelle"
+      ]
+     },
+     {
+      "label": "Engineered by",
+      "names": [
+       "Rémi Dumelz",
+       "Lucas Glastra",
+       "Vincent Taurelle",
+       "Louis Bes"
+      ]
+     }
+    ],
+    "label": "Genesis"
    },
    {
     "album": "1000 gecs",
@@ -141,7 +169,9 @@ window.PERSONAS = [
     ],
     "deezerId": 129486262,
     "artistId": 57379042,
-    "favTrack": "money machine"
+    "favTrack": "money machine",
+    "credits": [],
+    "label": "Dog Show Records"
    },
    {
     "album": "I'll Try Living Like This",
@@ -177,7 +207,9 @@ window.PERSONAS = [
     ],
     "deezerId": 71552502,
     "artistId": 13537803,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [],
+    "label": "Ghost Diamond"
    },
    {
     "album": "My Beautiful Dark Twisted Fantasy",
@@ -213,7 +245,37 @@ window.PERSONAS = [
     ],
     "deezerId": 707965,
     "artistId": 230,
-    "favTrack": "Runaway"
+    "favTrack": "Runaway",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Jeff Bhasker",
+       "Mike Dean",
+       "No I.D.",
+       "RZA"
+      ]
+     },
+     {
+      "label": "Mixed by",
+      "names": [
+       "Andrew Dawson",
+       "Mike Dean",
+       "Gaylord Holomalia",
+       "Phil Joly"
+      ]
+     },
+     {
+      "label": "Engineered by",
+      "names": [
+       "Brent Kolatalo",
+       "Ken Lewis",
+       "Pete Bischoff",
+       "Phil Joly"
+      ]
+     }
+    ],
+    "label": "Roc-A-Fella"
    },
    {
     "album": "7G",
@@ -249,7 +311,9 @@ window.PERSONAS = [
     ],
     "deezerId": 192574722,
     "artistId": 7850510,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [],
+    "label": "PC Music"
    },
    {
     "album": "Details",
@@ -285,7 +349,34 @@ window.PERSONAS = [
     ],
     "deezerId": 225028,
     "artistId": 109,
-    "favTrack": "Let Go"
+    "favTrack": "Let Go",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Imogen Heap",
+       "Guy Sigsworth"
+      ]
+     },
+     {
+      "label": "Mixed by",
+      "names": [
+       "Tom Elmhirst",
+       "Gili Wiseburgh",
+       "Damian Taylor",
+       "Imogen Heap"
+      ]
+     },
+     {
+      "label": "Engineered by",
+      "names": [
+       "Sean McGhee",
+       "Jake Davies",
+       "Tristan Norwell"
+      ]
+     }
+    ],
+    "label": "Universal-Island Records Ltd."
    },
    {
     "album": "Lungs",
@@ -321,7 +412,36 @@ window.PERSONAS = [
     ],
     "deezerId": 384180,
     "artistId": 183716,
-    "favTrack": "Dog Days Are Over"
+    "favTrack": "Dog Days Are Over",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "James Ellis Ford",
+       "Isabella Summers",
+       "Paul Epworth",
+       "Steve Mackey"
+      ]
+     },
+     {
+      "label": "Mixed by",
+      "names": [
+       "James Ellis Ford",
+       "Jimmy Robertson",
+       "Neil Comber",
+       "Cenzo Townshend"
+      ]
+     },
+     {
+      "label": "Engineered by",
+      "names": [
+       "Ben Jackson",
+       "Duncan Mills",
+       "Al Riley"
+      ]
+     }
+    ],
+    "label": "Universal-Island Records Ltd."
    },
    {
     "album": "Man On The Moon: The End Of Day",
@@ -357,7 +477,28 @@ window.PERSONAS = [
     ],
     "deezerId": 680100,
     "artistId": 158706,
-    "favTrack": "Pursuit of Happiness"
+    "favTrack": "Pursuit of Happiness",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Emile Haynie",
+       "Patrick Reynolds",
+       "Free School",
+       "Jeff Bhasker"
+      ]
+     },
+     {
+      "label": "Mixed by",
+      "names": [
+       "Manny Marroquin",
+       "Ryan West",
+       "Erik Madrid",
+       "Christian Plata"
+      ]
+     }
+    ],
+    "label": "Kid Cudi/Universal Records"
    },
    {
     "album": "Kala",
@@ -393,7 +534,34 @@ window.PERSONAS = [
     ],
     "deezerId": 106146,
     "artistId": 3878,
-    "favTrack": "Paper Planes"
+    "favTrack": "Paper Planes",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "M.I.A.",
+       "Switch",
+       "Diplo",
+       "Morganics"
+      ]
+     },
+     {
+      "label": "Mixed by",
+      "names": [
+       "Mark “Spike” Stent",
+       "Switch",
+       "Demacio Castellón"
+      ]
+     },
+     {
+      "label": "Engineered by",
+      "names": [
+       "Matty Green",
+       "Larry Lyons"
+      ]
+     }
+    ],
+    "label": "XL Recordings"
    },
    {
     "album": "1999",
@@ -429,7 +597,19 @@ window.PERSONAS = [
     ],
     "deezerId": 65371772,
     "artistId": 4105259,
-    "favTrack": "Waves"
+    "favTrack": "Waves",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Chuck Strangers",
+       "Freddie Joachim",
+       "Vin Skully",
+       "Knxwledge"
+      ]
+     }
+    ],
+    "label": "PRO ERA / EMPIRE"
    },
    {
     "album": "Some Rap Songs",
@@ -465,7 +645,32 @@ window.PERSONAS = [
     ],
     "deezerId": 79981842,
     "artistId": 4073450,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Thebe Kgositsile",
+       "Booliemane",
+       "Adé Hakim",
+       "Denmark Vessey"
+      ]
+     },
+     {
+      "label": "Mixed by",
+      "names": [
+       "Gio Escobar",
+       "Thebe Kgositsile"
+      ]
+     },
+     {
+      "label": "Engineered by",
+      "names": [
+       "Thebe Kgositsile"
+      ]
+     }
+    ],
+    "label": "Tan Cressida/Columbia"
    },
    {
     "album": "Hot Fuss",
@@ -501,7 +706,32 @@ window.PERSONAS = [
     ],
     "deezerId": 164869492,
     "artistId": 897,
-    "favTrack": "Mr. Brightside"
+    "favTrack": "Mr. Brightside",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "The Killers",
+       "Jeff Saltzman",
+       "Brandon Flowers"
+      ]
+     },
+     {
+      "label": "Mixed by",
+      "names": [
+       "Alan Moulder",
+       "Mark Needham"
+      ]
+     },
+     {
+      "label": "Engineered by",
+      "names": [
+       "Will Brierre",
+       "Dave Stedronsky"
+      ]
+     }
+    ],
+    "label": "Island Records"
    },
    {
     "album": "Dream Your Life Away",
@@ -537,7 +767,9 @@ window.PERSONAS = [
     ],
     "deezerId": 8435920,
     "artistId": 4768525,
-    "favTrack": "Riptide"
+    "favTrack": "Riptide",
+    "credits": [],
+    "label": "F-Stop Records/Atlantic"
    },
    {
     "album": "Someone's EP II",
@@ -573,7 +805,9 @@ window.PERSONAS = [
     ],
     "deezerId": 95169442,
     "artistId": 9102232,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [],
+    "label": "AllPoints"
    },
    {
     "album": "Cake Pop 2",
@@ -609,7 +843,18 @@ window.PERSONAS = [
     ],
     "deezerId": 223971002,
     "artistId": 126763622,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Dylan Brady",
+       "Cali Cartier",
+       "JUDGE"
+      ]
+     }
+    ],
+    "label": "Mad Decent"
    },
    {
     "album": "50 X HALF",
@@ -645,7 +890,9 @@ window.PERSONAS = [
     ],
     "deezerId": 322197877,
     "artistId": 2972051,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [],
+    "label": "Stone Music Entertainment, B2M Entertainment"
    },
    {
     "album": "Soundcraft",
@@ -681,7 +928,9 @@ window.PERSONAS = [
     ],
     "deezerId": 9138453,
     "artistId": 5865244,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [],
+    "label": "Cascade Records"
    },
    {
     "album": "Moon, Wisdom & Slackness",
@@ -717,7 +966,9 @@ window.PERSONAS = [
     ],
     "deezerId": 9902710,
     "artistId": 3945911,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [],
+    "label": "Cold Busted"
    },
    {
     "album": "The Wink",
@@ -753,7 +1004,9 @@ window.PERSONAS = [
     ],
     "deezerId": 59826262,
     "artistId": 4428921,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [],
+    "label": "Drag City"
    },
    {
     "album": "スレイヤーズMEGUMIXXX",
@@ -789,7 +1042,18 @@ window.PERSONAS = [
     ],
     "deezerId": 428240707,
     "artistId": 9160146,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [
+     {
+      "label": "Mixed by",
+      "names": [
+       "永山雄一",
+       "大平勉",
+       "矢吹俊郎"
+      ]
+     }
+    ],
+    "label": "KINGRECORDS"
    },
    {
     "album": "Watashiwo Mitsukete",
@@ -825,7 +1089,9 @@ window.PERSONAS = [
     ],
     "deezerId": 525768842,
     "artistId": 7951446,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [],
+    "label": "Universal Music LLC"
    },
    {
     "album": "DEATHMATCH II",
@@ -861,7 +1127,9 @@ window.PERSONAS = [
     ],
     "deezerId": 685307641,
     "artistId": 13541247,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [],
+    "label": "SUNTHOID"
    },
    {
     "album": "Selected Ambient Works 85-92",
@@ -897,7 +1165,16 @@ window.PERSONAS = [
     ],
     "deezerId": 12977824,
     "artistId": 580,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Richard D. James"
+      ]
+     }
+    ],
+    "label": "R&S Records"
    },
    {
     "album": "A View of U",
@@ -933,7 +1210,19 @@ window.PERSONAS = [
     ],
     "deezerId": 165274902,
     "artistId": 284217,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Holly",
+       "Machinedrum",
+       "Mono/Poly",
+       "Chrome Sparks"
+      ]
+     }
+    ],
+    "label": "Ninja Tune"
    },
    {
     "album": "OK Computer",
@@ -969,7 +1258,31 @@ window.PERSONAS = [
     ],
     "deezerId": 14879699,
     "artistId": 399,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Nigel Godrich",
+       "Radiohead"
+      ]
+     },
+     {
+      "label": "Mixed by",
+      "names": [
+       "Nigel Godrich"
+      ]
+     },
+     {
+      "label": "Engineered by",
+      "names": [
+       "Jon Bailey",
+       "Gerard Navarro",
+       "Chris Scard"
+      ]
+     }
+    ],
+    "label": "XL Recordings"
    },
    {
     "album": "Via",
@@ -1005,7 +1318,9 @@ window.PERSONAS = [
     ],
     "deezerId": 277473352,
     "artistId": 6023,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [],
+    "label": "VAMPROSE"
    },
    {
     "album": "Eyebrow Moon",
@@ -1041,7 +1356,9 @@ window.PERSONAS = [
     ],
     "deezerId": 83400402,
     "artistId": 12346638,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [],
+    "label": "Seiren"
    },
    {
     "album": "A Mad And Faithful Telling",
@@ -1077,7 +1394,9 @@ window.PERSONAS = [
     ],
     "deezerId": 43839671,
     "artistId": 4657,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [],
+    "label": "Anti/Epitaph"
    },
    {
     "album": "Once Twice Melody",
@@ -1113,7 +1432,9 @@ window.PERSONAS = [
     ],
     "deezerId": 265701822,
     "artistId": 75055,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [],
+    "label": "Sub Pop Records"
    },
    {
     "album": "Classics",
@@ -1149,7 +1470,9 @@ window.PERSONAS = [
     ],
     "deezerId": 106676,
     "artistId": 6058,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [],
+    "label": "XL Recordings"
    },
    {
     "album": "Cybele",
@@ -1185,7 +1508,9 @@ window.PERSONAS = [
     ],
     "deezerId": 342842077,
     "artistId": 12394580,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [],
+    "label": "Mellowax"
    },
    {
     "album": "pook",
@@ -1221,7 +1546,9 @@ window.PERSONAS = [
     ],
     "deezerId": 767571211,
     "artistId": 9150544,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [],
+    "label": "Inner Ocean Records"
    }
   ],
   "artistImg": {
@@ -1330,7 +1657,25 @@ window.PERSONAS = [
     ],
     "deezerId": 466106885,
     "artistId": 178008437,
-    "favTrack": "Super Shy"
+    "favTrack": "Super Shy",
+    "credits": [
+     {
+      "label": "Mixed by",
+      "names": [
+       "Phil Tan",
+       "Nathan Boddy",
+       "Tony Maserati",
+       "Jonny Breakwell"
+      ]
+     },
+     {
+      "label": "Engineered by",
+      "names": [
+       "Bill Zimmerman"
+      ]
+     }
+    ],
+    "label": "ADOR"
    },
    {
     "album": "UNFORGIVEN",
@@ -1366,7 +1711,28 @@ window.PERSONAS = [
     ],
     "deezerId": 434848357,
     "artistId": 168158797,
-    "favTrack": "UNFORGIVEN"
+    "favTrack": "UNFORGIVEN",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "13",
+       "HUH YUNJIN",
+       "적재",
+       "Hiss noise"
+      ]
+     },
+     {
+      "label": "Mixed by",
+      "names": [
+       "Matt Cahill",
+       "Geoff Swan",
+       "Ramiro Fernandez‐Seoane",
+       "Chris Galland"
+      ]
+     }
+    ],
+    "label": "SOURCE MUSIC"
    },
    {
     "album": "Armageddon - The 1st Album",
@@ -1402,7 +1768,9 @@ window.PERSONAS = [
     ],
     "deezerId": 653112011,
     "artistId": 113547672,
-    "favTrack": "Supernova"
+    "favTrack": "Supernova",
+    "credits": [],
+    "label": "SM Entertainment"
    },
    {
     "album": "I've IVE",
@@ -1438,7 +1806,19 @@ window.PERSONAS = [
     ],
     "deezerId": 427059047,
     "artistId": 153042292,
-    "favTrack": "I AM"
+    "favTrack": "I AM",
+    "credits": [
+     {
+      "label": "Mixed by",
+      "names": [
+       "Alawn",
+       "Simon Bergseth",
+       "Markus Gustafson",
+       "dr.ahn"
+      ]
+     }
+    ],
+    "label": "Starship Entertainment"
    },
    {
     "album": "The Perfect Red Velvet - The 2nd Album Repackage",
@@ -1474,7 +1854,9 @@ window.PERSONAS = [
     ],
     "deezerId": 106746252,
     "artistId": 338654,
-    "favTrack": "Bad Boy"
+    "favTrack": "Bad Boy",
+    "credits": [],
+    "label": "SM Entertainment"
    },
    {
     "album": "Formula of Love: O+T=<3",
@@ -1510,7 +1892,27 @@ window.PERSONAS = [
     ],
     "deezerId": 268310522,
     "artistId": 161553,
-    "favTrack": "SCIENTIST"
+    "favTrack": "SCIENTIST",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Lindgren",
+       "Sonny J Mason",
+       "Ronny Svendsen"
+      ]
+     },
+     {
+      "label": "Mixed by",
+      "names": [
+       "이태섭",
+       "Kevin Davis",
+       "임홍진",
+       "박은정"
+      ]
+     }
+    ],
+    "label": "Republic Records - TWICE"
    },
    {
     "album": "FML",
@@ -1546,7 +1948,9 @@ window.PERSONAS = [
     ],
     "deezerId": 432208777,
     "artistId": 240582,
-    "favTrack": "Super"
+    "favTrack": "Super",
+    "credits": [],
+    "label": "PLEDIS Entertainment"
    },
    {
     "album": "ODDINARY",
@@ -1582,7 +1986,32 @@ window.PERSONAS = [
     ],
     "deezerId": 303671207,
     "artistId": 13923487,
-    "favTrack": "MANIAC"
+    "favTrack": "MANIAC",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "박진영"
+      ]
+     },
+     {
+      "label": "Mixed by",
+      "names": [
+       "임홍진",
+       "Manny Marroquin",
+       "윤원권",
+       "신봉원"
+      ]
+     },
+     {
+      "label": "Engineered by",
+      "names": [
+       "Ramiro Fernandez‐Seoane",
+       "Chris Galland"
+      ]
+     }
+    ],
+    "label": "Republic Records - Stray Kids"
    },
    {
     "album": "The Chaos Chapter: FREEZE",
@@ -1618,7 +2047,9 @@ window.PERSONAS = [
     ],
     "deezerId": 233347232,
     "artistId": 60552072,
-    "favTrack": "0X1=LOVESONG"
+    "favTrack": "0X1=LOVESONG",
+    "credits": [],
+    "label": "Republic Records - TXT"
    },
    {
     "album": "CHECKMATE",
@@ -1654,7 +2085,26 @@ window.PERSONAS = [
     ],
     "deezerId": 336124187,
     "artistId": 3649631,
-    "favTrack": "SNEAKERS"
+    "favTrack": "SNEAKERS",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Karin Wilhelmina Eurenius",
+       "LDN Noise"
+      ]
+     },
+     {
+      "label": "Mixed by",
+      "names": [
+       "김영현",
+       "Tony Maserati",
+       "윤원권",
+       "임홍진"
+      ]
+     }
+    ],
+    "label": "Republic Records - ITZY"
    },
    {
     "album": "Fe3O4: BREAK",
@@ -1690,7 +2140,25 @@ window.PERSONAS = [
     ],
     "deezerId": 533684252,
     "artistId": 160138282,
-    "favTrack": "DASH"
+    "favTrack": "DASH",
+    "credits": [
+     {
+      "label": "Mixed by",
+      "names": [
+       "김영현",
+       "Tony Maserati",
+       "강선영",
+       "구종필"
+      ]
+     },
+     {
+      "label": "Engineered by",
+      "names": [
+       "dwilly"
+      ]
+     }
+    ],
+    "label": "Republic Records - NMIXX"
    },
    {
     "album": "THE ALBUM",
@@ -1726,7 +2194,26 @@ window.PERSONAS = [
     ],
     "deezerId": 177111982,
     "artistId": 10803980,
-    "favTrack": "How You Like That"
+    "favTrack": "How You Like That",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "24",
+       "R.Tee",
+       "TEDDY",
+       "YG Family"
+      ]
+     },
+     {
+      "label": "Mixed by",
+      "names": [
+       "Jason Roberts",
+       "Serban Ghenea"
+      ]
+     }
+    ],
+    "label": "YG Entertainment/Interscope Records"
    },
    {
     "album": "IU 5th Album 'LILAC'",
@@ -1762,7 +2249,19 @@ window.PERSONAS = [
     ],
     "deezerId": 217565572,
     "artistId": 2810121,
-    "favTrack": "Celebrity"
+    "favTrack": "Celebrity",
+    "credits": [
+     {
+      "label": "Mixed by",
+      "names": [
+       "손명갑",
+       "정유라",
+       "구종필",
+       "최형"
+      ]
+     }
+    ],
+    "label": "EDAM Entertainment"
    },
    {
     "album": "Proof",
@@ -1798,7 +2297,28 @@ window.PERSONAS = [
     ],
     "deezerId": 325690137,
     "artistId": 6982223,
-    "favTrack": "Yet To Come"
+    "favTrack": "Yet To Come",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "방시혁",
+       "j‐hope",
+       "Jung Kook",
+       "Pdogg"
+      ]
+     },
+     {
+      "label": "Mixed by",
+      "names": [
+       "James Reynolds",
+       "Jaycen Joshua",
+       "Jacob Richards",
+       "DJ Riggins"
+      ]
+     }
+    ],
+    "label": "BIGHIT MUSIC"
    },
    {
     "album": "Lion Heart - The 5th Album",
@@ -1834,7 +2354,9 @@ window.PERSONAS = [
     ],
     "deezerId": 106879282,
     "artistId": 1310497,
-    "favTrack": "Lion Heart"
+    "favTrack": "Lion Heart",
+    "credits": [],
+    "label": "SM Entertainment"
    },
    {
     "album": "Don't Call Me - The 7th Album",
@@ -1870,7 +2392,19 @@ window.PERSONAS = [
     ],
     "deezerId": 208865052,
     "artistId": 1377613,
-    "favTrack": "Don't Call Me"
+    "favTrack": "Don't Call Me",
+    "credits": [
+     {
+      "label": "Mixed by",
+      "names": [
+       "정의석",
+       "남궁진",
+       "김한구",
+       "이지홍"
+      ]
+     }
+    ],
+    "label": "SM Entertainment"
    },
    {
     "album": "Pink Tape - f(x) The 2nd Album",
@@ -1906,7 +2440,24 @@ window.PERSONAS = [
     ],
     "deezerId": 106878232,
     "artistId": 1493569,
-    "favTrack": "Rum Pum Pum Pum"
+    "favTrack": "Rum Pum Pum Pum",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "이수만"
+      ]
+     },
+     {
+      "label": "Mixed by",
+      "names": [
+       "남궁진",
+       "구종필",
+       "정의석"
+      ]
+     }
+    ],
+    "label": "SM Entertainment"
    },
    {
     "album": "CRUSH",
@@ -1942,7 +2493,22 @@ window.PERSONAS = [
     ],
     "deezerId": 233173682,
     "artistId": 1492615,
-    "favTrack": "Come Back Home"
+    "favTrack": "Come Back Home",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "TEDDY"
+      ]
+     },
+     {
+      "label": "Mixed by",
+      "names": [
+       "Jason Robert"
+      ]
+     }
+    ],
+    "label": "YG Entertainment"
    },
    {
     "album": "INVU - The 3rd Album",
@@ -1978,7 +2544,35 @@ window.PERSONAS = [
     ],
     "deezerId": 294550162,
     "artistId": 2562931,
-    "favTrack": "INVU"
+    "favTrack": "INVU",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "이주형",
+       "Simon Petrén",
+       "Lauritz Emil Christiansen",
+       "Ryan S. Jhun"
+      ]
+     },
+     {
+      "label": "Mixed by",
+      "names": [
+       "정의석",
+       "김철순"
+      ]
+     },
+     {
+      "label": "Engineered by",
+      "names": [
+       "정유라",
+       "강은지",
+       "권남우",
+       "이지홍"
+      ]
+     }
+    ],
+    "label": "SM Entertainment"
    },
    {
     "album": "1/6",
@@ -2014,7 +2608,9 @@ window.PERSONAS = [
     ],
     "deezerId": 755397181,
     "artistId": 8904144,
-    "favTrack": "You can't sit with us"
+    "favTrack": "You can't sit with us",
+    "credits": [],
+    "label": "ABYSS COMPANY"
    },
    {
     "album": "DRIP",
@@ -2050,7 +2646,9 @@ window.PERSONAS = [
     ],
     "deezerId": 662608161,
     "artistId": 244386532,
-    "favTrack": "DRIP"
+    "favTrack": "DRIP",
+    "credits": [],
+    "label": "YG Entertainment"
    },
    {
     "album": "SUPER REAL ME",
@@ -2086,7 +2684,9 @@ window.PERSONAS = [
     ],
     "deezerId": 563010272,
     "artistId": 259645622,
-    "favTrack": "Magnetic"
+    "favTrack": "Magnetic",
+    "credits": [],
+    "label": "BELIFT LAB"
    },
    {
     "album": "SIS (Soft Is Strong)",
@@ -2122,7 +2722,35 @@ window.PERSONAS = [
     ],
     "deezerId": 626871541,
     "artistId": 271210292,
-    "favTrack": "Touch"
+    "favTrack": "Touch",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Grant",
+       "Tyler Spry",
+       "Ryan Tedder",
+       "Cashmere Cat"
+      ]
+     },
+     {
+      "label": "Mixed by",
+      "names": [
+       "Serban Ghenea",
+       "Alex Ghenea"
+      ]
+     },
+     {
+      "label": "Engineered by",
+      "names": [
+       "Bryce Bordone",
+       "Chris Gehringer",
+       "Serban Ghenea",
+       "Tyler Spry"
+      ]
+     }
+    ],
+    "label": "HYBE/Geffen"
    },
    {
     "album": "SIXTH SENSE",
@@ -2158,7 +2786,9 @@ window.PERSONAS = [
     ],
     "deezerId": 729966751,
     "artistId": 2651261,
-    "favTrack": "Sixth Sense"
+    "favTrack": "Sixth Sense",
+    "credits": [],
+    "label": "Beyond Music"
    },
    {
     "album": "REBOOT",
@@ -2194,7 +2824,19 @@ window.PERSONAS = [
     ],
     "deezerId": 467869945,
     "artistId": 410599,
-    "favTrack": "Why So Lonely"
+    "favTrack": "Why So Lonely",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "홍지상",
+       "FRANTS",
+       "Toyo Lee",
+       "심은지"
+      ]
+     }
+    ],
+    "label": "Republic Records - JYP Entertainment"
    },
    {
     "album": "Sleepless In __________",
@@ -2230,7 +2872,9 @@ window.PERSONAS = [
     ],
     "deezerId": 550637802,
     "artistId": 4814124,
-    "favTrack": "Can You Hear My Heart"
+    "favTrack": "Can You Hear My Heart",
+    "credits": [],
+    "label": "OURS Co."
    },
    {
     "album": "[X X]",
@@ -2266,7 +2910,22 @@ window.PERSONAS = [
     ],
     "deezerId": 256094172,
     "artistId": 78598292,
-    "favTrack": "Hi High"
+    "favTrack": "Hi High",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Marc"
+      ]
+     },
+     {
+      "label": "Mixed by",
+      "names": [
+       "황현"
+      ]
+     }
+    ],
+    "label": "BlockBerryCreative"
    },
    {
     "album": "[Apocalypse : Save us]",
@@ -2302,7 +2961,9 @@ window.PERSONAS = [
     ],
     "deezerId": 961823341,
     "artistId": 15219,
-    "favTrack": "MAISON"
+    "favTrack": "MAISON",
+    "credits": [],
+    "label": "WM Korea"
    },
    {
     "album": "reality in BLACK",
@@ -2338,7 +2999,9 @@ window.PERSONAS = [
     ],
     "deezerId": 118951582,
     "artistId": 7161880,
-    "favTrack": "HIP"
+    "favTrack": "HIP",
+    "credits": [],
+    "label": "RBW, Inc"
    },
    {
     "album": "Time for us",
@@ -2374,7 +3037,9 @@ window.PERSONAS = [
     ],
     "deezerId": 606909592,
     "artistId": 52083222,
-    "favTrack": "Sunrise"
+    "favTrack": "Sunrise",
+    "credits": [],
+    "label": "SOURCE MUSIC"
    },
    {
     "album": "THE FIFTH SEASON",
@@ -2410,7 +3075,9 @@ window.PERSONAS = [
     ],
     "deezerId": 554234022,
     "artistId": 58272932,
-    "favTrack": "The Fifth Season"
+    "favTrack": "The Fifth Season",
+    "credits": [],
+    "label": "WM ENTERTAINMENT"
    },
    {
     "album": "TREASURE EPILOGUE : Action To Answer",
@@ -2446,7 +3113,17 @@ window.PERSONAS = [
     ],
     "deezerId": 886977162,
     "artistId": 49280302,
-    "favTrack": "Answer"
+    "favTrack": "Answer",
+    "credits": [
+     {
+      "label": "Mixed by",
+      "names": [
+       "구종필",
+       "정은경"
+      ]
+     }
+    ],
+    "label": "KQ Entertainment, Stone Music Entertainment"
    },
    {
     "album": "THE BOYZ 1ST ALBUM [REVEAL]",
@@ -2482,7 +3159,9 @@ window.PERSONAS = [
     ],
     "deezerId": 130999752,
     "artistId": 365514,
-    "favTrack": "REVEAL"
+    "favTrack": "REVEAL",
+    "credits": [],
+    "label": "Above Music"
    }
   ],
   "artistImg": {
@@ -2589,7 +3268,27 @@ window.PERSONAS = [
     ],
     "deezerId": 12047952,
     "artistId": 1,
-    "favTrack": "Come Together"
+    "favTrack": "Come Together",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "George Martin",
+       "Chris Thomas",
+       "Glyn Johns"
+      ]
+     },
+     {
+      "label": "Engineered by",
+      "names": [
+       "Geoff Emerick",
+       "Phil McDonald",
+       "Jeff Jarratt",
+       "Glyn Johns"
+      ]
+     }
+    ],
+    "label": "EMI Catalogue"
    },
    {
     "album": "The Dark Side of the Moon",
@@ -2625,7 +3324,29 @@ window.PERSONAS = [
     ],
     "deezerId": 12114240,
     "artistId": 860,
-    "favTrack": "Time"
+    "favTrack": "Time",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Pink Floyd"
+      ]
+     },
+     {
+      "label": "Mixed by",
+      "names": [
+       "Chris Thomas"
+      ]
+     },
+     {
+      "label": "Engineered by",
+      "names": [
+       "Peter James",
+       "Alan Parsons"
+      ]
+     }
+    ],
+    "label": "Pink Floyd Records"
    },
    {
     "album": "Led Zeppelin IV (Deluxe Edition)",
@@ -2661,7 +3382,9 @@ window.PERSONAS = [
     ],
     "deezerId": 8887733,
     "artistId": 848,
-    "favTrack": "Going to California"
+    "favTrack": "Going to California",
+    "credits": [],
+    "label": "Atlantic Records"
    },
    {
     "album": "Rumours",
@@ -2697,7 +3420,27 @@ window.PERSONAS = [
     ],
     "deezerId": 6237061,
     "artistId": 169,
-    "favTrack": "The Chain"
+    "favTrack": "The Chain",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Lindsey Buckingham",
+       "Ken Caillat",
+       "Richard Dashut",
+       "Mick Fleetwood"
+      ]
+     },
+     {
+      "label": "Engineered by",
+      "names": [
+       "Chris Morris",
+       "Ken Caillat",
+       "Richard Dashut"
+      ]
+     }
+    ],
+    "label": "Rhino/Warner Records"
    },
    {
     "album": "Let It Bleed",
@@ -2733,7 +3476,25 @@ window.PERSONAS = [
     ],
     "deezerId": 908516,
     "artistId": 11,
-    "favTrack": "Gimme Shelter"
+    "favTrack": "Gimme Shelter",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Jimmy Miller"
+      ]
+     },
+     {
+      "label": "Engineered by",
+      "names": [
+       "Bruce Botnick",
+       "Jerry Hansen",
+       "Glyn Johns",
+       "Irish O’Duffy"
+      ]
+     }
+    ],
+    "label": "ABKCO Music and Records, Inc."
    },
    {
     "album": "Hunky Dory (2015 Remaster)",
@@ -2769,7 +3530,23 @@ window.PERSONAS = [
     ],
     "deezerId": 11205658,
     "artistId": 997,
-    "favTrack": "Life on Mars?"
+    "favTrack": "Life on Mars?",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "David Bowie",
+       "Ken Scott"
+      ]
+     },
+     {
+      "label": "Mixed by",
+      "names": [
+       "Ken Scott"
+      ]
+     }
+    ],
+    "label": "Parlophone UK"
    },
    {
     "album": "Who's Next (Deluxe Edition)",
@@ -2805,7 +3582,32 @@ window.PERSONAS = [
     ],
     "deezerId": 213021,
     "artistId": 817,
-    "favTrack": "Baba O'Riley"
+    "favTrack": "Baba O'Riley",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Glyn Johns",
+       "Pete Kameron",
+       "Kit Lambert",
+       "Keith Moon"
+      ]
+     },
+     {
+      "label": "Mixed by",
+      "names": [
+       "Glyn Johns"
+      ]
+     },
+     {
+      "label": "Engineered by",
+      "names": [
+       "Glyn Johns",
+       "Andy Johns"
+      ]
+     }
+    ],
+    "label": "Polydor Records"
    },
    {
     "album": "Cosmo's Factory (Expanded Edition)",
@@ -2841,7 +3643,16 @@ window.PERSONAS = [
     ],
     "deezerId": 11692568,
     "artistId": 2468,
-    "favTrack": "Up Around the Bend"
+    "favTrack": "Up Around the Bend",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "John Fogerty"
+      ]
+     }
+    ],
+    "label": "Craft Recordings"
    },
    {
     "album": "Pet Sounds",
@@ -2877,7 +3688,9 @@ window.PERSONAS = [
     ],
     "deezerId": 436186197,
     "artistId": 2179,
-    "favTrack": "God Only Knows"
+    "favTrack": "God Only Knows",
+    "credits": [],
+    "label": "Capitol Records"
    },
    {
     "album": "Bridge Over Troubled Water",
@@ -2913,7 +3726,25 @@ window.PERSONAS = [
     ],
     "deezerId": 1208585,
     "artistId": 2707,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Art Garfunkel",
+       "Roy Halee",
+       "Paul Simon",
+       "Simon & Garfunkel"
+      ]
+     },
+     {
+      "label": "Engineered by",
+      "names": [
+       "Roy Halee"
+      ]
+     }
+    ],
+    "label": "Columbia"
    },
    {
     "album": "L.A. Woman",
@@ -2949,7 +3780,29 @@ window.PERSONAS = [
     ],
     "deezerId": 6415260,
     "artistId": 847,
-    "favTrack": "Riders on the Storm"
+    "favTrack": "Riders on the Storm",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Bruce Botnick",
+       "The Doors"
+      ]
+     },
+     {
+      "label": "Mixed by",
+      "names": [
+       "Bruce Botnick"
+      ]
+     },
+     {
+      "label": "Engineered by",
+      "names": [
+       "Bruce Botnick"
+      ]
+     }
+    ],
+    "label": "Rhino/Elektra"
    },
    {
     "album": "Are You Experienced",
@@ -2985,7 +3838,24 @@ window.PERSONAS = [
     ],
     "deezerId": 455130,
     "artistId": 849,
-    "favTrack": "Purple Haze"
+    "favTrack": "Purple Haze",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Bryan “Chas” Chandler"
+      ]
+     },
+     {
+      "label": "Engineered by",
+      "names": [
+       "Dave Siddle",
+       "Eddie Kramer",
+       "Mike Ross‐Trevor"
+      ]
+     }
+    ],
+    "label": "Legacy Recordings"
    },
    {
     "album": "Harvest Moon",
@@ -3021,7 +3891,32 @@ window.PERSONAS = [
     ],
     "deezerId": 81868,
     "artistId": 1379,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Ben Keith",
+       "Neil Young"
+      ]
+     },
+     {
+      "label": "Mixed by",
+      "names": [
+       "Tim Mulligan",
+       "John Nowland",
+       "Neil Young"
+      ]
+     },
+     {
+      "label": "Engineered by",
+      "names": [
+       "John Hausmann",
+       "Tom Allen"
+      ]
+     }
+    ],
+    "label": "Reprise"
    },
    {
     "album": "Blood On The Tracks",
@@ -3057,7 +3952,25 @@ window.PERSONAS = [
     ],
     "deezerId": 1399868,
     "artistId": 808,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Bob Dylan",
+       "Phil Ramone"
+      ]
+     },
+     {
+      "label": "Engineered by",
+      "names": [
+       "Paul Martinson",
+       "Glenn Berger",
+       "Phil Ramone"
+      ]
+     }
+    ],
+    "label": "Columbia"
    },
    {
     "album": "The Kinks Are the Village Green Preservation Society",
@@ -3093,7 +4006,9 @@ window.PERSONAS = [
     ],
     "deezerId": 901407822,
     "artistId": 1415,
-    "favTrack": "Waterloo Sunset"
+    "favTrack": "Waterloo Sunset",
+    "credits": [],
+    "label": "Sanctuary Records"
    },
    {
     "album": "Aja",
@@ -3129,7 +4044,9 @@ window.PERSONAS = [
     ],
     "deezerId": 491146635,
     "artistId": 1156,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [],
+    "label": "Geffen"
    },
    {
     "album": "Astral Weeks",
@@ -3165,7 +4082,9 @@ window.PERSONAS = [
     ],
     "deezerId": 345012,
     "artistId": 2798,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [],
+    "label": "Rhino/Warner Records"
    },
    {
     "album": "Otis Blue",
@@ -3201,7 +4120,17 @@ window.PERSONAS = [
     ],
     "deezerId": 6327489,
     "artistId": 2945,
-    "favTrack": "Try a Little Tenderness"
+    "favTrack": "Try a Little Tenderness",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Jim Stewart",
+       "Steve Cropper"
+      ]
+     }
+    ],
+    "label": "Rhino Atlantic"
    },
    {
     "album": "Night Beat",
@@ -3237,7 +4166,24 @@ window.PERSONAS = [
     ],
     "deezerId": 7014343,
     "artistId": 900,
-    "favTrack": "Bring It On Home to Me"
+    "favTrack": "Bring It On Home to Me",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Luigi Creatore",
+       "Hugo Peretti",
+       "Sam Cooke"
+      ]
+     },
+     {
+      "label": "Engineered by",
+      "names": [
+       "David Hassinger"
+      ]
+     }
+    ],
+    "label": "RCA/Legacy"
    },
    {
     "album": "What's Going On",
@@ -3273,7 +4219,22 @@ window.PERSONAS = [
     ],
     "deezerId": 184480112,
     "artistId": 1154,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Marvin Gaye"
+      ]
+     },
+     {
+      "label": "Mixed by",
+      "names": [
+       "Lawrence Miles"
+      ]
+     }
+    ],
+    "label": "UNI/MOTOWN"
    },
    {
     "album": "Innervisions",
@@ -3309,7 +4270,18 @@ window.PERSONAS = [
     ],
     "deezerId": 230976,
     "artistId": 166,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Stevie Wonder",
+       "Malcolm Cecil",
+       "Robert Margouleff"
+      ]
+     }
+    ],
+    "label": "Motown"
    },
    {
     "album": "The Velvet Underground & Nico (45th Anniversary / Super Deluxe Edition)",
@@ -3345,7 +4317,9 @@ window.PERSONAS = [
     ],
     "deezerId": 71054242,
     "artistId": 1559,
-    "favTrack": "Sunday Morning"
+    "favTrack": "Sunday Morning",
+    "credits": [],
+    "label": "Polydor"
    },
    {
     "album": "Paranoid",
@@ -3381,7 +4355,34 @@ window.PERSONAS = [
     ],
     "deezerId": 1444232,
     "artistId": 647,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Thom Panunzio",
+       "Bob Marlette",
+       "Danny Saber"
+      ]
+     },
+     {
+      "label": "Mixed by",
+      "names": [
+       "Bob Marlette",
+       "John X. Volaitis"
+      ]
+     },
+     {
+      "label": "Engineered by",
+      "names": [
+       "John Aguto",
+       "Phil Ault",
+       "Barry Clempson",
+       "Greg Hackett"
+      ]
+     }
+    ],
+    "label": "Epic"
    },
    {
     "album": "A Night At The Opera",
@@ -3417,7 +4418,26 @@ window.PERSONAS = [
     ],
     "deezerId": 320916697,
     "artistId": 412,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Roy Thomas Baker",
+       "Brian May",
+       "Queen",
+       "Roger Taylor"
+      ]
+     },
+     {
+      "label": "Engineered by",
+      "names": [
+       "Kris Fredriksson",
+       "Mike Stone"
+      ]
+     }
+    ],
+    "label": "Hollywood Records"
    },
    {
     "album": "Odessey and Oracle (Mono Remastered)",
@@ -3453,7 +4473,9 @@ window.PERSONAS = [
     ],
     "deezerId": 747884691,
     "artistId": 6173,
-    "favTrack": "A Rose for Emily"
+    "favTrack": "A Rose for Emily",
+    "credits": [],
+    "label": "Beechwood Park Records"
    },
    {
     "album": "Forever Changes (2015 Remaster)",
@@ -3489,7 +4511,23 @@ window.PERSONAS = [
     ],
     "deezerId": 11205606,
     "artistId": 4715,
-    "favTrack": "Alone Again Or"
+    "favTrack": "Alone Again Or",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Bruce Botnick",
+       "Arthur Lee"
+      ]
+     },
+     {
+      "label": "Engineered by",
+      "names": [
+       "Bruce Botnick"
+      ]
+     }
+    ],
+    "label": "Rhino/Elektra"
    },
    {
     "album": "#1 Record",
@@ -3525,7 +4563,9 @@ window.PERSONAS = [
     ],
     "deezerId": 320445247,
     "artistId": 2411,
-    "favTrack": "Thirteen"
+    "favTrack": "Thirteen",
+    "credits": [],
+    "label": "Stax"
    },
    {
     "album": "Pink Moon",
@@ -3561,7 +4601,22 @@ window.PERSONAS = [
     ],
     "deezerId": 231727202,
     "artistId": 2062,
-    "favTrack": "Place to Be"
+    "favTrack": "Place to Be",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "John Wood"
+      ]
+     },
+     {
+      "label": "Engineered by",
+      "names": [
+       "John Wood"
+      ]
+     }
+    ],
+    "label": "UMC (Universal Music Catalogue)"
    },
    {
     "album": "Marquee Moon",
@@ -3597,7 +4652,32 @@ window.PERSONAS = [
     ],
     "deezerId": 85859,
     "artistId": 8213,
-    "favTrack": "Marquee Moon"
+    "favTrack": "Marquee Moon",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Andy Johns",
+       "Tom Verlaine"
+      ]
+     },
+     {
+      "label": "Mixed by",
+      "names": [
+       "Jimmy Douglass",
+       "Andy Johns",
+       "Randy Mason"
+      ]
+     },
+     {
+      "label": "Engineered by",
+      "names": [
+       "Jim Boyer",
+       "Andy Johns"
+      ]
+     }
+    ],
+    "label": "Elektra Records"
    },
    {
     "album": "Maggot Brain",
@@ -3633,7 +4713,16 @@ window.PERSONAS = [
     ],
     "deezerId": 272469712,
     "artistId": 2720,
-    "favTrack": "Can You Get to That"
+    "favTrack": "Can You Get to That",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "George Clinton"
+      ]
+     }
+    ],
+    "label": "Westbound Records"
    },
    {
     "album": "Curtis in Chicago - Recorded Live!",
@@ -3669,7 +4758,9 @@ window.PERSONAS = [
     ],
     "deezerId": 345311,
     "artistId": 2027,
-    "favTrack": "Move On Up"
+    "favTrack": "Move On Up",
+    "credits": [],
+    "label": "Rhino"
    },
    {
     "album": "Still Bill",
@@ -3705,7 +4796,26 @@ window.PERSONAS = [
     ],
     "deezerId": 10154728,
     "artistId": 1118,
-    "favTrack": "Use Me"
+    "favTrack": "Use Me",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Benorce Blackmon",
+       "Melvin Dunlap",
+       "James Gadson",
+       "Raymond Jackson"
+      ]
+     },
+     {
+      "label": "Engineered by",
+      "names": [
+       "Bob Hughes",
+       "Phil Schier"
+      ]
+     }
+    ],
+    "label": "Columbia/Legacy"
    },
    {
     "album": "Tago Mago (40th Anniversary Edition)",
@@ -3741,7 +4851,9 @@ window.PERSONAS = [
     ],
     "deezerId": 7472029,
     "artistId": 2344,
-    "favTrack": "Halleluwah"
+    "favTrack": "Halleluwah",
+    "credits": [],
+    "label": "Mute"
    },
    {
     "album": "Nilsson Schmilsson",
@@ -3777,7 +4889,23 @@ window.PERSONAS = [
     ],
     "deezerId": 1422793,
     "artistId": 69681,
-    "favTrack": "Coconut"
+    "favTrack": "Coconut",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Richard Perry"
+      ]
+     },
+     {
+      "label": "Engineered by",
+      "names": [
+       "Robin Geoffrey Cable",
+       "Rich Schmitt"
+      ]
+     }
+    ],
+    "label": "RCA Records Label"
    }
   ],
   "artistImg": {
@@ -3884,7 +5012,17 @@ window.PERSONAS = [
     ],
     "deezerId": 208438142,
     "artistId": 11926479,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "underscores",
+       "Knapsack"
+      ]
+     }
+    ],
+    "label": "underscores"
    },
    {
     "album": "HALO",
@@ -3920,7 +5058,9 @@ window.PERSONAS = [
     ],
     "deezerId": 907282002,
     "artistId": 14582191,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [],
+    "label": "broke"
    },
    {
     "album": "Revengeseekerz",
@@ -3956,7 +5096,16 @@ window.PERSONAS = [
     ],
     "deezerId": 722106551,
     "artistId": 170234767,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Jane Remover"
+      ]
+     }
+    ],
+    "label": "deadAir"
    },
    {
     "album": "Stepdream",
@@ -3992,7 +5141,9 @@ window.PERSONAS = [
     ],
     "deezerId": 500727721,
     "artistId": 117501182,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [],
+    "label": "deadAir"
    },
    {
     "album": "1000 gecs and The Tree of Clues",
@@ -4028,7 +5179,9 @@ window.PERSONAS = [
     ],
     "deezerId": 159176512,
     "artistId": 57379042,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [],
+    "label": "Dog Show Records"
    },
    {
     "album": "BRAT",
@@ -4064,7 +5217,34 @@ window.PERSONAS = [
     ],
     "deezerId": 597350882,
     "artistId": 1462230,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Cirkut",
+       "A. G. Cook",
+       "Finn Keane",
+       "George Daniel"
+      ]
+     },
+     {
+      "label": "Mixed by",
+      "names": [
+       "Manny Marroquin",
+       "Tom Norris",
+       "Gesaffelstein",
+       "Bart Schoudel"
+      ]
+     },
+     {
+      "label": "Engineered by",
+      "names": [
+       "Cirkut"
+      ]
+     }
+    ],
+    "label": "Atlantic Records"
    },
    {
     "album": "Britpop",
@@ -4100,7 +5280,9 @@ window.PERSONAS = [
     ],
     "deezerId": 568973201,
     "artistId": 7850510,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [],
+    "label": "New Alias"
    },
    {
     "album": "OIL OF EVERY PEARL'S UN-INSIDES NON-STOP REMIX ALBUM",
@@ -4136,7 +5318,9 @@ window.PERSONAS = [
     ],
     "deezerId": 492776131,
     "artistId": 6478881,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [],
+    "label": "Future Classic"
    },
    {
     "album": "Y’all",
@@ -4172,7 +5356,9 @@ window.PERSONAS = [
     ],
     "deezerId": 818268351,
     "artistId": 7411938,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [],
+    "label": "broke"
    },
    {
     "album": "things with wings",
@@ -4208,7 +5394,9 @@ window.PERSONAS = [
     ],
     "deezerId": 318335407,
     "artistId": 67859242,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [],
+    "label": "LISTEN TO THE KIDS/Interscope Records"
    },
    {
     "album": "hypochondriac",
@@ -4244,7 +5432,23 @@ window.PERSONAS = [
     ],
     "deezerId": 381445657,
     "artistId": 14148833,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "brakence",
+       "Wyatt Otis"
+      ]
+     },
+     {
+      "label": "Mixed by",
+      "names": [
+       "brakence"
+      ]
+     }
+    ],
+    "label": "Columbia"
    },
    {
     "album": "Pang",
@@ -4280,7 +5484,26 @@ window.PERSONAS = [
     ],
     "deezerId": 113725342,
     "artistId": 4631793,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Caroline Polachek",
+       "Danny L Harle",
+       "Andrew Wyatt",
+       "Dan Carey"
+      ]
+     },
+     {
+      "label": "Mixed by",
+      "names": [
+       "Niko Battistini",
+       "Geoff Swan"
+      ]
+     }
+    ],
+    "label": "Perpetual Novice"
    },
    {
     "album": "Perfect Picture",
@@ -4316,7 +5539,9 @@ window.PERSONAS = [
     ],
     "deezerId": 462170755,
     "artistId": 7135525,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [],
+    "label": "PC Music"
    },
    {
     "album": "Harlecore",
@@ -4352,7 +5577,9 @@ window.PERSONAS = [
     ],
     "deezerId": 197993572,
     "artistId": 7850514,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [],
+    "label": "Mad Decent"
    },
    {
     "album": "two house",
@@ -4388,7 +5615,17 @@ window.PERSONAS = [
     ],
     "deezerId": 714451151,
     "artistId": 106464312,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "gupi",
+       "fraxiom"
+      ]
+     }
+    ],
+    "label": "food house"
    },
    {
     "album": "SOLITUDE IN SILENCE",
@@ -4424,7 +5661,24 @@ window.PERSONAS = [
     ],
     "deezerId": 1018573931,
     "artistId": 70047472,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "31sentinel",
+       "elxnce",
+       "Moore Kismet"
+      ]
+     },
+     {
+      "label": "Engineered by",
+      "names": [
+       "midwxst"
+      ]
+     }
+    ],
+    "label": "Rebellion Records"
    },
    {
     "album": "Strung Out Symphony",
@@ -4460,7 +5714,17 @@ window.PERSONAS = [
     ],
     "deezerId": 712171491,
     "artistId": 62817042,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "aldn",
+       "Gabe Greenland"
+      ]
+     }
+    ],
+    "label": "aldn"
    },
    {
     "album": "stars fell on trench",
@@ -4496,7 +5760,9 @@ window.PERSONAS = [
     ],
     "deezerId": 684088921,
     "artistId": 112964282,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [],
+    "label": "quinn"
    },
    {
     "album": "This is just a Dream (and soon I will awake)",
@@ -4532,7 +5798,17 @@ window.PERSONAS = [
     ],
     "deezerId": 606354742,
     "artistId": 76812952,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "d0llywood1",
+       "444jet"
+      ]
+     }
+    ],
+    "label": "d0llywood1"
    },
    {
     "album": "Let's Hope Heteros Fail, Learn and Retire",
@@ -4568,7 +5844,32 @@ window.PERSONAS = [
     ],
     "deezerId": 406082517,
     "artistId": 14728423,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Alice Longyu Gao",
+       "April Harper Grey",
+       "Dylan Brady",
+       "Wyatt Bernard"
+      ]
+     },
+     {
+      "label": "Mixed by",
+      "names": [
+       "John Fee"
+      ]
+     },
+     {
+      "label": "Engineered by",
+      "names": [
+       "Dale Becker",
+       "John Fee"
+      ]
+     }
+    ],
+    "label": "Alice Longyu Gao"
    },
    {
     "album": "mortal",
@@ -4604,7 +5905,9 @@ window.PERSONAS = [
     ],
     "deezerId": 445255985,
     "artistId": 14803387,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [],
+    "label": "blackwinterwells, under exclusive license to Amuseio AB"
    },
    {
     "album": "333",
@@ -4640,7 +5943,19 @@ window.PERSONAS = [
     ],
     "deezerId": 304588117,
     "artistId": 5804578,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Whitearmor",
+       "Lusi",
+       "Gud",
+       "Mechatok"
+      ]
+     }
+    ],
+    "label": "YEAR0001"
    },
    {
     "album": "E",
@@ -4676,7 +5991,25 @@ window.PERSONAS = [
     ],
     "deezerId": 304591887,
     "artistId": 6073616,
-    "favTrack": "Peroxide"
+    "favTrack": "Peroxide",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Shanti",
+       "Gud",
+       "Whitearmor",
+       "Mechatok"
+      ]
+     },
+     {
+      "label": "Mixed by",
+      "names": [
+       "Gud"
+      ]
+     }
+    ],
+    "label": "YEAR0001"
    },
    {
     "album": "Glitch Princess",
@@ -4712,7 +6045,25 @@ window.PERSONAS = [
     ],
     "deezerId": 257989642,
     "artistId": 10877874,
-    "favTrack": "Don't Be So Hard On Your Own Beauty"
+    "favTrack": "Don't Be So Hard On Your Own Beauty",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "yeule",
+       "Danny L Harle",
+       "Tohji",
+       "Kin Leonn"
+      ]
+     },
+     {
+      "label": "Mixed by",
+      "names": [
+       "Geoff Swan"
+      ]
+     }
+    ],
+    "label": "Bayonet Records"
    },
    {
     "album": "to hell with it",
@@ -4748,7 +6099,19 @@ window.PERSONAS = [
     ],
     "deezerId": 261715512,
     "artistId": 122602052,
-    "favTrack": "Pain"
+    "favTrack": "Pain",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "PinkPantheress",
+       "Oscar Scheller",
+       "IZCO",
+       "jkarri"
+      ]
+     }
+    ],
+    "label": "Parlophone UK"
    },
    {
     "album": "Mercurial World",
@@ -4784,7 +6147,28 @@ window.PERSONAS = [
     ],
     "deezerId": 234682722,
     "artistId": 10468777,
-    "favTrack": "Chaeri"
+    "favTrack": "Chaeri",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Magdalena Bay"
+      ]
+     },
+     {
+      "label": "Mixed by",
+      "names": [
+       "Matthew Lewin"
+      ]
+     },
+     {
+      "label": "Engineered by",
+      "names": [
+       "Matthew Lewin"
+      ]
+     }
+    ],
+    "label": "Luminelle Recordings"
    },
    {
     "album": "Flamboyant",
@@ -4820,7 +6204,9 @@ window.PERSONAS = [
     ],
     "deezerId": 97768252,
     "artistId": 9829696,
-    "favTrack": "Career Boy"
+    "favTrack": "Career Boy",
+    "credits": [],
+    "label": "Dorian Electra"
    },
    {
     "album": "Slide",
@@ -4856,7 +6242,9 @@ window.PERSONAS = [
     ],
     "deezerId": 89227412,
     "artistId": 8885366,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [],
+    "label": "100% Electronica LLC"
    },
    {
     "album": "Unlimited Ammo",
@@ -4892,7 +6280,9 @@ window.PERSONAS = [
     ],
     "deezerId": 264058322,
     "artistId": 10922274,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [],
+    "label": "PC Music"
    },
    {
     "album": "search result",
@@ -4928,7 +6318,9 @@ window.PERSONAS = [
     ],
     "deezerId": 191892312,
     "artistId": 12042424,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [],
+    "label": "PC Music"
    },
    {
     "album": "Personal Protocol",
@@ -4964,7 +6356,9 @@ window.PERSONAS = [
     ],
     "deezerId": 443070165,
     "artistId": 91079502,
-    "favTrack": ""
+    "favTrack": "",
+    "credits": [],
+    "label": "8485"
    }
   ],
   "artistImg": {
@@ -5068,7 +6462,31 @@ window.PERSONAS = [
     ],
     "deezerId": 97140952,
     "artistId": 1194083,
-    "favTrack": "EARFQUAKE"
+    "favTrack": "EARFQUAKE",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Tyler, The Creator"
+      ]
+     },
+     {
+      "label": "Mixed by",
+      "names": [
+       "Neal Pogue"
+      ]
+     },
+     {
+      "label": "Engineered by",
+      "names": [
+       "Zachary Acosta",
+       "John Armstrong",
+       "Rob Bisel",
+       "Ben Fletcher"
+      ]
+     }
+    ],
+    "label": "Columbia"
    },
    {
     "album": "THIRSTY",
@@ -5104,7 +6522,9 @@ window.PERSONAS = [
     ],
     "deezerId": 436977427,
     "artistId": 115893862,
-    "favTrack": "Island (Queen of Diamonds)"
+    "favTrack": "Island (Queen of Diamonds)",
+    "credits": [],
+    "label": "비스포크"
    },
    {
     "album": "TEEN TROUBLES",
@@ -5140,7 +6560,9 @@ window.PERSONAS = [
     ],
     "deezerId": 356014307,
     "artistId": 115893862,
-    "favTrack": "Powder Blue"
+    "favTrack": "Powder Blue",
+    "credits": [],
+    "label": "DOGGYRICH FOREVER, BESPOK"
    },
    {
     "album": "CALL ME IF YOU GET LOST",
@@ -5176,7 +6598,33 @@ window.PERSONAS = [
     ],
     "deezerId": 239516692,
     "artistId": 1194083,
-    "favTrack": "HOT WIND BLOWS (feat. Lil Wayne)"
+    "favTrack": "HOT WIND BLOWS (feat. Lil Wayne)",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Tyler, The Creator",
+       "Jamie xx",
+       "Jay Versace"
+      ]
+     },
+     {
+      "label": "Mixed by",
+      "names": [
+       "Neal Pogue"
+      ]
+     },
+     {
+      "label": "Engineered by",
+      "names": [
+       "Zachary Acosta",
+       "Gregory Scott",
+       "Ben Fletcher",
+       "Bobby Mota"
+      ]
+     }
+    ],
+    "label": "Columbia"
    },
    {
     "album": "Sweet Boy",
@@ -5212,7 +6660,9 @@ window.PERSONAS = [
     ],
     "deezerId": 567736181,
     "artistId": 193142737,
-    "favTrack": "4Me 4Me"
+    "favTrack": "4Me 4Me",
+    "credits": [],
+    "label": "Columbia"
    },
    {
     "album": "Ventura",
@@ -5248,7 +6698,19 @@ window.PERSONAS = [
     ],
     "deezerId": 93038342,
     "artistId": 6474027,
-    "favTrack": "What Can We Do? (feat. Nate Dogg)"
+    "favTrack": "What Can We Do? (feat. Nate Dogg)",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Anderson .Paak",
+       "Jairus Mozee",
+       "The Alchemist",
+       "Fredwreck"
+      ]
+     }
+    ],
+    "label": "Aftermath"
    },
    {
     "album": "It Is What It Is",
@@ -5284,7 +6746,9 @@ window.PERSONAS = [
     ],
     "deezerId": 127010392,
     "artistId": 546520,
-    "favTrack": "Funny Thing"
+    "favTrack": "Funny Thing",
+    "credits": [],
+    "label": "Brainfeeder"
    },
    {
     "album": "Musiq, Pt. 1",
@@ -5320,7 +6784,9 @@ window.PERSONAS = [
     ],
     "deezerId": 133302552,
     "artistId": 5057451,
-    "favTrack": "Jstfriends"
+    "favTrack": "Jstfriends",
+    "credits": [],
+    "label": "1988"
    },
    {
     "album": "NewJeans 2nd EP 'Get Up'",
@@ -5356,7 +6822,25 @@ window.PERSONAS = [
     ],
     "deezerId": 466106885,
     "artistId": 178008437,
-    "favTrack": "ETA"
+    "favTrack": "ETA",
+    "credits": [
+     {
+      "label": "Mixed by",
+      "names": [
+       "Phil Tan",
+       "Nathan Boddy",
+       "Tony Maserati",
+       "Jonny Breakwell"
+      ]
+     },
+     {
+      "label": "Engineered by",
+      "names": [
+       "Bill Zimmerman"
+      ]
+     }
+    ],
+    "label": "ADOR"
    },
    {
     "album": "summer flows 0.02",
@@ -5392,7 +6876,9 @@ window.PERSONAS = [
     ],
     "deezerId": 675568361,
     "artistId": 72302562,
-    "favTrack": "summer flows"
+    "favTrack": "summer flows",
+    "credits": [],
+    "label": "WAVY"
    },
    {
     "album": "Free Nationals",
@@ -5428,7 +6914,9 @@ window.PERSONAS = [
     ],
     "deezerId": 116804352,
     "artistId": 52240862,
-    "favTrack": "Gidget (feat. Anderson .Paak & T.Nava)"
+    "favTrack": "Gidget (feat. Anderson .Paak & T.Nava)",
+    "credits": [],
+    "label": "OBE, LLC / EMPIRE"
    },
    {
     "album": "You're The Man (Expanded Edition)",
@@ -5464,7 +6952,9 @@ window.PERSONAS = [
     ],
     "deezerId": 477668565,
     "artistId": 1154,
-    "favTrack": "My Last Chance (SalaAM ReMi LP Mix)"
+    "favTrack": "My Last Chance (SalaAM ReMi LP Mix)",
+    "credits": [],
+    "label": "UNI/MOTOWN"
    },
    {
     "album": "Luv 4 Rent",
@@ -5500,7 +6990,9 @@ window.PERSONAS = [
     ],
     "deezerId": 368463357,
     "artistId": 9492178,
-    "favTrack": "No L's"
+    "favTrack": "No L's",
+    "credits": [],
+    "label": "Motown Records"
    },
    {
     "album": "Hitler Wears Hermes 8: Side B",
@@ -5536,7 +7028,9 @@ window.PERSONAS = [
     ],
     "deezerId": 260175572,
     "artistId": 8323782,
-    "favTrack": "The Fly who couldn't Fly straight (feat. Tyler, The Creator)"
+    "favTrack": "The Fly who couldn't Fly straight (feat. Tyler, The Creator)",
+    "credits": [],
+    "label": "Griselda Records / EMPIRE"
    },
    {
     "album": "0.1 flaws and all.",
@@ -5572,7 +7066,22 @@ window.PERSONAS = [
     ],
     "deezerId": 647725701,
     "artistId": 72302562,
-    "favTrack": "bad"
+    "favTrack": "bad",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "김다니엘"
+      ]
+     },
+     {
+      "label": "Mixed by",
+      "names": [
+       "김다니엘"
+      ]
+     }
+    ],
+    "label": "WAVY"
    },
    {
     "album": "Zip",
@@ -5608,7 +7117,25 @@ window.PERSONAS = [
     ],
     "deezerId": 520058942,
     "artistId": 4990400,
-    "favTrack": "UNLOVE (prod. HONNE)"
+    "favTrack": "UNLOVE (prod. HONNE)",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "HONNE"
+      ]
+     },
+     {
+      "label": "Mixed by",
+      "names": [
+       "James Fouren",
+       "고현정",
+       "지민우",
+       "김준영"
+      ]
+     }
+    ],
+    "label": "theblacklabel"
    },
    {
     "album": "A Call from My Dream",
@@ -5644,7 +7171,9 @@ window.PERSONAS = [
     ],
     "deezerId": 175933532,
     "artistId": 83542562,
-    "favTrack": "Beep-Boop, Beep-Boop"
+    "favTrack": "Beep-Boop, Beep-Boop",
+    "credits": [],
+    "label": "Meaningful Stone"
    },
    {
     "album": "I Know",
@@ -5680,7 +7209,9 @@ window.PERSONAS = [
     ],
     "deezerId": 114389382,
     "artistId": 51079912,
-    "favTrack": "Dry Flower"
+    "favTrack": "Dry Flower",
+    "credits": [],
+    "label": "Happy Robot Records"
    },
    {
     "album": "Fancy That",
@@ -5716,7 +7247,32 @@ window.PERSONAS = [
     ],
     "deezerId": 749411161,
     "artistId": 122602052,
-    "favTrack": "Tonight"
+    "favTrack": "Tonight",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "aksel arvid",
+       "PinkPantheress",
+       "Dill Aitchison",
+       "Count Baldor"
+      ]
+     },
+     {
+      "label": "Mixed by",
+      "names": [
+       "Nickie Jon Pabón"
+      ]
+     },
+     {
+      "label": "Engineered by",
+      "names": [
+       "aksel arvid",
+       "PinkPantheress"
+      ]
+     }
+    ],
+    "label": "Warner Records"
    },
    {
     "album": "The Bricktionary",
@@ -5752,7 +7308,9 @@ window.PERSONAS = [
     ],
     "deezerId": 668820061,
     "artistId": 4437489,
-    "favTrack": "Rabies (feat. Benny the Butcher)"
+    "favTrack": "Rabies (feat. Benny the Butcher)",
+    "credits": [],
+    "label": "Boldy James / SRFSCHL, LLC"
    },
    {
     "album": "Apollo XXI",
@@ -5788,7 +7346,9 @@ window.PERSONAS = [
     ],
     "deezerId": 348062427,
     "artistId": 65574,
-    "favTrack": "Only If"
+    "favTrack": "Only If",
+    "credits": [],
+    "label": "3qtr"
    },
    {
     "album": "DIE FOR MY BITCH",
@@ -5824,7 +7384,17 @@ window.PERSONAS = [
     ],
     "deezerId": 103731632,
     "artistId": 48947681,
-    "favTrack": "STATS"
+    "favTrack": "STATS",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Baby Keem",
+       "Keanu Beats"
+      ]
+     }
+    ],
+    "label": "Baby Keem LLC"
    },
    {
     "album": "BETWEEN 1&2",
@@ -5860,7 +7430,19 @@ window.PERSONAS = [
     ],
     "deezerId": 349507667,
     "artistId": 161553,
-    "favTrack": "Talk that Talk"
+    "favTrack": "Talk that Talk",
+    "credits": [
+     {
+      "label": "Mixed by",
+      "names": [
+       "김영현",
+       "Tony Maserati",
+       "이태섭",
+       "임홍진"
+      ]
+     }
+    ],
+    "label": "Republic Records - TWICE"
    },
    {
     "album": "PsychoWarrior: MG Ultra X",
@@ -5896,7 +7478,9 @@ window.PERSONAS = [
     ],
     "deezerId": 804904441,
     "artistId": 151688,
-    "favTrack": "Come On Baby, Scrape My Data"
+    "favTrack": "Come On Baby, Scrape My Data",
+    "credits": [],
+    "label": "Future Classic"
    },
    {
     "album": "Bae 5",
@@ -5932,7 +7516,9 @@ window.PERSONAS = [
     ],
     "deezerId": 353004357,
     "artistId": 10559669,
-    "favTrack": "Welcome To the Disco (feat. Macross 82-99)"
+    "favTrack": "Welcome To the Disco (feat. Macross 82-99)",
+    "credits": [],
+    "label": "Future of Funk Records, LLC"
    },
    {
     "album": "If Not Winter",
@@ -5968,7 +7554,27 @@ window.PERSONAS = [
     ],
     "deezerId": 793816941,
     "artistId": 60989,
-    "favTrack": "Breathe onto me"
+    "favTrack": "Breathe onto me",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "aldn",
+       "Gabe Greenland",
+       "Stint",
+       "Zach Capitti Fenton"
+      ]
+     },
+     {
+      "label": "Mixed by",
+      "names": [
+       "Lars Stalfors",
+       "Jannick Frampton",
+       "Stephen Kaye"
+      ]
+     }
+    ],
+    "label": "Music Soup/Interscope Records"
    },
    {
     "album": "We Will Always Love You",
@@ -6004,7 +7610,34 @@ window.PERSONAS = [
     ],
     "deezerId": 190809862,
     "artistId": 2748,
-    "favTrack": "The Divine Chord (feat. MGMT & Johnny Marr)"
+    "favTrack": "The Divine Chord (feat. MGMT & Johnny Marr)",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Robbie Chater",
+       "Antony Di Blasi",
+       "Andrew Szekeres",
+       "Jamie xx"
+      ]
+     },
+     {
+      "label": "Mixed by",
+      "names": [
+       "Robbie Chater",
+       "Anthony di Blasi",
+       "Tony Espie"
+      ]
+     },
+     {
+      "label": "Engineered by",
+      "names": [
+       "Zack Zajdel",
+       "Nate Haessly"
+      ]
+     }
+    ],
+    "label": "Universal Music Australia Pty. Ltd."
    },
    {
     "album": "GNX",
@@ -6040,7 +7673,25 @@ window.PERSONAS = [
     ],
     "deezerId": 673968231,
     "artistId": 525046,
-    "favTrack": "tv off (feat. Lefty Gunplay)"
+    "favTrack": "tv off (feat. Lefty Gunplay)",
+    "credits": [
+     {
+      "label": "Produced by",
+      "names": [
+       "Jack Antonoff",
+       "Craig Balmoris",
+       "DJ Dahi",
+       "franO"
+      ]
+     },
+     {
+      "label": "Mixed by",
+      "names": [
+       "Oli Jacobs"
+      ]
+     }
+    ],
+    "label": "pgLang, under exclusive license to Interscope Records"
    }
   ],
   "artistImg": {
