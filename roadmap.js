@@ -2,10 +2,16 @@
    ROADMAP — Spindeck planning board (desktop viewer only)
 
    Behind the toolbar's "Roadmap" button. Top: a block calendar,
-   Aug → Dec 2026 (August is a two-week stub, see RM_CAL_MONTHS).
+   Aug → Dec 2026, TWO months on screen at a time but stepping by
+   one (August is a two-week stub, see RM_CAL_MONTHS / RM_CAL_SPAN).
    Left: the linear week-by-week timeline (Aug 21 → Dec 31 2026,
    19 weeks). Right top: short / medium / long term goals.
-   Right bottom: meeting notes.
+   Right bottom: meeting notes, one tab per session.
+
+   Three levels, deliberately: a WEEK is the workstream ("Design
+   pass"), a DAY EVENT is a fixed point inside it ("hand-in, 4pm"),
+   a SESSION is the record of one meeting. Clicking a day edits its
+   events; clicking a W-number jumps to the week.
 
    ── Why weeks run Friday → Thursday ──
    Week 1 starts Fri Aug 21. Keeping every week Fri→Thu means one
@@ -45,6 +51,14 @@ const RM_CAL_MONTHS = [[2026, 7], [2026, 8], [2026, 9], [2026, 10], [2026, 11]];
 const RM_MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const RM_DOW = ['F', 'S', 'S', 'M', 'T', 'W', 'T'];   // Friday-start, see header comment
 
+/* How many month blocks are on screen at once. The strip still STEPS by one
+   month, so consecutive pages overlap by SPAN-1 and you can follow a thread
+   across a month boundary instead of losing it to a page turn. Everything
+   else derives from this: slide width is 100/SPAN %, the last valid index is
+   RM_CAL_MAX(), and there is one pip per page rather than per month. */
+const RM_CAL_SPAN = 2;
+function rmCalMax() { return Math.max(0, RM_CAL_MONTHS.length - RM_CAL_SPAN); }
+
 /* All date maths in UTC — the board is a fixed calendar, not a clock, and
    local-midnight Dates would drift a day either side of the date line. */
 function rmDayMs(iso) { const p = iso.split('-'); return Date.UTC(+p[0], +p[1] - 1, +p[2]); }
@@ -65,8 +79,14 @@ const RM_WEEKS = (function () {
   return out;
 })();
 
-const RM_TRACKS = ['mockup', 'web', 'both', 'admin'];
-const RM_TRACK_LBL = { mockup: 'Mockup', web: 'Website', both: 'Both', admin: 'Admin' };
+/* Tracks are WORKSTREAMS, not the two Spindeck projects — the board plans one
+   effort and the old mockup/web/both split forced a choice that was almost
+   always "both". ⚠️ Renaming a track ORPHANS every board already saved under
+   the old value, so RM_TRACK_OLD maps the retired names forward; rmNormalize
+   runs it before the fallback that would otherwise reset them all to dev. */
+const RM_TRACKS = ['dev', 'design', 'admin', 'research'];
+const RM_TRACK_LBL = { dev: 'Development', design: 'Design', admin: 'Admin', research: 'Research' };
+const RM_TRACK_OLD = { mockup: 'design', web: 'dev', both: 'dev' };
 
 const RM_STATUS = ['planned', 'doing', 'done', 'risk'];
 const RM_STATUS_GLYPH = { planned: '–', doing: '▸', done: '✓', risk: '!' };
@@ -85,21 +105,28 @@ const RM_HOWTO =
   'Type a short SUBJECT on the line above — that is what shows on the calendar, ' +
   'so keep it to a couple of words — then the full detail here. ' +
   'The left chip cycles status (planned / doing / done / at risk), the right ' +
-  'chip cycles track (Mockup / Website / Both / Admin). Hover a day in the ' +
-  'calendar to light up its week down here, or click it to jump. ' +
+  'chip cycles track (Development / Design / Admin / Research). Hover a day to ' +
+  'light up its week down here; CLICK a day to put an event on it, or click the ' +
+  'W-number to jump. Notes are tabbed — one tab per meeting, + for a new one. ' +
   'Start a subject with MILESTONE to flag it. Everything saves in THIS browser ' +
   'only — hit Copy link or Copy Markdown before you close the tab.';
 
 function rmSeed() {
   const weeks = RM_WEEKS.map(function () {
-    return { tag: '', t: '', track: 'mockup', st: 'planned' };
+    return { tag: '', t: '', track: 'dev', st: 'planned' };
   });
-  weeks[0] = { tag: 'HOW TO USE', t: RM_HOWTO, track: 'both', st: 'doing' };
+  weeks[0] = { tag: 'HOW TO USE', t: RM_HOWTO, track: 'dev', st: 'doing' };
   return {
-    v: 2,
+    v: 3,
     weeks: weeks,
     goals: { short: [], medium: [], long: [] },
-    notes: '',
+    // Day events, keyed by ISO date — see the rmEv* block. An object rather
+    // than a per-week array so a day keeps its events if the week list moves.
+    events: {},
+    // Meeting notes are per SESSION: one tab per meeting, so last week's
+    // decisions stay readable while this week's are being typed.
+    sessions: [rmNewSession(rmTodayMs())],
+    si: 0,
   };
 }
 
@@ -113,9 +140,12 @@ let RM_BUILT = false;
 function rmNormalize(s) {
   const seed = rmSeed();
   s.weeks = RM_WEEKS.map(function (_, i) {
-    const w = s.weeks[i] || { tag: '', t: '', track: 'mockup', st: 'planned' };
+    const w = s.weeks[i] || { tag: '', t: '', track: 'dev', st: 'planned' };
+    // Retired track names map forward FIRST — the reset below is the last
+    // resort for a genuinely unknown value, not the migration path.
+    if (RM_TRACK_OLD[w.track]) w.track = RM_TRACK_OLD[w.track];
     // A value dropped from the lists would break the chip's cycle index.
-    if (RM_TRACKS.indexOf(w.track) < 0) w.track = 'mockup';
+    if (RM_TRACKS.indexOf(w.track) < 0) w.track = 'dev';
     if (RM_STATUS.indexOf(w.st) < 0) w.st = 'planned';
     if (typeof w.t !== 'string') w.t = '';
     // `tag` arrived after the first boards were saved, so it has to be filled
@@ -128,8 +158,41 @@ function rmNormalize(s) {
     if (!Array.isArray(s.goals[t.id])) s.goals[t.id] = [];
     s.goals[t.id] = s.goals[t.id].map(function (x) { return String(x == null ? '' : x); });
   });
-  if (typeof s.notes !== 'string') s.notes = '';
-  s.v = 2;
+
+  // Events: {ISO: [text, …]}. Drop empty days so the share link doesn't carry
+  // a key for every day someone opened and closed without typing.
+  const ev = {};
+  if (s.events && typeof s.events === 'object') {
+    Object.keys(s.events).forEach(function (k) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(k) || !Array.isArray(s.events[k])) return;
+      const list = s.events[k]
+        .map(function (x) { return String(x == null ? '' : x); })
+        .filter(function (x) { return x.trim(); });
+      if (list.length) ev[k] = list;
+    });
+  }
+  s.events = ev;
+
+  // Sessions replaced the single `notes` string in v3. A v2 board carries its
+  // notes forward as the first session rather than losing them.
+  if (!Array.isArray(s.sessions) || !s.sessions.length) {
+    s.sessions = [rmNewSession(rmTodayMs())];
+    if (typeof s.notes === 'string' && s.notes.trim()) s.sessions[0].body = s.notes;
+  }
+  s.sessions = s.sessions.map(function (x, i) {
+    const o = (x && typeof x === 'object') ? x : {};
+    return {
+      id: typeof o.id === 'string' && o.id ? o.id : 's' + i + '-' + (o.name || ''),
+      name: typeof o.name === 'string' && o.name.trim() ? o.name : 'Session ' + (i + 1),
+      body: typeof o.body === 'string' ? o.body : '',
+    };
+  });
+  // An out-of-range index would render a tab strip with nothing selected and
+  // bind the textarea to undefined.
+  s.si = (typeof s.si === 'number' && s.si >= 0 && s.si < s.sessions.length) ? s.si : 0;
+  delete s.notes;
+
+  s.v = 3;
   return s;
 }
 
@@ -154,6 +217,11 @@ function rmEsc(s) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+/* rmEsc is for TEXT between tags; it leaves quotes alone, which is fine there
+   and fatal inside an attribute. Anything user-typed going into title="…"
+   goes through this instead. */
+function rmAttr(s) { return rmEsc(s).replace(/"/g, '&quot;'); }
+
 /* A week counts as "has something" if EITHER field is filled — the subject
    alone is a legitimate entry, and it's the one the calendar can show. */
 function rmHasItem(d) { return !!((d.tag || '') + (d.t || '')).trim(); }
@@ -172,6 +240,43 @@ function rmWeekOf(ms) {
   return (i >= 0 && i < RM_WEEKS.length) ? i : -1;
 }
 
+/* ── Day events ─────────────────────────────────────────
+   A week says what the WORK is; an event says what happens on one DAY —
+   a call, a deadline, a hand-in. Keyed by ISO date rather than by week
+   index so moving RM_START re-labels the weeks without dragging every
+   event to a different date with them.
+   ────────────────────────────────────────────────────── */
+function rmIso(ms) {
+  const d = new Date(ms);
+  const p = function (n) { return (n < 10 ? '0' : '') + n; };
+  return d.getUTCFullYear() + '-' + p(d.getUTCMonth() + 1) + '-' + p(d.getUTCDate());
+}
+
+/* Always an array, never undefined — every caller iterates it. */
+function rmEvOn(iso) {
+  const list = RM.events[iso];
+  return Array.isArray(list) ? list : [];
+}
+
+/* Long-form day label for the popover header: "Mon Aug 24". */
+const RM_DOW_FULL = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+function rmDayLabel(ms) {
+  return RM_DOW_FULL[new Date(ms).getUTCDay()] + ' ' + rmFmt(ms);
+}
+
+/* ── Note sessions ──────────────────────────────────────
+   One tab per meeting. Named for the day it was opened, because that is how
+   anyone looks a meeting back up; the name is editable for the ones that
+   want a subject instead.
+   ────────────────────────────────────────────────────── */
+let RM_SID = 0;
+function rmNewSession(ms) {
+  RM_SID++;
+  return { id: 's' + RM_SID + '-' + ms, name: rmFmt(ms), body: '' };
+}
+
+function rmSession() { return RM.sessions[RM.si] || RM.sessions[0]; }
+
 /* ── Render: block calendar ─────────────────────────────
    ONE month on screen at a time, in a horizontal filmstrip. All four are
    rendered into .rm-cal-track and the track is translated — that is what
@@ -188,9 +293,13 @@ function rmCalHTML() {
     const first = Date.UTC(y, m, 1);
     const last = Date.UTC(y, m + 1, 0);
 
-    // No month name in the slide — it lives in the card header beside the
-    // arrows, so the control and the label it names stay together.
+    // ⚠️ The month name is back IN the slide. It used to live only in the card
+    // header beside the arrows, which was right when one month was on screen —
+    // with RM_CAL_SPAN of them visible, a single header label can't say which
+    // block is which. The header now names the visible RANGE; this names the
+    // block.
     h += '<div class="rm-cal-m">' +
+           '<div class="rm-cal-mname">' + RM_MON[m] + '</div>' +
            '<div class="rm-cal-grid">' +
              '<span class="rm-cal-cnr"></span>' +
              RM_DOW.map(function (d) { return '<span class="rm-cal-dow">' + d + '</span>'; }).join('');
@@ -205,11 +314,18 @@ function rmCalHTML() {
                    'data-mark="' + mark + '">W' + (i + 1) + '</button>';
       for (let k = 0; k < 7; k++) {
         const ms = rmAddDays(wk.ms, k);
+        const iso = rmIso(ms);
+        const evs = rmEvOn(iso);
         const cls = 'rm-cal-d' +
           ((ms < first || ms > last) ? ' is-out' : '') +
           ((ms === today) ? ' is-today' : '');
-        h += '<button class="' + cls + '" data-w="' + i + '" data-st="' + d.st + '" ' +
-                     'data-mark="' + mark + '">' + new Date(ms).getUTCDate() + '</button>';
+        // data-d carries the day's identity so the click handler doesn't have
+        // to re-derive it from the week index and the column.
+        h += '<button class="' + cls + '" data-w="' + i + '" data-d="' + iso + '" ' +
+                     'data-st="' + d.st + '" data-mark="' + mark + '" ' +
+                     'data-ev="' + (evs.length ? '1' : '') + '" ' +
+                     'title="' + (evs.length ? rmAttr(evs.join(' · ')) : 'Click to add an event') + '">' +
+               new Date(ms).getUTCDate() + '</button>';
       }
       // The subject bar, under the week's days and spanning them. ALWAYS
       // emitted, even empty: typing a subject must reveal it without a
@@ -226,15 +342,29 @@ function rmCalHTML() {
 
 /* ── Calendar paging ────────────────────────────────────── */
 
-/* Which month block holds today, so the board opens on the right one.
+/* Which page holds today, so the board opens on the right one. Clamped to
+   rmCalMax() — the last page starts SPAN months from the end, so December
+   can never be the leading block with blank space beside it.
    Outside the range we land on Sep, not on index 0 — August is a two-week
-   stub and makes a poor first screen for anyone arriving off-season. */
+   stub and makes a poor leading block for anyone arriving off-season. */
 function rmCalMonthOfToday() {
   const n = new Date();
   const i = RM_CAL_MONTHS.findIndex(function (ym) {
     return ym[0] === n.getFullYear() && ym[1] === n.getMonth();
   });
-  return i < 0 ? 1 : i;
+  return Math.min(i < 0 ? 1 : i, rmCalMax());
+}
+
+/* One page-step in pixels. The strip steps by ONE month while SPAN of them are
+   on screen, so a step is a SLIDE's width, not the viewport's — that single
+   distinction is what makes the pages overlap.
+   MEASURED off a real slide rather than computed as clientWidth / SPAN, so the
+   width lives in one place (the CSS) and a media query can change it without
+   this silently sliding to the wrong offset. Falls back only before the first
+   render, when there is no slide to measure. */
+function rmCalStepPx(view) {
+  const slide = view.querySelector('.rm-cal-m');
+  return (slide && slide.offsetWidth) || view.clientWidth / RM_CAL_SPAN;
 }
 
 /* Position the filmstrip. `px` is a live drag offset; omit it to snap. */
@@ -244,30 +374,40 @@ function rmCalSlide(px, animate) {
   if (!view || !track) return;
   track.style.transition = animate ? '' : 'none';
   track.style.transform =
-    'translateX(' + (-RM_CAL_I * view.clientWidth + (px || 0)) + 'px)';
+    'translateX(' + (-RM_CAL_I * rmCalStepPx(view) + (px || 0)) + 'px)';
 }
 
+/* The header names the visible RANGE ("Aug – Sep 2026"); each block carries its
+   own month name in the slide, since one header label can't identify two. */
 function rmCalLabel() {
-  const ym = RM_CAL_MONTHS[RM_CAL_I];
+  const a = RM_CAL_MONTHS[RM_CAL_I];
+  const b = RM_CAL_MONTHS[Math.min(RM_CAL_I + RM_CAL_SPAN - 1, RM_CAL_MONTHS.length - 1)];
   const name = document.getElementById('rm-cal-name');
-  if (name) name.textContent = RM_MON[ym[1]] + ' ' + ym[0];
+  if (name) {
+    name.textContent = (a === b ? RM_MON[a[1]] : RM_MON[a[1]] + ' – ' + RM_MON[b[1]]) + ' ' + b[0];
+  }
 
   const prev = document.getElementById('rm-cal-prev');
   const next = document.getElementById('rm-cal-next');
   if (prev) prev.disabled = RM_CAL_I === 0;
-  if (next) next.disabled = RM_CAL_I === RM_CAL_MONTHS.length - 1;
+  if (next) next.disabled = RM_CAL_I === rmCalMax();
 
+  // One pip per PAGE, not per month — with SPAN months visible there are
+  // fewer pages than months, and a pip per month would leave the trailing
+  // ones permanently unreachable.
   const pips = document.getElementById('rm-cal-pips');
   if (pips) {
-    pips.innerHTML = RM_CAL_MONTHS.map(function (_, i) {
-      return '<button class="rm-pip' + (i === RM_CAL_I ? ' is-on' : '') + '" ' +
-             'onclick="rmCalGo(' + i + ')" title="' + RM_MON[RM_CAL_MONTHS[i][1]] + '"></button>';
-    }).join('');
+    let p = '';
+    for (let i = 0; i <= rmCalMax(); i++) {
+      p += '<button class="rm-pip' + (i === RM_CAL_I ? ' is-on' : '') + '" ' +
+           'onclick="rmCalGo(' + i + ')" title="' + RM_MON[RM_CAL_MONTHS[i][1]] + '"></button>';
+    }
+    pips.innerHTML = p;
   }
 }
 
 window.rmCalGo = function (i, animate) {
-  RM_CAL_I = Math.max(0, Math.min(RM_CAL_MONTHS.length - 1, i));
+  RM_CAL_I = Math.max(0, Math.min(rmCalMax(), i));
   rmCalLabel();
   rmCalSlide(0, animate !== false);
 };
@@ -299,7 +439,7 @@ function rmCalSwipe() {
     if (Math.abs(dx) > 6) view._rmDragged = true;
     // Rubber-band at the two ends rather than sliding into blank space.
     const atEnd = (RM_CAL_I === 0 && dx > 0) ||
-                  (RM_CAL_I === RM_CAL_MONTHS.length - 1 && dx < 0);
+                  (RM_CAL_I === rmCalMax() && dx < 0);
     rmCalSlide(atEnd ? dx * 0.3 : dx, false);
   });
 
@@ -307,7 +447,9 @@ function rmCalSwipe() {
     if (!down) return;
     down = false;
     view.classList.remove('is-grabbing');
-    const w = view.clientWidth;
+    // Measured against ONE STEP, not the viewport — a drag half a slide wide
+    // is a full page now that a page is a slide.
+    const w = rmCalStepPx(view);
     // A short flick counts as much as a long drag — 60px, or a fifth of the way.
     if (Math.abs(dx) > Math.min(60, w * 0.2)) window.rmCalStep(dx < 0 ? 1 : -1);
     else rmCalSlide(0, true);
@@ -341,6 +483,144 @@ function rmCalMark(i) {
     if (el.classList.contains('rm-cal-tag')) el.textContent = d.tag;
   });
 }
+
+/* Repaint one DAY's cells — the event indicator and its hover title. Same
+   rule as rmCalMark: called from the typing handler, so it must not render.
+   A day can appear in two blocks at once (a week straddling a month boundary
+   is drawn in both), hence querySelectorAll rather than querySelector. */
+function rmEvMark(iso) {
+  const evs = rmEvOn(iso);
+  document.querySelectorAll('#rm-cal [data-d="' + iso + '"]').forEach(function (el) {
+    el.dataset.ev = evs.length ? '1' : '';
+    el.title = evs.length ? evs.join(' · ') : 'Click to add an event';
+  });
+}
+
+/* ── The day popover ────────────────────────────────────
+   Clicking a day opens a small editor for THAT day's events. It is appended to
+   #roadmap and positioned absolutely against it — not into .rm-cal-body, whose
+   `overflow: hidden` (the filmstrip's clip) would cut it in half. #roadmap is
+   `position: absolute; inset: 0` and carries no transform, so it is a reliable
+   containing block; `position: fixed` would not be, since any transformed
+   ancestor the viewer grows later would silently re-parent it.
+   ────────────────────────────────────────────────────── */
+let RM_DAY = null;      // ISO of the day whose popover is open, or null
+
+function rmDayEl() {
+  let el = document.getElementById('rm-day');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'rm-day';
+    el.className = 'rm-day';
+    el.hidden = true;
+    document.getElementById('roadmap').appendChild(el);
+  }
+  return el;
+}
+
+function rmDayHTML(iso) {
+  const evs = rmEvOn(iso);
+  const wi = rmWeekOf(rmDayMs(iso));
+  let h = '<div class="rm-day-hd">' +
+            '<span class="rm-day-date">' + rmDayLabel(rmDayMs(iso)) + '</span>' +
+            (wi >= 0 ? '<button class="rm-day-w" onclick="rmDayToWeek(' + wi + ')" ' +
+                       'title="Jump to this week in the timeline">W' + (wi + 1) + '</button>' : '') +
+            '<span class="rm-day-sp"></span>' +
+            '<button class="rm-day-x" onclick="rmDayClose()" title="Close (Esc)">×</button>' +
+          '</div><div class="rm-day-list">';
+
+  evs.forEach(function (txt, i) {
+    h += '<div class="rm-ev">' +
+           '<span class="rm-ev-dot">•</span>' +
+           '<div class="rm-ev-text" contenteditable="plaintext-only" spellcheck="false" ' +
+                'data-ph="Event…" data-rm-ev="' + i + '">' + rmEsc(txt) + '</div>' +
+           '<button class="rm-del" title="Delete" onclick="rmEvDel(' + i + ')">×</button>' +
+         '</div>';
+  });
+
+  h += '</div><button class="rm-add rm-day-add" onclick="rmEvAdd()">+ add event</button>';
+  return h;
+}
+
+/* Re-render the popover body in place. Structural only (add / delete) — typing
+   goes through the delegated input handler and must never land here. */
+function rmDayPaint() {
+  if (RM_DAY == null) return;
+  rmDayEl().innerHTML = rmDayHTML(RM_DAY);
+}
+
+window.rmDayOpen = function (iso, anchor) {
+  RM_DAY = iso;
+  const el = rmDayEl();
+  el.innerHTML = rmDayHTML(iso);
+  el.hidden = false;
+
+  // Position under the day, then pull back inside the overlay. Measured after
+  // the content is in and `hidden` is off, or offsetWidth/Height read zero.
+  const root = document.getElementById('roadmap').getBoundingClientRect();
+  const a = anchor.getBoundingClientRect();
+  const w = el.offsetWidth, h = el.offsetHeight;
+  let left = a.left - root.left + a.width / 2 - w / 2;
+  let top = a.bottom - root.top + 6;
+  // Flip above the day when there isn't room below, so a popover opened on the
+  // last row isn't pinned half off the bottom of the overlay.
+  if (top + h > root.height - 8) top = a.top - root.top - h - 6;
+  el.style.left = Math.max(8, Math.min(left, root.width - w - 8)) + 'px';
+  el.style.top = Math.max(8, top) + 'px';
+
+  // Straight into the first empty row so a day with nothing on it is one
+  // click from typing; otherwise leave the caret out of existing text.
+  const rows = el.querySelectorAll('[data-rm-ev]');
+  if (!rows.length) window.rmEvAdd();
+};
+
+window.rmDayClose = function () {
+  // A blank row is created eagerly on open (and by "+ add"), so closing has to
+  // sweep the ones nobody typed into — otherwise an opened-and-closed day keeps
+  // an empty event forever and rides along in every share link.
+  if (RM_DAY != null && RM.events[RM_DAY]) {
+    const kept = RM.events[RM_DAY].filter(function (x) { return x.trim(); });
+    if (kept.length) RM.events[RM_DAY] = kept; else delete RM.events[RM_DAY];
+    rmSave();
+    rmEvMark(RM_DAY);
+  }
+  RM_DAY = null;
+  const el = document.getElementById('rm-day');
+  if (el) { el.hidden = true; el.innerHTML = ''; }
+};
+
+window.rmDayToWeek = function (i) {
+  window.rmDayClose();
+  const row = document.querySelector('.rm-week[data-w="' + i + '"]');
+  if (!row) return;
+  row.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  const tag = row.querySelector('.rm-week-tag');
+  const cell = (tag && !tag.textContent.trim()) ? tag : row.querySelector('.rm-week-text');
+  if (cell) cell.focus();
+};
+
+window.rmEvAdd = function () {
+  if (RM_DAY == null) return;
+  if (!Array.isArray(RM.events[RM_DAY])) RM.events[RM_DAY] = [];
+  RM.events[RM_DAY].push('');
+  rmDayPaint();
+  const rows = document.querySelectorAll('#rm-day [data-rm-ev]');
+  const last = rows[rows.length - 1];
+  if (last) last.focus();
+};
+
+window.rmEvDel = function (i) {
+  if (RM_DAY == null) return;
+  const list = RM.events[RM_DAY];
+  if (!list) return;
+  list.splice(i, 1);
+  // Drop the key outright when the last one goes, so an emptied day doesn't
+  // keep its marker dot or ride along in every share link from here on.
+  if (!list.length) delete RM.events[RM_DAY];
+  rmSave();
+  rmEvMark(RM_DAY);
+  rmDayPaint();
+};
 
 /* The readout beside the Calendar title — the "what's due here" line that
    answers a hover without making anyone read the timeline below. */
@@ -388,6 +668,11 @@ function rmRender() {
   const tl = document.getElementById('rm-timeline');
   const gl = document.getElementById('rm-goals');
   if (!tl || !gl) return;
+
+  // Close the popover FIRST — it is anchored to a cell this render is about to
+  // throw away, and closing it prunes the blank row it opens with, so the grid
+  // below is built from already-clean state.
+  if (RM_DAY != null) window.rmDayClose();
 
   // Structural re-renders must not throw the reader back to the top.
   const tlTop = tl.scrollTop, glTop = gl.scrollTop;
@@ -454,6 +739,74 @@ function rmRender() {
   rmReadout(null);
 }
 
+/* ── Note sessions: tab strip + textarea binding ────────
+   The textarea is a single element bound to whichever session is active, not
+   one textarea per tab — switching swaps `value` rather than swapping nodes,
+   so the browser's own undo stack is the only thing that resets and nothing
+   leaks per tab.
+   ────────────────────────────────────────────────────── */
+function rmTabsRender() {
+  const bar = document.getElementById('rm-tabs');
+  if (!bar) return;
+  let h = '';
+  RM.sessions.forEach(function (s, i) {
+    const on = i === RM.si;
+    // A <div>, not a <button>: the active tab's name is contenteditable, and a
+    // caret inside a button is unreliable across browsers. The × stops
+    // propagation or the delete would also register as "switch to this tab".
+    h += '<div class="rm-tab' + (on ? ' is-on' : '') + '" onclick="rmTabGo(' + i + ')" ' +
+              'title="' + rmAttr(s.name) + (on ? ' — click the name to rename' : '') + '">' +
+           '<span class="rm-tab-name"' + (on ? ' contenteditable="plaintext-only" spellcheck="false" ' +
+             'data-rm-sname="' + i + '"' : '') + '>' + rmEsc(s.name) + '</span>' +
+           (on && RM.sessions.length > 1
+             ? '<span class="rm-tab-x" onclick="event.stopPropagation();rmTabDel(' + i + ')" ' +
+               'title="Delete this session">×</span>'
+             : '') +
+         '</div>';
+  });
+  h += '<div class="rm-tab rm-tab--add" onclick="rmTabAdd()" title="New session">+</div>';
+  bar.innerHTML = h;
+}
+
+/* Bind the textarea to the active session. Called on every switch and once at
+   init; nothing else may write `value`, or a keystroke races the render. */
+function rmTabBind() {
+  const ta = document.getElementById('rm-notes');
+  if (!ta) return;
+  ta.value = rmSession().body;
+}
+
+window.rmTabGo = function (i) {
+  if (i === RM.si) return;      // a click on the active tab is a rename target
+  RM.si = Math.max(0, Math.min(RM.sessions.length - 1, i));
+  rmSave();
+  rmTabsRender();
+  rmTabBind();
+};
+
+window.rmTabAdd = function () {
+  RM.sessions.push(rmNewSession(rmTodayMs()));
+  RM.si = RM.sessions.length - 1;
+  rmSave();
+  rmTabsRender();
+  rmTabBind();
+  const ta = document.getElementById('rm-notes');
+  if (ta) ta.focus();
+};
+
+window.rmTabDel = function (i) {
+  // Never leave the card with no session — the textarea would bind to nothing.
+  if (RM.sessions.length < 2) return;
+  const s = RM.sessions[i];
+  if (s.body.trim() &&
+      !confirm('Delete "' + s.name + '"? Its notes go with it.')) return;
+  RM.sessions.splice(i, 1);
+  if (RM.si >= RM.sessions.length) RM.si = RM.sessions.length - 1;
+  rmSave();
+  rmTabsRender();
+  rmTabBind();
+};
+
 /* ── Edits ──────────────────────────────────────────────── */
 window.rmCycle = function (i, field) {
   const list = field === 'st' ? RM_STATUS : RM_TRACKS;
@@ -503,7 +856,23 @@ function rmMarkdown() {
            (cell(d.t) || '—') + ' |\n';
   });
 
-  out += '\n## Meeting notes\n\n' + (RM.notes.trim() || '_(none)_') + '\n';
+  // Events are the other half of the calendar and were invisible in the export
+  // until v3 — a board copied out without them lost every date-specific thing
+  // on it. Sorted by ISO, which sorts chronologically for free.
+  const days = Object.keys(RM.events).sort();
+  if (days.length) {
+    out += '\n## Events\n\n';
+    days.forEach(function (iso) {
+      const wi = rmWeekOf(rmDayMs(iso));
+      out += '- **' + rmDayLabel(rmDayMs(iso)) + '**' + (wi >= 0 ? ' (W' + (wi + 1) + ')' : '') +
+             ' — ' + rmEvOn(iso).join('; ') + '\n';
+    });
+  }
+
+  out += '\n## Meeting notes\n';
+  RM.sessions.forEach(function (s) {
+    out += '\n### ' + s.name + '\n\n' + (s.body.trim() || '_(none)_') + '\n';
+  });
   return out;
 }
 
@@ -605,11 +974,11 @@ window.rmDownload = function (btn) {
 window.rmReset = function () {
   // Destructive and easy to hit beside Export — confirm() is a browser modal,
   // but this is viewer chrome, never the phone prototype, so it's safe here.
-  if (!confirm('Reset the roadmap to a blank board? Your edits and notes will be lost.')) return;
+  if (!confirm('Reset the roadmap to a blank board? Your edits, events and notes will be lost.')) return;
+  window.rmDayClose();          // it holds an ISO into the state we're replacing
   RM = rmSeed();
   rmSave(); rmRender();
-  const n = document.getElementById('rm-notes');
-  if (n) n.value = '';
+  rmTabsRender(); rmTabBind();
 };
 
 /* ── Open / close ───────────────────────────────────────── */
@@ -617,6 +986,7 @@ window.toggleRoadmap = function () {
   const el = document.getElementById('roadmap');
   if (!el) return;
   if (!RM_BUILT) { rmInit(); RM_BUILT = true; }
+  if (!el.hidden) window.rmDayClose();   // don't leave it open behind a closed board
   el.hidden = !el.hidden;
   // The overlay only covers #stage, so the thumbnail tray and the rec strip
   // would still show under it — hide them for the duration.
@@ -645,10 +1015,13 @@ function rmInit() {
   rmRender();
   rmCalSwipe();
 
+  rmTabsRender();
+  rmTabBind();
   const notes = document.getElementById('rm-notes');
   if (notes) {
-    notes.value = RM.notes;
-    notes.addEventListener('input', function () { RM.notes = notes.value; rmSave(); });
+    // Writes to whichever session is active at the time — rmTabGo swaps the
+    // value under it, so there is no per-tab listener to keep in sync.
+    notes.addEventListener('input', function () { rmSession().body = notes.value; rmSave(); });
   }
 
   // ONE delegated listener for every editable cell — the rows are rebuilt by
@@ -670,6 +1043,17 @@ function rmInit() {
       const parts = t.dataset.rmGoal.split(':');
       RM.goals[parts[0]][+parts[1]] = t.textContent;
       rmSave();
+    } else if (t.dataset.rmEv != null) {
+      // The popover is a child of #roadmap, so it rides this same listener.
+      const list = RM_DAY != null ? RM.events[RM_DAY] : null;
+      if (list) {
+        list[+t.dataset.rmEv] = t.textContent;
+        rmSave();
+        rmEvMark(RM_DAY);       // the day's marker follows live, no re-render
+      }
+    } else if (t.dataset.rmSname != null) {
+      RM.sessions[+t.dataset.rmSname].name = t.textContent;
+      rmSave();                 // no rmTabsRender — it would eat the caret
     }
   });
 
@@ -678,6 +1062,10 @@ function rmInit() {
   root.addEventListener('keydown', function (e) {
     if (e.key !== 'Enter' || !e.target.hasAttribute('contenteditable')) return;
     e.preventDefault();
+    // Enter in an event opens the NEXT event on that day — a day usually gets
+    // a burst of them typed in one go, and reaching for "+ add" between each
+    // one turns a list into a chore.
+    if (e.target.dataset.rmEv != null) { window.rmEvAdd(); return; }
     // Enter in a subject moves to that week's detail line — they're one entry
     // typed top to bottom, so it shouldn't cost a second click. Everywhere
     // else Enter commits, since a stray <br> breaks the :empty placeholder.
@@ -695,20 +1083,37 @@ function rmInit() {
       if (c) rmHi(+c.dataset.w);
     });
     cal.addEventListener('mouseleave', function () { rmHi(null); });
+    // Two different targets, two different jobs. A DAY opens its event editor —
+    // that is the day-level thing you'd want from a day. The W-number gutter
+    // (and the subject bar over the row) still jumps to the week in the
+    // timeline, which is what the whole cell used to do.
     cal.addEventListener('click', function (e) {
       if (cal._rmDragged) return;   // a swipe that ended on a day isn't a tap
+      const day = e.target.closest('.rm-cal-d');
+      if (day) {
+        // A second click on the open day closes it, rather than re-opening
+        // the same popover under the caret someone is already typing in.
+        if (RM_DAY === day.dataset.d) window.rmDayClose();
+        else window.rmDayOpen(day.dataset.d, day);
+        return;
+      }
       const c = e.target.closest('[data-w]');
       if (!c) return;
-      const row = document.querySelector('.rm-week[data-w="' + c.dataset.w + '"]');
-      if (!row) return;
-      row.scrollIntoView({ block: 'center', behavior: 'smooth' });
-      // Land on the subject when the week is blank — that's the field you
-      // fill first — and on the detail once it already has one.
-      const tag = row.querySelector('.rm-week-tag');
-      const cell = (tag && !tag.textContent.trim()) ? tag : row.querySelector('.rm-week-text');
-      if (cell) cell.focus();
+      window.rmDayClose();
+      window.rmDayToWeek(+c.dataset.w);
     });
   }
+
+  // Clicking anywhere else dismisses the popover. Capture phase, because the
+  // calendar's own click handler above would otherwise re-open it in the same
+  // gesture; the popover's own clicks are excluded by the contains() test.
+  document.addEventListener('pointerdown', function (e) {
+    if (RM_DAY == null) return;
+    const el = document.getElementById('rm-day');
+    if (el && el.contains(e.target)) return;
+    if (e.target.closest && e.target.closest('.rm-cal-d')) return;
+    window.rmDayClose();
+  }, true);
 
   // Hovering the linear list lights the calendar too — the link works both ways.
   const tl = document.getElementById('rm-timeline');
@@ -725,10 +1130,15 @@ function rmInit() {
   window.addEventListener('resize', function () { rmCalSlide(0, false); });
 }
 
-// Esc closes, matching the rest of the viewer's overlays.
+// Esc closes, matching the rest of the viewer's overlays. The day popover is
+// the innermost thing open, so it takes the first Esc and the board takes the
+// second — one Esc closing both would lose the board over a stray keypress.
 document.addEventListener('keydown', function (e) {
   if (e.key !== 'Escape') return;
   const el = document.getElementById('roadmap');
+  if (!el || el.hidden) return;
+  if (RM_DAY != null) { window.rmDayClose(); e.stopPropagation(); return; }
   // Route through the toggle so the #viewer class is unwound too.
-  if (el && !el.hidden) { window.toggleRoadmap(); e.stopPropagation(); }
+  window.toggleRoadmap();
+  e.stopPropagation();
 }, true);

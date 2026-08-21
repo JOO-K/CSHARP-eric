@@ -13,7 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;0,9..40,800;1,9..40,400&family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Roboto+Flex:opsz,wdth,wght@8..144,25..151,100..900&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=SUSE+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css?v=151">
   <link rel="stylesheet" href="app.css?v=317">
-  <link rel="stylesheet" href="roadmap.css?v=4">
+  <link rel="stylesheet" href="roadmap.css?v=6">
 </head>
 <body>
 
@@ -95,7 +95,7 @@
       <section id="roadmap" hidden>
         <header class="rm-hd">
           <span class="rm-hd-title">Spindeck — Roadmap</span>
-          <span class="rm-hd-sub">Aug 21 – Dec 31 2026 · 19 weeks · click any line to edit</span>
+          <span class="rm-hd-sub">Aug 21 – Dec 31 2026 · 19 weeks · click a line to edit, a day to add an event</span>
           <span class="rm-hd-spacer"></span>
           <button class="rm-btn" onclick="rmReset()">Reset</button>
           <button class="rm-btn" onclick="rmCopyLink(this)"
@@ -109,19 +109,21 @@
           <!-- LEFT: calendar over the linear timeline. RIGHT: goals + notes,
                the whole column, since those are what gets written in live. -->
           <div class="rm-col">
-            <!-- One month on screen, paged by the arrows / pips / a drag.
+            <!-- TWO months on screen, stepping by one, so a page turn keeps
+                 the month you were reading beside the one you're moving to.
                  Every row is exactly one roadmap week (weeks run Fri → Thu
                  from Aug 21), so hovering a day lights the matching row in
                  the timeline below and prints what's due into .rm-cal-read.
-                 Slides are built by rmCalHTML() into .rm-cal-track. -->
+                 Clicking a DAY opens its event popover; clicking the W-number
+                 jumps to that week. Slides: rmCalHTML() into .rm-cal-track. -->
             <div class="rm-card rm-card--cal">
               <div class="rm-card-hd">
                 <span class="rm-card-title">Calendar</span>
                 <button class="rm-cal-nav" id="rm-cal-prev" onclick="rmCalStep(-1)"
-                        title="Previous month">&#8249;</button>
+                        title="Back one month">&#8249;</button>
                 <span class="rm-cal-name" id="rm-cal-name">—</span>
                 <button class="rm-cal-nav" id="rm-cal-next" onclick="rmCalStep(1)"
-                        title="Next month">&#8250;</button>
+                        title="Forward one month">&#8250;</button>
                 <span class="rm-cal-pips" id="rm-cal-pips"></span>
               </div>
               <div class="rm-card-body rm-cal-body">
@@ -154,8 +156,12 @@
             <div class="rm-card rm-card--notes">
               <div class="rm-card-hd">
                 <span class="rm-card-title">Meeting notes</span>
-                <span class="rm-card-sub">autosaves in this browser · Copy link to share</span>
+                <span class="rm-card-sub">one tab per session · autosaves in this browser</span>
               </div>
+              <!-- One tab per meeting, filled by rmTabsRender(). The textarea
+                   below is a single element rebound on every switch, not one
+                   per tab — see the note-sessions block in roadmap.js. -->
+              <div class="rm-tabs" id="rm-tabs"></div>
               <div class="rm-card-body">
                 <textarea class="rm-notes" id="rm-notes" spellcheck="false"
                           placeholder="Notes, decisions, questions…"></textarea>
@@ -228,6 +234,6 @@
   <script src="share.js?v=8"></script>
   <!-- Roadmap overlay. Independent of the prototype — loads last, touches
        nothing in app.js, and only runs when the toolbar button is pressed. -->
-  <script src="roadmap.js?v=5"></script>
+  <script src="roadmap.js?v=6"></script>
 </body>
 </html>

@@ -172,9 +172,14 @@ sequence** with the reaction's name and the action that fires it
 
 The planning board behind the toolbar's **🗺 Roadmap** button — an editable
 4-month plan meant to be opened live in a meeting. **Left column:** a block
-calendar (one month at a time, Aug–Dec 2026) over a 19-week vertical timeline
-(Aug 21 → Dec 31 2026, month rules between). **Right column:** short / medium /
-long term goals over meeting notes.
+calendar (**two months on screen, stepping by one**, Aug–Dec 2026) over a
+19-week vertical timeline (Aug 21 → Dec 31 2026, month rules between).
+**Right column:** short / medium / long term goals over meeting notes.
+
+**Three levels of thing, deliberately kept apart:** a **week** is the
+workstream ("Design pass"), a **day event** is a fixed point inside it
+("hand-in, 4pm"), a **session** is the record of one meeting. Clicking a day
+edits its events; clicking the W-number jumps to the week.
 
 The split is deliberate: the left is what you READ off, the right is what gets
 WRITTEN during the meeting — so the right column takes the larger share of the
@@ -215,25 +220,38 @@ a full detail line was never going to fit in one.
   what makes a month scannable by workstream at a glance.
 
 ### The block calendar (`rmCalHTML` / `rmHi` / `rmCalMark`)
-**One month on screen**, as a horizontal filmstrip: all four are rendered into
-`.rm-cal-track` and the track is translated, which is what makes a drag
-continuous instead of a cut between two renders. Each month is an 8-column grid:
-a W-number gutter, then seven days.
+**Two months on screen, stepping by ONE**, as a horizontal filmstrip: all five
+are rendered into `.rm-cal-track` and the track is translated, which is what
+makes a drag continuous instead of a cut between two renders. Each month is an
+8-column grid: a W-number gutter, then seven days.
+
+- ⚠️ **`RM_CAL_SPAN = 2` is how many months are VISIBLE, not how far a step
+  moves.** Consecutive pages overlap by `SPAN - 1`, so the month you were
+  reading stays on screen beside the one you moved to — that overlap is the
+  point of the feature, not a rounding artefact. Everything derives from it:
+  `.rm-cal-m` is `flex: 0 0 50%`, the last valid index is `rmCalMax()` =
+  `months - SPAN`, and there is one pip per PAGE (4), not per month (5). A pip
+  per month would leave the trailing ones permanently unreachable.
 
 - **Paged four ways** — the header's `‹ ›`, the pips, a pointer drag, and a
   trackpad horizontal swipe. `rmCalGo(i)` is the single entry point; the arrows
   disable at the ends and a drag past either end rubber-bands at 0.3×.
-- ⚠️ **`rmCalSlide` translates in PIXELS off `view.clientWidth`**, not in `%`,
-  because a live drag offset has to be added to it. That is why a **resize
-  listener re-snaps it** — otherwise the strip sits parked between two months —
-  and why `rmRender` calls it after rebuilding the slides.
+- ⚠️ **`rmCalSlide` translates in PIXELS off one SLIDE's width**, not in `%` and
+  not off the viewport, because a live drag offset has to be added to it and a
+  step is one slide. `rmCalStepPx` **measures a real `.rm-cal-m`** rather than
+  computing `clientWidth / SPAN`, so the width lives only in the CSS and a media
+  query can change it without the JS sliding to the wrong offset. That is also
+  why a **resize listener re-snaps it** — otherwise the strip sits parked
+  between two months — and why `rmRender` calls it after rebuilding the slides.
 - ⚠️ **A drag that ends on a day must not count as a tap** — the click handler
   bails on `view._rmDragged`, set once a pointer moves more than 6px. Without it
   every swipe also jumped the timeline to whatever day was under the finger.
-- ⚠️ **The month name lives in the card HEADER, not in the slide**, so the label
-  and the arrows that change it stay together. `rmCalLabel()` owns the name, the
-  pips and the arrows' disabled state; it must be called from every path that
-  moves `RM_CAL_I`.
+- **The header names the visible RANGE ("Aug – Sep 2026"); each block names
+  ITSELF** (`.rm-cal-mname`). The name used to live only in the header, which was
+  right when one month was on screen — with two, a single label cannot say which
+  block is which, so it moved back into the slide and the header widened to a
+  range. `rmCalLabel()` owns the range, the pips and the arrows' disabled state;
+  it must be called from every path that moves `RM_CAL_I`.
 - The board opens on the month containing today (`rmCalMonthOfToday`, falling
   back to **index 1 = Sep** when today is outside the range — index 0 is the
   August stub and makes a poor first screen off-season).
@@ -245,9 +263,12 @@ a W-number gutter, then seven days.
   read as "which week am I in" at a glance. Move `RM_START` off a Friday and
   `RM_DOW` has to rotate with it.
 - **The link is two-way**: hovering a day (or its W-number) lights the matching
-  row in the linear list and prints `W6 · Sep 25 – Oct 1 · Both · Planned — item`
+  row in the linear list and prints `W6 · Sep 25 – Oct 1 · Design · Planned — item`
   into `.rm-cal-read` in the card header; hovering the list lights the calendar.
-  Clicking a day scrolls the list to that week and focuses its text.
+- ⚠️ **A day and its W-number HOVER alike but CLICK differently.** A day opens
+  its event popover; the W-number gutter (and the subject bar) jumps to the week
+  in the timeline, which is what the whole cell used to do. Both still light the
+  same week on hover, so the two-way link is unchanged.
 - **A week that straddles a month boundary is drawn in BOTH blocks**, with the
   out-of-month days dimmed — the alternative is a week that exists in the list
   but nowhere in the calendar.
@@ -266,6 +287,75 @@ a W-number gutter, then seven days.
   the list, and opening the board scrolls to the current week (`rmScrollToNow`)
   rather than to W1.
 
+### Tracks are workstreams (`RM_TRACKS`)
+**Development · Design · Admin · Research.** They replaced `mockup / web / both
+/ admin`, which mapped the two Spindeck projects onto a board that only ever
+plans one effort — the answer was almost always "Both", so the chip carried no
+information.
+
+- ⚠️ **Renaming a track orphans every board already saved under the old value.**
+  `RM_TRACK_OLD` maps the retired names forward (`mockup → design`, `web → dev`,
+  `both → dev`) and `rmNormalize` runs it **before** the fallback that resets an
+  unknown track to `dev` — reverse those two and every old board goes uniformly
+  `dev` instead of migrating.
+- ⚠️ Colours live in three CSS rules (`.rm-chip`, `.rm-week-tag`, `.rm-cal-tag`)
+  and must stay in step with `RM_TRACKS`. **Research took the gold the retired
+  "Both" used to**, not a green, because a green subject bar sits directly over
+  day cells tinted green for the `done` status.
+
+### Day events (`rmDayOpen` / `rmEvAdd` / `rmEvMark`, `RM.events`)
+Clicking a day opens a small editor for **that day's** events. A week says what
+the work is; an event is a fixed point inside it — a call, a hand-in, a
+deadline.
+
+- **Keyed by ISO date (`{'2026-09-15': ['Hand-in 4pm', …]}`)**, not by week
+  index, so moving `RM_START` re-labels the weeks without dragging every event
+  to a different date with them.
+- ⚠️ **The popover is appended to `#roadmap`, not into the calendar card.**
+  `.rm-cal-body` sets `overflow: hidden` to clip the filmstrip and would cut the
+  popover in half. It is positioned `absolute` against `#roadmap` (which is
+  `position: absolute; inset: 0` and carries no transform) rather than `fixed` —
+  `fixed` would silently re-anchor itself if any ancestor ever gained a
+  transform. It flips above the day when there is no room below.
+- ⚠️ **Opening a day creates a blank row eagerly**, so a day with nothing on it
+  is one click from typing. `rmDayClose` therefore **sweeps rows nobody typed
+  into**, and `rmEvDel` deletes the key outright when the last event goes —
+  otherwise every day anyone merely opened would keep an empty event forever and
+  ride along in every share link. `rmNormalize` prunes them again on the way in.
+- ⚠️ **Typing calls `rmEvMark(iso)`, not `rmRender()`** — the caret rule again.
+  It re-stamps `data-ev` and the title on **every** cell for that day, because a
+  week straddling a month boundary is drawn in two blocks at once.
+- The marker is `::before` (a corner square), since `::after` is already the
+  WEEK's dot and a day can legitimately carry both.
+- Events land in `rmMarkdown()` under their own `## Events` heading. They were
+  invisible in the export before v3, which meant a board copied out lost every
+  date-specific thing on it.
+
+### Meeting notes are per SESSION (`RM.sessions` / `RM.si`)
+One tab per meeting, so last week's decisions stay readable while this week's
+are being typed. Tabs are named for the day they were opened and are renamable
+in place.
+
+- ⚠️ **One textarea, rebound on switch** — not one textarea per tab. `rmTabGo`
+  swaps `value`; the single `input` listener writes to `rmSession()`, whichever
+  that currently is. Per-tab nodes would leak a listener each.
+- ⚠️ **A tab is a `<div>`, not a `<button>`** — the active tab's name is
+  contenteditable, and a caret inside a button is unreliable across browsers.
+  The `×` calls `event.stopPropagation()` or deleting would also register as
+  "switch to this tab".
+- ⚠️ **Renaming must not call `rmTabsRender()`** (caret rule), and the last
+  session cannot be deleted — the textarea would bind to nothing.
+- `rmMarkdown()` emits one `###` per session.
+
+### Storage version
+⚠️ **`RM_KEY` is still `spindeck-roadmap-v2` — the DATES have not moved.** The
+key is bumped when the week list changes, because reconciling by index would
+pin old notes to different dates. Shape changes are migrated instead: the `v`
+field went to **3** (events + sessions), and `rmNormalize` upgrades a v2 board
+in place — old tracks mapped forward, the single `notes` string carried into
+session 1, `events` defaulted. Bumping the key here would have thrown away every
+board and share link in circulation for no benefit.
+
 - **Self-contained.** Two new files, loaded last in `index.html`; it imports
   nothing from app.js and app.js knows nothing about it. `rmInit()` runs on the
   **first open**, not at load, so it costs nothing until pressed.
@@ -273,6 +363,17 @@ a W-number gutter, then seven days.
   above the dev box's 60 — so it covers the phones but leaves the toolbar
   reachable. `toggleRoadmap` also sets `.rm-open` on `#viewer`, which hides
   `#thumb-tray` and `#recbox`; without it both sit visible *below* the overlay.
+- ⚠️ **The right column is weighted to NOTES, not split evenly** — goals `34%`,
+  notes `66%`. Goals are a short standing list that gets read; notes are written
+  continuously and are the thing that actually runs out of room.
+- ⚠️ **Under 1080px the layout is `display: block`, not a one-column grid.**
+  Every `.rm-card` carries `min-height: 0` so it can shrink in the two-column
+  flex layout, which makes its content contribution to a grid row effectively
+  zero — Chrome split the height evenly between the two rows and both columns
+  overflowed theirs, painting the goals card straight over the timeline. Block
+  flow has no height to distribute, so cards are content-height and `.rm-grid`
+  takes the scrollbar; the per-card caps (`#rm-timeline`, `#rm-goals`,
+  `.rm-notes`) are what keep it from running to 19 weeks of full height.
 - **Editing is contenteditable + one delegated `input` listener** on `#roadmap`,
   because `rmRender()` rebuilds the rows and per-node listeners would leak on
   every structural change. Fields are `plaintext-only` and Enter blurs rather
@@ -296,8 +397,8 @@ a W-number gutter, then seven days.
   their own machine — it persists for them across reloads, and it is invisible
   to everyone else. Nothing is shared and nothing syncs between devices.
   `rmMarkdown()` emits goals + a timeline table (Week · Starting · Subject ·
-  Track · Status · Detail; blank weeks omitted, typed `|` escaped) + notes for
-  **Copy Markdown** / **Download .md**.
+  Track · Status · Detail; blank weeks omitted, typed `|` escaped) + events +
+  one section per note session, for **Copy Markdown** / **Download .md**.
 
 ### Share links (`rmEncode` / `rmDecode` / `rmCopyLink` / `rmFromHash`)
 **Copy link** packs the entire board into the URL hash (`#rm=<url-safe base64

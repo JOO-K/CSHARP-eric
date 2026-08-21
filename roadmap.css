@@ -154,14 +154,28 @@
   will-change: transform;
   transition: transform .28s cubic-bezier(.4, 0, .2, 1);
 }
-.rm-cal-m { flex: 0 0 100%; min-width: 0; }
+/* ⚠️ TWO months on screen, so a slide is HALF the viewport — the strip still
+   steps by one, which is what makes consecutive pages overlap. Keep this
+   fraction and RM_CAL_SPAN in roadmap.js in step; the JS translates by
+   clientWidth / SPAN and nothing here tells it otherwise. */
+.rm-cal-m { flex: 0 0 50%; min-width: 0; padding: 0 5px; }
+
+/* Each block names itself. With one month visible the card header was enough;
+   with two it can only name the range, so the block carries its own label. */
+.rm-cal-mname {
+  font-family: 'SUSE Mono', ui-monospace, monospace;
+  font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--vdim);
+  text-align: center;
+  margin-bottom: 5px;
+}
 
 /* Capped and centred: one month across a half-width column would otherwise
    give 60px-wide cells 17px tall, which reads as a table, not a calendar. */
 .rm-cal-grid {
   display: grid;
-  grid-template-columns: 24px repeat(7, minmax(0, 1fr));
-  gap: 3px;
+  grid-template-columns: 20px repeat(7, minmax(0, 1fr));
+  gap: 2px;
   max-width: 320px;
   margin: 0 auto;
   font-family: 'SUSE Mono', ui-monospace, monospace;
@@ -174,8 +188,9 @@
   user-select: none;
 }
 
-/* Day cells and the week-number gutter are both buttons so either can be
-   hovered or clicked to reach the same week. */
+/* Day cells and the week-number gutter are both buttons, and both HOVER to the
+   same week — but they click to different things: a day opens its event
+   popover, the gutter jumps to the week in the timeline. See rmInit. */
 .rm-cal-d, .rm-cal-wk {
   position: relative;
   min-width: 0;
@@ -219,6 +234,19 @@
 .rm-cal-d[data-mark="ms"]::after { background: #e8a83c; width: 4px; height: 4px; margin-left: -2px; }
 .rm-cal-wk[data-mark="ms"] { color: #e8a83c; }
 
+/* A day with events gets a corner flag — ::before, because ::after is already
+   the WEEK's marker dot and a day can legitimately carry both. Top-right vs
+   bottom-centre keeps the two readable side by side at this size. */
+.rm-cal-d[data-ev="1"]::before {
+  content: '';
+  position: absolute;
+  top: 3px; right: 3px;
+  width: 4px; height: 4px;
+  border-radius: 1px;
+  background: var(--vaccent);
+}
+.rm-cal-d[data-ev="1"] { font-weight: 700; }
+
 /* The subject bar — the week's short label, spanning its seven days. This is
    the whole point of the calendar: a couple of words you can read at a glance
    where a full line of detail would never fit.
@@ -240,10 +268,10 @@
   user-select: none;
 }
 .rm-cal-tag:empty { display: none; }
-.rm-cal-tag[data-track="mockup"] { background: rgba(143,184,224,0.16); color: #a9c9e8; }
-.rm-cal-tag[data-track="web"]    { background: rgba(199,154,224,0.16); color: #d5b3ea; }
-.rm-cal-tag[data-track="both"]   { background: rgba(232,168,60,0.16);  color: #f0c079; }
-.rm-cal-tag[data-track="admin"]  { background: rgba(134,191,176,0.16); color: #9fd0c2; }
+.rm-cal-tag[data-track="dev"]      { background: rgba(143,184,224,0.16); color: #a9c9e8; }
+.rm-cal-tag[data-track="design"]   { background: rgba(199,154,224,0.16); color: #d5b3ea; }
+.rm-cal-tag[data-track="admin"]    { background: rgba(134,191,176,0.16); color: #9fd0c2; }
+.rm-cal-tag[data-track="research"] { background: rgba(232,168,60,0.16);  color: #f0c079; }
 .rm-cal-tag[data-mark="ms"] { font-weight: 700; box-shadow: inset 0 0 0 1px rgba(232,168,60,0.5); }
 
 /* Today, and the hovered week — both drawn as a ring so a status tint under
@@ -350,10 +378,10 @@
   text-transform: uppercase;
   color: var(--vdim);
 }
-.rm-week-tag[data-track="mockup"] { color: #8fb8e0; }
-.rm-week-tag[data-track="web"]    { color: #c79ae0; }
-.rm-week-tag[data-track="both"]   { color: #e8a83c; }
-.rm-week-tag[data-track="admin"]  { color: #86bfb0; }
+.rm-week-tag[data-track="dev"]      { color: #8fb8e0; }
+.rm-week-tag[data-track="design"]   { color: #c79ae0; }
+.rm-week-tag[data-track="admin"]    { color: #86bfb0; }
+.rm-week-tag[data-track="research"] { color: #e8a83c; }
 .rm-week-tag:empty { opacity: 0; transition: opacity .1s; }
 .rm-week:hover .rm-week-tag:empty,
 .rm-week-tag:empty:focus { opacity: 1; }
@@ -399,10 +427,13 @@
   font-weight: 500;
 }
 .rm-chip:hover { border-color: #404040; color: var(--vtext); }
-.rm-chip[data-track="mockup"] { color: #8fb8e0; border-color: rgba(143,184,224,0.35); }
-.rm-chip[data-track="web"]    { color: #c79ae0; border-color: rgba(199,154,224,0.35); }
-.rm-chip[data-track="both"]   { color: #e8a83c; border-color: rgba(232,168,60,0.35); }
-.rm-chip[data-track="admin"]  { color: #86bfb0; border-color: rgba(134,191,176,0.35); }
+/* ⚠️ Four tracks, four hues — keep these in step with RM_TRACKS in roadmap.js.
+   Research takes the gold the retired "Both" used to, rather than a green that
+   would read as the "done" status tint on the day cells underneath it. */
+.rm-chip[data-track="dev"]      { color: #8fb8e0; border-color: rgba(143,184,224,0.35); }
+.rm-chip[data-track="design"]   { color: #c79ae0; border-color: rgba(199,154,224,0.35); }
+.rm-chip[data-track="admin"]    { color: #86bfb0; border-color: rgba(134,191,176,0.35); }
+.rm-chip[data-track="research"] { color: #e8a83c; border-color: rgba(232,168,60,0.35); }
 
 .rm-st { width: 20px; text-align: center; padding: 3px 0; }
 
@@ -460,12 +491,112 @@
 }
 .rm-add:hover { color: var(--vtext); border-color: #404040; }
 
+/* ── The day popover ────────────────────────────────────
+   Anchored to a day cell but appended to #roadmap, because .rm-cal-body clips
+   its overflow to hold the filmstrip and would cut this in half. Positioned
+   from JS; everything here is just the look and the size floor.
+   ──────────────────────────────────────────────────────── */
+.rm-day {
+  position: absolute;
+  z-index: 20;                    /* over the calendar card, inside the overlay */
+  width: 230px;
+  background: var(--vsurface);
+  border: 1px solid #3a3a3a;
+  border-radius: 9px;
+  box-shadow: 0 10px 28px rgba(0,0,0,0.55);
+  padding: 8px 9px 9px;
+}
+.rm-day[hidden] { display: none; }
+.rm-day-hd {
+  display: flex; align-items: center; gap: 6px;
+  margin-bottom: 6px;
+}
+.rm-day-date {
+  font-family: 'SUSE Mono', ui-monospace, monospace;
+  font-size: 10px; letter-spacing: 0.03em;
+  color: var(--vtext);
+}
+.rm-day-w {
+  background: none;
+  border: 1px solid var(--vborder);
+  border-radius: 999px;
+  color: var(--vdim);
+  font-family: 'SUSE Mono', ui-monospace, monospace;
+  font-size: 8px; letter-spacing: 0.04em;
+  padding: 1px 5px;
+  cursor: pointer;
+}
+.rm-day-w:hover { color: var(--vaccent); border-color: var(--vaccent); }
+.rm-day-sp { flex: 1; }
+.rm-day-x {
+  background: none; border: none; padding: 0 2px;
+  color: var(--vdim); font-size: 14px; line-height: 1; cursor: pointer;
+}
+.rm-day-x:hover { color: var(--vtext); }
+
+.rm-day-list { max-height: 190px; overflow-y: auto; }
+.rm-ev { display: flex; align-items: flex-start; gap: 5px; }
+.rm-ev + .rm-ev { margin-top: 1px; }
+.rm-ev-dot { color: var(--vaccent); font-size: 11px; line-height: 1.6; user-select: none; }
+.rm-ev-text {
+  flex: 1; min-width: 0;
+  font-size: 11.5px; line-height: 1.5;
+  padding: 1px 3px; border-radius: 3px;
+  outline: none;
+  word-break: break-word;
+}
+.rm-ev-text:hover { background: rgba(255,255,255,0.03); }
+.rm-ev-text:focus { background: rgba(255,255,255,0.06); box-shadow: inset 0 0 0 1px var(--vborder); }
+.rm-day-add { width: 100%; margin-top: 6px; }
+
+/* ── Note session tabs ──────────────────────────────────
+   One tab per meeting, in the notes card header. The strip scrolls sideways
+   rather than wrapping — a second row would eat the notes area it sits above,
+   which is the one thing this card is for.
+   ──────────────────────────────────────────────────────── */
+.rm-tabs {
+  flex-shrink: 0;
+  display: flex; align-items: center; gap: 4px;
+  padding: 6px 13px 7px;
+  border-bottom: 1px solid var(--vborder);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.rm-tabs::-webkit-scrollbar { display: none; }
+.rm-tab {
+  flex-shrink: 0;
+  display: flex; align-items: center; gap: 4px;
+  max-width: 150px;
+  padding: 3px 8px;
+  border: 1px solid var(--vborder);
+  border-radius: 999px;
+  color: var(--vdim);
+  font-family: 'SUSE Mono', ui-monospace, monospace;
+  font-size: 9.5px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color .1s, border-color .1s, background .1s;
+}
+.rm-tab:hover { color: var(--vtext); border-color: #404040; }
+.rm-tab.is-on {
+  color: var(--vaccent);
+  border-color: var(--vaccent);
+  background: rgba(255,255,255,0.04);
+}
+/* The active tab's name is editable in place; the caret needs somewhere to
+   sit when the name has been cleared to nothing. */
+.rm-tab-name { outline: none; min-width: 14px; overflow: hidden; text-overflow: ellipsis; }
+.rm-tab-x { color: var(--vdim); font-size: 12px; line-height: 1; }
+.rm-tab-x:hover { color: #e0645c; }
+.rm-tab--add { padding: 3px 9px; font-size: 12px; line-height: 1; }
+
 /* ── Goals + meeting notes (the whole right column) ─────
-   Both grow with the column and scroll inside themselves; notes gets a floor
-   so an empty goals list can't leave it as a two-line slot, and goals gets one
-   so a long note session can't squeeze it away. */
-.rm-card--goals { flex: 1 1 50%; min-height: 150px; }
-.rm-card--notes { flex: 1 1 50%; min-height: 170px; }
+   Notes take roughly two thirds and goals one. Goals are a short standing list
+   that gets read; notes are written continuously through a meeting and are the
+   thing that actually runs out of room, so the split is weighted to them.
+   Both keep a floor so neither can be squeezed to nothing. */
+.rm-card--goals { flex: 0 1 34%; min-height: 128px; }
+.rm-card--notes { flex: 1 1 66%; min-height: 230px; }
 .rm-notes {
   width: 100%; height: 100%;
   background: none; border: none; outline: none; resize: none;
@@ -484,10 +615,33 @@
 }
 .rm-card-body::-webkit-scrollbar-thumb:hover { background: #383838; }
 
-/* Narrow viewports: stack instead of letting the columns crush. The calendar
-   is already one month wide, so it needs nothing here. */
+/* Narrow viewports: stack instead of letting the columns crush.
+   ⚠️ The stacked layout SCROLLS THE GRID, it does not divide the height.
+   `grid-template-rows: 1fr auto` was the bug here: four cards' worth of
+   content does not fit one viewport at this width, so the left column
+   overflowed its row and the goals card painted straight over the timeline.
+   Rows are auto and .rm-grid takes the scrollbar; each card is capped instead,
+   so they sit one after another and stay whole. */
 @media (max-width: 1080px) {
-  .rm-grid { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
-  .rm-card--goals { flex: 0 0 auto; min-height: 120px; }
-  .rm-card--notes { flex: 0 0 150px; min-height: 0; }
+  /* ⚠️ display:block, NOT a one-column grid. Every .rm-card carries
+     `min-height: 0` so it can shrink inside the two-column flex layout, which
+     means a grid row's content contribution here is effectively zero — Chrome
+     split the height evenly between the two rows and both columns overflowed
+     theirs. Block flow has no height to distribute, so each card is simply as
+     tall as it needs and .rm-grid takes the scrollbar. */
+  .rm-grid { display: block; overflow-y: auto; }
+  .rm-col { display: block; }
+  .rm-col + .rm-col,
+  .rm-card + .rm-card { margin-top: 12px; }
+  /* Caps, not fractions — cards are content-height now, and left alone the
+     timeline would run to all 19 weeks and the notes to the whole session. */
+  #rm-timeline { max-height: 46vh; }
+  #rm-goals { max-height: 30vh; }
+  .rm-card--goals, .rm-card--notes { flex: none; min-height: 0; }
+  /* height:100% resolves against an auto-height parent as auto, which collapses
+     the textarea to its default two rows. */
+  .rm-notes { height: 34vh; }
+  /* The calendar keeps both months here: the columns have collapsed to one,
+     so it has the FULL width to draw them in — more than it had in the
+     two-column layout, not less. Nothing to override. */
 }
