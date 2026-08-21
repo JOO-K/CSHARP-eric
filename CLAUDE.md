@@ -171,10 +171,15 @@ sequence** with the reaction's name and the action that fires it
 ## Roadmap (`roadmap.js` + `roadmap.css`, `#roadmap` in index.html)
 
 The planning board behind the toolbar's **🗺 Roadmap** button — an editable
-4-month plan meant to be opened live in a meeting. **Left column:** a block
-calendar (**two months on screen, stepping by one**, Aug–Dec 2026) over a
-19-week vertical timeline (Aug 21 → Dec 31 2026, month rules between).
-**Right column:** short / medium / long term goals over meeting notes.
+project-year plan meant to be opened live in a meeting. **Left column:** a
+block calendar (**two months on screen, stepping by one**, Aug 2026 → Apr 2027)
+over a **37-week** vertical timeline (Aug 21 2026 → May 6 2027, month rules
+between). **Right column:** short / medium / long term goals over meeting
+notes.
+
+**The range is two constants** — `RM_START` and `RM_WEEK_COUNT`. The calendar's
+month blocks, the year labels, the header line and the export range all derive
+from them, so extending the board is one number and nothing to keep in sync.
 
 **Three levels of thing, deliberately kept apart:** a **week** is the
 workstream ("Design pass"), a **day event** is a fixed point inside it
@@ -272,13 +277,22 @@ makes a drag continuous instead of a cut between two renders. Each month is an
 - **A week that straddles a month boundary is drawn in BOTH blocks**, with the
   out-of-month days dimmed — the alternative is a week that exists in the list
   but nowhere in the calendar.
-- **`RM_CAL_MONTHS` is Aug–Dec.** August is a deliberate **stub block**: the
-  grid only emits rows for weeks that touch the month, so it holds W1
-  (Aug 21–27) and W2 (Aug 28 – Sep 3, its September days dimmed) and nothing
-  before the 21st — the timeline does not start until then. It exists so every
-  week in the linear list has a calendar cell and so the board can open on
-  today. Don't "fix" its short height: the filmstrip's height comes from the
-  tallest slide, so a two-row August costs no layout.
+- **`RM_CAL_MONTHS` is DERIVED from the week list**, not hand-listed — the two
+  were separate constants once and drifted, which is why W1 spent a while with
+  no calendar cell at all. It runs from the month of the FIRST week's start to
+  the month of the LAST week's start, which gives two useful edges for free:
+  **August is a stub block** (W1 Aug 21 is the first start, so nothing before
+  the 21st is drawn — the timeline doesn't begin until then), and the final
+  week, which starts Apr 30 2027 and runs into May, appears in the **April**
+  block with its May days dimmed rather than earning May a block of its own.
+  Don't "fix" August's short height: the filmstrip takes its height from the
+  tallest slide, so a two-row block costs no layout.
+- **The board crosses into 2027**, so blocks are stamped `APR '27` and the
+  header spells both years when a page straddles the boundary
+  (`Dec 2026 – Jan 2027`, but `Sep – Oct 2026` inside one year). `RM_SPANS_YEARS`
+  gates the suffix — on a single-year board it would be noise on every block.
+  ⚠️ The timeline's month rules group on **year+month**, not month alone, or two
+  different Augusts would fold under one heading.
 - ⚠️ **Typing in a week calls `rmCalMark(i)`, not `rmRender()`** — the caret rule
   below applies to the calendar too. `rmCalMark` only re-stamps `data-mark` on
   that week's cells (the dot under the date; gold and larger for a line starting
@@ -347,14 +361,38 @@ in place.
   session cannot be deleted — the textarea would bind to nothing.
 - `rmMarkdown()` emits one `###` per session.
 
-### Storage version
-⚠️ **`RM_KEY` is still `spindeck-roadmap-v2` — the DATES have not moved.** The
-key is bumped when the week list changes, because reconciling by index would
-pin old notes to different dates. Shape changes are migrated instead: the `v`
-field went to **3** (events + sessions), and `rmNormalize` upgrades a v2 board
-in place — old tracks mapped forward, the single `notes` string carried into
-session 1, `events` defaulted. Bumping the key here would have thrown away every
-board and share link in circulation for no benefit.
+### ⚠️ NEVER ERASE A READER'S BOARD — the standing rule for this file
+Every visitor's notes live **only in their own browser**, under `RM_KEY`. We
+cannot see them, cannot restore them, and they are overwritten the first time a
+new build saves. The user has asked explicitly that updates to this board never
+cost their collaborator the notes they have already taken. Treat that as a
+constraint on every future change here, not a nice-to-have.
+
+What that means in practice:
+
+- **`RM_KEY` is still `spindeck-roadmap-v2` — the DATES have not moved.** The
+  key is bumped only when the week list re-dates, because state is keyed by
+  index and reconciling would pin old notes to different dates. Shape changes
+  are **migrated** instead: the `v` field (`RM_SHAPE_V`) went to **3** for
+  events + sessions, and `rmNormalize` upgrades a v2 board in place — old tracks
+  mapped forward, the single `notes` string carried into session 1, `events`
+  defaulted. Bumping the key would have thrown away every board and share link
+  in circulation for no benefit.
+- ⚠️ **Extending the board FORWARD is safe; moving the start is not.** Raising
+  `RM_WEEK_COUNT` leaves every existing index on the date it already had and
+  pads the new weeks blank — that is exactly how the range went from 19 weeks to
+  37 without anyone losing a line. Changing `RM_START`, or shortening the count
+  past filled weeks, silently re-dates or drops what people wrote. **Add weeks
+  to the end.**
+- **`RM_PREV_KEY` (`spindeck-roadmap-prev`) is the safety net.** `rmBackup`
+  stashes the stored board's RAW string before anything reshapes it, and
+  `rmFromHash` does the same before a share link replaces a local board. It only
+  writes when the shape is actually about to change, so ordinary loads don't
+  churn the one copy worth keeping. Recover with:
+  `JSON.parse(localStorage['spindeck-roadmap-prev'])`.
+- Before shipping a change to the state model, ask what happens to a board
+  already saved under the old one — and if the answer is "it gets replaced",
+  that is a bug, not a migration.
 
 - **Self-contained.** Two new files, loaded last in `index.html`; it imports
   nothing from app.js and app.js knows nothing about it. `rmInit()` runs on the

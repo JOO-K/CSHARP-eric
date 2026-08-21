@@ -2,11 +2,16 @@
    ROADMAP — Spindeck planning board (desktop viewer only)
 
    Behind the toolbar's "Roadmap" button. Top: a block calendar,
-   Aug → Dec 2026, TWO months on screen at a time but stepping by
-   one (August is a two-week stub, see RM_CAL_MONTHS / RM_CAL_SPAN).
-   Left: the linear week-by-week timeline (Aug 21 → Dec 31 2026,
-   19 weeks). Right top: short / medium / long term goals.
+   Aug 2026 → Apr 2027, TWO months on screen at a time but stepping
+   by one (August is a two-week stub, see RM_CAL_MONTHS/RM_CAL_SPAN).
+   Left: the linear week-by-week timeline (Aug 21 2026 → May 6 2027,
+   37 weeks). Right top: short / medium / long term goals.
    Right bottom: meeting notes, one tab per session.
+
+   The RANGE is two constants — RM_START and RM_WEEK_COUNT. The month
+   blocks, the year labels and the header line all derive from them,
+   so extending the board is one number. See the warning on RM_START
+   for the one direction that is NOT safe to change.
 
    Three levels, deliberately: a WEEK is the workstream ("Design
    pass"), a DAY EVENT is a fixed point inside it ("hand-in, 4pm"),
@@ -40,14 +45,16 @@
    notes to the wrong weeks. */
 const RM_KEY = 'spindeck-roadmap-v2';
 
+/* ⚠️ RM_START IS FROZEN. Extending the board forward — raising RM_WEEK_COUNT —
+   is SAFE: every existing index keeps the date it already had, rmLoad pads the
+   new weeks with blanks, and nobody's notes move. Changing RM_START (or
+   SHORTENING the count past filled weeks) is NOT safe: stored state is keyed by
+   index, so week 5's notes would silently re-date, and readers keep their board
+   in their own browser where we cannot fix it afterwards. Add weeks to the end;
+   don't move the start. */
 const RM_START = '2026-08-21';   // Friday
-const RM_WEEK_COUNT = 19;        // through the week of Dec 25 → Dec 31
+const RM_WEEK_COUNT = 37;        // through the week of Apr 30 → May 6 2027
 
-/* Months drawn in the block calendar. August leads with a short block —
-   only the two weeks the timeline actually covers (W1 Aug 21–27, W2 Aug 28
-   with its Sep days dimmed) — so every week in the list has a calendar cell
-   and the board can open on today. Sep → Dec are the four development months. */
-const RM_CAL_MONTHS = [[2026, 7], [2026, 8], [2026, 9], [2026, 10], [2026, 11]];  // month is 0-based
 const RM_MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const RM_DOW = ['F', 'S', 'S', 'M', 'T', 'W', 'T'];   // Friday-start, see header comment
 
@@ -74,7 +81,32 @@ const RM_WEEKS = (function () {
   const out = [];
   for (let i = 0; i < RM_WEEK_COUNT; i++) {
     const ms = rmAddDays(rmDayMs(RM_START), i * 7);
-    out.push({ ms: ms, label: rmFmt(ms), month: new Date(ms).getUTCMonth() });
+    const d = new Date(ms);
+    // `y` matters now that the board crosses a new year: the timeline's month
+    // rules are grouped on year+month, or Aug 2026 and a future Aug would
+    // collapse into one heading.
+    out.push({ ms: ms, label: rmFmt(ms), month: d.getUTCMonth(), y: d.getUTCFullYear() });
+  }
+  return out;
+})();
+
+/* Months drawn in the block calendar, DERIVED from the week list rather than
+   hand-listed — the two used to be separate constants and drifted, which is why
+   W1 spent a while with no calendar cell at all. Runs from the month of the
+   first week's START to the month of the last week's START, so:
+     · August is a short leading block (W1 Aug 21 is the first start, and
+       nothing before the 21st is drawn — the timeline doesn't begin until then)
+     · the final week, which starts Apr 30 and runs into May, shows in the APRIL
+       block with its May days dimmed, and May gets no block of its own.
+   Extending RM_WEEK_COUNT now extends the calendar too, with nothing to keep
+   in sync by hand. */
+const RM_CAL_MONTHS = (function () {
+  const first = RM_WEEKS[0], last = RM_WEEKS[RM_WEEKS.length - 1];
+  const out = [];
+  let y = first.y, m = first.month;
+  while (y < last.y || (y === last.y && m <= last.month)) {
+    out.push([y, m]);
+    if (++m > 11) { m = 0; y++; }
   }
   return out;
 })();
@@ -117,7 +149,7 @@ function rmSeed() {
   });
   weeks[0] = { tag: 'HOW TO USE', t: RM_HOWTO, track: 'dev', st: 'doing' };
   return {
-    v: 3,
+    v: RM_SHAPE_V,
     weeks: weeks,
     goals: { short: [], medium: [], long: [] },
     // Day events, keyed by ISO date — see the rmEv* block. An object rather
@@ -192,14 +224,38 @@ function rmNormalize(s) {
   s.si = (typeof s.si === 'number' && s.si >= 0 && s.si < s.sessions.length) ? s.si : 0;
   delete s.notes;
 
-  s.v = 3;
+  s.v = RM_SHAPE_V;
   return s;
 }
 
+/* ── Never lose a reader's board ────────────────────────
+   Every visitor's notes live only in THEIR browser: we cannot see them, cannot
+   restore them, and they are overwritten the first time a new build saves. So
+   before anything reshapes a stored board, keep the raw string exactly as it
+   was under a second key. It costs one write on the one load after a deploy
+   that changes the shape, and it is the difference between "recoverable from
+   the console" and "gone".
+   Recover with:  JSON.parse(localStorage['spindeck-roadmap-prev'])
+   ────────────────────────────────────────────────────── */
+const RM_PREV_KEY = 'spindeck-roadmap-prev';
+
+/* The SHAPE version, separate from RM_KEY. RM_KEY is bumped only when the week
+   DATES move (which orphans notes by index); the shape version tracks added
+   fields, which rmNormalize migrates in place instead of discarding. */
+const RM_SHAPE_V = 3;
+
+function rmBackup(raw, stored) {
+  // Only when the shape is actually about to change — otherwise every ordinary
+  // load would churn the backup and overwrite the copy worth keeping.
+  if (stored && stored.v === RM_SHAPE_V) return;
+  try { localStorage.setItem(RM_PREV_KEY, raw); } catch (e) { /* quota / private mode */ }
+}
+
 function rmLoad() {
-  let s = null;
-  try { s = JSON.parse(localStorage.getItem(RM_KEY) || 'null'); } catch (e) { s = null; }
+  let raw = null, s = null;
+  try { raw = localStorage.getItem(RM_KEY); s = JSON.parse(raw || 'null'); } catch (e) { s = null; }
   if (!s || !Array.isArray(s.weeks)) return rmSeed();
+  rmBackup(raw, s);
   return rmNormalize(s);
 }
 
@@ -258,6 +314,12 @@ function rmEvOn(iso) {
   return Array.isArray(list) ? list : [];
 }
 
+/* The board crosses into 2027, so a bare "APR" on a calendar block is ambiguous
+   in a way "APR '27" is not. Only stamped when the range actually spans more
+   than one year — on a single-year board the suffix is noise on every block. */
+const RM_SPANS_YEARS = RM_WEEKS[0].y !== RM_WEEKS[RM_WEEKS.length - 1].y;
+function RM_YR_SUFFIX(y) { return RM_SPANS_YEARS ? " '" + String(y).slice(2) : ''; }
+
 /* Long-form day label for the popover header: "Mon Aug 24". */
 const RM_DOW_FULL = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 function rmDayLabel(ms) {
@@ -299,7 +361,7 @@ function rmCalHTML() {
     // block is which. The header now names the visible RANGE; this names the
     // block.
     h += '<div class="rm-cal-m">' +
-           '<div class="rm-cal-mname">' + RM_MON[m] + '</div>' +
+           '<div class="rm-cal-mname">' + RM_MON[m] + RM_YR_SUFFIX(y) + '</div>' +
            '<div class="rm-cal-grid">' +
              '<span class="rm-cal-cnr"></span>' +
              RM_DOW.map(function (d) { return '<span class="rm-cal-dow">' + d + '</span>'; }).join('');
@@ -384,7 +446,12 @@ function rmCalLabel() {
   const b = RM_CAL_MONTHS[Math.min(RM_CAL_I + RM_CAL_SPAN - 1, RM_CAL_MONTHS.length - 1)];
   const name = document.getElementById('rm-cal-name');
   if (name) {
-    name.textContent = (a === b ? RM_MON[a[1]] : RM_MON[a[1]] + ' – ' + RM_MON[b[1]]) + ' ' + b[0];
+    // "Aug – Sep 2026" inside a year, "Dec 2026 – Jan 2027" across one: sharing
+    // the trailing year is only legible while both halves are in it.
+    name.textContent =
+      a === b ? RM_MON[a[1]] + ' ' + a[0]
+      : a[0] === b[0] ? RM_MON[a[1]] + ' – ' + RM_MON[b[1]] + ' ' + b[0]
+      : RM_MON[a[1]] + ' ' + a[0] + ' – ' + RM_MON[b[1]] + ' ' + b[0];
   }
 
   const prev = document.getElementById('rm-cal-prev');
@@ -684,12 +751,15 @@ function rmRender() {
   }
 
   const today = rmTodayMs();
-  let h = '', lastMonth = -1;
+  // ⚠️ Grouped on year+month, not month alone. The board runs into 2027, and a
+  // bare month index would fold two different Augusts under one rule.
+  let h = '', lastKey = '';
   RM_WEEKS.forEach(function (wk, i) {
     const d = RM.weeks[i];
-    if (wk.month !== lastMonth) {
-      h += '<div class="rm-month">' + RM_MON[wk.month] + ' 2026</div>';
-      lastMonth = wk.month;
+    const key = wk.y + '-' + wk.month;
+    if (key !== lastKey) {
+      h += '<div class="rm-month">' + RM_MON[wk.month] + ' ' + wk.y + '</div>';
+      lastKey = key;
     }
     const now = (today >= wk.ms && today <= rmAddDays(wk.ms, 6)) ? ' is-now' : '';
     h +=
@@ -830,9 +900,15 @@ window.rmDelGoal = function (term, i) {
 };
 
 /* ── Export ─────────────────────────────────────────────── */
+/* "Aug 21 2026 – May 6 2027". Both years spelled out once the board crosses
+   one — a single trailing year would have been wrong, not just terse. */
 function rmRange() {
-  return rmFmt(RM_WEEKS[0].ms) + ' – ' +
-         rmFmt(rmAddDays(RM_WEEKS[RM_WEEKS.length - 1].ms, 6)) + ' 2026';
+  const a = RM_WEEKS[0].ms;
+  const b = rmAddDays(RM_WEEKS[RM_WEEKS.length - 1].ms, 6);
+  const yr = function (ms) { return ' ' + new Date(ms).getUTCFullYear(); };
+  return RM_SPANS_YEARS
+    ? rmFmt(a) + yr(a) + ' – ' + rmFmt(b) + yr(b)
+    : rmFmt(a) + ' – ' + rmFmt(b) + yr(b);
 }
 
 function rmMarkdown() {
@@ -946,6 +1022,9 @@ function rmFromHash() {
   let local = null;
   try { local = localStorage.getItem(RM_KEY); } catch (e) {}
   if (local && !confirm('Open the shared roadmap? It replaces the board saved in this browser.')) return null;
+  // They said yes, but "replaces" is doing a lot of work in that sentence —
+  // stash what was here so an accidental yes is recoverable.
+  if (local) { try { localStorage.setItem(RM_PREV_KEY, local); } catch (e) {} }
   return rmNormalize(s);
 }
 
@@ -1010,6 +1089,12 @@ function rmInit() {
   const shared = rmFromHash();
   RM = shared || rmLoad();
   if (shared) rmSave();
+
+  // Stamped rather than written into the markup, so the range can't go stale
+  // in the header the next time RM_WEEK_COUNT moves.
+  const sub = document.getElementById('rm-hd-sub');
+  if (sub) sub.textContent = rmRange() + ' · ' + RM_WEEKS.length +
+                             ' weeks · click a line to edit, a day to add an event';
 
   RM_CAL_I = rmCalMonthOfToday();
   rmRender();

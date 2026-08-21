@@ -95,7 +95,10 @@
       <section id="roadmap" hidden>
         <header class="rm-hd">
           <span class="rm-hd-title">Spindeck — Roadmap</span>
-          <span class="rm-hd-sub">Aug 21 – Dec 31 2026 · 19 weeks · click a line to edit, a day to add an event</span>
+          <!-- Range + week count are filled by rmInit() from RM_START /
+               RM_WEEK_COUNT, so extending the board can't leave a stale date
+               sitting in the header. -->
+          <span class="rm-hd-sub" id="rm-hd-sub">click a line to edit, a day to add an event</span>
           <span class="rm-hd-spacer"></span>
           <button class="rm-btn" onclick="rmReset()">Reset</button>
           <button class="rm-btn" onclick="rmCopyLink(this)"
@@ -234,6 +237,6 @@
   <script src="share.js?v=8"></script>
   <!-- Roadmap overlay. Independent of the prototype — loads last, touches
        nothing in app.js, and only runs when the toolbar button is pressed. -->
-  <script src="roadmap.js?v=6"></script>
+  <script src="roadmap.js?v=7"></script>
 </body>
 </html>
