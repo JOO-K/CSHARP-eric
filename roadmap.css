@@ -60,12 +60,14 @@
 /* Saved / copied flash on the header buttons */
 .rm-btn.is-ok { color: #6fcf8f; border-color: rgba(111,207,143,0.5); }
 
-/* ── Body: timeline left · goals + notes right ───────────── */
+/* ── Body: calendar + timeline left · goals + notes right ─
+   The right column is the whole of what gets WRITTEN during a meeting, so it
+   takes the larger share; the left is the plan you're reading off. */
 .rm-grid {
   flex: 1;
   min-height: 0;                  /* lets the children scroll instead of the page */
   display: grid;
-  grid-template-columns: minmax(360px, 1fr) minmax(400px, 1.05fr);
+  grid-template-columns: minmax(330px, 0.92fr) minmax(400px, 1.08fr);
   gap: 12px;
   padding: 12px 16px 16px;
 }
@@ -91,6 +93,187 @@
   font-size: 9.5px; color: var(--vdim);
 }
 .rm-card-body { flex: 1; min-height: 0; overflow-y: auto; padding: 8px 13px 13px; }
+
+/* ── Block calendar (top of the left column) ─────────────
+   ONE month on screen, in a horizontal filmstrip paged by the header arrows,
+   the pips, a drag, or a trackpad swipe. Each month is an 8-column grid: a
+   W-number gutter, then Fri→Thu. That column order is not decorative — it
+   makes one ROW exactly one roadmap week, which is the whole reason the
+   calendar and the linear list can highlight each other. See roadmap.js.
+   ──────────────────────────────────────────────────────── */
+.rm-card--cal { flex: 0 0 auto; }        /* sized by its month; timeline takes the rest */
+.rm-cal-body { overflow: hidden; padding: 10px 13px 11px; }
+
+/* Header: ‹ Sep 2026 › then the pips, pushed to the right. */
+.rm-cal-nav {
+  flex-shrink: 0;
+  width: 18px; height: 18px;
+  margin-left: auto;
+  padding: 0;
+  border: 1px solid var(--vborder);
+  border-radius: 5px;
+  background: none;
+  color: var(--vdim);
+  font: inherit; font-size: 12px; line-height: 1;
+  cursor: pointer;
+  align-self: center;
+}
+.rm-cal-nav + .rm-cal-name + .rm-cal-nav { margin-left: 0; }
+.rm-cal-nav:hover:not(:disabled) { color: var(--vtext); border-color: #404040; }
+.rm-cal-nav:disabled { opacity: 0.28; cursor: default; }
+
+.rm-cal-name {
+  flex-shrink: 0;
+  min-width: 62px;
+  text-align: center;
+  align-self: center;
+  font-family: 'SUSE Mono', ui-monospace, monospace;
+  font-size: 10px; color: var(--vtext);
+  user-select: none;
+}
+
+.rm-cal-pips { display: flex; gap: 4px; align-self: center; margin-left: 4px; }
+.rm-pip {
+  width: 5px; height: 5px; padding: 0;
+  border: none; border-radius: 50%;
+  background: var(--vborder);
+  cursor: pointer;
+}
+.rm-pip:hover { background: #4a4a4a; }
+.rm-pip.is-on { background: var(--vaccent); }
+
+/* The filmstrip. Translated in px off the viewport width by rmCalSlide. */
+.rm-cal-view {
+  overflow: hidden;
+  cursor: grab;
+  touch-action: pan-y;            /* let a vertical scroll through; we take X */
+}
+.rm-cal-view.is-grabbing { cursor: grabbing; }
+.rm-cal-track {
+  display: flex;
+  will-change: transform;
+  transition: transform .28s cubic-bezier(.4, 0, .2, 1);
+}
+.rm-cal-m { flex: 0 0 100%; min-width: 0; }
+
+/* Capped and centred: one month across a half-width column would otherwise
+   give 60px-wide cells 17px tall, which reads as a table, not a calendar. */
+.rm-cal-grid {
+  display: grid;
+  grid-template-columns: 24px repeat(7, minmax(0, 1fr));
+  gap: 3px;
+  max-width: 320px;
+  margin: 0 auto;
+  font-family: 'SUSE Mono', ui-monospace, monospace;
+}
+.rm-cal-cnr { display: block; }
+.rm-cal-dow {
+  text-align: center;
+  font-size: 8.5px; line-height: 15px;
+  color: var(--vdim);
+  user-select: none;
+}
+
+/* Day cells and the week-number gutter are both buttons so either can be
+   hovered or clicked to reach the same week. */
+.rm-cal-d, .rm-cal-wk {
+  position: relative;
+  min-width: 0;
+  height: 26px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.035);
+  color: var(--vtext);
+  font: inherit;
+  font-size: 10px;
+  line-height: 24px;
+  text-align: center;
+  cursor: pointer;
+}
+.rm-cal-wk {
+  background: none;
+  color: var(--vdim);
+  font-size: 8.5px;
+  letter-spacing: -0.02em;
+}
+.rm-cal-d.is-out { color: var(--vdim); opacity: 0.32; }
+
+/* Status tints the day the same way it tints the spine node in the list. */
+.rm-cal-d[data-st="doing"] { background: rgba(232,168,60,0.20); color: #f0c079; }
+.rm-cal-d[data-st="done"]  { background: rgba(111,207,143,0.16); color: #8fd9a8; }
+.rm-cal-d[data-st="risk"]  { background: rgba(224,100,92,0.18); color: #ec8a83; }
+
+/* A week with something written on it gets a marker under the date — the
+   quick-read signal that this block is what the whole calendar is for. */
+.rm-cal-d[data-mark="item"]::after,
+.rm-cal-d[data-mark="ms"]::after {
+  content: '';
+  position: absolute;
+  left: 50%; bottom: 2.5px;
+  width: 3px; height: 3px;
+  margin-left: -1.5px;
+  border-radius: 50%;
+  background: var(--vdim);
+}
+.rm-cal-d[data-mark="ms"]::after { background: #e8a83c; width: 4px; height: 4px; margin-left: -2px; }
+.rm-cal-wk[data-mark="ms"] { color: #e8a83c; }
+
+/* The subject bar — the week's short label, spanning its seven days. This is
+   the whole point of the calendar: a couple of words you can read at a glance
+   where a full line of detail would never fit.
+   ⚠️ Always in the DOM, hidden by :empty, so typing a subject reveals it
+   without a re-render. See rmCalHTML / rmCalMark. */
+.rm-cal-tag {
+  grid-column: 2 / -1;
+  margin: -1px 0 2px;
+  padding: 2px 5px;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.06);
+  color: var(--vdim);
+  font-size: 8.5px;
+  line-height: 1.35;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  cursor: pointer;
+  user-select: none;
+}
+.rm-cal-tag:empty { display: none; }
+.rm-cal-tag[data-track="mockup"] { background: rgba(143,184,224,0.16); color: #a9c9e8; }
+.rm-cal-tag[data-track="web"]    { background: rgba(199,154,224,0.16); color: #d5b3ea; }
+.rm-cal-tag[data-track="both"]   { background: rgba(232,168,60,0.16);  color: #f0c079; }
+.rm-cal-tag[data-track="admin"]  { background: rgba(134,191,176,0.16); color: #9fd0c2; }
+.rm-cal-tag[data-mark="ms"] { font-weight: 700; box-shadow: inset 0 0 0 1px rgba(232,168,60,0.5); }
+
+/* Today, and the hovered week — both drawn as a ring so a status tint under
+   them still reads. */
+.rm-cal-d.is-today { border-color: var(--vaccent); font-weight: 700; }
+.rm-cal-d.is-hi, .rm-cal-wk.is-hi {
+  border-color: #6a6a6a;
+  background: rgba(255,255,255,0.13);
+  color: var(--vtext);
+}
+.rm-cal-tag.is-hi { box-shadow: inset 0 0 0 1px #6a6a6a; }
+.rm-cal-d.is-hi.is-out { opacity: 0.7; }
+
+/* Readout under the calendar — the hover answer. Two lines, clamped and a
+   fixed height, so a long week item can't make the card breathe on hover. */
+.rm-cal-read {
+  height: 26px;
+  margin-top: 9px;
+  padding-top: 8px;
+  border-top: 1px solid var(--vborder);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  font-family: 'SUSE Mono', ui-monospace, monospace;
+  font-size: 9.5px; line-height: 1.42; color: var(--vdim);
+}
+.rm-cal-read em { font-style: italic; }
+.rm-read-w { color: var(--vaccent); font-weight: 500; }
+.rm-read-sep { opacity: 0.5; }
 
 /* ── Timeline (left) ────────────────────────────────────── */
 .rm-week {
@@ -149,6 +332,34 @@
 .rm-week[data-st="risk"]::after  { border-color: #e0645c; background: #e0645c; }
 .rm-week[data-st="done"] .rm-week-text { color: var(--vdim); text-decoration: line-through; }
 
+/* The middle column is a stack: subject over detail. */
+.rm-week-main { min-width: 0; }
+
+/* The subject — the short label the calendar prints. Faint until the row is
+   hovered or it has something in it, so 19 empty rows don't read as 19
+   unfilled form fields. */
+.rm-week-tag {
+  padding: 1px 4px;
+  border-radius: 3px;
+  outline: none;
+  min-height: 15px;
+  font-family: 'SUSE Mono', ui-monospace, monospace;
+  font-size: 9px;
+  line-height: 1.45;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--vdim);
+}
+.rm-week-tag[data-track="mockup"] { color: #8fb8e0; }
+.rm-week-tag[data-track="web"]    { color: #c79ae0; }
+.rm-week-tag[data-track="both"]   { color: #e8a83c; }
+.rm-week-tag[data-track="admin"]  { color: #86bfb0; }
+.rm-week-tag:empty { opacity: 0; transition: opacity .1s; }
+.rm-week:hover .rm-week-tag:empty,
+.rm-week-tag:empty:focus { opacity: 1; }
+.rm-week-tag:hover { background: rgba(255,255,255,0.03); }
+.rm-week-tag:focus { background: rgba(255,255,255,0.06); box-shadow: inset 0 0 0 1px var(--vborder); }
+
 .rm-week-text {
   font-size: 12px;
   line-height: 1.5;
@@ -169,6 +380,9 @@
   font-style: italic;
   pointer-events: none;
 }
+/* The subject cell is uppercase mono; its placeholder is a prompt, not a
+   value, so it opts out of both. */
+.rm-week-tag[data-ph]:empty::before { text-transform: none; letter-spacing: 0; }
 
 .rm-week-side { display: flex; align-items: center; gap: 5px; padding-top: 2px; }
 
@@ -188,8 +402,15 @@
 .rm-chip[data-track="mockup"] { color: #8fb8e0; border-color: rgba(143,184,224,0.35); }
 .rm-chip[data-track="web"]    { color: #c79ae0; border-color: rgba(199,154,224,0.35); }
 .rm-chip[data-track="both"]   { color: #e8a83c; border-color: rgba(232,168,60,0.35); }
+.rm-chip[data-track="admin"]  { color: #86bfb0; border-color: rgba(134,191,176,0.35); }
 
 .rm-st { width: 20px; text-align: center; padding: 3px 0; }
+
+/* The other half of the calendar link — a hovered week lights here too, and
+   the current week carries a standing accent rail. */
+.rm-week.is-hi { background: rgba(255,255,255,0.05); border-radius: 5px; }
+.rm-week.is-now::before { background: var(--vaccent); width: 2px; left: 3.5px; }
+.rm-week.is-now .rm-week-no { color: var(--vaccent); }
 
 /* ── Goals (right, top) ─────────────────────────────────── */
 .rm-term + .rm-term { margin-top: 14px; }
@@ -239,8 +460,12 @@
 }
 .rm-add:hover { color: var(--vtext); border-color: #404040; }
 
-/* ── Meeting notes (right, bottom) ──────────────────────── */
-.rm-card--notes { flex: 0 0 34%; }
+/* ── Goals + meeting notes (the whole right column) ─────
+   Both grow with the column and scroll inside themselves; notes gets a floor
+   so an empty goals list can't leave it as a two-line slot, and goals gets one
+   so a long note session can't squeeze it away. */
+.rm-card--goals { flex: 1 1 50%; min-height: 150px; }
+.rm-card--notes { flex: 1 1 50%; min-height: 170px; }
 .rm-notes {
   width: 100%; height: 100%;
   background: none; border: none; outline: none; resize: none;
@@ -259,8 +484,10 @@
 }
 .rm-card-body::-webkit-scrollbar-thumb:hover { background: #383838; }
 
-/* Narrow viewports: stack instead of letting the columns crush */
+/* Narrow viewports: stack instead of letting the columns crush. The calendar
+   is already one month wide, so it needs nothing here. */
 @media (max-width: 1080px) {
   .rm-grid { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
-  .rm-card--notes { flex: 0 0 150px; }
+  .rm-card--goals { flex: 0 0 auto; min-height: 120px; }
+  .rm-card--notes { flex: 0 0 150px; min-height: 0; }
 }

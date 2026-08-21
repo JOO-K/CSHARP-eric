@@ -171,9 +171,96 @@ sequence** with the reaction's name and the action that fires it
 ## Roadmap (`roadmap.js` + `roadmap.css`, `#roadmap` in index.html)
 
 The planning board behind the toolbar's **🗺 Roadmap** button — an editable
-4-month plan meant to be opened live in a meeting. **Left:** an 18-week vertical
-timeline (Aug 17 → Dec 14 2026, month rules between). **Right top:** short /
-medium / long term goals. **Right bottom:** meeting notes.
+4-month plan meant to be opened live in a meeting. **Left column:** a block
+calendar (one month at a time, Sep–Dec 2026) over a 19-week vertical timeline
+(Aug 21 → Dec 31 2026, month rules between). **Right column:** short / medium /
+long term goals over meeting notes.
+
+The split is deliberate: the left is what you READ off, the right is what gets
+WRITTEN during the meeting — so the right column takes the larger share of the
+width (`0.92fr / 1.08fr`) and both its cards grow with it rather than the notes
+being pinned to a fixed 34%.
+
+**The board ships near-empty on purpose** — every week but W1 is blank and all
+three goal lists start at zero, because it's filled in live during the meeting.
+**W1 carries the how-to** (`RM_HOWTO`) instead of a task, so the instructions are
+the first thing on screen and get typed over once the plan starts landing.
+
+### A week is a SUBJECT plus a detail
+Each week holds `{tag, t, track, st}` — `tag` is a couple of words (the subject),
+`t` is the full line. The timeline stacks them, subject over detail; **the
+calendar prints the subject only**, as a bar spanning that week's seven days.
+That split is the reason the calendar is useful at all: a day cell is ~38px and
+a full detail line was never going to fit in one.
+
+- ⚠️ **The subject bar is ALWAYS in the DOM, collapsed by
+  `.rm-cal-tag:empty { display: none }`.** Typing a subject has to reveal it on
+  the calendar *without a re-render* (the caret rule), so `rmCalMark(i)` only
+  sets `textContent` and CSS does the rest. Rendering the bar conditionally
+  would mean a structural change per keystroke.
+- ⚠️ `rmCalMark` writes with **`textContent`, not `innerHTML`** — this is raw
+  user input going into the DOM on every keystroke.
+- **`rmHasItem` / `rmIsMilestone` / `rmMarkOf` read BOTH fields.** A subject with
+  no detail is a legitimate entry (it's the one the calendar can show), so the
+  marker dot and the Markdown export must not test `t` alone. `MILESTONE` is
+  matched on the subject first, then the text, so older boards keep their flags.
+- ⚠️ **`tag` arrived after boards were already saved**, so `rmNormalize` fills it
+  in rather than assuming the key exists — a stored board or a share link from
+  before it existed would otherwise put `undefined` where a string belongs.
+- The subject is faint until its row is hovered (`.rm-week-tag:empty`), or 19
+  blank weeks read as 19 unfilled form fields. **Enter in a subject moves to
+  that week's detail** instead of blurring — one entry, typed top to bottom —
+  and clicking a blank week in the calendar lands on the subject, not the detail.
+- Both the subject (timeline and calendar) take the **track's colour**, which is
+  what makes a month scannable by workstream at a glance.
+
+### The block calendar (`rmCalHTML` / `rmHi` / `rmCalMark`)
+**One month on screen**, as a horizontal filmstrip: all four are rendered into
+`.rm-cal-track` and the track is translated, which is what makes a drag
+continuous instead of a cut between two renders. Each month is an 8-column grid:
+a W-number gutter, then seven days.
+
+- **Paged four ways** — the header's `‹ ›`, the pips, a pointer drag, and a
+  trackpad horizontal swipe. `rmCalGo(i)` is the single entry point; the arrows
+  disable at the ends and a drag past either end rubber-bands at 0.3×.
+- ⚠️ **`rmCalSlide` translates in PIXELS off `view.clientWidth`**, not in `%`,
+  because a live drag offset has to be added to it. That is why a **resize
+  listener re-snaps it** — otherwise the strip sits parked between two months —
+  and why `rmRender` calls it after rebuilding the slides.
+- ⚠️ **A drag that ends on a day must not count as a tap** — the click handler
+  bails on `view._rmDragged`, set once a pointer moves more than 6px. Without it
+  every swipe also jumped the timeline to whatever day was under the finger.
+- ⚠️ **The month name lives in the card HEADER, not in the slide**, so the label
+  and the arrows that change it stay together. `rmCalLabel()` owns the name, the
+  pips and the arrows' disabled state; it must be called from every path that
+  moves `RM_CAL_I`.
+- The board opens on the month containing today (`rmCalMonthOfToday`, falling
+  back to Sep when today is outside the four).
+
+- ⚠️ **Weeks run Friday → Thursday and the day columns read `F S S M T W T`.**
+  That is not a quirk to "fix": W1 starts Fri Aug 21, and holding every week
+  Fri→Thu makes one calendar ROW exactly one roadmap WEEK. That 1:1 alignment is
+  what lets a hover in either view light the other, and what makes the block
+  read as "which week am I in" at a glance. Move `RM_START` off a Friday and
+  `RM_DOW` has to rotate with it.
+- **The link is two-way**: hovering a day (or its W-number) lights the matching
+  row in the linear list and prints `W6 · Sep 25 – Oct 1 · Both · Planned — item`
+  into `.rm-cal-read` in the card header; hovering the list lights the calendar.
+  Clicking a day scrolls the list to that week and focuses its text.
+- **A week that straddles a month boundary is drawn in BOTH blocks**, with the
+  out-of-month days dimmed — the alternative is a week that exists in the list
+  but nowhere in the calendar.
+- ⚠️ **`RM_CAL_MONTHS` is Sep–Dec, so W1 (Aug 21–27) appears only in the linear
+  list.** The two August weeks reach into September and show as the leading rows
+  of the Sep block; W1 does not touch September at all. Deliberate — the ask was
+  four development months — but it's why the how-to week has no calendar cell.
+- ⚠️ **Typing in a week calls `rmCalMark(i)`, not `rmRender()`** — the caret rule
+  below applies to the calendar too. `rmCalMark` only re-stamps `data-mark` on
+  that week's cells (the dot under the date; gold and larger for a line starting
+  `MILESTONE`).
+- **Today** gets an accent ring in the calendar and an accent spine + W-number in
+  the list, and opening the board scrolls to the current week (`rmScrollToNow`)
+  rather than to W1.
 
 - **Self-contained.** Two new files, loaded last in `index.html`; it imports
   nothing from app.js and app.js knows nothing about it. `rmInit()` runs on the
@@ -191,20 +278,45 @@ medium / long term goals. **Right bottom:** meeting notes.
   **must not re-render** (it destroys the caret mid-keystroke). Only structural
   changes — `rmCycle` / `rmAddGoal` / `rmDelGoal` — call `rmRender()`, and those
   restore both card bodies' `scrollTop` so the reader isn't thrown to the top.
-- **State** is one object in `localStorage` under `spindeck-roadmap-v1`, saved
-  debounced at 250ms. `RM_WEEKS` (the date labels) is **static and separate from
-  the stored state**, which holds only `{t, track, st}` per index — so editing
+- **State** is one object in `localStorage` under `spindeck-roadmap-v2`, saved
+  debounced at 250ms. `RM_WEEKS` is **derived from `RM_START` + `RM_WEEK_COUNT`**
+  (all date maths in UTC — this is a fixed calendar, not a clock) and is separate
+  from the stored state, which holds only `{t, track, st}` per index — so editing
   the week list re-labels the board instead of orphaning someone's notes
-  (`rmLoad` pads/truncates to match).
+  (`rmLoad` pads/truncates to match). ⚠️ **Bump the key when the DATES move**, as
+  v1→v2 did: reconciling by index would otherwise pin last week's notes to a
+  different date. `rmLoad` also resets a `track`/`st` that's fallen out of its
+  list, which would break the chip's cycle index.
 - ⚠️ **localStorage is per-browser, so a reader's notes never come back on their
-  own.** That is what **Copy Markdown** / **Download .md** are for; `rmMarkdown()`
-  emits goals + a timeline table (blank weeks omitted, typed `|` escaped) +
-  notes. Say this out loud before handing the link over.
-- Chips cycle on click: track (Mockup · Website · Both) and status (`–` planned ·
-  `▸` doing · `✓` done · `!` at risk, which also colours the spine node).
-- The seeded content is a **draft to argue with**, taken from the open threads
-  recorded in this file. `rmSeed()` is the single place to change it; **Reset**
-  restores it and drops the reader's edits (behind a `confirm`).
+  own.** On the live Pages site every visitor gets their own board, saved on
+  their own machine — it persists for them across reloads, and it is invisible
+  to everyone else. Nothing is shared and nothing syncs between devices.
+  `rmMarkdown()` emits goals + a timeline table (Week · Starting · Subject ·
+  Track · Status · Detail; blank weeks omitted, typed `|` escaped) + notes for
+  **Copy Markdown** / **Download .md**.
+
+### Share links (`rmEncode` / `rmDecode` / `rmCopyLink` / `rmFromHash`)
+**Copy link** packs the entire board into the URL hash (`#rm=<url-safe base64
+of the JSON>`), so a link is the transport between people. There is no server —
+that is the only reason this works on GitHub Pages at all. An empty board is
+~1.8k of URL; a meeting's worth of notes stays well inside what a browser takes.
+
+- **Base64 is URL-SAFE** (`+/` → `-_`, padding stripped) — a raw `+` or `/` gets
+  mangled passing through chat apps and mail clients.
+- ⚠️ **An incoming `#rm=` asks before replacing a board that already exists in
+  that browser.** Silently overwriting someone's own notes is the worst possible
+  outcome of clicking a link.
+- ⚠️ **The hash is stripped via `replaceState` on arrival, decoded or not** — on
+  a reload it would otherwise re-import and wipe out everything typed since.
+- ⚠️ **`rmNormalize` runs on BOTH paths**, storage and link, so a link from an
+  older build can't arrive half-shaped and put a `null` where a string belongs.
+  `rmDecode` returns `null` on anything it can't parse (a truncated paste is the
+  common case), and the import falls through to the local board.
+- Chips cycle on click: track (Mockup · Website · Both · **Admin**) and status
+  (`–` planned · `▸` doing · `✓` done · `!` at risk, which also colours the spine
+  node **and tints the day cells** in the calendar).
+- `rmSeed()` is the single place to change what a blank board contains;
+  **Reset** restores it and drops the reader's edits (behind a `confirm`).
 
 ## Album Wall — the popular grid (`wallHtml` / `wallGridHtml` / `wallItems`)
 
@@ -624,12 +736,26 @@ Writes a `credits` array onto each album in `personas.js`; responses cache in
   so it's easy to forget it obeys the same cache-busting rule as the hand-edited
   files — the page will happily keep serving the pre-bake copy and every album
   reads as having no credits.
-### The label fallback
+### Three standing rows — Produced by · Mixed by · Label
 
-Credits when we have them, **`LABEL · <name>` when we don't** (`labelFor` in
-app.js). The label is one field of the SAME Deezer album call `creditsFor`
-already makes for the upc, so it costs nothing extra — and it is a real credit:
-for a small act "Independent" is itself the answer.
+⚠️ **All three are ALWAYS drawn**, and a missing value leaves its label in place
+(faded via `.v3-cred-row.is-empty`) rather than dropping the row. This reverses
+the earlier "hide it when empty" rule on purpose: coverage is patchy, so hiding
+produced a block that changed height on every swipe, and a strip that changes
+shape album to album reads worse than a blank in a standing form. The labels
+also double as a statement of what the app thinks is worth crediting.
+`Engineered by` is still collected by the bake but not shown — room for three.
+
+⚠️ **Baked albums paint synchronously, skipping the 520ms debounce.** Both
+lookups resolve off the record itself for anything the build saw, and routing
+those through the timer made the block visibly pop in on every swipe. The
+debounce is there to keep the NETWORK quiet, so it should only apply when
+there is a request — i.e. the runtime rec pool, which paints its labels
+immediately and fills the values in when they land.
+
+The label is one field of the SAME Deezer album call `creditsFor` already makes
+for the upc, so it costs nothing extra — and it is a real credit: for a small
+act "Independent" is itself the answer.
 
 - **Baked at 100%** — all 159 persona albums have a label, against 52% for
   credits. Runtime recs resolve theirs from one cached `dz()` call (12/12 in a
@@ -953,7 +1079,21 @@ Fillet positions:
 **The one sanctioned divergence: engagement pills on review rows.** A feed row for a `review`/`rating` now carries a like pill and a comment pill, because the feed's job is other people's reviews and you should be able to see that one has traction — and add to it — without leaving home. It is built from the **shared** vocabulary and changes nothing about the row's anatomy: `.ntf-foot` holds the timestamp and the pills on one line, and with no pills it is a flex row of one child, so an inbox row that adopts it looks exactly as it does now. That's the difference from the attempt this warning was written about, which also added a star line and its own spacing. **The inbox's own like/comment rows can take `.ntf-acts` as-is** when they want the same affordance.
 - The like pill uses **`feedRevKey(e)`**, the same key the album page's pinned card uses — so liking in the feed and liking on the album page are one act, not two counters. ⚠️ Change one and the other has to follow.
 - The comment pill calls `feedOpen(n)` like the row does; it exists for the **count** and the affordance. `openFriendReview` opens that review's thread on the way in, so you land on the album page with the comments already cascading.
-- **The score goes UNDER the cover** — `.ntf-obj` stacks `.ntf-art` over `.ntf-score`, so the row's object is one unit. Parking the number *beside* the thumb was tried first and cost the copy column ~35px on a row that already wraps; below it costs nothing and reads quieter. ⚠️ Only review/rating rows get a number: `FRIEND_ACTIVITY` hands every row a `rating` whether its verb earned one or not, so printing it on all of them would claim a friend rated something they only bookmarked. ⚠️ It takes **`--sd-ink`, not `--star`** — the gold read as an alert on a row whose job is to be scanned past, and collided with the upvote pill's `is-on` gold in the same row. There is **no vinyl** beside it; the avatar's badge already says the act was a review.
+- **The timestamp sits UNDER the avatar** (`.ntf-who` wraps portrait + time),
+  not in the copy column. The body is the row's only elastic part and the time
+  was the one thing in it that never needed to be. ⚠️ Changed in **both** the
+  feed and the inbox — they are one component, and a time in a different place
+  on each is exactly the divergence this section warns about.
+- **The score is part of the SENTENCE** — "reviewed X by Y **a 4.5**"
+  (`.ntf-line-score`). Said out loud that is how the verb ends, so the row reads
+  in one pass instead of the eye jumping to the thumbnail to find out what they
+  gave it. It keeps the row's own `--sd-ink`, not `--star`, for the reason
+  below. `.ntf-obj` is a single child again and `.ntf-score` is retired.
+- ⚠️ **The feed's pills run bigger than `.v3-up--sm` elsewhere**
+  (`.v3-up--sm.v3-up--feed`). They're the only tap target on a row you're meant
+  to scan past, and at the shared size they were the smallest thing on screen.
+  Scoped to `--feed` so the review cards' pills, in a denser column, keep theirs.
+- **The score used to go UNDER the cover** (retired, see above) — `.ntf-obj` stacks `.ntf-art` over `.ntf-score`, so the row's object is one unit. Parking the number *beside* the thumb was tried first and cost the copy column ~35px on a row that already wraps; below it costs nothing and reads quieter. ⚠️ Only review/rating rows get a number: `FRIEND_ACTIVITY` hands every row a `rating` whether its verb earned one or not, so printing it on all of them would claim a friend rated something they only bookmarked. ⚠️ It takes **`--sd-ink`, not `--star`** — the gold read as an alert on a row whose job is to be scanned past, and collided with the upvote pill's `is-on` gold in the same row. There is **no vinyl** beside it; the avatar's badge already says the act was a review.
 - ⚠️ **`.v3-up--feed` re-declares the pill's colours off the `--sd-*` tokens.** Plain `.v3-up` is hard-coded for a dark surface, which is right everywhere else it appears (review cards sit on the album's procedural colour, dark in both themes) and wrong here — the feed sits on the screen bg, which is cream in the light theme. Same trap as `--vinyl-empty`: the value follows the **surface**, not the theme.
 
 The two **"you may know" rails** (`renderKnowRails`, `.v3-rail` / `.v3-kcard`, memoised into `_KNOW`) used to sit above the feed. They're deleted — markup, CSS and JS.
