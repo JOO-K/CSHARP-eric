@@ -2891,6 +2891,12 @@
 .v3-up svg { width: 14px; height: 14px; flex-shrink: 0; }
 .v3-up--sm { font-size: 10.5px; padding: 4px 9px 4px 7px; }
 .v3-up--sm svg { width: 13px; height: 13px; }
+/* ⚠️ The FEED's pills run bigger than `.v3-up--sm` elsewhere. They are the
+   only tap target on a row you are meant to scan past quickly, and at the
+   shared size they were the smallest thing on screen. Scoped to --feed so
+   the review cards' pills, which sit in a denser column, keep theirs. */
+.v3-up--sm.v3-up--feed { font-size: 11.5px; padding: 5.5px 12px 5.5px 10px; }
+.v3-up--sm.v3-up--feed svg { width: 14.5px; height: 14.5px; }
 .v3-up:hover { background: rgba(255,255,255,0.11); color: #e8e2d6; }
 .v3-up.is-on { background: rgba(232,168,60,0.16); color: var(--star); }
 /* The comment pill is the same object as the upvote pill, so the pair reads as
@@ -3596,10 +3602,10 @@
    Produced by / Mixed by, from MusicBrainz (see `creditsFor` in app.js).
    ⚠️ Spans both columns on a second grid row — the title and the rating share
    row 1, and this belongs under BOTH, not beside either.
-   ⚠️ It is `hidden` until data arrives and stays hidden when there is none.
-   Coverage is genuinely patchy (MusicBrainz is volunteer-entered), so the row
-   has to be invisible rather than show an empty label — "Produced by —" across
-   half the catalogue would read as broken rather than as missing data.
+   ⚠️ THREE fixed rows, always drawn (see `creditRowsHtml`): a missing value
+   leaves its label in place, faded. Coverage is patchy — MusicBrainz is
+   volunteer-entered — so the alternative was a block that changes height on
+   every swipe, which reads worse than a blank in a standing form.
    ⚠️ Compact bento only; the review state lays this box out differently. */
 .s-home-v3:not(.s-home-v3--review) .v3-blue-credits {
   grid-column: 1 / -1;
@@ -3611,8 +3617,13 @@
 .v3-blue-credits[hidden] { display: none; }
 .v3-cred-row {
   display: flex; align-items: baseline; gap: 5px;
-  min-width: 0; line-height: 1.3;
+  min-width: 0; line-height: 1.28;
 }
+/* ⚠️ A row with no value keeps its LABEL but fades it, so the three lines read
+   as a standing form with a blank in it rather than as three broken rows. Do
+   not hide it — the strip is a fixed height and a block that changes shape
+   album to album is what this arrangement exists to avoid. */
+.v3-cred-row.is-empty .v3-cred-lbl { opacity: 0.45; }
 .v3-cred-lbl {
   flex-shrink: 0;
   font-family: var(--font-mono); font-size: 8px;
@@ -3704,7 +3715,7 @@
   left: 0px;
   top: 4.5px;
   font-size: 14px;
-  row-gap: 6px;
+  row-gap: 5.5px;
 }
 /* ⚠️ One token changed from the pasted output: `gap: 1px` → `row-gap: 1px`.
    The slider is labelled Row gap, but `gap` sets BOTH axes, which crushed the
@@ -7172,6 +7183,18 @@
    trailing art is the ARTIST's photo, so it goes round (`--round`), and a
    milestone row has no person at all, so the album cover stands in as the
    subject and stays square (`--art`). */
+/* ⚠️ Avatar over timestamp, as one column. The time used to sit in `.ntf-body`
+   under the copy; it moved here because the body is the row's only elastic
+   part and the time was the one thing in it that never needed to be. Applied
+   to BOTH the feed and the inbox — they are one component, and a time in a
+   different place on each is exactly the divergence the ⚠️ in
+   renderFriendFeed warns about. */
+.ntf-who {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 5px; flex-shrink: 0;
+}
+.ntf-who .ntf-time { margin-top: 0; text-align: center; }
+
 .ntf-ava {
   position: relative; flex-shrink: 0;
   width: 44px; height: 44px; border-radius: 50%;
@@ -7238,15 +7261,16 @@
   flex-shrink: 0;
   display: flex; flex-direction: column; align-items: center; gap: 3px;
 }
-.ntf-score {
-  font-family: var(--font-mono); font-size: 12px; font-weight: 700;
-  line-height: 1;
-  /* ⚠️ The row's own ink, NOT `--star`. The gold read as an alert on a row
-     whose whole job is to be scanned past, and it also collides with the
-     upvote pill's `is-on` gold in the same row. `--sd-ink` is literally black
-     (#1a1208) in the light theme and its off-white counterpart on dark — the
-     value follows the surface, so it stays legible on both. */
+/* The score, inside the sentence: "reviewed X by Y a 4.5".
+   ⚠️ Takes the row's own ink, NOT `--star` — the gold read as an alert on a row
+   whose whole job is to be scanned past, and it collided with the upvote pill's
+   `is-on` gold in the same row. `--sd-ink` follows the SURFACE, so it stays
+   legible on both themes. Mono so the number reads as a value, not a word. */
+.ntf-line-score {
+  font-family: var(--font-mono);
+  font-weight: 700;
   color: var(--sd-ink);
+  white-space: nowrap;
 }
 .ntf-follow {
   flex-shrink: 0; margin-top: 4px;

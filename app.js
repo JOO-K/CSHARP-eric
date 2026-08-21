@@ -2173,16 +2173,26 @@ function renderFriendFeed(screenEl) {
   const rec = e => `<i>${e.album}</i>` +
     (e.artist && e.artist !== e.album ? ` by <b>${e.artist}</b>` : '');
 
+  /* ⚠️ The score is part of the SENTENCE now — "reviewed X by Y a 4.5" — not a
+     number stacked under the cover. Said out loud that's how the verb ends, so
+     the row reads in one pass instead of the eye jumping to the thumbnail to
+     find out what they actually gave it.
+     ⚠️ Still only on review/rating rows. `FRIEND_ACTIVITY` hands every row a
+     `rating` whether the verb earned one or not, so printing it everywhere
+     would claim a friend scored something they only bookmarked. */
+  const score = e => ((e.type === 'review' || e.type === 'rating') && e.rating)
+    ? ` a <b class="ntf-line-score">${Number(e.rating).toFixed(1)}</b>` : '';
+
   const line = e => {
     if (e.type === 'follow')   return `<b>${e.user}</b> started following <b>${e.artist}</b>`;
     // ⚠️ Playlist rows stay short. They already name TWO things (the record and
     // the playlist), and a third proper noun makes the line unreadable.
     if (e.type === 'playlist') return `<b>${e.user}</b> added <i>${e.album}</i> to <i>${e.playlist}</i>`;
-    if (e.type === 'rating')   return `<b>${e.user}</b> rated ${rec(e)}`;
+    if (e.type === 'rating')   return `<b>${e.user}</b> rated ${rec(e)}${score(e)}`;
     if (e.type === 'fav')      return `<b>${e.user}</b> favourited ${rec(e)}`;
     if (e.type === 'listened') return `<b>${e.user}</b> logged ${rec(e)}`;
     if (e.type === 'later')    return `<b>${e.user}</b> saved ${rec(e)} for later`;
-    return `<b>${e.user}</b> reviewed ${rec(e)}`;
+    return `<b>${e.user}</b> reviewed ${rec(e)}${score(e)}`;
   };
 
   /* Engagement, on the row itself. ⚠️ This is the ONE place a feed row diverges
@@ -2204,21 +2214,14 @@ function renderFriendFeed(screenEl) {
                     </div>`;
   };
 
-  /* The object of the sentence: the record, with what they gave it UNDER it.
-     A number tucked below the cover is quieter than one parked beside it and
-     costs the copy column no width at all — the two read as one object either
-     way, which is the point.
-     ⚠️ Only review/rating rows carry a score. A favourite or a "saved for
-     later" isn't one, and `FRIEND_ACTIVITY` hands every row a `rating` whether
-     the verb earned it or not — printing it on all of them would claim a friend
-     rated something they only bookmarked. */
+  /* The object of the sentence: the record. ⚠️ The score used to stack UNDER
+     this thumb; it moved into the line itself, so `.ntf-obj` is a single child
+     again and `.ntf-score` is retired. */
   const obj = (e, n) => `
                 <div class="ntf-obj">
                   <div class="ntf-art${e.type === 'follow' ? ' ntf-art--round' : ''}"
                        style="background-image:url('${e.thumb}')"
                        onclick="event.stopPropagation(); feedOpenArt(${n})"></div>
-                  ${(e.type === 'review' || e.type === 'rating') && e.rating
-                    ? `<div class="ntf-score">${Number(e.rating).toFixed(1)}</div>` : ''}
                 </div>`;
 
   /* Row anatomy is the inbox's — avatar + badge · copy · time · trailing thumb.
@@ -2227,20 +2230,21 @@ function renderFriendFeed(screenEl) {
      looks exactly as it does now. */
   const row = (e, n) => {
     const face = e.face;
+    const pills = acts(e, n);
     return `
               <div class="ntf-row${e.fresh ? ' ntf-row--new' : ''}" onclick="event.stopPropagation(); feedOpen(${n})">
-                <div class="ntf-ava" style="background-image:url('${face}')">
-                  <span class="ntf-badge ntf-badge--${e.type}">
-                    <svg viewBox="0 0 24 24" fill="currentColor">${BADGE[e.type]}</svg>
-                  </span>
+                <div class="ntf-who">
+                  <div class="ntf-ava" style="background-image:url('${face}')">
+                    <span class="ntf-badge ntf-badge--${e.type}">
+                      <svg viewBox="0 0 24 24" fill="currentColor">${BADGE[e.type]}</svg>
+                    </span>
+                  </div>
+                  <div class="ntf-time">${e.ago}</div>
                 </div>
                 <div class="ntf-body">
                   <div class="ntf-text">${line(e)}</div>
                   ${e.type === 'review' && e.quote ? `<div class="ntf-quote">${e.quote}</div>` : ''}
-                  <div class="ntf-foot">
-                    <div class="ntf-time">${e.ago}</div>
-                    ${acts(e, n)}
-                  </div>
+                  ${pills ? `<div class="ntf-foot">${pills}</div>` : ''}
                 </div>
                 ${obj(e, n)}
               </div>`;
@@ -5185,7 +5189,7 @@ const DEVBOX_TABS = [
       { k: 'l1x', label: 'X',       min: -20, max: 20, step: 0.5, def: 0 },
       { k: 'l1y', label: 'Y',       min: -20, max: 20, step: 0.5, def: 4.5 },
       { k: 'l1s', label: 'Size',    min: 7,   max: 20, step: 0.1, def: 14 },
-      { k: 'l1g', label: 'Row gap', min: 0,   max: 12, step: 0.5, def: 6 },
+      { k: 'l1g', label: 'Row gap', min: 0,   max: 12, step: 0.5, def: 5.5 },
       { grp: 'Line 2 — rating' },
       { k: 'l2x', label: 'X',       min: -20, max: 20, step: 0.5, def: 0 },
       { k: 'l2y', label: 'Y',       min: -20, max: 20, step: 0.5, def: 2 },
@@ -5958,38 +5962,66 @@ function labelFor(album) {
     .catch(() => null);
 }
 
-/* ⚠️ Debounced, and it re-checks the album before painting. The bento swipes
-   faster than three network calls resolve, so without both guards a slow lookup
-   would land on whatever record happened to be on screen by then — the same
-   class of bug as the For-You panel painting a stale index. */
+/* ⚠️ The three rows are FIXED and always drawn — Produced by / Mixed by /
+   Label — with the value left blank when we don't have it, rather than the row
+   being dropped. That's a deliberate reversal of the earlier "hide it when
+   empty" rule: a strip whose contents change shape album to album reads as
+   unstable, and the standing labels double as a statement of what the app
+   thinks is worth crediting. `Engineered by` is still collected by the bake but
+   not shown here; there is only room for three.
+
+   ⚠️ Baked albums paint SYNCHRONOUSLY, without the debounce. Both lookups
+   resolve from the record itself for anything the build saw, and routing those
+   through a 520ms timer made the block visibly pop in on every swipe. The
+   debounce exists to keep the network quiet, so it should only apply when
+   there IS a network call — i.e. the runtime rec pool.
+   ⚠️ It re-checks the album before painting the async path: the bento swipes
+   faster than three calls resolve, so a slow lookup would otherwise land on
+   whatever record happened to be on screen by then. */
+const CREDIT_ROWS = ['Produced by', 'Mixed by'];
+
+function creditRowsHtml(list, label) {
+  const by = {};
+  (list || []).forEach(c => { by[c.label] = c.names; });
+  const rows = CREDIT_ROWS.map(l => [l, by[l]]);
+  rows.push(['Label', label ? [label] : null]);
+  return rows.map(([lbl, names]) =>
+    `<div class="v3-cred-row${names && names.length ? '' : ' is-empty'}">` +
+    `<span class="v3-cred-lbl">${lbl}</span>` +
+    `<span class="v3-cred-names">${names ? names.slice(0, 3).join(', ') : ''}</span></div>`
+  ).join('');
+}
+
+function paintCredits(album, list, label) {
+  const html = creditRowsHtml(list, label);
+  document.querySelectorAll('.s-home-v3').forEach(scr => {
+    const el = scr.querySelector('.v3-blue-credits');
+    if (!el || scr.classList.contains('s-home-v3--review')) return;
+    el.innerHTML = html;
+    el.hidden = false;
+  });
+}
+
 let _credT = null;
 function populateCredits(screenEl, album) {
   const box = screenEl && screenEl.querySelector('.v3-blue-credits');
   if (!box) return;
-  box.hidden = true;
-  box.innerHTML = '';
-  if (!album) return;
   clearTimeout(_credT);
+  if (!album) { box.hidden = true; box.innerHTML = ''; return; }
+
+  // Everything the build saw: paint now, no timer, no request.
+  if (Array.isArray(album.credits) && typeof album.label === 'string') {
+    paintCredits(album, album.credits.length ? album.credits : null, album.label || null);
+    return;
+  }
+
+  // Runtime recs: keep the labels up so the strip doesn't change shape, and
+  // fill the values in when the lookups land.
+  paintCredits(album, null, null);
   _credT = setTimeout(() => {
     Promise.all([creditsFor(album), labelFor(album)]).then(([list, label]) => {
-      // Still the same record? Bail if the user swiped on.
       if (currentBentoAlbum && currentBentoAlbum() !== album) return;
-      let rows = '';
-      if (list) {
-        rows = list.slice(0, 2).map(c =>
-          `<div class="v3-cred-row"><span class="v3-cred-lbl">${c.label}</span>` +
-          `<span class="v3-cred-names">${c.names.slice(0, 3).join(', ')}</span></div>`).join('');
-      } else if (label) {
-        rows = `<div class="v3-cred-row"><span class="v3-cred-lbl">Label</span>` +
-               `<span class="v3-cred-names">${label}</span></div>`;
-      }
-      if (!rows) return;
-      document.querySelectorAll('.s-home-v3').forEach(scr => {
-        const el = scr.querySelector('.v3-blue-credits');
-        if (!el || scr.classList.contains('s-home-v3--review')) return;
-        el.innerHTML = rows;
-        el.hidden = false;
-      });
+      paintCredits(album, list, label);
     });
   }, 520);
 }

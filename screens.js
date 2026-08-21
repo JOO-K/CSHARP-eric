@@ -1951,15 +1951,17 @@ function notificationsHtml(light) {
       : `style="background-image:url('${pics[it.user] || ''}')"`;
     return `
               <div class="ntf-row${it.unread ? ' ntf-row--new' : ''}" data-tab="${it.tab}" onclick="${go(it)}">
-                <div class="ntf-ava${isSys(it) ? ' ntf-ava--art' : ''}" ${face}>
-                  <span class="ntf-badge ntf-badge--${it.type}">
-                    <svg viewBox="0 0 24 24" fill="currentColor">${BADGES[it.type]}</svg>
-                  </span>
+                <div class="ntf-who">
+                  <div class="ntf-ava${isSys(it) ? ' ntf-ava--art' : ''}" ${face}>
+                    <span class="ntf-badge ntf-badge--${it.type}">
+                      <svg viewBox="0 0 24 24" fill="currentColor">${BADGES[it.type]}</svg>
+                    </span>
+                  </div>
+                  <div class="ntf-time">${it.time}</div>
                 </div>
                 <div class="ntf-body">
                   <div class="ntf-text">${line(it)}</div>
                   ${it.quote ? `<div class="ntf-quote">${it.quote}</div>` : ''}
-                  <div class="ntf-time">${it.time}</div>
                 </div>
                 ${trail(it)}
               </div>`;
