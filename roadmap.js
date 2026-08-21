@@ -2,9 +2,10 @@
    ROADMAP — Spindeck planning board (desktop viewer only)
 
    Behind the toolbar's "Roadmap" button. Top: a block calendar,
-   Sep → Dec 2026. Left: the linear week-by-week timeline
-   (Aug 21 → Dec 31 2026, 19 weeks). Right top: short / medium /
-   long term goals. Right bottom: meeting notes.
+   Aug → Dec 2026 (August is a two-week stub, see RM_CAL_MONTHS).
+   Left: the linear week-by-week timeline (Aug 21 → Dec 31 2026,
+   19 weeks). Right top: short / medium / long term goals.
+   Right bottom: meeting notes.
 
    ── Why weeks run Friday → Thursday ──
    Week 1 starts Fri Aug 21. Keeping every week Fri→Thu means one
@@ -36,10 +37,11 @@ const RM_KEY = 'spindeck-roadmap-v2';
 const RM_START = '2026-08-21';   // Friday
 const RM_WEEK_COUNT = 19;        // through the week of Dec 25 → Dec 31
 
-/* Months drawn in the block calendar — the four development months.
-   The two August weeks overlap September, so they show as the leading
-   (dimmed) rows of the Sep block rather than getting a block of their own. */
-const RM_CAL_MONTHS = [[2026, 8], [2026, 9], [2026, 10], [2026, 11]];  // month is 0-based
+/* Months drawn in the block calendar. August leads with a short block —
+   only the two weeks the timeline actually covers (W1 Aug 21–27, W2 Aug 28
+   with its Sep days dimmed) — so every week in the list has a calendar cell
+   and the board can open on today. Sep → Dec are the four development months. */
+const RM_CAL_MONTHS = [[2026, 7], [2026, 8], [2026, 9], [2026, 10], [2026, 11]];  // month is 0-based
 const RM_MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const RM_DOW = ['F', 'S', 'S', 'M', 'T', 'W', 'T'];   // Friday-start, see header comment
 
@@ -224,13 +226,15 @@ function rmCalHTML() {
 
 /* ── Calendar paging ────────────────────────────────────── */
 
-/* Which month block holds today, so the board opens on the right one. */
+/* Which month block holds today, so the board opens on the right one.
+   Outside the range we land on Sep, not on index 0 — August is a two-week
+   stub and makes a poor first screen for anyone arriving off-season. */
 function rmCalMonthOfToday() {
   const n = new Date();
   const i = RM_CAL_MONTHS.findIndex(function (ym) {
     return ym[0] === n.getFullYear() && ym[1] === n.getMonth();
   });
-  return i < 0 ? 0 : i;
+  return i < 0 ? 1 : i;
 }
 
 /* Position the filmstrip. `px` is a live drag offset; omit it to snap. */

@@ -172,7 +172,7 @@ sequence** with the reaction's name and the action that fires it
 
 The planning board behind the toolbar's **🗺 Roadmap** button — an editable
 4-month plan meant to be opened live in a meeting. **Left column:** a block
-calendar (one month at a time, Sep–Dec 2026) over a 19-week vertical timeline
+calendar (one month at a time, Aug–Dec 2026) over a 19-week vertical timeline
 (Aug 21 → Dec 31 2026, month rules between). **Right column:** short / medium /
 long term goals over meeting notes.
 
@@ -235,7 +235,8 @@ a W-number gutter, then seven days.
   pips and the arrows' disabled state; it must be called from every path that
   moves `RM_CAL_I`.
 - The board opens on the month containing today (`rmCalMonthOfToday`, falling
-  back to Sep when today is outside the four).
+  back to **index 1 = Sep** when today is outside the range — index 0 is the
+  August stub and makes a poor first screen off-season).
 
 - ⚠️ **Weeks run Friday → Thursday and the day columns read `F S S M T W T`.**
   That is not a quirk to "fix": W1 starts Fri Aug 21, and holding every week
@@ -250,10 +251,13 @@ a W-number gutter, then seven days.
 - **A week that straddles a month boundary is drawn in BOTH blocks**, with the
   out-of-month days dimmed — the alternative is a week that exists in the list
   but nowhere in the calendar.
-- ⚠️ **`RM_CAL_MONTHS` is Sep–Dec, so W1 (Aug 21–27) appears only in the linear
-  list.** The two August weeks reach into September and show as the leading rows
-  of the Sep block; W1 does not touch September at all. Deliberate — the ask was
-  four development months — but it's why the how-to week has no calendar cell.
+- **`RM_CAL_MONTHS` is Aug–Dec.** August is a deliberate **stub block**: the
+  grid only emits rows for weeks that touch the month, so it holds W1
+  (Aug 21–27) and W2 (Aug 28 – Sep 3, its September days dimmed) and nothing
+  before the 21st — the timeline does not start until then. It exists so every
+  week in the linear list has a calendar cell and so the board can open on
+  today. Don't "fix" its short height: the filmstrip's height comes from the
+  tallest slide, so a two-row August costs no layout.
 - ⚠️ **Typing in a week calls `rmCalMark(i)`, not `rmRender()`** — the caret rule
   below applies to the calendar too. `rmCalMark` only re-stamps `data-mark` on
   that week's cells (the dot under the date; gold and larger for a line starting
