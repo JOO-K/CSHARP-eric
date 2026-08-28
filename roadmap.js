@@ -940,8 +940,14 @@ function rmMarkdown() {
     out += '\n## Events\n\n';
     days.forEach(function (iso) {
       const wi = rmWeekOf(rmDayMs(iso));
+      /* WARNING: the ISO goes in as well as the human label, and it is what
+         `rmParseMarkdown` reads back. The label alone ("Mon Sep 8") is LOSSY --
+         it carries no year, so a re-imported board could not tell 2026 from
+         2027 and every event would land on the wrong day or nowhere. The label
+         stays because it is what a person reads in a doc; the code reads the
+         backticked ISO beside it. */
       out += '- **' + rmDayLabel(rmDayMs(iso)) + '**' + (wi >= 0 ? ' (W' + (wi + 1) + ')' : '') +
-             ' — ' + rmEvOn(iso).join('; ') + '\n';
+             ' `' + iso + '` — ' + rmEvOn(iso).join('; ') + '\n';
     });
   }
 
@@ -1037,6 +1043,143 @@ function rmCopyFallback(text, done) {
   try { document.execCommand('copy'); done(); } catch (e) { /* nothing else to try */ }
   document.body.removeChild(ta);
 }
+
+
+/* ── Import: a downloaded .md back into a board ──────────
+   The round trip for `rmDownload`. Everything the board holds is already in
+   that document, so the file IS the save format -- this parses it back rather
+   than adding a second one.
+
+   WARNING: it reads the shapes `rmMarkdown` writes, and the two have to move
+   together. Section headings (## Goals / ## Timeline / ## Events /
+   ## Meeting notes) are the state machine; change a heading there and change it
+   here. Labels are mapped back through the same RM_TRACK_LBL / RM_STATUS_LBL /
+   RM_TERMS tables the writer used, so a renamed label cannot silently import as
+   the wrong track.
+
+   WARNING: anything the document does not mention comes back EMPTY, not
+   preserved. This replaces the board; it does not merge into it. That is why
+   the caller confirms first and stashes the old board in RM_PREV_KEY.
+
+   Unparseable input returns null and the caller says so -- a half-read board
+   would be worse than none. */
+function rmParseMarkdown(md) {
+  if (!md || md.indexOf('#') < 0) return null;
+  const s = {
+    v: RM_SHAPE_V,
+    weeks: RM_WEEKS.map(function () { return { tag: '', t: '', track: 'dev', st: 'planned' }; }),
+    goals: { short: [], medium: [], long: [] },
+    events: {},
+    sessions: [],
+    si: 0,
+  };
+  const byLabel = function (table, lbl, fallback) {
+    const k = Object.keys(table).filter(function (id) { return table[id] === lbl; })[0];
+    return k || fallback;
+  };
+  // `—` is what the writer puts in an empty cell; a pipe inside a cell is escaped.
+  const cell = function (x) {
+    const v = String(x == null ? '' : x).replace(/\\\|/g, '|').trim();
+    return v === '\u2014' ? '' : v;
+  };
+
+  let section = '', term = '', session = null, hits = 0;
+  const lines = String(md).split(/\r?\n/);
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    let m;
+
+    if ((m = line.match(/^##\s+(.+?)\s*$/))) {
+      section = m[1]; term = ''; session = null; continue;
+    }
+    if ((m = line.match(/^###\s+(.+?)\s*$/))) {
+      const head = m[1];
+      if (section === 'Goals') {
+        // "Short term (now → 4 weeks)" -> the id behind that name.
+        const nm = head.replace(/\s*\(.*\)\s*$/, '');
+        const t = RM_TERMS.filter(function (x) { return x.name === nm; })[0];
+        term = t ? t.id : '';
+      } else if (section === 'Meeting notes') {
+        session = rmNewSession(rmTodayMs());
+        session.name = head;
+        session.body = '';
+        s.sessions.push(session);
+      }
+      continue;
+    }
+
+    if (section === 'Goals' && term && (m = line.match(/^-\s+(.*)$/))) {
+      const v = m[1].trim();
+      if (v && v !== '_(none)_') { s.goals[term].push(v); hits++; }
+
+    } else if (section === 'Timeline' && (m = line.match(/^\|\s*W(\d+)\s*\|(.*)\|\s*$/))) {
+      const wi = +m[1] - 1;
+      if (wi < 0 || wi >= s.weeks.length) continue;
+      // Split on unescaped pipes only, so a "\|" inside a cell stays in it.
+      const parts = m[2].split(/(?<!\\)\|/);
+      if (parts.length < 5) continue;
+      s.weeks[wi] = {
+        tag:   cell(parts[1]),
+        t:     cell(parts[4]),
+        track: byLabel(RM_TRACK_LBL,  cell(parts[2]), 'dev'),
+        st:    byLabel(RM_STATUS_LBL, cell(parts[3]), 'planned'),
+      };
+      hits++;
+
+    } else if (section === 'Events' &&
+               (m = line.match(/^-\s+.*?`(\d{4}-\d{2}-\d{2})`\s*\u2014\s*(.+)$/))) {
+      const list = m[2].split(';').map(function (x) { return x.trim(); })
+                       .filter(function (x) { return x; });
+      if (list.length) { s.events[m[1]] = list; hits++; }
+
+    } else if (section === 'Meeting notes' && session) {
+      // Everything under a ### until the next heading is the note body, blank
+      // lines included -- notes are prose and their shape is the content.
+      session.body += (session.body ? '\n' : '') + line;
+      hits++;
+    }
+  }
+
+  s.sessions.forEach(function (x) {
+    x.body = x.body.replace(/^\s+|\s+$/g, '');
+    if (x.body === '_(none)_') x.body = '';
+  });
+  if (!s.sessions.length) s.sessions = [rmNewSession(rmTodayMs())];
+  return hits ? rmNormalize(s) : null;
+}
+
+/* The picker. WARNING: the <input> is reused and cleared on every open --
+   without the reset, choosing the SAME file twice in a row fires no `change`
+   event at all and the second import looks like it silently failed. */
+window.rmUpload = function (btn) {
+  const inp = document.getElementById('rm-file');
+  if (!inp) return;
+  inp.value = '';
+  inp.onchange = function () {
+    const f = inp.files && inp.files[0];
+    if (!f) return;
+    const fr = new FileReader();
+    fr.onload = function () {
+      const board = rmParseMarkdown(String(fr.result || ''));
+      if (!board) { rmFlash(btn, '✗ Not a board'); return; }
+      /* Same contract as an incoming share link: replacing someone's board is
+         the worst outcome of a mis-click, so it is a yes, and the old board is
+         stashed where the link importer stashes it. */
+      let local = null;
+      try { local = localStorage.getItem(RM_KEY); } catch (err) {}
+      if (local && !confirm('Replace the board in this browser with ' + f.name + '?')) return;
+      if (local) { try { localStorage.setItem(RM_PREV_KEY, local); } catch (err) {} }
+      window.rmDayClose();          // it holds an ISO into the state being replaced
+      RM = board;
+      rmSave(); rmRender();
+      rmTabsRender(); rmTabBind();
+      rmFlash(btn, '\u2713 Loaded');
+    };
+    fr.readAsText(f);
+  };
+  inp.click();
+};
 
 window.rmDownload = function (btn) {
   const blob = new Blob([rmMarkdown()], { type: 'text/markdown' });

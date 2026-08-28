@@ -197,6 +197,39 @@ three goal lists start at zero, because it's filled in live during the meeting.
 **W1 carries the how-to** (`RM_HOWTO`) instead of a task, so the instructions are
 the first thing on screen and get typed over once the plan starts landing.
 
+### Import — a downloaded .md back into a board (`rmParseMarkdown` · `rmUpload`)
+
+The round trip for **Download .md**. Everything the board holds is already in
+that document, so **the file IS the save format** — this parses it back rather
+than adding a second one. `Upload .md` sits beside Download in the header and
+drives a hidden `#rm-file` input.
+
+- ⚠️ **The export now carries the ISO date** as well as the human label:
+  ``- **Tue Sep 8** (W3) `2026-09-08` — …``. The label alone is **lossy** — no
+  year — so a re-imported board could not tell 2026 from 2027 and every event
+  would land on the wrong day. The label stays because it is what a person reads;
+  the parser reads the backticked ISO beside it.
+- ⚠️ **The writer and the parser have to move together.** Section headings
+  (`## Goals` / `## Timeline` / `## Events` / `## Meeting notes`) are the
+  parser'''s state machine; change a heading in `rmMarkdown` and change it here.
+  Track and status come back through the **same** `RM_TRACK_LBL` /
+  `RM_STATUS_LBL` / `RM_TERMS` tables the writer used, so a renamed label cannot
+  silently import as the wrong track.
+- ⚠️ **It REPLACES the board; it does not merge.** Anything the document does not
+  mention comes back empty. Same contract as an incoming share link: it confirms
+  first and stashes the old board in `RM_PREV_KEY`.
+- ⚠️ **Unparseable input returns `null`** and the button says *✗ Not a board* —
+  a half-read board is worse than none, and the existing one is left untouched.
+- ⚠️ **The file input is cleared on every open.** Without that, picking the SAME
+  file twice fires no `change` event at all and the second import looks like it
+  silently failed.
+- Cell pipes are escaped on the way out and unescaped on the way back, and the
+  table is split on unescaped pipes only — verified with a subject containing
+  a literal `|`.
+- Verified round trip on a fully populated board: **37/37 weeks identical**,
+  goals, events (with dates) and every note body byte-for-byte, blank lines
+  inside notes included.
+
 ### A week is a SUBJECT plus a detail
 Each week holds `{tag, t, track, st}` — `tag` is a couple of words (the subject),
 `t` is the full line. The timeline stacks them, subject over detail; **the
@@ -2582,6 +2615,155 @@ the two groups, so growing them much further crowds the wordmark. ⚠️
 `.v3-bubble--notif.has-notif`'s `min-width` tracks this number: the expanded
 pill can be narrower than the circle it grew from with a small count, and that
 `min-width` is what stops it shrinking as it lights up.
+
+---
+
+## The nav console — where a CD tap goes (`openConsole` in `app.js`)
+
+Tapping a CD used to raise a **popup over the screen**. It doesn't any more, and
+it must not go back: a floating panel covered the record you had just tapped, and
+it was a second surface to dismiss on a screen that already has a nav. The nav's
+plateau is already the app's "what is playing" strip, so the answer to *where do
+I hear this?* belongs in it.
+
+**The plateau grows** (`.s-home-v3--console`), the friends ticker gives way to the
+album you tapped, and the room that opens up holds the four services.
+
+### ⚠️ The geometry lives in five CSS variables and nowhere else
+
+Four elements share the nav's box — `.v3-bottom-nav`, `.v3-nav-blur`,
+`.v3-nav-nest`, `.v3-nav-emboss > i` — and **three of them carry a mask of the
+same contour**. They all read `--nav-ar` / `--nav-mask` / `--nav-mask-neg` /
+`--nav-mask-scoop` / `--nav-shoulder`, so the console state is **one override
+block** rather than eight edits that drift apart.
+
+- ⚠️ **The outline is the one exception.** It is an inline `<svg>` whose
+  `viewBox` CSS cannot reach, so `bottomNav()` ships **both** contours and CSS
+  toggles which is visible. Change one and change the other.
+- **The tall contour is the short one with every point below the plateau pushed
+  down 88 units** and a straight wall inserted between the plateau's two fillets,
+  where the tangent is already vertical. The fillets are untouched — which is why
+  nothing distorts. `preserveAspectRatio="none"` would happily stretch them, and
+  `--nav-ar` changes in step so it never has to.
+- The shoulder is `34.1217/93` = **36.69%** normally and `(34.1217+88)/181` =
+  **67.47%** grown: the same line in absolute terms, a different fraction of a
+  taller box. `.v3-nav-items` reads it, or the icons would float.
+- Regenerating after a rise change is mechanical — see the derivation in the CSS
+  comment; every path is the short one plus the offset.
+
+### ⚠️ The console is a child of the NAV, not a sibling
+
+It was a sibling positioned in **px from the screen bottom**, and that is wrong
+here: the nav is `aspect-ratio` driven, so its height follows the frame width. The
+two drifted apart the moment the viewer scaled the phone and the panel floated
+clean out of the plateau. As a child it is placed as a **% of the nav's own box**,
+the only thing that tracks the plateau at every size.
+
+- ⚠️ The ticker stays a sibling — its px offsets ride the viewer's `zoom`, as
+  they always did.
+- The band is `top: 5%; bottom: 34%`. Measured at the 385px frame: the plateau's
+  interior is **81.6px** and the content needs **74px**. It was 72 units of rise
+  and a 57px band, which overflowed by 5px and clipped the album title.
+- ⚠️ **`.s-home-v3--console .v3-nowbar` hides with `visibility`, not `display`.**
+  `renderNowBar`'s swap timer keeps writing to the ticker while the console is up,
+  and a `display: none` element has no box to measure.
+
+### Growing, and the background around the grown indent
+
+⚠️ **What animates is `aspect-ratio`**, on all four boxes that share the nav's
+geometry. Height is not settable here — it *is* the aspect ratio — and a custom
+property cannot be transitioned, but the property that READS it can, so swapping
+`--nav-ar` drives a real interpolation.
+
+- ⚠️ **The masks and the outline swap DISCRETELY** — a data-URI mask cannot
+  tween. For the ~260ms of the growth the tall contour is squashed into a shorter
+  box, and because everything is `preserveAspectRatio="none"` that reads as the
+  plateau unfolding rather than as a glitch.
+- The **content** is not carried by that: it fades and rises on its own, a beat
+  behind, or it appears fully drawn inside a plateau that has not finished
+  opening. `prefers-reduced-motion` turns all of it off.
+- ⚠️ **`.v3-bottom-fade` HAS TO GROW WITH THE NAV** (`--nav-fade-h` /
+  `--nav-fade-solid`). It is sized in px from the screen bottom, and the console
+  makes the nav nearly twice as tall — the band tuned for the 62px bar stopped
+  **58px short** of the new top edge, so content ran sharp and unfaded straight
+  into the raised plateau. The nest still plugs everything INSIDE the nav's box;
+  this is about the content above it. Derivation: the nav is docked, so its top
+  edge is its own height above the bottom (121px at the 385 frame); the solid
+  band must reach just past that, so `121 + 2 − 39` = 84px solid of a 118px box
+  = 71%.
+
+### The line, and the marks
+
+**One line: art, album, year, artist.** ⚠️ The album is the only part that may
+shrink (`min-width: 0` + ellipsis on it alone) — let the year or the artist flex
+and a long title pushes them off the end, losing the two facts that are always
+short.
+
+- ⚠️ **No close button.** It closes on the next thing you do, so a persistent ✕
+  was a control for something that already puts itself away, and it cost the line
+  the width it needs to read as one sentence.
+
+#### Service marks: drop a real icon in and it wins (`svcMarkHtml`)
+
+Two layers per tile — the vector below, an `<img src="images/svc-<id>.png">` over
+it — and **the image wins when it is there**. The `<img>` removes itself
+`onerror`, so:
+
+- **Adding a real app icon is the whole change**: save it as
+  `images/svc-spotify.png`, `svc-apple.png`, `svc-deezer.png`, `svc-ytmusic.png`.
+  No code edit, no build step.
+- A **missing** file degrades to the drawing rather than leaving an empty tile.
+- The image is absolutely positioned over the whole tile, so a real icon covers
+  the drawing **and** the brand colour behind it. Verified both ways: with a file
+  present the `<img>` survives and matches the tile exactly; with none, all four
+  remove themselves and the vectors show.
+- ⚠️ **The vectors are approximations drawn from memory. They are the FALLBACK,
+  not the goal** — if a tile looks wrong the fix is the real file, not another
+  pass at the path data. (Apple Music's was a *star* at one point, which is not
+  their mark at all; it is a beamed double-note now. Spotify's waves are black on
+  green and YouTube Music is a red disc on white, per the real app icons.)
+- `platRowsHtml` uses the same helper, so the CD menus and the console can never
+  show different marks.
+
+### It closes on the next thing you do
+
+A scroll, a touch on the bento, the CD again, or the ✕. That is what keeps it
+from being a *mode*: you never have to put it away. `closeConsole` is idempotent
+so every path can call it blind.
+
+- ⚠️ The scroll listener goes on **`.v3-body`**, the element that actually
+  scrolls — in the desktop viewer the phone is a box on a page that never scrolls
+  itself, so a window listener would never fire.
+- ⚠️ Wired per **open** and torn down on close, not once at build: a permanent
+  `pointerdown` on the bento would run on every tap of a screen that is usually
+  not in console state at all.
+- ⚠️ `capture` on the bento, because the CD, the cover and the For You box all
+  stop propagation in their own handlers.
+- ⚠️ A tap **inside** the console must not close it — the service buttons live
+  there, and the padding between them does not stop propagation on its own.
+
+### ⚠️ The album lives on the SHELL (`_consoleAlbum`)
+
+Several `.s-home-v3` exist at once and the first is often not the visible one —
+the same trap that once played previews for the wrong track — and the console can
+be showing a **profile favourite**, which is not the shell's bento album and has
+no slot index once it is on the nav. `consoleGo` reads it from there;
+`openOnService` still goes through `menuAlbum` for the menus that remain.
+
+- `serviceGo` is the one opener both paths share, so the cache, the miss
+  behaviour and the open-the-tab-inside-the-gesture trick exist once.
+- ⚠️ **`nowBar()` had been inlined into both home variants**, so the console the
+  helper ships simply did not exist on the one screen it matters most on: the tap
+  set the state and there was nothing in the plateau to show. Both now call the
+  helper. Exactly the duplication that made `bentoHtml()` necessary.
+- **YouTube Music** joins `SD_SERVICES` (four now). Like Spotify it resolves to a
+  **search**: there is no public lookup without an API key, and a keyed call does
+  not belong in a static prototype.
+- ⚠️ **The profile's per-disc popups are gone.** Tapping a favourite raises the
+  console, so the menu that carried *Listen to preview* and the service rows had
+  nothing left to offer — previews are off (`PREVIEWS_ENABLED`) and the services
+  moved. It also carried **Replace album**, which is now reached only through
+  Edit Profile → tap a disc.
 
 ---
 

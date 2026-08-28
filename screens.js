@@ -190,14 +190,35 @@ function sdShopBtn(active) {
    ⚠️ SoundCloud used to sit where Deezer does. It went because there is no
    keyless way to resolve an album on it, and a row that opens nothing is worse
    than a row that isn't there. Add one back only with a link to go with it. */
+/* Each service's mark. Two layers, and the IMAGE WINS when it is there:
+   `svcMarkHtml` draws the vector below and an <img> over it, and the <img>
+   removes itself `onerror`. So dropping a real app icon at
+   `images/svc-<id>.png` is the whole change -- no code edit, no build step,
+   and a missing file degrades to the drawing instead of an empty tile.
+   WARNING: the vectors below are approximations drawn from memory. They are
+   the FALLBACK, not the goal -- if a tile looks wrong, the fix is the real
+   file, not another pass at the path data. */
 const SD_SERVICES = [
-  { id: 'spotify', name: 'Spotify',     bg: '#1DB954',
-    ico: `<svg width="11" height="11" viewBox="0 0 24 24" fill="white"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.52 17.34c-.24.36-.66.48-1.02.24-2.82-1.74-6.36-2.1-10.56-1.14-.42.12-.78-.18-.9-.54-.12-.42.18-.78.54-.9 4.56-1.02 8.52-.6 11.64 1.32.42.18.48.66.3 1.02zm1.44-3.3c-.3.42-.84.6-1.26.3-3.24-1.98-8.16-2.58-11.94-1.38-.48.12-1.02-.12-1.14-.6-.12-.48.12-1.02.6-1.14 4.38-1.32 9.78-.72 13.5 1.56.36.24.54.84.24 1.26zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.3c-.6.18-1.2-.18-1.38-.72-.18-.6.18-1.2.72-1.38 4.26-1.26 11.28-1.02 15.72 1.62.54.3.72 1.02.42 1.56-.3.42-1.02.6-1.56.3z"/></svg>` },
-  { id: 'apple',   name: 'Apple Music', bg: 'linear-gradient(135deg,#fc3c44,#fc6f32)',
-    ico: `<svg width="9" height="11" viewBox="0 0 13 16" fill="white"><path d="M6.5 0L8 3.5 13 4.3l-3.5 3.4.8 4.8L6.5 10.5 2.2 12.5l.8-4.8L0 4.3l5-.8z"/></svg>` },
-  { id: 'deezer',  name: 'Deezer',      bg: 'linear-gradient(135deg,#a238ff,#ff0092)',
-    ico: `<svg width="12" height="9" viewBox="0 0 24 18" fill="white"><rect x="14" y="0" width="9" height="2.6" rx="1.3"/><rect x="1" y="5" width="9" height="2.6" rx="1.3"/><rect x="14" y="5" width="9" height="2.6" rx="1.3"/><rect x="1" y="10" width="9" height="2.6" rx="1.3"/><rect x="14" y="10" width="9" height="2.6" rx="1.3"/><rect x="1" y="15" width="9" height="2.6" rx="1.3"/><rect x="14" y="15" width="9" height="2.6" rx="1.3"/></svg>` },
+  { id: 'spotify', name: 'Spotify',       bg: '#1ED760',
+    ico: `<svg viewBox="0 0 24 24" fill="#000"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.52 17.34c-.24.36-.66.48-1.02.24-2.82-1.74-6.36-2.1-10.56-1.14-.42.12-.78-.18-.9-.54-.12-.42.18-.78.54-.9 4.56-1.02 8.52-.6 11.64 1.32.42.18.48.66.3 1.02zm1.44-3.3c-.3.42-.84.6-1.26.3-3.24-1.98-8.16-2.58-11.94-1.38-.48.12-1.02-.12-1.14-.6-.12-.48.12-1.02.6-1.14 4.38-1.32 9.78-.72 13.5 1.56.36.24.54.84.24 1.26zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.3c-.6.18-1.2-.18-1.38-.72-.18-.6.18-1.2.72-1.38 4.26-1.26 11.28-1.02 15.72 1.62.54.3.72 1.02.42 1.56-.3.42-1.02.6-1.56.3z"/></svg>` },
+  { id: 'apple',   name: 'Apple Music',   bg: 'linear-gradient(135deg,#fa233b,#fb5c74)',
+    ico: `<svg viewBox="0 0 24 24" fill="white"><path d="M20.4 3.05a.9.9 0 0 0-.74-.2l-11 2.2a.9.9 0 0 0-.72.89v9.99a3.4 3.4 0 0 0-1.85-.5C4.4 15.43 3 16.6 3 18c0 1.4 1.4 2.57 3.09 2.57 1.7 0 3.09-1.16 3.09-2.57V9.13l9.05-1.81v6.6a3.4 3.4 0 0 0-1.85-.5c-1.7 0-3.09 1.17-3.09 2.57S14.68 18.57 16.38 18.57s3.08-1.17 3.08-2.57V3.75a.9.9 0 0 0-.3-.7z"/></svg>` },
+  { id: 'deezer',  name: 'Deezer',        bg: 'linear-gradient(135deg,#a238ff,#ff0092)',
+    ico: `<svg viewBox="0 0 24 18" fill="white"><rect x="14.6" y="0" width="9" height="2.7" rx="1"/><rect x="14.6" y="4.6" width="9" height="2.7" rx="1"/><rect x="0.4" y="9.2" width="9" height="2.7" rx="1"/><rect x="14.6" y="9.2" width="9" height="2.7" rx="1"/><rect x="0.4" y="13.8" width="9" height="2.7" rx="1"/><rect x="7.5" y="13.8" width="9" height="2.7" rx="1"/><rect x="14.6" y="13.8" width="9" height="2.7" rx="1"/></svg>` },
+  /* Search-only, like Spotify: no public YouTube Music lookup without an API
+     key, and a keyed call does not belong in a static prototype. */
+  { id: 'ytmusic', name: 'YouTube Music', bg: '#ffffff',
+    ico: `<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9.4" fill="#ff0033"/><path d="M9.9 7.9 15.9 12l-6 4.1z" fill="#fff"/></svg>` },
 ];
+
+/* The tile. `cls` is the class the caller styles the box with; the <img> is
+   absolutely positioned over the whole tile, so a real icon covers both the
+   drawing and the brand colour behind it. */
+function svcMarkHtml(sv, cls) {
+  return `<span class="${cls}" style="background:${sv.bg}">${sv.ico}` +
+         `<img class="sd-svc-img" src="images/svc-${sv.id}.png" alt="" `+
+         `onerror="this.remove()"></span>`;
+}
 /* `slot` is the profile card's favourite index — that menu belongs to one of
    five pinned albums, so it has to name which. The bento passes nothing and
    `openOnService` reads the album off the shell instead. */
@@ -205,7 +226,7 @@ function platRowsHtml(slot) {
   const arg = slot == null ? '' : ', ' + slot;
   return SD_SERVICES.map(s => `
               <button class="wall2-menu-item plp-plat-item" onclick="event.stopPropagation(); openOnService(this, '${s.id}'${arg})">
-                <span class="plp-plat-ico" style="background:${s.bg}">${s.ico}</span>
+                ${svcMarkHtml(s, 'plp-plat-ico')}
                 ${s.name}
               </button>`).join('');
 }
@@ -442,13 +463,13 @@ const SCREENS = [
           </div><!-- /v3-review-panel -->
           </div><!-- /v3-body -->
 
-          <!-- NOW-PLAYING TICKER — a friend's live listen (name · song · album · artist)
-               with a waveform on the right. Sits just above the bottom nav, left-aligned
-               by the nav's left curve. app.js fills it and cycles through listeners. -->
-          <div class="v3-nowbar">
-            <div class="v3-now-text"></div>
-            <div class="v3-now-wave" aria-hidden="true"></div>
-          </div>
+          <!-- NOW-PLAYING TICKER + the CD console that replaces it.
+               ⚠ ${nowBar()}, NOT the markup inlined again. Both home variants had
+               their own copy of the ticker, so the console the helper now also
+               ships simply did not exist on the one screen it matters most on —
+               the tap set the state and there was nothing in the plateau to show.
+               Exactly the duplication that made bentoHtml() necessary. -->
+          ${nowBar()}
 
           <!-- BOTTOM NAV — shared glass console (see bottomNav helper) -->
           ${bottomNav('home')}
@@ -634,13 +655,13 @@ const SCREENS = [
           </div><!-- /v3-review-panel -->
           </div><!-- /v3-body -->
 
-          <!-- NOW-PLAYING TICKER — a friend's live listen (name · song · album · artist)
-               with a waveform on the right. Sits just above the bottom nav, left-aligned
-               by the nav's left curve. app.js fills it and cycles through listeners. -->
-          <div class="v3-nowbar">
-            <div class="v3-now-text"></div>
-            <div class="v3-now-wave" aria-hidden="true"></div>
-          </div>
+          <!-- NOW-PLAYING TICKER + the CD console that replaces it.
+               ⚠ ${nowBar()}, NOT the markup inlined again. Both home variants had
+               their own copy of the ticker, so the console the helper now also
+               ships simply did not exist on the one screen it matters most on —
+               the tap set the state and there was nothing in the plateau to show.
+               Exactly the duplication that made bentoHtml() necessary. -->
+          ${nowBar()}
 
           <!-- BOTTOM NAV — shared glass console (see bottomNav helper) -->
           ${bottomNav('home')}
@@ -878,6 +899,13 @@ function appHeader(subtitle) {
           </div>`;
 }
 
+/* The nav's plateau holds TWO things, one at a time: the friends ticker, and —
+   once you tap a CD — the console. `.s-home-v3--console` on the shell swaps them
+   and grows the plateau to fit (see app.css).
+   ⚠ The console itself is NOT here — it is inside `bottomNav()`, as a child of
+   the nav. It has to be placed as a % of the nav's own box to stay in the
+   plateau at every frame size, and only a child can do that. This ticker stays
+   a sibling because its px offsets ride the viewer's zoom, as they always did. */
 function nowBar() {
   return `
           <div class="v3-nowbar">
@@ -1366,13 +1394,12 @@ function profScore(P) {
    does not. `padding-inline` on the rail is what lets the FIRST and LAST items
    reach the centre; without it `scroll-snap-align: center` can never centre
    them and the rail looks broken at both ends.
-   ⚠ The five menus live AFTER the rail, not inside it: the rail is
-   `overflow-x: auto`, which would clip a popup. `toggleProfCd` finds them by
-   `data-slot` for that reason. */
+   ⚠ Tapping a disc raises the NAV CONSOLE, not a popup — see `profFavTap`. The
+   rail is `overflow-x: auto` and would clip a popup anyway, which is half of why
+   the console is the better home for it. */
 function profFavsHtml(P, o) {
   const findAlb = name => (window.ARCHIVE || []).find(a => a.album === name);
   const esc = s2 => String(s2).replace(/'/g, '\'');
-  const penIco = `<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>`;
   const favs = [0, 1, 2, 3, 4];
 
   const cds = favs.map(i => {
@@ -1392,23 +1419,13 @@ function profFavsHtml(P, o) {
       </button>`;
   }).join('');
 
-  const menus = favs.map(i => {
-    const a = findAlb((P.favs || [])[i]);
-    if (!a || o.edit) return '';
-    return `<div class="wall2-menu v3-cd-menu prof-cd-menu" data-slot="${i}" hidden>
-        <button class="v3-stream-preview prof-cd-prev" onclick="event.stopPropagation(); profCdPreview(this, ${i})">
-          <span class="v3-stream-preview-ico"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
-          <span class="v3-stream-preview-txt">Listen to preview</span>
-          <span class="v3-stream-preview-dur">0:30</span>
-        </button>
-        <div class="v3-cd-menu-sep"></div>
-        ${platRowsHtml(i)}
-        <div class="v3-cd-menu-sep"></div>
-        <button class="wall2-menu-item plp-plat-item" onclick="event.stopPropagation(); this.closest('.prof-cd-menu').hidden=true; openProfPicker(${i}, this)">
-          <span class="plp-plat-ico" style="background:var(--pf-base)">${penIco}</span>Replace album
-        </button>
-      </div>`;
-  }).join('');
+  /* ⚠ There are no per-disc popups here any more. Tapping a favourite raises the
+     NAV CONSOLE (`profFavTap` → `openConsole`), so the menu that used to carry
+     "Listen to preview" and the service rows has nothing left to offer:
+     previews are off (`PREVIEWS_ENABLED`), and the services moved into the
+     console. Keeping an unreachable popup in the DOM is worse than removing it.
+     ⚠ It also carried "Replace album", which is now reached through Edit
+     Profile → tap a disc, rather than from the profile in view mode. */
 
   /* The panel under the rail. Filled by `profFavSync` from whichever CD is
      centred — the markup carries no album, so it cannot go stale against the
@@ -1436,7 +1453,6 @@ function profFavsHtml(P, o) {
                   <span class="prof-fav-meta"></span>
                 </div>
               </div>
-              ${menus}
             </div>`;
 }
 
@@ -2629,12 +2645,49 @@ function bottomNav(active = 'home') {
                  rather than an outlined cut-out. Sides and outer bottom run
                  outside the viewBox so their stroke clips away. -->
             <svg class="v3-nav-shape" viewBox="0 0 576 93" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><path d="M-8 101V34.1217H64.8923C73.1451 34.1217 79.8353 27.4315 79.8353 19.1787C79.8353 8.86277 88.198 0.5 98.514 0.5L480.656 0.5C490.972 0.5 499.335 8.86277 499.335 19.1788C499.335 27.4316 506.025 34.1218 514.278 34.1218H584V101"/></svg>
+            <!-- The same contour with the plateau raised 88 units, for the console
+                 state. WARNING: a SECOND svg rather than a class on the first,
+                 because the viewBox changes with it and viewBox cannot be set
+                 from CSS. Both are preserveAspectRatio=none and the nav's
+                 aspect-ratio switches with the state, so whichever is showing
+                 always matches its own box and nothing stretches. The plateau's
+                 two fillets are untouched; a straight wall is inserted between
+                 them, where the tangent is already vertical. Change one contour
+                 and change the other, plus the three masks in app.css. -->
+            <svg class="v3-nav-shape v3-nav-shape--tall" viewBox="0 0 576 181" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><path d="M-8 189V122.122H64.8923C73.1451 122.122 79.8353 115.431 79.8353 107.179L79.8353 19.1787C79.8353 8.86277 88.198 0.5 98.514 0.5L480.656 0.5C490.972 0.5 499.335 8.86277 499.335 19.1788L499.335 107.179C499.335 115.432 506.025 122.122 514.278 122.122H584V189"/></svg>
             <div class="v3-nav-items">
               <button class="v3-nav-item${on('home')}" onclick="navigate('home')" title="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/></svg></button>
               <button class="v3-nav-item${on('wall')}" onclick="navigate('wall')" title="Trending"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="2.5" y="2.5" width="5" height="5" rx="1.2"/><rect x="9.5" y="2.5" width="5" height="5" rx="1.2"/><rect x="16.5" y="2.5" width="5" height="5" rx="1.2"/><rect x="2.5" y="9.5" width="5" height="5" rx="1.2"/><rect x="9.5" y="9.5" width="5" height="5" rx="1.2"/><rect x="16.5" y="9.5" width="5" height="5" rx="1.2"/><rect x="2.5" y="16.5" width="5" height="5" rx="1.2"/><rect x="9.5" y="16.5" width="5" height="5" rx="1.2"/><rect x="16.5" y="16.5" width="5" height="5" rx="1.2"/></svg></button>
               <span class="v3-nav-gap" aria-hidden="true"></span>
               <button class="v3-nav-item${on('playlists')}" onclick="navigate('playlists')" title="Playlists"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></button>
               <button class="v3-nav-item${on('profile')}" onclick="navigate('profile')" title="Profile"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></button>
+            </div>
+            <!-- The CD console. WARNING: it lives INSIDE the nav, not beside it.
+                 It was a sibling positioned in px from the screen bottom, and the
+                 nav is aspect-ratio driven — its height follows the frame width —
+                 so the two drifted apart the moment the viewer scaled the phone
+                 and the panel floated out of the plateau it is meant to sit in.
+                 As a child it can be placed as a % of the nav's own box, which is
+                 the only thing that tracks the plateau at every size. -->
+            <div class="v3-console" aria-hidden="true">
+              <!-- ONE line: art, album, year, artist. WARNING: no close
+                   button. It closes on the next thing you do -- a scroll, a
+                   touch on the bento, or the CD again -- so a persistent x was
+                   a control for something that already puts itself away, and it
+                   cost the line the width it needs to read as one sentence. -->
+              <div class="v3-nc-row">
+                <span class="v3-nc-art" aria-hidden="true"></span>
+                <span class="v3-nc-line">
+                  <span class="v3-nc-alb"></span>
+                  <span class="v3-nc-yr"></span>
+                  <span class="v3-nc-artist"></span>
+                </span>
+              </div>
+              <div class="v3-nc-svcs">${SD_SERVICES.map(sv => `
+                <button class="v3-nc-svc" type="button" data-svc="${sv.id}" title="Open in ${sv.name}" aria-label="Open in ${sv.name}"
+                        onclick="event.stopPropagation(); consoleGo(this, '${sv.id}')">
+                  ${svcMarkHtml(sv, 'v3-nc-ico')}
+                </button>`).join('')}</div>
             </div>
           </nav>
           <!-- Scoop EMBOSS. The 0-height wrapper paints nothing itself, but

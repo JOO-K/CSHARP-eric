@@ -2574,6 +2574,168 @@
    opacity change on tap reads as the audio doing something. */
 .v3-nowbar:active { transform: scale(0.975); }
 
+
+/* ==========================================================================
+   THE NAV CONSOLE - the plateau grows to hold what a CD tap has to say
+   ==========================================================================
+   Tapping a CD used to raise a POPUP over the screen. It raises the nav's own
+   plateau instead: the bump grows, the friends ticker gives way to the album you
+   tapped, and the room that opens up holds the four services.
+
+   WARNING: THE GEOMETRY LIVES IN THESE FIVE VARIABLES AND NOWHERE ELSE. Four
+   elements share the nav's box (`.v3-bottom-nav`, `.v3-nav-blur`,
+   `.v3-nav-nest`, `.v3-nav-emboss > i`) and three of them carry a mask of the
+   same contour. They all read these, so the console state is ONE override block
+   rather than eight edits that drift apart. The outline is the one exception --
+   an inline <svg> whose viewBox CSS cannot reach -- so `bottomNav()` ships both
+   and this toggles which is visible.
+
+   WARNING: the tall contour is the short one with every point below the plateau
+   pushed down 88 units and a straight wall inserted between the plateau's two
+   fillets, where the tangent is already vertical. The fillets themselves are
+   untouched, which is why nothing distorts: `preserveAspectRatio="none"` would
+   happily stretch them, and `--nav-ar` changes in step so it never has to.
+
+   WARNING: the shoulder -- where the flat runs sit, and where `.v3-nav-items`
+   starts -- is 34.1217/93 = 36.69% normally and (34.1217+88)/181 = 67.47% when
+   grown. The same line in absolute terms; a different fraction of a taller box. */
+.s-home-v3 {
+  --nav-ar:         576 / 93;
+  --nav-shoulder:   36.69%;
+  --nav-mask:       url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20576%2093'%20preserveAspectRatio='none'%3E%3Cpath%20d='M-8%20101V34.1217H64.8923C73.1451%2034.1217%2079.8353%2027.4315%2079.8353%2019.1787C79.8353%208.86277%2088.198%200.5%2098.514%200.5L480.656%200.5C490.972%200.5%20499.335%208.86277%20499.335%2019.1788C499.335%2027.4316%20506.025%2034.1218%20514.278%2034.1218H584V101H375.209V94.0125C373.667%2094.0125%20372.433%2092.7335%20372.488%2091.1928L372.792%2082.7034C373.566%2061.0759%20356.243%2043.1217%20334.602%2043.1217H232.378C210.707%2043.1217%20193.328%2061.0425%20193.994%2082.7034L194.232%2090.4501C194.292%2092.3996%20192.728%2094.0125%20190.777%2094.0125V101H-8Z'%20fill='%23fff'/%3E%3C/svg%3E");
+  --nav-mask-neg:   url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20576%2093'%20preserveAspectRatio='none'%3E%3Cpath%20d='M-12%20-12H588V105H-12ZM-8%20101V34.1217H64.8923C73.1451%2034.1217%2079.8353%2027.4315%2079.8353%2019.1787C79.8353%208.86277%2088.198%200.5%2098.514%200.5L480.656%200.5C490.972%200.5%20499.335%208.86277%20499.335%2019.1788C499.335%2027.4316%20506.025%2034.1218%20514.278%2034.1218H584V101H375.209V94.0125C373.667%2094.0125%20372.433%2092.7335%20372.488%2091.1928L372.792%2082.7034C373.566%2061.0759%20356.243%2043.1217%20334.602%2043.1217H232.378C210.707%2043.1217%20193.328%2061.0425%20193.994%2082.7034L194.232%2090.4501C194.292%2092.3996%20192.728%2094.0125%20190.777%2094.0125V101H-8Z'%20fill='%23fff'%20fill-rule='evenodd'%20stroke='%23fff'%20stroke-width='2'%20stroke-linejoin='round'/%3E%3C/svg%3E");
+  --nav-mask-scoop: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20576%2093'%20preserveAspectRatio='none'%3E%3Cpath%20d='M375.209%20101V94.0125C373.667%2094.0125%20372.433%2092.7335%20372.488%2091.1928L372.792%2082.7034C373.566%2061.0759%20356.243%2043.1217%20334.602%2043.1217H232.378C210.707%2043.1217%20193.328%2061.0425%20193.994%2082.7034L194.232%2090.4501C194.292%2092.3996%20192.728%2094.0125%20190.777%2094.0125V101Z'%20fill='%23fff'%20stroke='%23fff'%20stroke-width='2'%20stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+.s-home-v3--console {
+  --nav-ar:         576 / 181;
+  --nav-shoulder:   67.47%;
+  --nav-mask:       url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20576%20181'%20preserveAspectRatio='none'%3E%3Cpath%20d='M-8%20189V122.122H64.8923C73.1451%20122.122%2079.8353%20115.431%2079.8353%20107.179L79.8353%2019.1787C79.8353%208.86277%2088.198%200.5%2098.514%200.5L480.656%200.5C490.972%200.5%20499.335%208.86277%20499.335%2019.1788L499.335%20107.179C499.335%20115.432%20506.025%20122.122%20514.278%20122.122H584V189H375.209%20189V182.012C373.667%20182.012%20372.433%20180.733%20372.488%20179.193L372.792%20170.703C373.566%20149.076%20356.243%20131.122%20334.602%20131.122H232.378C210.707%20131.122%20193.328%20149.042%20193.994%20170.703L194.232%20178.45C194.292%20180.4%20192.728%20182.012%20190.777%20182.012V189H-8Z'%20fill='%23fff'/%3E%3C/svg%3E");
+  --nav-mask-neg:   url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20576%20181'%20preserveAspectRatio='none'%3E%3Cpath%20d='M-12%20-12H588V193H-12ZM-8%20189V122.122H64.8923C73.1451%20122.122%2079.8353%20115.431%2079.8353%20107.179L79.8353%2019.1787C79.8353%208.86277%2088.198%200.5%2098.514%200.5L480.656%200.5C490.972%200.5%20499.335%208.86277%20499.335%2019.1788L499.335%20107.179C499.335%20115.432%20506.025%20122.122%20514.278%20122.122H584V189H375.209%20189V182.012C373.667%20182.012%20372.433%20180.733%20372.488%20179.193L372.792%20170.703C373.566%20149.076%20356.243%20131.122%20334.602%20131.122H232.378C210.707%20131.122%20193.328%20149.042%20193.994%20170.703L194.232%20178.45C194.292%20180.4%20192.728%20182.012%20190.777%20182.012V189H-8Z'%20fill='%23fff'%20fill-rule='evenodd'%20stroke='%23fff'%20stroke-width='2'%20stroke-linejoin='round'/%3E%3C/svg%3E");
+  --nav-mask-scoop: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20576%20181'%20preserveAspectRatio='none'%3E%3Cpath%20d='M375.209%20189V182.012C373.667%20182.012%20372.433%20180.733%20372.488%20179.193L372.792%20170.703C373.566%20149.076%20356.243%20131.122%20334.602%20131.122H232.378C210.707%20131.122%20193.328%20149.042%20193.994%20170.703L194.232%20178.45C194.292%20180.4%20192.728%20182.012%20190.777%20182.012V189Z'%20fill='%23fff'%20stroke='%23fff'%20stroke-width='2'%20stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+.v3-nav-shape--tall                     { display: none; }
+.s-home-v3--console .v3-nav-shape       { display: none; }
+.s-home-v3--console .v3-nav-shape--tall { display: block; }
+
+/* -- The console panel ---------------------------------------------------
+   Sits in the plateau the state above opened up. WARNING: anchored in px from
+   the BOTTOM of the screen, not as a % of the nav -- the nav's height changes
+   with the state, so a percentage would move this twice. The plateau's floor
+   (the shoulder) is ~40px up at the 393 frame and its ceiling is the nav's top
+   at ~113px, so 46 -> 108 sits inside it with air at both ends. */
+.v3-console {
+  /* All four numbers are % of the NAV, whose child this is. WARNING: they were
+     px offsets from the screen bottom and that is wrong here -- the nav is
+     aspect-ratio driven, so its height follows the frame width, and the panel
+     floated clean out of the plateau the moment the viewer scaled the phone.
+     Horizontally the plateau's interior is x 98.5-480.7 of 576 = 17.1%-83.5%;
+     vertically it runs from the nav top to the shoulder at 67.47%.
+     WARNING: `bottom` deliberately leaves more air under the marks than over the
+     line -- the row wants to sit high in the plateau, near its ceiling, not
+     centred in it. Centred, the logos drifted down onto the shoulder. */
+  position: absolute;
+  left: 19%; right: 18.5%;
+  top: 4.5%; bottom: 38%;
+  z-index: 6;
+  display: none;
+  flex-direction: column; justify-content: space-between; gap: 6px;
+}
+.s-home-v3--console .v3-console { display: flex; }
+/* WARNING: the ticker and the console are never both up, and this is
+   `visibility` rather than `display` on purpose -- `renderNowBar`'s swap timer
+   keeps writing to the ticker while the console is open, and a `display: none`
+   element has no box to measure. */
+.s-home-v3--console .v3-nowbar { visibility: hidden; pointer-events: none; }
+
+/* ONE line: art, album, year, artist. WARNING: the album is the only part that
+   may shrink (`min-width: 0` + ellipsis on it alone). Let the year or the artist
+   flex and a long title pushes them off the end instead of truncating itself,
+   which loses the two facts that are always short. */
+.v3-nc-row { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.v3-nc-art {
+  flex-shrink: 0; width: 22px; height: 22px; border-radius: 4px;
+  background-size: cover; background-position: center; background-color: rgba(0,0,0,.35);
+}
+.v3-nc-line { display: flex; align-items: baseline; gap: 5px; min-width: 0; flex: 1; }
+.v3-nc-alb {
+  min-width: 0; flex-shrink: 1;
+  font-size: 11.5px; font-weight: 700; color: var(--sd-ink);
+  font-family: var(--font-head); letter-spacing: -.2px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.v3-nc-yr {
+  flex-shrink: 0; font-size: 9.5px; color: var(--sd-ink3);
+  font-family: var(--font-mono);
+}
+.v3-nc-artist {
+  flex-shrink: 0; max-width: 42%;
+  font-size: 9.5px; color: var(--sd-ink2); font-family: var(--font-mono);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* The four services. WARNING: `space-between` over fixed-size marks rather than
+   stretched buttons -- these are brand logos, and a logo whose width follows its
+   container stops reading as a logo. */
+.v3-nc-svcs { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.v3-nc-svc {
+  flex: 0 0 auto; padding: 0; border: 0; background: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform .14s, opacity .14s;
+}
+.v3-nc-svc:active { transform: scale(0.9); }
+.v3-nc-ico {
+  position: relative; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  width: 38px; height: 38px; border-radius: 11px;
+  box-shadow: 0 3px 9px rgba(0,0,0,.38);
+}
+.v3-nc-ico > svg { width: 62%; height: 62%; }
+
+/* ⚠ A real app icon, when one has been dropped in, covers the whole tile —
+   drawing AND brand colour. The <img> removes itself `onerror`, so a missing
+   file falls back to the vector rather than leaving an empty square, and the
+   drawings stay the fallback rather than the goal. */
+.sd-svc-img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%; object-fit: cover;
+  border-radius: inherit;
+}
+/* The two states `serviceGo` puts a button in: waiting on a lookup, and a
+   service that has not got the record. The same language the menu rows spoke. */
+.v3-nc-svc.is-wait { opacity: .45; }
+.v3-nc-svc.none    { opacity: .45; }
+
+/* -- Growing and shrinking -------------------------------------------------
+   WARNING: what animates is `aspect-ratio`, on all four boxes that share the
+   nav's geometry. Height is not settable here (it IS the aspect ratio), and a
+   custom property cannot be transitioned -- but the property that READS the
+   property can, so the swap of `--nav-ar` drives a real interpolation.
+
+   WARNING: the masks and the outline swap DISCRETELY -- a data-URI mask cannot
+   tween. For the ~260ms of the growth the tall contour is squashed into a
+   shorter box, and because everything here is `preserveAspectRatio="none"` that
+   reads as the plateau unfolding rather than as a glitch. It is the reason the
+   easing is an ease-out overshoot: the squash resolves fastest at the start,
+   where it is largest.
+
+   WARNING: the CONTENT is not carried by that -- it fades and rises on its own,
+   one beat behind, or it appears fully drawn inside a plateau that has not
+   finished opening. */
+.v3-bottom-nav, .v3-nav-blur, .v3-nav-nest, .v3-nav-emboss > i {
+  transition: aspect-ratio .26s cubic-bezier(.22, 1, .36, 1);
+}
+.v3-console {
+  opacity: 0;
+  transform: translateY(7px);
+  transition: opacity .18s ease .07s, transform .22s cubic-bezier(.22, 1, .36, 1) .05s;
+}
+.s-home-v3--console .v3-console { opacity: 1; transform: translateY(0); }
+/* Anyone who would rather it just appear. */
+@media (prefers-reduced-motion: reduce) {
+  .v3-bottom-nav, .v3-nav-blur, .v3-nav-nest, .v3-nav-emboss > i,
+  .v3-console { transition: none; }
+}
+
 /* ── Nav backdrop blur ────────────────────────────────────────
    The glass's own `backdrop-filter` is masked to the BAR shape, so it stops
    dead at the scoop and at the corners beside the bump — content passing behind
@@ -2585,7 +2747,7 @@
   position: absolute;
   left: 0; right: 0; bottom: 0;
   width: 100%;
-  aspect-ratio: 576 / 93;   /* same box as the nav */
+  aspect-ratio: var(--nav-ar);   /* same box as the nav */
   z-index: 3;               /* under the plug (4), the nav (5), everything */
   pointer-events: none;
   -webkit-backdrop-filter: blur(22px) saturate(175%);
@@ -2607,7 +2769,7 @@
   position: absolute;
   left: 0; right: 0; bottom: 0;
   width: 100%;
-  aspect-ratio: 576 / 93;      /* same box as the nav, so the mask lines up */
+  aspect-ratio: var(--nav-ar);      /* same box as the nav, so the mask lines up */
   z-index: 4;                  /* over content, under the nav (5) and the pet */
   pointer-events: none;
   background-color: inherit;
@@ -2620,8 +2782,8 @@
      scoop alone left the corners, which is why text still peeked along the
      fillets. The path is also STROKED, dilating the plug 1 unit into the bar so
      the two overlap rather than butting edge-to-edge. */
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 576 93' preserveAspectRatio='none'%3E%3Cpath d='M-12 -12H588V105H-12ZM-8 101V34.1217H64.8923C73.1451 34.1217 79.8353 27.4315 79.8353 19.1787C79.8353 8.86277 88.198 0.5 98.514 0.5L480.656 0.5C490.972 0.5 499.335 8.86277 499.335 19.1788C499.335 27.4316 506.025 34.1218 514.278 34.1218H584V101H375.209V94.0125C373.667 94.0125 372.433 92.7335 372.488 91.1928L372.792 82.7034C373.566 61.0759 356.243 43.1217 334.602 43.1217H232.378C210.707 43.1217 193.328 61.0425 193.994 82.7034L194.232 90.4501C194.292 92.3996 192.728 94.0125 190.777 94.0125V101H-8Z' fill='%23fff' fill-rule='evenodd' stroke='%23fff' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center / 100% 100%;
-          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 576 93' preserveAspectRatio='none'%3E%3Cpath d='M-12 -12H588V105H-12ZM-8 101V34.1217H64.8923C73.1451 34.1217 79.8353 27.4315 79.8353 19.1787C79.8353 8.86277 88.198 0.5 98.514 0.5L480.656 0.5C490.972 0.5 499.335 8.86277 499.335 19.1788C499.335 27.4316 506.025 34.1218 514.278 34.1218H584V101H375.209V94.0125C373.667 94.0125 372.433 92.7335 372.488 91.1928L372.792 82.7034C373.566 61.0759 356.243 43.1217 334.602 43.1217H232.378C210.707 43.1217 193.328 61.0425 193.994 82.7034L194.232 90.4501C194.292 92.3996 192.728 94.0125 190.777 94.0125V101H-8Z' fill='%23fff' fill-rule='evenodd' stroke='%23fff' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center / 100% 100%;
+  -webkit-mask: var(--nav-mask-neg) no-repeat center / 100% 100%;
+          mask: var(--nav-mask-neg) no-repeat center / 100% 100%;
 }
 
 /* ── Bottom fade ──────────────────────────────────────────────
@@ -2638,12 +2800,27 @@
 .v3-bottom-fade {
   position: absolute;
   left: 0; right: 0;
-  bottom: 39px; height: 52px;
+  bottom: 39px; height: var(--nav-fade-h, 52px);
   z-index: 4;
   pointer-events: none;
   background-color: inherit;
-  -webkit-mask-image: linear-gradient(to top, #000 0%, #000 46%, transparent 100%);
-          mask-image: linear-gradient(to top, #000 0%, #000 46%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to top, #000 0%, #000 var(--nav-fade-solid, 46%), transparent 100%);
+          mask-image: linear-gradient(to top, #000 0%, #000 var(--nav-fade-solid, 46%), transparent 100%);
+  transition: height .26s cubic-bezier(.22, 1, .36, 1);
+}
+/* ⚠ THE FADE HAS TO GROW WITH THE NAV. It is sized in px from the screen bottom
+   and the console makes the nav nearly twice as tall, so the band tuned for the
+   62px bar stopped 58px short of the new top edge — content ran sharp and
+   unfaded straight into the raised plateau, which is what "the bg outside the
+   indent" was missing. The nest still plugs everything INSIDE the nav's box;
+   this is about the content above it.
+   Derivation, same as the short state's: the nav is docked, so its top edge is
+   its own height above the bottom — 121px at the 385 frame. The opaque band has
+   to reach just past that: 121 + 2 − 39 (this box's own offset) = 84px of solid,
+   then ~34px of fade, so 118px tall and solid to 84/118 = 71%. */
+.s-home-v3--console {
+  --nav-fade-h: 118px;
+  --nav-fade-solid: 71%;
 }
 
 /* ── The scene — the face cradled in the nav's scoop ────────────
@@ -3018,7 +3195,7 @@
   /* Keeps the fillet curves undistorted — height follows the screen width
      (~62px at the 385px mockup). Don't swap this for a fixed height: the SVG is
      preserveAspectRatio="none" and WILL stretch. */
-  aspect-ratio: 576 / 93;
+  aspect-ratio: var(--nav-ar);
   z-index: 5;
 }
 /* Frosted-glass fill, clipped to the console shape */
@@ -3031,8 +3208,8 @@
   /* Shadow casts UPWARD now — the bar is docked, so there's nothing below it. */
   box-shadow: 0 -8px 28px rgba(0,0,0,0.38);
   /* ⚠️ Same path as the .v3-nav-shape <svg> in bottomNav(). Change both. */
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 576 93' preserveAspectRatio='none'%3E%3Cpath d='M-8 101V34.1217H64.8923C73.1451 34.1217 79.8353 27.4315 79.8353 19.1787C79.8353 8.86277 88.198 0.5 98.514 0.5L480.656 0.5C490.972 0.5 499.335 8.86277 499.335 19.1788C499.335 27.4316 506.025 34.1218 514.278 34.1218H584V101H375.209V94.0125C373.667 94.0125 372.433 92.7335 372.488 91.1928L372.792 82.7034C373.566 61.0759 356.243 43.1217 334.602 43.1217H232.378C210.707 43.1217 193.328 61.0425 193.994 82.7034L194.232 90.4501C194.292 92.3996 192.728 94.0125 190.777 94.0125V101H-8Z' fill='%23fff'/%3E%3C/svg%3E") no-repeat center / 100% 100%;
-          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 576 93' preserveAspectRatio='none'%3E%3Cpath d='M-8 101V34.1217H64.8923C73.1451 34.1217 79.8353 27.4315 79.8353 19.1787C79.8353 8.86277 88.198 0.5 98.514 0.5L480.656 0.5C490.972 0.5 499.335 8.86277 499.335 19.1788C499.335 27.4316 506.025 34.1218 514.278 34.1218H584V101H375.209V94.0125C373.667 94.0125 372.433 92.7335 372.488 91.1928L372.792 82.7034C373.566 61.0759 356.243 43.1217 334.602 43.1217H232.378C210.707 43.1217 193.328 61.0425 193.994 82.7034L194.232 90.4501C194.292 92.3996 192.728 94.0125 190.777 94.0125V101H-8Z' fill='%23fff'/%3E%3C/svg%3E") no-repeat center / 100% 100%;
+  -webkit-mask: var(--nav-mask) no-repeat center / 100% 100%;
+          mask: var(--nav-mask) no-repeat center / 100% 100%;
 }
 /* Hairline outline over the glass */
 .v3-nav-shape {
@@ -3076,14 +3253,14 @@
 .v3-nav-emboss > i {
   position: absolute; left: 0; right: 0; bottom: 0;
   display: block;
-  aspect-ratio: 576 / 93;          /* same box as the nav */
+  aspect-ratio: var(--nav-ar);          /* same box as the nav */
   background-color: inherit;
   /* ⚠️ Mask path STROKED as well as filled — same 1-unit dilation as
      `.v3-nav-nest`. This is the TOPMOST layer over the scoop, so its edge is the
      visible boundary; butted exactly against the bar it leaves a sub-pixel seam
      and feed text peeks through along the outline. Overlap, don't abut. */
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 576 93' preserveAspectRatio='none'%3E%3Cpath d='M375.209 101V94.0125C373.667 94.0125 372.433 92.7335 372.488 91.1928L372.792 82.7034C373.566 61.0759 356.243 43.1217 334.602 43.1217H232.378C210.707 43.1217 193.328 61.0425 193.994 82.7034L194.232 90.4501C194.292 92.3996 192.728 94.0125 190.777 94.0125V101Z' fill='%23fff' stroke='%23fff' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center / 100% 100%;
-          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 576 93' preserveAspectRatio='none'%3E%3Cpath d='M375.209 101V94.0125C373.667 94.0125 372.433 92.7335 372.488 91.1928L372.792 82.7034C373.566 61.0759 356.243 43.1217 334.602 43.1217H232.378C210.707 43.1217 193.328 61.0425 193.994 82.7034L194.232 90.4501C194.292 92.3996 192.728 94.0125 190.777 94.0125V101Z' fill='%23fff' stroke='%23fff' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center / 100% 100%;
+  -webkit-mask: var(--nav-mask-scoop) no-repeat center / 100% 100%;
+          mask: var(--nav-mask-scoop) no-repeat center / 100% 100%;
 }
 .s-home-v3--light .v3-nav-emboss {
   filter: drop-shadow(0 0 7px rgba(116,150,179,0.32));
@@ -3093,7 +3270,10 @@
    Bottom padding keeps the icons off the screen edge now that the bar is docked
    — with the old floating bar its own 24px gap did that job. */
 .v3-nav-items {
-  position: absolute; left: 0; right: 0; top: 36.7%; bottom: 0;
+  /* WARNING: `--nav-shoulder`, not a literal. The icons sit on the flat runs,
+     and how far down the nav's box that line falls changes when the plateau
+     grows. */
+  position: absolute; left: 0; right: 0; top: var(--nav-shoulder); bottom: 0;
   display: flex; align-items: center; justify-content: space-around;
   /* Vertical nudge lives in the transform, NOT in padding-bottom. With
      `align-items: center`, trimming Npx of bottom padding only moves the icons
@@ -6254,10 +6434,13 @@
    see neither — the menu warms all three links as it opens. */
 .plp-plat-item.is-wait { opacity: .5; pointer-events: none; }
 .plp-plat-item.none { opacity: .45; }
+/* Same two-layer tile as the console's, at menu-row size — see `svcMarkHtml`. */
 .plp-plat-ico {
+  position: relative; overflow: hidden;
   width: 18px; height: 18px; border-radius: 5px; flex-shrink: 0;
   display: inline-flex; align-items: center; justify-content: center;
 }
+.plp-plat-ico > svg { width: 64%; height: 64%; }
 
 /* — songs — one line per row: song name boldest · album mid · artist lightest.
    Overflow fades out on the right (mask) instead of ellipsizing. */

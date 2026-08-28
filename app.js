@@ -1307,16 +1307,93 @@ window.reactRing = reactRing;
 
 // CD tap — react the ring and toggle the compact CD popup (preview + streaming
 // platforms), anchored above the CD like the playlist page's plat menu.
+/* ══════════════════════════════════════════════════════════════════════════
+   THE NAV CONSOLE — where a CD tap goes now (`openConsole` · `closeConsole`)
+   ══════════════════════════════════════════════════════════════════════════
+   ⚠️ Tapping a CD used to raise a POPUP over the screen. It does not any more,
+   and it should not go back: a floating panel covered the record you had just
+   tapped, and it was a second surface to dismiss on top of a screen that already
+   has a nav. The nav's plateau is already the app's "what is playing" strip, so
+   the answer to "where do I hear this?" belongs in it. The plateau GROWS
+   (`.s-home-v3--console`, see app.css), the friends ticker gives way to the
+   album you tapped, and the room that opens up holds the four services.
+
+   ⚠️ It closes on the next thing you do — a scroll, or a touch on the bento.
+   That is what keeps it from being a mode: you never have to put it away, and
+   the ticker comes back on its own. `closeConsole` is idempotent so every one of
+   those paths can call it without checking.
+
+   ⚠️ The album lives on the SHELL (`_consoleAlbum`), not in a global. Several
+   `.s-home-v3` exist at once and the first is often not the visible one — the
+   same trap that once played previews for the wrong track — and the console can
+   be showing a profile favourite, which is not the shell's bento album. */
+window.openConsole = function (screenEl, album) {
+  if (!screenEl || !album) return;
+  screenEl._consoleAlbum = album;
+
+  const box = screenEl.querySelector('.v3-console');
+  if (box) {
+    const art = box.querySelector('.v3-nc-art');
+    if (art) art.style.backgroundImage = album.image ? `url('${album.image}')` : '';
+    const alb = box.querySelector('.v3-nc-alb');
+    if (alb) alb.textContent = album.album || '';
+    const yr = box.querySelector('.v3-nc-yr');
+    if (yr) yr.textContent = album.year ? String(album.year) : '';
+    const who = box.querySelector('.v3-nc-artist');
+    if (who) who.textContent = album.artist || '';
+    box.setAttribute('aria-hidden', 'false');
+  }
+  screenEl.classList.add('s-home-v3--console');
+
+  /* Resolve all four links while the plateau is still growing, so the button you
+     then tap opens its tab synchronously and is not caught by the popup blocker. */
+  warmServiceLinks(album);
+  consoleArmDismiss(screenEl);
+};
+
+window.closeConsole = function (elOrScreen) {
+  const scr = (elOrScreen && elOrScreen.closest)
+    ? elOrScreen.closest('.s-home-v3') : elOrScreen;
+  if (!scr || !scr.classList.contains('s-home-v3--console')) return;
+  scr.classList.remove('s-home-v3--console');
+  scr._consoleAlbum = null;
+  const box = scr.querySelector('.v3-console');
+  if (box) box.setAttribute('aria-hidden', 'true');
+  if (scr._consoleOff) { scr._consoleOff(); scr._consoleOff = null; }
+};
+
+/* What puts it away again. ⚠ The scroll listener goes on `.v3-body` — the
+   element that actually scrolls — not the window: in the desktop viewer the
+   phone is a box on a page that never scrolls itself, so a window listener would
+   never fire. ⚠ Wired per OPEN and torn down on close, rather than once at
+   build: a permanent `pointerdown` listener on the bento would run on every tap
+   of a screen that is usually not in console state at all.
+   ⚠ `capture` on the bento so it lands even though the CD, the cover and the
+   For You box all stop propagation on their own handlers. */
+function consoleArmDismiss(scr) {
+  if (scr._consoleOff) scr._consoleOff();
+  const body  = scr.querySelector('.v3-body');
+  const bento = scr.querySelector('.v3-bento');
+  const bye = () => window.closeConsole(scr);
+  /* ⚠ A tap on the console itself must not close it — the service buttons live
+     in there. They stop propagation, but the padding between them does not. */
+  const onBento = (ev) => { if (!ev.target.closest('.v3-console')) bye(); };
+  if (body)  body.addEventListener('scroll', bye, { passive: true });
+  if (bento) bento.addEventListener('pointerdown', onBento, true);
+  scr._consoleOff = () => {
+    if (body)  body.removeEventListener('scroll', bye, { passive: true });
+    if (bento) bento.removeEventListener('pointerdown', onBento, true);
+  };
+}
+
 window.onCdTap = function (el, e) {
   if (e) e.stopPropagation();
   const scr = el.closest('.s-home-v3');
   if (!scr) return;
   reactRing(scr, 'cd');
-  const menu = scr.querySelector('.v3-cd-menu');
-  if (menu) menu.hidden = !menu.hidden;
-  // Resolve the three service links while the menu is coming in, so the row you
-  // then tap can open its tab synchronously — see `openOnService`.
-  if (menu && !menu.hidden) warmServiceLinks(scr._album || currentBentoAlbum());
+  // Tapping the CD again puts the console away — the CD is the toggle.
+  if (scr.classList.contains('s-home-v3--console')) { window.closeConsole(scr); return; }
+  window.openConsole(scr, scr._album || currentBentoAlbum());
 };
 
 // Play a 30s preview from the stream sheet — toggles play/pause on the button itself.
@@ -3720,6 +3797,12 @@ function serviceUrlFor(album, svc) {
     p = fetchItunesAlbum(album).then(a =>
       (a && a._sdTier <= 1 && a.collectionViewUrl) ||
       'https://music.apple.com/search?term=' + encodeURIComponent(album.artist + ' ' + album.album));
+  } else if (svc === 'ytmusic') {
+    /* Search, for the same reason as Spotify: there is no public YouTube Music
+       lookup without an API key. Being honest about that is better than a keyed
+       call in a static prototype, or a guessed watch URL that 404s. */
+    p = Promise.resolve('https://music.youtube.com/search?q=' +
+        encodeURIComponent(album.artist + ' ' + album.album));
   } else {
     p = fetchDeezerAlbumUrl(album);
   }
@@ -3748,25 +3831,45 @@ function serviceMiss(el) {
   setTimeout(() => el.classList.remove('none'), 1400);
 }
 
-window.openOnService = function (el, svc, slot) {
-  const menu = el.closest('.wall2-menu');
-  const album = menuAlbum(el, slot);
-  if (!album) { if (menu) menu.hidden = true; return; }
+/* Open one album on one service. Shared by the CD menus and the nav console, so
+   the popup and the console can never disagree about what a service link means —
+   the cache, the miss behaviour and the gesture trick all live here once.
+   ⚠ `done` runs only on a real open, so a caller that wants to dismiss itself
+   does NOT dismiss on a miss: the row has to stay put to show the dip. */
+function serviceGo(el, svc, album, done) {
+  if (!album) return;
   const cached = SERVICE_URL_CACHE.get(svc + '|' + albumKey(album).toLowerCase());
-  if (cached) { if (menu) menu.hidden = true; window.open(cached, '_blank', 'noopener'); return; }
+  if (cached) { if (done) done(); window.open(cached, '_blank', 'noopener'); return; }
   if (cached === null) { serviceMiss(el); return; }    // asked before; this service has not got it
-  /* Cold — open the tab in the gesture and point it once the lookup answers.
-     `noopener` cannot ride along here (we need the handle to steer it), so the
-     link back is cut by hand instead. */
+  /* Cold — open the tab INSIDE the gesture and point it once the lookup answers.
+     A popup opened later is blocked. `noopener` cannot ride along (we need the
+     handle to steer it), so the link back is cut by hand instead. */
   const w = window.open('', '_blank');
   el.classList.add('is-wait');
   serviceUrlFor(album, svc).then(url => {
     el.classList.remove('is-wait');
     if (!url) { if (w) w.close(); serviceMiss(el); return; }
-    if (menu) menu.hidden = true;
-    if (w) { try { w.opener = null; } catch (e) {} w.location.replace(url); }
+    if (done) done();
+    if (w) { try { w.opener = null; } catch (err) {} w.location.replace(url); }
     else window.open(url, '_blank', 'noopener');
   });
+}
+
+window.openOnService = function (el, svc, slot) {
+  const menu = el.closest('.wall2-menu');
+  const album = menuAlbum(el, slot);
+  if (!album) { if (menu) menu.hidden = true; return; }
+  serviceGo(el, svc, album, () => { if (menu) menu.hidden = true; });
+};
+
+/* The console's own opener. ⚠ It reads the album off the SHELL (`_consoleAlbum`)
+   rather than through `menuAlbum`: the console can be showing a profile
+   favourite, which is not the shell's current bento album and has no slot index
+   once it is on the nav. The console stays open — you may well want to try a
+   second service — so no `done`. */
+window.consoleGo = function (btn, svc) {
+  const scr = btn.closest('.s-home-v3');
+  if (scr && scr._consoleAlbum) serviceGo(btn, svc, scr._consoleAlbum, null);
 };
 
 /* Called when a CD menu OPENS, so the tap that follows is the synchronous path.
@@ -7217,7 +7320,18 @@ window.profFavTap = function (btn, e, slot, picker) {
     return;
   }
   if (picker) { openProfPicker(slot, btn); return; }
-  toggleProfCd(btn, e, slot);
+  /* ⚠ The console, not the popup — same as the bento's CD. The profile screen is
+     an `.s-home-v3` and carries the same nav, so the plateau is right there. The
+     album comes from the SLOT: five discs share one screen, so `_album` (the
+     bento's notion of "current") means nothing here. */
+  const scr = btn.closest('.s-home-v3');
+  const name = ((window.PROFILE && window.PROFILE.favs) || [])[slot];
+  const album = name && (window.ARCHIVE || []).find(a => a.album === name);
+  if (!scr || !album) return;
+  if (scr.classList.contains('s-home-v3--console') && scr._consoleAlbum === album) {
+    window.closeConsole(scr); return;          // same disc twice = put it away
+  }
+  window.openConsole(scr, album);
 };
 
 /* Scroll → which disc is centred → the panel underneath.
