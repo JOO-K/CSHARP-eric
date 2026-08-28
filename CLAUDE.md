@@ -58,6 +58,7 @@ not a state at all any more — see *Fullscreen is the album page*.
 | `playlist` | Playlist Page (detail) | Float·Dark, Float·Light |
 | `notifications` | Notifications (activity inbox) | Float·Dark, Float·Light |
 | `settings` | Settings | Float·Dark, Float·Light |
+| `shop` | Shop (in-app goods; opens with a live Pro bento) | Float·Dark, Float·Light |
 
 `auth`/`onboarding`/`song` use the older `.app-screen` component CSS re-skinned to
 the current palette via the **`sd-theme-dark` / `sd-theme-light`** scope classes
@@ -959,6 +960,11 @@ act "Independent" is itself the answer.
 Without `height: 100%`, the entire screen scrolls inside `screen-content` and the bottom nav floats off the bottom.
 
 ### Grid structure
+> ⚠️ The markup lives in **`bentoHtml()`** (`screens.js`, above `SCREENS`) —
+> one copy, three callers: Float·Dark, Float·Light and the shop's Pro
+> showcase. It used to be inlined in both home variants, which were
+> byte-identical apart from three comments. Edit it in one place.
+
 ```css
 .v3-bento {
   display: grid;
@@ -1293,7 +1299,632 @@ cradles the pet. Silhouette is `images/BOTTOM_NAV_FULL_INDENT.svg` (viewBox
   8.5 / 25.5 / 74.5 / 91.5%. ⚠️ Resize the scoop in the SVG and this has to
   follow, or the middle two icons hang over the hole.
 
-### The pet — the face in the notch (`sdScene()` · `paintScene()` · `sceneReact()`)
+### Someone else's profile (`openFriendProfile()` · `restoreOwnProfile()`, `app.js`)
+
+**There is no second profile screen.** `profileHtml` reads ONE global object
+(`window.PROFILE`), so opening a friend is a temporary overwrite of it: stash
+yours, deal theirs into the same object, navigate. Leaving hands yours back.
+
+- ⚠ **The stash is what makes it safe.** Without it your own profile would
+  quietly stay whoever you looked at last — the screen has no idea it is showing
+  a guest.
+- ⚠ **Dealt from the NAME.** `randomizeProfile(seedName)` runs every draw
+  through `seedRng(name)` (FNV-1a → mulberry32) instead of `Math.random`, so a
+  friend is **the same person every time you open them**. Re-rolling per visit
+  reads as the app forgetting who they were. One stray `Math.random()` left in
+  that function breaks the guarantee.
+- ⚠ **`navigate(id, 'guest')` is a third direction**, beside `'back'`. It is
+  what stops `navigate` re-rolling the profile we just dealt *and* restoring the
+  one we just stashed. Every other navigation — including a tap on Profile in
+  the nav, which means YOURS — calls `restoreOwnProfile()`.
+- The edit pencil is hidden while `PROFILE_GUEST` is set.
+
+**The now bar is the way in.** Tapping `.v3-nowbar` opens whoever is currently on
+it (`renderNowBar`).
+
+- ⚠ The handler reads **`bar._nowItem`**, not a captured `list[i]`. The ticker
+  swaps on a timer, so a closed-over value would open the person who was on the
+  bar when the screen was built rather than the one actually tapped.
+- `NOW_SWAP_MS` is **10s** (was 4.2). It is a *reading* window now, not just a
+  ticker interval — the bar has to sit still long enough to notice a name,
+  decide, and reach it.
+- The press is the only affordance it gets, and it is a `scale` rather than a
+  colour or opacity change: the bar holds a live waveform, and a fade on tap
+  reads as the audio doing something.
+
+### Plan — Free vs Pro (`isPro()` · `setPlan()` · `renderPlanBar()`, `app.js`)
+
+**One global: which account is looking at the mockup.** The toolbar's `Free | Pro`
+switch sits next to the persona switcher, and is deliberately the same segmented
+control — both answer *who is looking at this screen*. Pro lights **gold**, the
+app's reserved-for-paid accent, so the viewer chrome agrees with the storefront.
+
+- **The gate is `body.sd-pro`, not a class per screen.** Dark and Light are two
+  live phones on stage at once and the mobile prototype has no toolbar at all;
+  one write on `body` covers every shell and survives every screen rebuild.
+  CSS gates with `body.sd-pro .x`, JS gates with `isPro()`.
+- **`setPlan()` re-renders**, it does not patch. Pro changes what screens are
+  *made of* — same reason `applyPersona` rebuilds. Persisted to
+  `localStorage['spindeck-pro']`; `initPlan()` runs in `init()` **before** the
+  first render.
+- ⚠ **Buying Pro in the shop routes through `setPlan(true)`.** `sdBuy` special-
+  cases `.shop-pro-btn` and returns early — everything else in the shop swaps one
+  button, Pro changes the whole app. The row comes back reading "Active" from
+  `shopHtml`, so the storefront and the toolbar can never disagree.
+
+**What Pro currently changes**
+
+| Where | Free | Pro |
+|-------|------|-----|
+| Home bento cover | tap opens the album | tap opens the album, **hold opens the shelf wheel** |
+| Shop — Pro row | `$3/mo` button | `Active` pill |
+
+#### The shelf wheel has two hosts now (`proWheelInit`)
+
+`shopProInit` (was the only entry point) is now a thin caller:
+
+- **`shopProInit`** — the storefront demo, inside `#shopPro`. Anyone can hold it,
+  Free included; that is what a showcase is for.
+- **`homeProInit`** — the real feature, on `.v3-bento` on the home screen.
+  Returns early unless `isPro()`.
+
+**Committing a shelf means different things per host** (`commit()` → `commitShelf`):
+
+- **Shop** — *cosmetic*. `setMainAlbum` swaps the cover, tint and text on that
+  one bento. A storefront demo must not re-deal the real home screen behind it.
+- **Home** — *real*. The shelf becomes the **queue**. `albumSeq()` is built from
+  `featuredAlbum` + `trendingAlbums` and the For You box shows `seq[i+1]`, so
+  `commitShelf` writes those two globals and then runs `applyAlbumIndex(el, 0,
+  …)` on **every** `.s-home-v3:not(.s-shop)`. Writing only the main cover left
+  For You and the whole swipe queue on the shelf you had just left.
+  ⚠ It is `reshuffleHome` scoped to one shelf — same globals, same `shuffled`
+  deal. Change the deal there and it changes here.
+- ⚠ **Releasing on the shelf you are already on does nothing.** `commit()`
+  compares against `liveIdx`; a hold that ends where it started is a *cancelled*
+  gesture, and re-dealing would throw away the album on screen for no reason the
+  user can see.
+
+**The shelves** (`shelfPool()` — the one place that knows what a shelf means)
+
+Ordered broad → narrow: the three ways of cutting the whole catalogue, then
+genres under them.
+
+| Shelf | Pool |
+|-------|------|
+| For You | the unfiltered catalogue |
+| Friends | albums a friend logged — via `friendRecFor`, the same lookup the feed and the cover's friend tag use, so they cannot disagree |
+| Popular USA | top 20 by `reviewCount`, already in the catalogue — no new data |
+| *genre* | primary genre only (before the `/`), read from `ARCHIVE`, first 8 |
+
+⚠ Any shelf that cannot field **two** albums is dropped when the wheel is
+built, not caught at commit — so an unusable shelf never appears rather than
+appearing and doing nothing. Friends is the one that needs this most: it depends
+on who the persona follows. `shelfPool` is called at build time *and* at commit,
+so a shelf reflects an `ARCHIVE` that `expandRecs` has since widened.
+
+Two ⚠ that only matter on the home host:
+
+- **`touch-action` is CSS and a class, not an inline write** (`.v3-album` /
+  `.v3-album--wheel` in `app.css`; `proWheelInit` only adds the class). The
+  wheel drags vertically, so it needs `none` where the swipe leaves `pan-y` —
+  without it the browser claims the drag for panning and the wheel never moves.
+  ⚠ It **used** to be two inline writes racing: `setupAlbumSwipe` wrote `pan-y`,
+  `proWheelInit` wrote `none` after it (`populateHomeData` calls the swipe
+  first), and inline beat every rule in `app.css` — which is why the old
+  `.shop-showcase .v3-album { touch-action: none }` never applied. The browser
+  latches `touch-action` at touch-start, before any JS runs, so it has to be
+  state rather than a flag left by whoever wired last. As classes it is ordinary
+  specificity, and the album page can out-specify both to take the drag back.
+- ⚠ **The wheel is tinted by the ALBUM, not by gold.** The lens and the selected
+  row read `--v3-accent`, extracted from the cover by `applyAlbumColors` and set
+  on the screen element, so it inherits down and the wheel re-tints with every
+  album — the bento's "album art drives colour" rule applied to the thing
+  sitting on top of the art. Gold is the fallback only. `color-mix()` is what
+  gets one variable to two alphas for the lens; a fixed `rgba()` cannot follow a
+  var. (`color-mix` is already used elsewhere in `app.css`.)
+- ⚠ **A row is a fixed box.** The selected row is set at **24px** against the
+  others' 13px — the size step is what makes a list read as a wheel — but
+  `height: var(--pick-h)` and `line-height: 1` do not move. Only the glyphs
+  scale. Let the row grow with its font and every row below it shifts, so the
+  drag arithmetic (whole units of `--pick-h`) walks out of step with what is
+  under the lens. Flex + `align-items: center` is what lets 24px type sit in a
+  34px box without re-tuning a line-height each time.
+- ⚠ **The finger and the list are measured in DIFFERENT units.** `paint()`
+  moves the list from inside the box, so it counts in CSS px (`SHOP_PICK_H`);
+  the drag happens outside it and counts in **rendered** px (`rowPx()`, the row's
+  own `getBoundingClientRect().height`). They are the same number on the home
+  screen and are not in the shop, where the model is `transform: scale()`d — nor
+  anywhere when the desktop viewer is zoomed. Using the constant for both is
+  what made the wheel need a 1.3× longer drag per row inside the shop.
+- ⚠ **`--pick-h` (app.css) and `SHOP_PICK_H` (app.js) are ONE number in two
+  files** — 34. The CSS var sizes the rows and the lens and centres both via
+  `calc(50% - var(--pick-h) / 2)`; the JS constant is what the drag counts in.
+  If they disagree, the row under the lens stops being the row you get.
+- **Each row carries its album count**, set in **Crimson Text italic** against
+  the labels' DM Sans. A different voice reads as an annotation on the list
+  rather than as part of a label. The number is the "how much of me is this"
+  figure: For You is the whole catalogue, a genre is your slice of it, so
+  reading down the wheel shows where your listening actually sits.
+- ⚠ **The wheel does NOT use `backdrop-filter`, and must not go back to it.**
+  It did, and the blur could not be made to cover the cover: `backdrop-filter`
+  samples its backdrop in the coordinate space of its **backdrop root**, and
+  `.v3-album` sits under both a `transform` (the sub-pixel optical nudge,
+  `--album-dx`) and the viewer's `zoom` on `#phone-container`. Neither is
+  accounted for, so the sampled rect landed offset and a strip of cover stayed
+  sharp. Growing the box only moved which edge the strip showed on (left, then
+  bottom) — the offset is in the *sampling*, not the geometry.
+  The blur is a painted layer instead: `.shop-pick-bg`, a copy of the cover with
+  `filter: blur()`, filled by `syncBg()` **on every arm** (the cover changes with
+  every swipe and commit). `transform: scale(1.14)` overscans so the blur's own
+  soft edge is pushed outside the wheel's `overflow: hidden` rather than showing
+  as a pale rim. Ancestors clip ordinary content reliably, so it cannot fall short.
+- ⚠ **The wash is a layer (`.shop-pick-tint`), not a background on `.shop-pick`.**
+  A parent's own background paints *beneath* its children, which would put the
+  tint under the very thing it is there to darken.
+- `.shop-pick` keeps a symmetric `inset: -4px` as belt and braces for the
+  sub-pixel nudge; the parent's `overflow: hidden` trims it. ⚠ Keep it
+  **symmetric** — `top: calc(50% - 13px)` centres the wheel on this box, and a
+  box grown equally on both sides has the same centre.
+- **An armed release has to eat the following click** (`eatNextClick`). On home
+  the cover keeps its tap-to-open-album handler, so a shelf change would also
+  navigate away from the screen it just changed. The listener goes on
+  **`document`**, not the cover: at the *target* phase the DOM fires capture and
+  bubble listeners in **registration order**, so a capture listener added to
+  `.v3-album` still runs after the `onclick` `setMainAlbum` put there first.
+  Only an ancestor's capture listener is guaranteed to go first. Self-removing,
+  with a 400ms fallback timer for the release that never produces a click.
+
+⚠ **`.shop-owned` is visible by default now.** It used to be `opacity: 0` until
+`sdBuy` added `.is-in` — which meant the tiles you *start* owning (Funky 01,
+Hairline, Devotee) rendered blank, because they come straight from `shopHtml`
+with no JS to light them. The fade is opt-in via `.shop-owned--new`, which only
+the pill `sdBuy` creates carries.
+
+### Shop — the nav scoop's button + the `shop` screen (`sdShopBtn()` · `shopHtml()`)
+
+**The scoop is a shop button now.** `sdScene()` returns `sdShopBtn()` unless
+`SD_PET_ENABLED` (top of `screens.js`) is flipped back to `true`.
+
+- **The button** — `.sd-shop-btn` copies `.sd-scene`'s geometry exactly: 63×30,
+  `left: 49.1%`, `bottom: 2px`, `z-index: 7`. ⚠️ **Keep the two in step** — if
+  the pet ever comes back they have to land on the same spot. The one real
+  difference is `pointer-events`: the pet was decorative, this is pressable, so
+  it takes the whole scoop as its hit area. The glyph is `SD_ICONS.bag`, a new
+  5×5 entry in `SD_DOT_ICONS` (handles over a box), sized **22px against the
+  scoop's 63px FLAT TOP, not its 123px opening** — the same narrow-end
+  constraint the face was fitted to. `bottomNav(active)` passes `active`
+  through `sdScene` so it can light up on the shop screen.
+- ⚠️ **`sceneReact` bails when nothing carries `.sd-scene`.** Without that guard
+  the first reaction pushes onto `_sceneQ` and starts `sceneFlush`'s 400ms
+  interval, which then has no pet to flush to and ticks forever.
+
+#### The sheet system — the bento crossed with an app store
+
+The brief was "our bento mixed with the Apple Store". Those pull opposite ways:
+the bento is **dense and interlocking**, a store front is **airy and browsable**.
+The screen resolves it by scale — **density inside a section, air between them**.
+
+Below the Pro showcase, a section is a **sheet** (`.shop-sheet`): tiles that butt
+together over a **3px seam of screen bg**, one outer radius, `overflow: hidden`.
+
+| Sheet | Shape | Holds |
+|-------|-------|-------|
+| `--shelf` | horizontal rail, bleeds and peeks | Themes |
+| `--row` | N equal tiles across | Frames, Badges |
+| `--pro` | a single row | the Pro pitch + price |
+
+- **`--shelf` is `.v3-aa-row` unchanged** — `margin: 0 -12px` + `padding: 0 12px`
+  + `scroll-padding-left: 12px` so a snap doesn't scroll the padding away. The
+  last tile peeking off the frame is the point.
+- ⚠️ **The sheet casts nothing.** Tiles are what sit proud, via `--sd-card-hi`
+  (inset highlight, no cast shadow) like every other card in the app. There is
+  no shared tile base class — the two tile kinds have nothing in common past
+  that fill.
+
+### Pro · the mix dial (`mixInlineBuild` · `openMixDial` · `beltPath` in `app.js`)
+
+**The logo is a belt drive, so this builds one.** Genres are the holes of a dial;
+picking one turns it into a **pulley** and the belt re-wraps to take it in. Pick
+one and the shape on screen is the Spindeck logo exactly — big wheel, small
+wheel, belt. Pick six and it's a machine you built.
+
+**Where it sits — IN THE BENTO, not in a window.** Pro's cover-hold opens the
+shelf wheel: a vertical scroll over the album art that picks **one** shelf. Its
+last row is **Custom mix**, which opens the dial instead of committing. The dial
+takes the **same square** (`.v3-album`) and its commit sits in **`.v3-blue`**
+directly beneath it, so choosing a mix happens on the object it changes.
+Confirming calls `commitShelf({kind:'mix', genres:[…]})`.
+
+- ⚠️ **It was a bottom sheet, and must not go back to being one.** A window
+  sliding up in front of the bento covered the very thing you were deciding
+  about, and added a surface you then had to get out of. `.mix-overlay` /
+  `.mix-sheet` are gone; `.mix-inline` + `.v3-blue-mix` replace them.
+- ⚠️ **The gesture is a TAP (`mixDialTap`), not a rotary turn.** It *was* a
+  turn — press a hole, drag it clockwise to a finger stop, release there to
+  commit. That was a lovely gesture in a sheet 340px wide and it does not
+  survive the move into a 291px square, where the same travel is a few degrees
+  of a much smaller circle. Tapping is also the only thing that lets you add a
+  second genre without undoing the first, which is the whole point of a mix.
+  Gone with it: `mixDialDrag`, `mixDialFocus`, `dialCW`, `DIAL.stop`,
+  `DIAL.commit`, `.ob-dial-stop`, `.ob-dial-plate` (a plate is what a dial turns
+  *against*) and the ring's `transform-origin` / spring transition.
+- ⚠️ **The belt is untouched by any of that.** It was never the gesture — it is
+  the picture of what you built — and it still redraws on every toggle.
+- ⚠️ **This was briefly onboarding step 3, and must not go back.** A new user's
+  first thirty seconds is the worst place to teach a gesture, and a wall of
+  chips is instantly legible where a dial is not. Here the audience is someone
+  who already knows to hold the cover — the dial is the reward for knowing the
+  app, not the toll to enter it.
+- ⚠️ **Only on the real home** (`opts.realShelf`). The shop's showcase commits
+  cosmetically to one bento; the demo must not reach out of its case.
+- `MIX` lives outside the DOM, so closing and reopening returns you to the mix
+  you were building.
+
+#### The geometry is sized to the album cell (`DIAL`)
+
+`.v3-album` is ~**291×289** at the 393px frame, so the 320-unit viewBox renders
+at about **0.91px per unit** and everything must fit inside it — labels
+included, and they radiate *outward*. The budget from the middle out is
+`ring + holeOn + 5 + longest label < 158`:
+
+| | was (sheet) | is (bento) |
+|---|---|---|
+| `ring` | 120 | **80** |
+| `hub` | 44 | **30** |
+| `hole` / `holeOn` | 12 / 15 | **10 / 12** |
+| `gap` | 7 | **5** |
+
+⚠️ **These five are ONE set.** `ring + holeOn` is what the label budget is left
+over from — a corner slice reaches 177.6, a label starts at `ring + holeOn + 5`,
+and "Alternative" needs ~77 of what remains. At 80/12 that leaves **80.6**,
+about three units of slack; push `ring` past 84 or `holeOn` past 12 and the long
+names start condensing again. The other limit is that neighbours must not merge:
+holes sit `2·ring·sin(9°)` = **25.0** apart, so a *picked* pair clears by 1.0.
+The circles were grown once the corner seating freed the room — the unpicked
+hole went 8 → 10 (**+25%**, and it is the state you see most of the time).
+
+##### ⚠️ The box is a SQUARE and the dial is a CIRCLE — so use the corners
+
+How far the middle can reach before it hits the viewBox depends on which way it
+points: `vb/2` straight up, and **41% further** (`vb/2 × √2`) into a corner. A
+ring that budgets every label for the worst direction throws that away.
+
+`dialRoom(deg)` is that distance; `dialReach(deg)` is what a **slice** may use —
+the room at its *narrowest edge*, not along its centre line, because a wedge
+drawn to its middle's room would poke out of the square along whichever edge sits
+nearer an axis, and take the label with it. Labels start at `ring + holeOn + 5` = **97**, so:
+
+| Holes | Reach | Label budget |
+|---|---|---|
+| the 8 flanking the diagonals (36°, 54°, 126°, 144°, …) | 178 | **80.6** |
+| the other 12 | 160 | **63** |
+
+##### ⚠️ Seating: the longest names get the roomiest slots (`dialSeating`)
+
+The dial walks **holes**, not genres — `DIAL_SEAT[hole] = genreIndex` decides
+which name sits where, longest into the roomiest. Verified: all eight of the
+longest (*Alternative, Electronic, Dream Pop, Trip-hop, Shoegaze, Ambient,
+Country, Hip-Hop*) land in the eight roomy corner slots, and *Pop* / *R&B*
+take the axes. Every label then fits at **full width** — condensing becomes the
+safety net it should be rather than the thing holding the ring together, and the
+room went into **size for everybody**: 10 units → **14** (~9.0px → ~12.6px).
+
+- ⚠️ **This is the one place the dial stops following `SD_GENRES` order**, and it
+  is a real trade: that list is editorial (related genres adjacent) and seating
+  by length scrambles it around the ring. It became worth it once the dial
+  stopped **turning** — adjacency used to mean "a related pick is a short turn",
+  and there is no turn any more. `return SD_GENRES.map((_, i) => i)` in
+  `dialSeating` puts the editorial order back; nothing else needs to change.
+- ⚠️ **Both sorts fall back to the original index on a tie**, so the seating is
+  deterministic. The ring must not reshuffle between renders.
+- ⚠️ **`data-i` stays the GENRE index**, not the hole — that is what `MIX`,
+  `mixToggle` and `mixDialSync` speak in. `dialAngleOfGenre` (via `DIAL_HOLE`,
+  the inverse map) is what `dialWheels` uses to put a pulley where its genre
+  actually sits; without it the belt wraps the *unseated* positions.
+- ⚠️ **There is no `DIAL.hit` any more and don't add one back.** How far a slice
+  reaches is not one number.
+- ⚠️ **Each label's budget is STAMPED on it** as `data-w` by `mixDialSvg`, where
+  the angle is known. A corner has ~81 and an axis ~63, so one shared budget would
+  either condense the corners for nothing or let the axes overflow.
+
+##### The labels are a VARIABLE face, condensed per label (`mixDialFitLabels`)
+
+Half the genres are short (Pop, Jazz, R&B, Folk) and a couple are not
+(Alternative, Electronic). A fixed face has to be small enough for the **longest**
+name, which throws away the space the short ones aren't using — that is why the
+labels sat at 10 units on SUSE Mono, rendering about **9px**.
+
+They are now **Roboto Flex** — the same variable face the album title uses
+(`.v3-blue-info-row`), already loaded in `index.html` with all three axes at full
+range (`opsz 8..144, wdth 25..151, wght 100..900`). Set at **14 units (~12.6px, 40% bigger)** — a size the seating above is what
+makes safe — and anything that still overflows gives up **width** rather than
+size. With the current twenty genres nothing has to: all projected at `wdth` 100.
+
+- ⚠️ **Measured, not estimated.** `mixDialFitLabels` asks the engine via
+  `getComputedTextLength()`, which reports in **user units** — the same units as
+  the budget — and the rotate/translate a label sits under preserve length. How
+  much a name overflows depends on the face that actually loaded, the axis
+  position and the letter-spacing; none of that is safe to guess.
+- ⚠️ **Iterated, because width is not linear in `wdth`.** The first guess is
+  proportional and two corrections land it. It bails the moment a pass stops
+  making the label narrower, so a name that cannot fit even fully condensed
+  settles instead of looping.
+- ⚠️ **It runs again on `document.fonts.ready`.** Roboto Flex arrives over the
+  network; until it does, the first pass measures the **fallback** face, which
+  has no `wdth` axis and reports somebody else's widths.
+- ⚠️ **Measurable at build time only because `.mix-inline` is `opacity: 0`, never
+  `display: none`** — the same reason the shelf wheel's `rowPx()` can measure a
+  row before the wheel is armed.
+- ⚠️ **`DIAL_WDTH_MIN` is 60, not the axis floor of 25.** Roboto Flex will go to
+  a hairline at 25 and the label stops being *readable* long before it stops
+  fitting. A genre that needs more than this should be shortened in `SD_GENRES`.
+- ⚠️ **`opsz` is pinned to 9, not left on `auto`.** The SVG is scaled by its
+  viewBox (~0.9px per unit), so the used font-size `auto` would read is the
+  unscaled 13 — an optical size for text half again as big as what lands.
+- ⚠️ **The axes arrive as custom properties** (`--lwdth`, `--lwght`), because
+  `font-variation-settings` replaces the whole tuple: a plain `font-weight` on
+  the picked state is ignored while that property is set, and the JS fit pass
+  would wipe the weight if it wrote the tuple itself. One variable each.
+- **`.ob-hole-t`'s `font-size` is the one dial to turn** if the labels read too
+  small or too tight — raise it and more names get condensed, lower it and fewer
+  do. `DIAL.hit` is matched to the same 158, so the far end of a long name is
+  inside its own tap wedge rather than a few pixels past it.
+
+#### ⚠️ A genre's tap target is its WEDGE, not its hole (`dialWedge`)
+
+Twenty holes on a 74-unit ring sit **23 units apart**, so a hole grown into a
+decent target would touch its neighbours — and the hole itself is ~15px on a
+phone, which is not a target at all. Each genre already **owns 18°** of the
+dial, so the hit area is that whole slice, from the hub out to `DIAL.hit`, with
+its hole *and its label* inside it: a **26×115px** slab instead of a dot.
+
+- ⚠️ **The wedge is painted FIRST** in the `<g>`, so it sits under its own hole
+  and label, and it is the **only** thing in the group that takes a pointer —
+  `.ob-hole-c` and `.ob-hole-t` are `pointer-events: none`, so every tap in the
+  slice reports the same target and there are no dead gaps between them.
+- ⚠️ **`mixDialTap` swallows the click whether or not it hit a genre.** The dial
+  covers `.v3-album`, which carries `onAlbumArt` — a tap on the empty middle
+  would otherwise fall through and navigate to the album page out from under the
+  dial. `.mix-inline` stops the bubble too.
+- ⚠️ **`bentoGesturesOn` returns false while `--mixing`.** The swipe underneath
+  would otherwise change the album out from under the dial, and the cover-hold
+  would arm the shelf wheel on top of it — both reading the same drag the taps
+  are landing in.
+
+#### The readout moved to the info box (`.v3-blue-mix`)
+
+The hub used to carry the count; a 52-unit record has no room for it, and the
+box below already exists to say what you are looking at. So the box that
+normally tells you what this **album** is tells you what the **mix** is — album
+count in DM Sans, genre count in the same Crimson italic the shelf wheel uses
+for its counts, and `Play this mix` on the right.
+
+- ⚠️ **It covers `.v3-blue` completely and stops the bubble**, which is also
+  what takes that box's tap-to-open-album off the table while you are choosing.
+  Otherwise committing a mix could navigate away from the screen it was
+  committed for.
+- The box's normal children go `visibility: hidden`, **not** `display: none`, so
+  the box keeps the height its own content gives it and nothing below shifts.
+- ⚠️ **The dial carries its own dark tokens** (`.mix-inline`), exactly as the
+  sheet did. It draws in `var(--text)`, and on a *light* home it would otherwise
+  come out as near-black ink on a dark, tinted cover.
+- ⚠️ **Tinted by the ALBUM, not by gold** — `--accent: var(--v3-accent, …)`, the
+  same rule the shelf wheel follows, so the belt re-tints with the art.
+- ⚠️ **The blur is a painted layer** (`.mix-inline-bg`, refilled on every open),
+  never `backdrop-filter` — see `.shop-pick` for why that cannot work under the
+  bento's transform and the viewer's zoom.
+
+##### ⚠️ The dial's labels are editorial, so `shelfPool` matches them LOOSELY
+
+`SD_GENRES` (screens.js) is a **hand-written list of 20**, unlike the wheel's
+rows, which are read back out of `ARCHIVE` and therefore always match. The mix
+case used to do an exact, case-sensitive compare — and the archive writes
+`Hip-hop` where the dial says `Hip-Hop`, so **the single biggest genre in the
+catalogue (44 albums) scored zero**, the hub read "0 albums", and the button sat
+dead on the app's most obvious pick.
+
+It now lowercases both sides and asks whether the label is *contained* in the
+genre, which fixes the casing and folds the compound names in with it — that is
+what a broad genre shelf is supposed to mean:
+
+| Label | Takes | Was → is |
+|-------|-------|----------|
+| `Hip-Hop` | Hip-hop, Experimental hip-hop, Korean hip-hop | 0 → 44 |
+| `Rock` | Alternative rock, Art rock, Noise rock, J-rock… | 3 → 13 |
+| `Pop` | Art pop, Indie pop, K-Pop, Hyperpop… (deliberately) | 3 → 11 |
+| `Indie` | Indie rock, Indie pop, Indie Folk | 0 → 6 |
+| `Soul` | Neo-soul, Electronic soul | 0 → 3 |
+
+- ⚠️ **An album can now match several picked genres**, so the old note that "an
+  album has ONE primary genre, so it can match at most one member of the mix" no
+  longer holds. `filter` visits each album exactly once so the pool still cannot
+  contain a duplicate (verified: Rock+Alternative+Indie = 29, all unique) — but
+  **don't** rewrite it as a pass per genre that concatenates. That one can.
+- **10 of the 20 holes still can't stand alone**, because those albums are not
+  in the catalogue at all: Punk, Metal, Latin, Country, Blues and Funk have
+  **zero**; Ambient, Dream Pop, Shoegaze and Jazz have one. They combine fine —
+  they just can't be a shelf by themselves, and the button now says so.
+- ⚠️ **`dzRecord` sets `genre: ''`** (`expandRecs`'s Deezer records), so the
+  hundreds of albums that widen `ARCHIVE` at runtime join **no** genre shelf.
+  That is why these counts stay in the tens while the archive grows. Fixing it
+  means mapping Deezer's `genre_id`, and it would lift every genre at once.
+
+- `MIX` lives outside the DOM, so closing and reopening returns you to the mix
+  you were building.
+
+#### Getting out — the corner pill, not a ✕ (`s-home-v3--mixing`)
+
+**The dial has no close button of its own.** The cover-hold opens it and the
+gesture does not resolve until you commit a mix or leave, so you are *held* in
+this state and need a way back — and the app already has one dedicated back
+affordance: `.v3-live-pill`, the bento's corner notch, which is the hand-layout
+switch on the home bento and **Back** in review. The dial borrows it rather than
+inventing a second exit.
+
+- `openMixDial` puts `s-home-v3--mixing` on its host and `closeMixDial` takes it
+  off; `mixHost` is both "which screen" and "is it open at all", and every
+  lookup in `mixDialSync` is scoped to it. Reopening from the other home variant
+  clears the old host first — a screen left marked keeps a dial over its cover
+  and a pill saying Back with nothing to go back from.
+- `onLivePill` checks `--mixing` **before** `--review`: while the dial is up,
+  this pill means back ahead of whatever the screen underneath would make it.
+- ⚠️ **No z-index lift, and don't add one back.** It was `z-index: 201`, because
+  the dial used to be a bottom sheet whose scrim (`.sd-log-overlay`,
+  `inset: 0; z-index: 200`) lay over the whole bento and swallowed the tap while
+  the pill still looked perfectly clickable. The dial now lives inside
+  `.v3-album` — `z-index: 1`, `overflow: hidden` — so it cannot reach the pill
+  at 6, let alone cover it.
+
+#### `beltPath()` — the convex hull of a set of CIRCLES
+
+Not the hull of their centres. The wheels have different radii (the hub is three
+times a pulley), so an outline offset from a centre-hull cuts through the hub and
+floats off the small ones. The real thing is what a belt physically is: an
+external tangent between each consecutive pair, joined by the arc each wheel
+actually wraps. Gift-wrapping, one wheel at a time — standing on a wheel with the
+outward normal at `ang`, the next is whichever needs the least clockwise turn.
+
+- The shared normal of an external tangent satisfies `(c2−c1)·n = r1−r2`, i.e.
+  **`φ = atan2(dy,dx) − acos((r1−r2)/d)`**.
+- ⚠️ **MINUS, not plus.** The two solutions are the two external tangents, one
+  down each side, and only one belongs to a clockwise walk with an outward
+  normal. Taking the other still closes the loop **for two wheels** — so the logo
+  case passes while everything else is wrong — but from three wheels up the
+  least-turn choice skips wheels and the belt runs straight through the hub.
+  Sanity check on two equal circles side by side: the top run's normal points
+  **up**, i.e. `base − acos`.
+- ⚠️ **The iteration cap is not decoration.** A degenerate set (two wheels
+  sharing a centre) would wrap forever and hang the tab instead of drawing
+  nothing.
+- Radii arrive already grown by `DIAL.gap`, so the belt is drawn where a belt
+  sits — off the wheels, with the clearance the logo has.
+- Verified against nine configurations (none / one / adjacent / opposite /
+  spread / cluster / all twenty): every straight run clears every wheel, every
+  arc belongs to a real wheel, the path closes, and every wheel ends up wrapped
+  or interior.
+
+#### Pro showcase — the real compact bento (`shopProInit` in `app.js`)
+
+The top of the shop is **the actual compact-state bento**, not a drawing of one:
+the same `bentoHtml()` the home screen renders, found and filled by the same
+`populateHomeData`. Showing the object beats picturing it, and it means the
+showcase can never drift from the thing it sells.
+
+- ⚠️ **`bentoHtml()` is new, and it deduplicated the home screen.** The bento
+  markup was inlined **twice** — Float·Dark and Float·Light were byte-identical
+  apart from three comments. One copy now, three callers. Declared above
+  `SCREENS` for the same reason as `sdScene()`: the home `html:` is a static
+  template literal evaluated while `screens.js` parses.
+- ⚠️ **Style the CASE, never the bento.** `.shop-showcase` only zeroes the
+  bento's home-screen margin, and the scale lives on a `.shop-model` wrapper.
+  Anything that reaches in and restyles a `.v3-*` will drift from home the first
+  time home changes — if the showcase needs the bento to look different, that
+  means the bento should change, not that the shop should override it.
+
+##### The bento is shown as a SCALE MODEL (`.shop-model`, 76%)
+
+At full size the showcase reads as the home screen with a shop bolted above it
+— you are looking at your phone, not at a product. Shrunk and centred, with air
+on every side, the same object reads as the thing on the shelf.
+
+- ⚠️ **A transform, never a width.** Everything inside the bento is px (type,
+  radii, the CD) positioned against a `%` frame, so narrowing the box would
+  shrink the frame and leave the type at full size — the layout breaks instead
+  of scaling. `transform: scale()` is the only thing that takes the whole object
+  down uniformly, which is what a scale model *is*.
+- ⚠️ **A transform doesn't change the LAYOUT box**, so the model's full-size
+  height would leave a hole under it. `.shop-model`'s negative `margin-bottom`
+  takes back exactly what the scale removed: a % margin resolves against the
+  parent's **width**, and the bento's height is its width × `--v3-bento-hw`.
+- ⚠️ **`--v3-bento-hw` (1.0595, on `.s-home-v3`) is `.v3-bento`'s `aspect-ratio`
+  written a second time as a number** — `calc()` cannot divide a ratio type.
+  Both carry a note; change one and change the other.
+- ⚠️ **The Pro tag does not scale.** It is a label on the display, not part of
+  the product, so it stays full size and is positioned off the *model's* left
+  edge — `calc((1 - var(--shop-model)) / 2 * 100% - 2px)`, half the width the
+  model gave up.
+- The scale is one number: `--shop-model` on `.shop-showcase`.
+- ⚠️ **The showcase's cover must not tap through.** `setMainAlbum` skips its
+  `onclick` when the art is inside `.shop-showcase` — there the cover owns a
+  HOLD, and a tap-through would navigate the shop screen itself to an album
+  page. Re-checked on every album change, because that handler is reassigned
+  each time.
+
+**What Pro adds — the shelf wheel.** Hold the cover, a vertical wheel comes up
+over the art, drag to pick For You or a genre, release and the bento **moves to
+that shelf for real**: `setMainAlbum` re-tints the box, re-runs the typewriter
+and swaps the art, exactly as on the home screen.
+
+- ⚠️ **The wheel is built in `shopProInit`, not in `bentoHtml()`.** That
+  component is shared with home and stays pristine; the shop is what wants an
+  overlay, so the shop is what adds it. It is appended *into* `.v3-album` so it
+  inherits the art's rounded corners and covers exactly what you're holding.
+- ⚠️ **Hold, not tap.** `SHOP_HOLD_MS` is 240. On the home screen the delay is
+  what separates "open this album" from "change shelf", so the demo has to
+  teach the delay too.
+- ⚠️ **`top: calc(50% - 13px)` on BOTH `.shop-pick-list` and `.shop-pick-lens`**
+  centres selection 0 under the lens without either knowing the art's size —
+  the art is square and sized by the bento's percentage grid, so there is no
+  height to hard-code. 13 is half of `SHOP_PICK_H` (26); change one, change both.
+- **Drag down moves down the list** — the row you pull toward the lens is the
+  one you get.
+- **Shelves are real**, read from `ARCHIVE`: primary genre only (the part before
+  the `/`), first album per genre stands for it, `For You` pinned first. No new
+  data.
+
+#### The album page's CTA row — clearing the credits
+
+⚠ **`.v3-blue` is absolutely positioned**, and on the album page it is
+`height: auto; overflow: visible` — so the three credit rows (Produced by /
+Mixed by / Label) grow it **downward out of its own box**, and nothing in normal
+flow below knows they are there. The CTA row landed on top of them.
+
+- `--rev-cred-h` (40px) is that overhang, added to `.v3-rev-mine`'s base 26px.
+  3 rows × 10px names at line-height 1.28 ≈ 38px. Turn it if the rows are restyled.
+- ⚠ **Declared on the SCREEN, not on `.v3-rev-mine`.** Custom properties inherit
+  *down*, and `.v3-blue-credits` is a **sibling** of that column — a var set on
+  the column is invisible to the block it is measuring.
+- Credits coverage is patchy (MusicBrainz is volunteer-entered) and the block is
+  `hidden` when nothing came back, so
+  `:has(.v3-blue-credits[hidden])` drops the var to `0px` — otherwise the
+  reserved space is just a hole. (The one `:has()` in `app.css`.)
+- ⚠ **The CTA row is 80% wide, not 100%.** Full width put it on the album's own
+  grid, which read as correct beside the histogram and the tracklist — but it
+  also made the page's one ACTION the widest element on it, so it stopped
+  reading as a button and became another band of layout. The 20% it gives up is
+  what makes it look pressable. ⚠ It is CENTRED with `margin-inline: auto` —
+  `.v3-rev-mine` is a flex *column*, so `align-items: stretch` is what was
+  positioning it, and once the row has an explicit width stretch has nothing to
+  stretch and drops it on the left edge.
+
+#### Colour, type, copy
+
+- ⚠️ **Colour comes from the tile, not the sheet.** Frames and badges pass a
+  `--tint` as an `"r,g,b"` triple and `.shop-field--tint` washes with
+  `rgba(var(--tint), .13)`. This is the **bento's procedural colour moved onto
+  products** — the home bento takes its colour from the cover; a shop tile takes
+  its colour from what it sells. Themes skip the token and fill the field with
+  their own palette inline, because there the swatch **is** the preview.
+- **Gold is reserved for what you can act on** — buy buttons, prices, and the
+  armed state of the Pro picker. It is not used as decoration anywhere on this
+  screen.
+- ⚠️ **`.shop-title` is 34px, not Settings' 26px.** That's the store half of the
+  brief showing up in the type: the shop is the one screen that isn't a list of
+  your own stuff, so it opens with its name set big and tight (-1.2px).
+- **The price is the button** (`.shop-buy`) — there's no second word to read,
+  and no cart to put anything in. `sdBuy` swaps it for an **"Owned" pill of the
+  same footprint** so the row doesn't reflow. Nothing is charged or persisted.
+- Everything is placeholder: invented names and prices, art is CSS. Themes reuse
+  the `Funky 01` name the Settings row already shows.
+
+### The pet — the face in the notch (`sdScene()` · `paintScene()` · `sceneReact()`) — **PARKED**
+> The scoop holds the **shop button** now (see Shop above). Disabled via
+> `SD_PET_ENABLED = false` in `screens.js`; the whole engine below — `paintScene`
+> / `sceneTick` / `sceneReact` / `SCENE_REACTIONS`, every `.sd-face` rule, the ☺
+> Pet box — is intact and untouched. Flip the flag to bring it back. ⚠️ The two
+> **cannot share the notch**: it is 63×30 and the face was already sized against
+> its worst formation (see `--sd-face-k` below).
+
 
 **Six dots**, the same six the live pill's arrow is made of, at the same offsets
 the retired `.v3-ring--smile` used (they still live in the website proto's
@@ -1640,17 +2271,94 @@ Light theme overrides these with hardcoded values (`background: #999`) — still
 
 ### Music Preview System
 30-second Apple Music previews, played via a single reused `<audio>` element. All in `app.js`.
+**Previews are OFF** (`PREVIEWS_ENABLED = false`) — see *No autoplay* below.
 
-**Fetching (`fetchPreviewUrl`)** — iTunes Search API over JSONP (no CORS). Two hops: album search → track lookup. Cached by `"artist – album"` (lowercased):
+**Fetching (`fetchPreviewUrl`)** — iTunes Search API over JSONP (no CORS). Two hops: `fetchItunesAlbum` → track lookup. Cached by `"artist – album"` (lowercased):
 - `PREVIEW_CACHE` — resolved results (a URL, or `null` for a known miss).
 - `PREVIEW_PENDING` — in-flight promises, so concurrent lookups for the same album share one request.
+- **`fetchItunesAlbum` / `ITUNES_CACHE`** hold the first hop on its own, because *Listen on* wants the same record's `collectionViewUrl` while the preview wants its `collectionId`. One request, one cache, `null` included.
 
 **State (`PREVIEW`)** — intent is the single source of truth; the UI **never** reads `audio.paused` (it lags while buffering, which made the icon "invert" on 5G):
 - `on` — preview mode armed (speaker). `paused` — CD-paused within the mode. Playing ⟺ `on && !paused`.
 - `gen` — token bumped on every tap and every album change; a late fetch bails if `gen` (or the album `key`) changed while it was in flight, so a slow result can't hijack the audio.
 - `unlocked` — the element is unlocked once, synchronously, inside the first tap gesture (a runtime-built silent WAV). iOS only permits programmatic `play()` after that — this is why previews wouldn't start before.
 
+**No autoplay — a product decision, not a limitation.** Previews were briefly armed by the first touch of the phone and it worked; it was removed because music that starts on its own is a thing users switch off, not a feature. **Don't wire it back up.** The row in the CD's menu is the whole of the preview feature: you ask for one, you get one. (For the record on the constraint itself: no page may start audio before a gesture — `play()` before one is rejected, and iOS additionally requires the `<audio>` **element** to have been played once *inside* a real gesture, which is the job of `unlockAudio` and its runtime-built silent WAV.)
+
+**Warming (`preloadPreviews`)** — **forward-only and staggered**, and neither is arbitrary:
+- Forward-only for the same reason as `preloadForYou`: a swipe goes forward, For You shows what's next, and the album behind you is already cached — warming backwards spends a budget you can't get back.
+- Staggered (`PREVIEW_WARM_GAP` = 400ms) because iTunes refuses outright when several requests land in the same instant. Measured: a ~120ms gap errors, 400ms+ is clean — and the empty result sets in between are **real catalogue gaps, not throttling** (Blonde and Loveless genuinely aren't in the Search index).
+- ⚠️ The album actually making sound is **never in this queue**; `playPreviewFor` fetches it directly, so nothing warm is ever ahead of it.
+
 **Actuation (`playPreviewFor(album, gen)`)** — plays the preview for a **specific album passed in**, resolved through the cache. It must NOT re-query the DOM for "the current album": there are multiple `.s-home-v3` instances (variants + mobile clones) and `querySelector` returns the first, which often isn't the one you swiped — that was the "swipe plays the wrong/stale track" bug. `loadPreview(album)` (called from `setMainAlbum` on every album change) passes the swiped album straight through. Only the tap handlers use `currentBentoAlbum()`, which prefers a **visible** screen.
+
+### Listen on — Spotify / Apple Music / Deezer (`openOnService` in `app.js`, `SD_SERVICES` in `screens.js`)
+
+The three rows under the preview in a CD's menu. Tapping one opens that service
+on the album — on a phone these are **universal links**, so the OS hands off to
+the installed app; on desktop the same URL opens the web player. Nothing is
+mocked. Wired on the **bento's CD** (home *and* the album page) and on the
+**profile card's five CDs**; the playlist page's identical-looking menu is left
+alone, because a Spindeck playlist is not an album and has nothing to link to.
+
+**Where a link comes from**
+
+| Service | Link | Why |
+|---------|------|-----|
+| Deezer | the real album page | public API, no key, and `deezerId` is already on anything the rec pool dealt — often no request at all |
+| Apple Music | the real album page **when the match is confident**, else a search | iTunes Search indexes the *store*, not all of Apple Music — Blonde and Loveless simply aren't in it |
+| Spotify | always a search | its API needs an OAuth token and a static page has nowhere to keep one |
+
+- ⚠️ **The tab is opened INSIDE the gesture.** `window.open` after an `await`
+  is a popup and gets blocked — the first tap on every album would silently do
+  nothing, which looks exactly like a dead button. A warm link opens directly; a
+  cold one opens a **blank tab now** and gets steered when the lookup lands.
+  Opening the menu calls `warmServiceLinks`, so by the time a finger travels
+  from the CD to a row the tap is nearly always the direct path.
+- ⚠️ **`SERVICE_URL_CACHE` caches `null` too.** "Deezer hasn't got this record"
+  is worth remembering — otherwise every tap re-asks and the row goes on feeling
+  broken in a new way each time. A miss dips the row (`.none`), the same
+  language the preview button already speaks.
+- **Which album a menu belongs to** (`menuAlbum`): the bento's reads `_album`
+  off the **shell it sits in**, never a global — several `.s-home-v3` are in the
+  DOM at once and the first is usually not the visible one (the same trap behind
+  the old "preview plays the wrong track" bug). The profile's five CDs share one
+  screen, so each names its favourite's `slot` instead — which is also why
+  `toggleProfCd` now takes a slot.
+- ⚠️ **`SD_SERVICES` + `platRowsHtml(slot)` in `screens.js` are the ONE copy of
+  those rows**, declared above `SCREENS` (the bento's markup is a template
+  literal evaluated as the file parses, so the table cannot be declared after
+  it). They used to be two hand-written copies of the same wall of inline SVG.
+- **SoundCloud is gone** from these two menus, replaced by Deezer. There is no
+  keyless way to resolve an album on it, and a row that opens nothing is worse
+  than a row that isn't there.
+
+### Matching a record to a service (`pickItunesAlbum`)
+
+Shared by the preview and the Apple link, and the reason the old one had to go:
+searching *"Phoebe Bridgers Punisher"* returns a **cover of Punisher by someone
+else** above anything of hers, and the old picker took it — the title contained
+the album, so it stopped looking. **The artist has to agree before the title
+counts at all.**
+
+Tiers, best first: `0` exact title · `1` same record reissued · `2` right artist,
+wrong record · `3` nothing. Within a tier the **shortest** title wins, which is
+what keeps a plain album ahead of its own deluxe (SOS over "SOS Deluxe: LANA").
+
+- Two title normalisers, each catching what the other can't. `normFull` keeps
+  everything — "Crystal Castles (II)" and "(III)" are different records and
+  stripping the numeral would merge them. `normBase` drops parentheses and
+  edition suffixes — "In Utero" has to match "In Utero (20th Anniversary
+  Edition)", the only one Apple has.
+- ⚠️ **`wantB` is guarded against empty.** The archive stores Crystal Castles'
+  albums as `"(II)"` / `"(III)"`, which strip to nothing — and an empty string
+  would then match every other title that also strips to nothing. Those records
+  are caught by comparing **artist + title** as well, which is how `"(II)"`
+  meets the service's "Crystal Castles (II)".
+- ⚠️ **Tier 2 is returned, not dropped.** The preview wants *something* by this
+  artist and has always settled for that; the Apple link refuses it and falls
+  back to a search. **The caller decides how much certainty it needs** — don't
+  make the picker stricter to fix a link, or previews go quiet.
 
 ### Album Swipe & Text Animation
 `setMainAlbum(screenEl, album, animate, animateText = animate)` splits two concerns:
@@ -1668,9 +2376,62 @@ Adapted to the home shell like the wall: `.s-home-v3 .s-pl2` + `appHeader()` + `
 - **Popularity** — favs desc
 - **Discover** — community playlists (`creator !== 'you'`), most-loved first (`plays` still lives in `plLists()` data, currently unused)
 
-Card geometry comes from Eric's `PlaylistBox_NEW.svg` / `PlaylistHLBox_NEW.svg` (688×158, scaled ~0.51): a split card — custom image panel (left) flush against the info panel (right: large title / `by creator · edited Xd ago` / `N songs · ♥ favs`). The `--hl` variant carves a concave scoop from the info panel's **lower-right** corner (screen-bg carve path, theme-specific color) and seats Eric's rounded tag in it with an icon centered inside; the tag recolors per type — **yellow + crown = community favorite (favs > 25)**, **blue + candle = staff pick (`staff: true` in `plLists()`)**; staff pick wins the slot if both apply. Ten sample lists (data in `plLists()`, shared with the playlist page) carry memey user-typed titles (mixed case, stray symbols — they're personal, not editorial), **custom cover art** (`images/playlist-*.jpg`, sourced from Eric's own images — deliberately NOT album covers), an `edited` stamp, and `plays`. Card click → `openPlaylistPage(name)`.
+Ten sample lists (data in `plLists()`, shared with the playlist page) carry memey user-typed titles (mixed case, stray symbols — they're personal, not editorial), **custom cover art** (`images/playlist-*.jpg`, sourced from Eric's own images — deliberately NOT album covers), an `edited` stamp, and `plays`. Card click → `openPlaylistPage(name)`.
 
-Apostrophes in names are escaped with the same inline `replace(/'/g, '\\\'')` idiom the wall uses. (`openArtistPageFor` in app.js and the `.pl2-artist`/`.pl2-song`/`.pl2-genre` CSS survive from the removed tabs, currently unused.)
+### The card
+
+Two things were tried and dropped on the way here, and both matter before changing this:
+
+1. **A wall of 80px split rows** (geometry from `PlaylistBox_NEW.svg`, gone along with every `.pl2-list-*` rule). Too small to be anything — a playlist is the one object in the app the user actually *made*, and a row gave it nothing.
+2. **Five user-pickable themes** (poster / polaroid / tape / index / classic). ⚠️ Killed deliberately: a wall where every card is a different shape reads as a mess, and most people never open a picker — so the wall gets judged on the default anyway. **Do not reintroduce per-card shapes.**
+
+What is left is **one card**, 3:2, art full-bleed under a scrim with the title set at 24px over it. The variety comes from where it should: the **artwork**, which differs for every playlist because the user chose it, and the badges. The frame stays constant so ten of them stack into a wall instead of a pile.
+
+- ⚠️ **`aspect-ratio`, not a fixed height.** The phone frame is not one width (the viewer zooms; the mobile prototype is the real device), and a card locked to 230px goes squat on a wide frame and cramped on a narrow one.
+- ⚠️ **The scrim is a gradient layer, never a `filter` on the art.** Darkening the whole image to make type readable throws away the picture the card exists to show. It has **two** mid stops — a single linear ramp leaves a visible band across the middle at this height.
+- ⚠️ **The art is scaled 1.04 and grows on press**, not the card alone. The card is mostly picture, so the press has to happen to the *picture* or it reads as the text moving.
+- ⚠️ **No light-theme overrides, on purpose.** Every piece of type sits on a photograph, not on the page, so it stays white in both themes — exactly as album art does everywhere else. The light theme only touches the empty state behind an unloaded image.
+- The `·` separators in the meta row come from CSS (`span + span::before`), not the markup — a leading dot before an empty first item is the classic version of that bug.
+
+### Moving covers — GIF and video (`plIsVideo` · `plArtHtml` · `plVideoWatch`)
+
+A cover can be a still, a **GIF** or a **video**. A GIF needs nothing special — it animates as a `background-image` like any other file — so video is the only case worth detecting, and `plArtHtml` returns either a `<div>` with a background or a real `<video>`. The same helper backs the card, the playlist page hero and the upload well, so all three agree.
+
+- ⚠️ **Detect on the `data:` MIME as well as the extension.** An uploaded cover arrives from `FileReader` as a `data:` URL with no filename at all, so an extension test alone renders every uploaded video as a blank box.
+- ⚠️ **The markup ships NO `autoplay`, and `preload="none"`.** A wall of ten cards can hold ten videos, and ten decoders at once is what turns a scroll into a slideshow — on a real phone over 5G, the exact case this prototype exists to test. `plVideoWatch` plays them by visibility instead.
+- ⚠️ **The observer's root is `.v3-body`, the element that actually scrolls — not the viewport.** In the desktop viewer the phone is a box on a page that never scrolls itself, so a viewport-rooted observer reports every card as permanently visible and plays all ten.
+- ⚠️ `muted` + `playsinline` are not optional: without `muted` the browser refuses to play without a gesture, and without `playsinline` iOS takes the video fullscreen the moment it starts.
+- ⚠️ `object-fit: cover` on `.pl2-art-vid` is the video equivalent of `background-size: cover`. Without it the frame is letterboxed and the crop stops matching every other cover on the wall.
+- **Two sample covers move**: `playlist-car-dash.mp4` (93KB) and `playlist-wildflowers.gif` (283KB), so both paths are exercised by the sample data rather than only by an upload. Both were generated from the stills beside them with ffmpeg — a slow zoom, **mirrored so the loop is seamless** — which is why they are kilobytes rather than megabytes. The upload input accepts `image/*,video/mp4,video/webm`.
+
+### Badges (`PL_BADGES`, up to `PL_BADGE_MAX` = 3)
+
+Emblems the owner pins on a card, drawn in the **dot system** (new 5×5 entries in `SD_DOT_ICONS`: `gem` `flame` `moon` `bolt` `drop` `sun`), so a badge is the same material as the nav and the log buttons rather than a sticker from somewhere else. Each has its own colour: now that the card is fixed, badges and artwork are the *only* things that vary, so a card wearing three should read as three things and not a row of identical chips.
+
+- ⚠️ **Badges survived the theme cull because they cannot break the wall** — they are small, they sit in a slot the design reserves for them, and no arrangement of them makes the page look wrong. That is the test for anything else added here.
+- ⚠️ **The cap is the design.** A card wearing six badges says nothing.
+- ⚠️ **The editorial tag is a different object from a badge.** Crown = community favourite (favs > 25), candle = staff pick, staff wins. Square not round, top-*left* not top-right — a badge is self-expression, the tag is a verdict from outside, and the two must not be mistaken for each other.
+
+### Customising a card
+
+⚠️ **Nothing here is sold, and nothing is locked.** Themes and badges were briefly products in the shop and it was the wrong call: a playlist is the one place in the app where the user is the *author*, and charging for how they dress their own work turns self-expression into a tier list. The line that came out of it: **cosmetics that dress up YOU** — profile themes, frames, the badge by your name — **are fair game; cosmetics that dress up what you MADE are not.** Don't add a `price` field to `PL_BADGES`, an ownership check to the sheet, or a playlist section back to `shopHtml` — all three were removed on purpose.
+
+- **`plCustom()` / `plSetCustom(name, patch)`** — per-playlist overrides in `localStorage['spindeck-pl-custom']`, merged over the authored defaults at the end of `plLists()`. The authored `badges` exist so the wall is not a column of bare cards on first load.
+**Two controls, two scopes** — and deliberately two different glyphs:
+
+| Where | Glyph | Opens |
+|-------|-------|-------|
+| in the badge row, top-right | `+` | `openPlCustomize(key, triggerEl)` — the badges sheet |
+| lower-right corner | pencil | `openEditPlaylist(key)` — the playlist itself |
+
+- ⚠️ Two pencils in two corners would be a coin flip. The `+` sits next to the badges it adds to; the pencil is the whole playlist.
+- ⚠️ The badge row **still renders on your own card when there are no badges yet** — otherwise the only way to get a first badge would be a control that appears once you already have one.
+- ⚠️ `@media (hover: none) { opacity: 1 }` on the corner handle, or it is unreachable on the device this is designed for.
+- **`openEditPlaylist`** re-uses the New Playlist page rather than adding an edit screen — every field is already there, and a second form would drift out of sync with the first. `PLNEW.editing` holds the stable key and is the only thing that tells the two apart; `plnewCreateLabel` swaps the button to *Save changes*. ⚠️ `openNewPlaylist` must clear it, or "+" silently overwrites whatever was edited last.
+- Saving branches on where the playlist lives: one you created is a real object in `PLNEW_CREATED` and gets mutated; an authored sample is regenerated on every `plLists()` call, so the change goes to `plCustom` under the **stable key** and is merged back over the literal.
+- ⚠️ **`key` is stamped last in `plLists()`, from the literal's own name**, so it cannot be overridden. Everything customisable is stored under it rather than under the displayed name — which is what lets the editor rename a playlist without orphaning its badges.
+- ⚠️ **The sheet writes through immediately** — no Save, same as the log sheet and the dev box. Every tap re-renders the wall behind it, so you choose against the real card rather than a preview.
+- ⚠️ `PLC.light` remembers which shell the sheet was opened from. Dark and Light are separate screen elements and every change re-renders both, so without it the sheet could jump variants mid-edit.
 
 ## New Playlist (`playlistNewHtml(light)` + `PLNEW` in `app.js`)
 
@@ -1798,21 +2559,270 @@ top gap** (`.prof2-userbar`). Rendered **Funky·Dark / Funky·Light**; tokens
 
 - **State** in `window.PROFILE` (`name`, `handle`, `bio`, `pic`, `favs` = 5 album
   names, `socials`). Pic currently borrows `images/playlist-statue-night.jpg`.
-- **Favourite albums:** each `.prof-alb` (under a CD hole) → `openProfPicker(slot,
+- **Favourite albums:** each `.prof-fav` disc in the rail → `openProfPicker(slot,
   btn)` opens a bottom-sheet album picker (`#prof-picker`); `profPick(name)`
   writes `PROFILE.favs[slot]` and `renderViewer()`s.
 - **Social:** `.prof-social` tab → `toggleProfSocial` opens `.prof-soc-menu`;
   `openSocial(id)` deep-links to instagram/x/soundcloud + the stored handle.
-- The card's pencil (`.prof-edit`) opens **Edit Profile** — see below.
+- The card's action button (`.prof-act`, Edit on your own page) opens **Edit
+  Profile** — see below.
 - Being an `.s-home-v3`, `populateHomeData` runs on it (now-playing bar) — the
   bento-only calls no-op just like on wall/playlists.
 - **Deploy note:** `images/profile-skin-01.png` is a new asset — `git add` it.
 
 ---
 
+### The header's three bubbles (`.v3-bubble`)
+
+Notifications · settings · search — the only always-present controls on the
+shell. **34px with 17px glyphs**, up from 30/15: at the old size they were the
+smallest tap targets in the app. ⚠️ Kept modest rather than pushed to the 44px
+guideline floor — the header is a 60px strip and the brand block sits between
+the two groups, so growing them much further crowds the wordmark. ⚠️
+`.v3-bubble--notif.has-notif`'s `min-width` tracks this number: the expanded
+pill can be narrower than the circle it grew from with a small count, and that
+`min-width` is what stops it shrinking as it lights up.
+
+---
+
+## Profile — "Regular" theme card (`profCanvasHtml` in `screens.js`)
+
+The other profile theme: a neumorphic card traced from **`ProfileTheme_Regular4
+(1).svg`**, shared by the profile page and the Edit Profile screen (which shows
+the same card live above its form — building it twice would let the preview
+drift from the real thing).
+
+### ⚠️⚠️ The `viewBox` height and the canvas `aspect-ratio` are ONE number
+
+`.prof-base` is `viewBox="0 0 690 460"` and `.prof-canvas` is
+`aspect-ratio: 690 / 460`. **Change one without the other and the card breaks in
+a way that is very hard to read.** `preserveAspectRatio="xMidYMid meet"` scales
+the drawing to fit the *shorter* axis, so a 608-tall viewBox inside a 460-tall
+box renders the whole card at **75.7%** and centres it — while every
+percentage-positioned element on top stays exactly where it was. Nothing looks
+broken on its own; the card is simply wrong everywhere at once. This is exactly
+what happened when the favourites moved out.
+
+### The canvas is 690×460, not the file's 690×608
+
+The artwork's bottom ~150 units are the five favourite-album circles, and those
+are no longer in the card — they are a swipeable rail in their own section. The
+canvas stops where the *card* stops, at y=449, plus a little air.
+
+Every percentage in app.css's `.prof-*` block resolves against **690×460**:
+horizontals are `x / 690`, verticals are `y / 460`. **A value copied from an
+older revision lands in the wrong place without looking obviously wrong**, which
+is the trap every time this changes — it has been 466, then 608, now 460. What
+the artwork revision itself changed:
+
+| | old (690×466) | new (690×608) |
+|---|---|---|
+| card body | y 65.7→328 | y 74.7→**449** |
+| picture pane | x 0→262.3 (37.9%) | x 0→**374.5 (54.3%)** |
+| right pane | 61.8% of width | **45.6%** |
+| name banner | to x 409.9, y→69 | to x **467.5**, y→**74.9** |
+| CD row | in the card, 5 wells | **out of the card** — see below |
+| action button | bottom-right notch | free-standing, lower right |
+
+- ⚠️ **The stats became a 2×2 grid.** The picture took the width the old row of
+  four needed: the right pane is ~153px at the 393px frame, and four columns at
+  7.4px do not fit. The pane is tall enough to spend a second row.
+- ⚠️ **The bottom-right notch is gone from the silhouette**, so nothing seats in
+  it any more — the right edge runs straight from 429 up to 94.7. The action
+  button is a free-standing pill resting inside the corner instead.
+- ⚠️ **The right pane is ONE flex column (`.prof-right`), not three positioned
+  boxes.** Stats / bio / location each carried a hand-computed `top`, and any
+  restyle inside one of them silently pushed it into the next — giving the stats
+  their inset wells grew that block by ~20px and dropped the bio on top of it. A
+  column cannot overlap itself, and `.prof-meta` takes `margin-top: auto` so a
+  short bio leaves the gap above the location rather than below it. Only the
+  action button stays absolute: it is anchored to the card's corner, not to the
+  end of this stack.
+- ⚠️ `.prof-info` / `.prof-meta` need `position: relative` now — they are flow
+  children, and the `.pfe-slot` badge used to get its containing block for free
+  from the slot being absolutely positioned itself.
+
+#### ⚠️ ONE action button, not two (`.prof-act`)
+
+**Edit** on your own profile, **Follow** on someone else's — the same element,
+with `PROFILE_GUEST` deciding what it says. They were separate elements once, so
+*both* rendered on your own page; giving them a shared box then made the later
+one in the DOM hide the other, and **the pencil vanished**. A page offers one
+action here, so there is one element.
+
+#### The stats: three figures, STACKED
+
+**Following · Followers · Review score**, down the right pane, and nothing else
+in it. Playlists went first (the section below already shows them, with covers),
+then the review **count** — it is baked into the score, which is points per
+review plus points per like.
+
+- ⚠️ **Stacked, not a row, and that is what buys the size.** Side by side, each
+  figure was capped by the width of its own *label* — "Following" at 7px already
+  took 40px of the ~45px each column had — so the numbers could not exceed 17px
+  however much vertical space the pane had. Down the column each gets the full
+  width: measured, the widest text is **62.7px of 131.5**, and height is what
+  binds instead (three ~42px blocks in a 161px column, ~14px slack).
+- Numbers are **34px** against 9px labels. The label can be a real word again for
+  the same reason — the row could only afford "Score".
+- ⚠️ **No emboss.** Each figure briefly sat in its own inset well; stacked, three
+  wells read as a list of controls rather than as a readout.
+- ⚠️ **The bio and the location are OUT of the card, temporarily.** The pane was
+  a stat row, a two-line paragraph and a pin all competing in a ~131px column and
+  none of them had room to be read. `metaHtml` / `pinIco` in `screens.js` and the
+  `.prof-desc` / `.prof-meta*` rules in app.css are deliberately kept so putting
+  them back is a few lines. ⚠️ **While they are out, bio and location have no
+  edit affordance** — their `pfe-slot`s went with them.
+
+#### ⚠️ The action button is UPPER RIGHT
+
+It sat in the card's lower-right corner and moved. Down there it was *inside* the
+card, level with the stats, and read as part of that block rather than as the
+page's one action; up here it is on the strip above the card, opposite the name
+banner — where the trace puts a pill (x 600→688, y 1→55) and where a profile's
+follow control is expected.
+
+- ⚠️ **Wider than the traced pill on purpose.** 12.75% is ~46px at the 393 frame
+  and the dots plus "FOLLOW" want ~58. 17% gives ~61px and still starts at 81.5%,
+  clear of the name banner, which ends at 67.8% (measured clearance: 43.7px).
+
+#### Favourite albums — a rail of three (`profFavsHtml` · `profFavPaint`)
+
+Five small wells traced into the bottom of the card became **three big discs,
+one centred and two peeking**, swipeable, with a panel underneath. At the old
+size **the cover was all you got** — no title, no artist, no year — and a cover
+is not enough to know an album by. The panel says album, artist, stars, and
+year · genre · review count.
+
+- ⚠️ **CSS scroll-snap, not a hand-rolled gesture.** This has to feel native
+  under a thumb, and the browser's own momentum, rubber-band and snap beat
+  anything written here. The swipe engines elsewhere in this app exist because
+  they animate a bento cell; this does not.
+- ⚠️⚠️ **The end spacers are ELEMENTS (`.prof-fav-pad`), and the rail must never
+  get horizontal padding.** They let the FIRST and LAST discs reach the centre —
+  without something there, `scroll-snap-align: center` cannot centre either end.
+  It was `padding-inline: 19%` and **nothing lined up**: percentage `flex-basis`
+  resolves against the flex container's **content box**, so side padding of 19%
+  made each disc 62% of the *remaining* 62% — 38.4% of the rail — while the
+  centring arithmetic is written in percentages *of the rail*. Padding silently
+  redefines what a percentage means in here. As elements, the spacers are in the
+  same units as the discs. The `- 12px` in their basis is the `gap` that lands
+  between spacer and first disc; without it every disc sits one gap right of
+  centre. Verified: disc 1 centres at `scrollLeft` 0 and disc 5 at exactly the
+  maximum.
+- ⚠️ **`.prof-fav-rail` must stay `position: relative`.** That makes it each
+  button's `offsetParent`, which is what puts `offsetLeft` in the same
+  coordinate space as `scrollLeft` for `profFavPaint`.
+- ⚠️ **The menus live AFTER the rail, not beside their disc.** The rail is
+  `overflow-x: auto` and would clip a popup. `toggleProfCd` and `profCdPreview`
+  therefore find them by `data-slot` rather than by `nextElementSibling` /
+  `previousElementSibling` — both lookups were adjacency-based and both broke.
+- ⚠️ **A tap on a disc that isn't centred scrolls it to the middle** instead of
+  acting on it (`profFavTap`). Opening a menu for an album that is half off the
+  screen is the only other option, and it isn't one.
+- ⚠️ **The rail opens on the SECOND disc** (`profFavStart`). At `scrollLeft: 0`
+  the first disc is centred against an empty spacer — nothing left of it, one
+  neighbour right — which reads as the start of a list rather than as a carousel
+  that works both ways. One step in and it is three discs from the moment the
+  page lands.
+- ⚠️ **`profFavBoot` retries instead of assuming one frame is enough.** Both
+  steps need a laid-out rail, and `profFavStart` sets its once-only flag when it
+  runs — so an attempt against a zero-width rail must NOT count as having run,
+  or the next paint (triggered by the user's own scroll) yanks the rail back to
+  disc 2 under their finger.
+- The info panel carries **album + year on one line**, then artist, then stars
+  and the review count. ⚠️ Genre was dropped: it said little at this size, and
+  the archive's genre strings are inconsistent enough ("Hip-hop" /
+  "Experimental hip-hop" / "Korean hip-hop") that it read as noise.
+- ⚠️ **`.prof-fav-hole` is 13%, where the small wells were 21%.** A spindle hole
+  is a fixed size on a real record — it does not grow with the disc — so a
+  percentage that read correctly at 60px is a doughnut at 200px.
+- `profFavSync` is **rAF-throttled**: `scroll` fires faster than paint and the
+  paint measures every item. The first paint is deferred a frame from
+  `applyProfColors`, because a fresh render has no `clientWidth` yet.
+- The panel's markup carries **no album**, so it cannot go stale against the
+  rail's scroll position — `profFavPaint` is the only writer.
+- ⚠️ **The edit screen renders the rail too.** The favourites left the card, so
+  without it there is no way to change them any more.
+
+### Review history — the last section (`profReviewLog` in `screens.js`)
+
+Replaces the old **"Recently rated"** strip, which was four covers with four
+hardcoded star values and four hardcoded ages. A history has to carry what the
+person actually **said** — that is the difference between a list of albums they
+touched and a record of their taste, which is what a profile is for.
+
+⚠️ **The rows ARE the home feed's `.ntf-row`, and there is no `.prof-rv-*`
+component any more.** Same anatomy (avatar + badge · sentence · quote ·
+engagement · trailing thumb), same SUBJECT · VERB · OBJECT order, the same
+`upvoteHtml` pill and comment button — because a review is a review, and a
+profile that renders one its own way is a second component that will drift from
+the first. The only thing that changes is the subject: every row here has the
+same author, so the avatar is theirs and the name is the profile's.
+
+- `--sd-*` reaches these rows because the profile screen is itself an
+  `.s-home-v3`, which is where those tokens are scoped.
+- `upvoteHtml` (a window global) and `CMT_SVG` (a top-level `const`, so global
+  *lexical* scope rather than a window property) both live in `app.js`, which
+  loads after `screens.js` — fine, because this runs at render time.
+- Each entry carries seeded `likes` (0–239) and `comments` (0–8). ⚠️ The floor
+  is **0** and the curve is skewed low on purpose: a feed where every row has
+  hundreds of likes reads as fake.
+- The only thing the profile adds is a bigger tap target, `.v3-up--prof` —
+  12.5px type and 17px glyphs against the feed's 11.5/14.5. On home these pills
+  sit in a scrolling feed of many verbs; here they are the point of the page.
+
+- ⚠️ **DERIVED, not stored on `PROFILE`.** That object is written from three
+  places — the literal in `app.js`, `randomizeProfile` for a random or seeded
+  visitor, and a persona — so a field added to one of them is missing from the
+  other two. Seeded off the handle instead, which gives the same guarantee
+  `randomizeProfile`'s seeded stream gives a friend's page: open a profile twice
+  and it says the same things.
+- `dzSeed` lives in `app.js`, which loads **after** `screens.js` — fine, because
+  this runs at render time, not while the file parses.
+- Their own `P.recent` picks come first, then the list tops up from the archive
+  to nine, skipping duplicates. Ages are strictly increasing, so it reads
+  newest-first without needing real dates.
+
+#### ⚠️ `dzSeed(...) % smallN` is BROKEN, and this is where it showed
+
+`dzSeed` is a rolling hash, `h = h*131 + c`. **131² ≡ 1 (mod 20)** and ≡ 1
+(mod 8), so `dzSeed(seed, 'x', i) % 20` collapses to `(C(seed) + i) % 20` —
+**linear in the index**. Every profile drew the same review lines in the same
+cyclic order, merely rotated by a per-name offset:
+
+```
+ericd          17 18 19 0 1 2
+moonlit_echo   18 19  0 1 2 3
+```
+
+`profMix()` is an avalanche step applied **before** the remainder, and it fixes
+it (verified: one profile's sequence is no longer any rotation of another's).
+⚠️ **Anywhere else that wants `dzSeed(...) % smallN` needs the same treatment** —
+the hash is fine for large moduli and for equality, not for a short pool.
+
+### The name banner grows with the username (`sizeProfName` · `profNameTabPath`)
+
+The banner is a **parametric path**: `profNameTabPath(dx)` slides every point on
+its right half out by `dx`, leaving the left edge, the corner radius and the
+slant's shape alone, so the tab stretches without deforming. `sizeProfName`
+measures the rendered label, converts px → SVG units, and moves the tab path and
+the white pill's width by the **same** `dx` so they grow as one shape.
+
+- ⚠️ **Four numbers move together on a retrace** and all four came out of the
+  new file: the banner's slant anchor (295.443 → **339.995**), the pill's left
+  edge (16.04 → **16**) and its right cap (314.351 → **360**), plus the clamp.
+  The pill sits 20 units inside the anchor here exactly as it sat 18.9 inside the
+  old one — if that relationship breaks, the pill and the banner drift apart as
+  the name gets longer.
+- The clamp is **200**: the banner's right edge is 467.5 and `467.5 + 200` is
+  still inside the 690 box.
+
+---
+
 ## Edit Profile (`profileEditHtml` + `PFEDIT` in `app.js`)
 
-The customising page behind the profile card's pencil (`.prof-edit`, previously a
+The customising page behind the profile card's action button (`.prof-act`, previously a
 dead `event.stopPropagation()` stub). `openProfileEdit()` seeds the draft, pushes
 the back stack and navigates to `profile-edit`.
 
@@ -1830,7 +2840,7 @@ The top bar reads **back pill · "Editing profile" · Save changes**, so the mod
 labelled rather than implied.
 
 Badge placement is per-slot (`.prof-pic`, `.prof-info`, `.prof-meta`,
-`.prof-name-tab-lbl`, `.prof-alb`, `.prof-pl`, `.prof-song` each get their own
+`.prof-name-tab-lbl`, `.prof-fav`, `.prof-pl`, `.prof-song` each get their own
 offsets) because the card's regions butt right up against each other — a badge
 hung off a generic corner lands on a neighbour or covers its own text. Note the
 discs get `pfe-slot` from `profCanvasHtml`'s slot branch, **not** from the `ed()`
@@ -1880,7 +2890,7 @@ slot.
 
 ### CSS gotcha
 `.pfe-slot` must **not** set `position: relative`. The card's regions
-(`.prof-pic`, `.prof-info`, `.prof-meta`, `.prof-name-tab-lbl`, `.prof-alb`) are
+(`.prof-pic`, `.prof-info`, `.prof-meta`, `.prof-name-tab-lbl`) are
 absolutely positioned from the traced SVG coordinates, and relative drops them
 back into normal flow and wrecks the card. They already establish a containing
 block for `::after`; only the flow-level rows (`.prof-pl`, `.prof-song`) get
@@ -2009,9 +3019,9 @@ JS shows one at a time.
 
 **Steps:** `0` username · `1` connect service (Spotify/Apple/SoundCloud) · `2`
 allow listening-tracking (**only shown if a service was connected** —
-`obActiveSteps()` drops it otherwise) · `3` genres · `4` artists · `5` albums ·
-`6` people you may know · `7` minimal profile (the payoff → `Start exploring` →
-`navigate('home')`).
+`obActiveSteps()` drops it otherwise) · `3` genres (plain chips, from
+`SD_GENRES`) · `4` artists · `5` albums · `6` people you may know · `7` minimal
+profile (the payoff → `Start exploring` → `navigate('home')`).
 
 - **State** lives in the module-global `OB` object (username, service, tracking,
   and `Set`s for genres/artists/albums/following, plus per-wall search query).
@@ -2265,10 +3275,33 @@ step.
 
 There used to be a plain fullscreen **review** state in between: the bento
 opened it, and tapping the album title *inside* it stepped up to the album page.
-That middle layer is gone. The album page is swipeable in its own right, so the
-review state was an extra level of navigation showing nearly the same thing —
-the one visible difference being that the review state still had the **For You
-box** (`.v3-for-single`, which `--album` hides).
+That middle layer is gone: the review state was an extra level of navigation
+showing nearly the same thing — the one visible difference being that the review
+state still had the **For You box** (`.v3-for-single`, which `--album` hides).
+
+### No gestures on the cover here (`bentoGesturesOn`, `app.js`)
+
+**The album page's cover is a header, not a deck.** Swipe-for-next-album and
+hold-for-the-shelf-wheel are **bento** gestures and stay there — the bento is
+the thing we want people handling, and on this page there is exactly one album,
+it is the one you just chose, and swiping it away undoes the tap that got you
+here.
+
+- ⚠️ **The test is at gesture START, not at wire time.** Both gestures are wired
+  **once per element** (`album._swipeInit` in `setupAlbumSwipe`, `box._wired` in
+  `proWheelInit`) and the album page is *the same `.v3-album`* in a different
+  state — so there is no wiring moment at which the answer is known. `onDown`
+  and the wheel's `pointerdown` each ask `bentoGesturesOn(screenEl)` and bail.
+- ⚠️ It tests **`s-home-v3--review`**, which is never set without `--album` and
+  which `--artist` layers on top of — so one class covers the album page and the
+  artist page both. The artist banner is not a deck either.
+- **The drag goes back to the page.** `.s-home-v3--review .v3-album` re-declares
+  `touch-action: pan-y` (out-specifying `.v3-album--wheel`, which Pro adds for
+  the wheel) so a scroll started on the cover scrolls the review panel — the
+  cover is the biggest target on the page to start one on. `cursor` drops to
+  `default` with it: `enterAlbumPage` early-returns when the shell is already
+  fullscreen, so the tap does nothing and shouldn't advertise otherwise.
+- The **bento is untouched** — swipe and hold there work exactly as before.
 
 - ⚠️ **`--review` is never set without `--album`.** The class pair survives
   because the CSS is tuned for the combination, but nothing can reach `--review`
@@ -2348,7 +3381,7 @@ On mobile (`≤767px`): Single / Multi / Flow / Live modes via header segmented 
 - **Previews follow the album, not the DOM** — `playPreviewFor(album)` plays the album it's handed; never re-query `querySelector('.s-home-v3')` for "the current album" (multiple instances → wrong track). Intent (`PREVIEW.on/paused`) drives the UI, never `audio.paused`
 - **Art vs text animation are separate** — `setMainAlbum`'s `animate` (cover/CD) is independent of `animateText` (typewriter); swipes animate text only, since the filmstrip already moves the art
 - **Fullscreen** — the `.v3-blue` stats block (album/date · artist · stars) is nudged down 3px via `transform`. The compose UI is a `.v3-rev-cta` button → **Log Sheet** (see above) with three **quick-log squares** attached to its right (`.v3-rev-cta-row` › `.v3-rev-quick` › `.v3-rev-q` — listened · listen later · favourite), followed by the **Tracklist**. The streaming action grid (`.v3-rev-actions`) reserves a fixed **58px** column so the review box never shifts as icons change; fav/later/shop moved into the log sheet, leaving Spotify/Apple/YouTube.
-- **Previews are currently OFF** — `PREVIEWS_ENABLED = false` in `app.js` no-ops `togglePreview`/`togglePreviewMode`/`loadPreview`/`playPreviewFor`, and `.v3-preview-btn` is hidden. Flip the flag to re-enable.
+- **Previews are OFF** — `PREVIEWS_ENABLED = false` in `app.js` no-ops `togglePreview`/`togglePreviewMode`/`loadPreview`/`playPreviewFor`. The one preview that still plays is the explicit **Listen to preview** row in a CD's menu (`playPreview`, which doesn't read the flag). Autoplay is deliberately gone — see the Music Preview System section.
 
 ---
 
@@ -2402,5 +3435,4 @@ map or the archive ships broken without them.
 >
 > Open threads: **Social (08) and Live Stream (09) are on the page map but have
 > no screen** — the remaining gap · light-theme bento boxes are still `#999`
-> placeholders · profile theme 02 (angular) not started · `PREVIEWS_ENABLED =
-> false` · ~38 inline `★` glyphs still bypass the vinyl `halfStars` treatment.
+> placeholders · profile theme 02 (angular) not started · ~38 inline `★` glyphs still bypass the vinyl `halfStars` treatment.

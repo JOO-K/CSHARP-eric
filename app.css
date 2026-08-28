@@ -62,6 +62,9 @@
   --accent:   #e6b866;
   --accent2:  #cfa24f;
 }
+/* Selected genre chip: give the light theme a warm tint (the dark default's
+   translucent off-white is invisible on cream). */
+.app-screen.sd-theme-light .chip.selected { background: rgba(168,116,42,0.10); }
 .app-screen.sd-theme-light {
   --bg:       #f0ece3;
   --bg2:      #ece7dc;
@@ -74,10 +77,6 @@
   --accent:   #a8742a;
   --accent2:  #8a5f1f;
 }
-/* Selected genre chip: give the light theme a warm tint (the dark default's
-   translucent off-white is invisible on cream). */
-.app-screen.sd-theme-light .chip.selected { background: rgba(168,116,42,0.10); }
-
 /* Hide all scrollbars inside the phone UI */
 .screen-content *::-webkit-scrollbar { display: none; }
 .screen-content * { scrollbar-width: none; }
@@ -2413,9 +2412,15 @@
 .v3-header-user .v3-hsub-handle { opacity: .7; }
 .s-home-v3--light .v3-header-user { color: rgba(26,18,8,0.55); }
 .s-home-v3--light .v3-header-user .v3-hsub-nick { color: rgba(26,18,8,0.9); }
+/* ⚠ 34, up from 30. These three (notifications · settings · search) are the
+   only always-present controls on the shell, and at 30 they were the smallest
+   tap targets in the app — under every guideline's floor and noticeably fiddly
+   next to the bento. Kept modest rather than pushed to 44: the header is a thin
+   strip above the bento and the brand block sits between them, so growing these
+   much further starts crowding the wordmark. */
 .v3-bubble {
-  width: 30px;
-  height: 30px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   background: rgba(255,255,255,0.07);
   border: 1px solid rgba(255,255,255,0.12);
@@ -2428,7 +2433,7 @@
   flex-shrink: 0;
   transition: background 0.15s, border-color 0.15s;
 }
-.v3-bubble svg { width: 15px; height: 15px; }
+.v3-bubble svg { width: 17px; height: 17px; }
 
 /* Notification pill — expands right & turns blue when there are unread notifications */
 .v3-bubble--notif {
@@ -2438,14 +2443,17 @@
 .v3-bubble-count {
   display: none;
   font-family: var(--font-main);
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 700;
   line-height: 1;
   white-space: nowrap;
 }
+/* ⚠ `min-width` tracks `.v3-bubble`'s width. The expanded pill grows past it,
+   but with a small `+5` count it can be narrower than the circle it grew from —
+   so this is what stops it shrinking when it lights up. */
 .v3-bubble--notif.has-notif {
   width: auto;
-  min-width: 30px;
+  min-width: 34px;
   border-radius: 999px;
   padding: 0 9px 0 8px;
   gap: 5px;
@@ -2544,6 +2552,12 @@
   height: 20px;
   display: flex;
   align-items: center;
+  /* It opens whoever is on it — see `renderNowBar`. The press is the only
+     affordance it gets: the bar sits in the nav's bump and anything more
+     (a border, a hover fill) would turn a piece of ambient chrome into a
+     control competing with the six nav icons beside it. */
+  cursor: pointer;
+  transition: transform .12s, opacity .12s;
   /* Text + waveform ride together, centred in the bump. `.v3-now-text` is
      `flex: 0 1 auto` (not `1`) so the pair stays glued instead of the text
      eating the bar and pushing the bars to the far edge — centring only reads
@@ -2556,6 +2570,10 @@
   background: none;
   border: none;
 }
+/* The press. Scale only — the bar has a live waveform in it, so a colour or
+   opacity change on tap reads as the audio doing something. */
+.v3-nowbar:active { transform: scale(0.975); }
+
 /* ── Nav backdrop blur ────────────────────────────────────────
    The glass's own `backdrop-filter` is masked to the BAR shape, so it stops
    dead at the scoop and at the corners beside the bump — content passing behind
@@ -3141,6 +3159,10 @@
 /* Bento: aspect-ratio matches SVG viewBox 690×670 so children can be % positioned */
 .v3-bento {
   position: relative;
+  /* ⚠ This ratio exists a SECOND time, as the number `--v3-bento-hw` on
+     `.s-home-v3` — the shop's scale model has to compute a height from it and
+     `aspect-ratio` is a ratio type, not something `calc()` can divide. Change
+     one, change the other. (730 ÷ 689 = 1.0595.) */
   aspect-ratio: 689 / 730;
   overflow: visible;
   flex-shrink: 0;
@@ -3224,9 +3246,37 @@
 .s-home-v3 {
   --album-dx: -0.175434%;   /* -0.5px */
   --album-dy: -0.070697%;   /* -0.2px */
+  /* The bento's height ÷ its width, i.e. its `aspect-ratio` as a number the
+     shop can multiply by. See the ⚠ on `.v3-bento` — these two are one number. */
+  --v3-bento-hw: 1.0595;
 }
 /* Fullscreen cover butts against nothing, so it wants no correction. */
 .s-home-v3--review .v3-album { --album-dx: 0%; --album-dy: 0%; }
+
+/* ── Who gets the finger on the cover ─────────────────────────────
+   `touch-action` is decided BEFORE any JS runs — the browser latches it at
+   touch-start — so it has to be declarative state, not a flag written by
+   whichever gesture happened to wire itself last. It used to be exactly that:
+   two inline writes racing (`setupAlbumSwipe` wrote `pan-y`, `proWheelInit`
+   wrote `none`), and inline beat every rule in this file, so the CSS could not
+   have the last word even when it was right.
+
+     .v3-album          the swipe reads horizontal drags; vertical stays the
+                        page's, so the home screen still scrolls under a finger
+                        that lands on the cover
+     --wheel            Pro's shelf wheel drags DOWNWARD, so it has to claim the
+                        axis the swipe gave back (added by `proWheelInit`)
+     --review           the album page. Both gestures are off here (see
+                        `bentoGesturesOn` in app.js) — the cover is a header, so
+                        every drag belongs to the page, and the cover is the
+                        biggest thing on screen to start a scroll on.
+   ⚠ Specificity is what orders these, not source order: `--review` is (0,2,0)
+   and beats `--wheel`'s (0,1,0) wherever the two meet. */
+.v3-album { touch-action: pan-y; }
+.v3-album--wheel { touch-action: none; }
+/* Nothing here answers a tap either — `enterAlbumPage` early-returns when the
+   shell is already fullscreen — so stop advertising one. */
+.s-home-v3--review .v3-album { touch-action: pan-y; cursor: default; }
 
 /* Right column wrapper: search corner on top, red box below */
 .v3-right-col {
@@ -4471,6 +4521,19 @@
 .s-home-v3--review .v3-live-content { display: none; }
 .s-home-v3--review .v3-back-content { display: inline-flex; }
 
+/* …and again while the mix dial is up. The dial has no close button of its
+   own: this pill is the app's ONE dedicated back button, so it is what gets you
+   out of a gesture that is still "held" — the cover-hold opened the dial and
+   does not resolve until you commit a mix or leave.
+   ⚠ No z-index lift is needed and none should be added back. It WAS `201`,
+   because the dial used to be a bottom sheet whose scrim (`.sd-log-overlay`,
+   `inset: 0; z-index: 200`) lay over the whole bento and swallowed the tap
+   while the pill still looked perfectly clickable. The dial now lives inside
+   `.v3-album`, which is `z-index: 1` with `overflow: hidden` — it cannot reach
+   the pill at 6, let alone cover it. */
+.s-home-v3--mixing .v3-live-content { display: none; }
+.s-home-v3--mixing .v3-back-content { display: inline-flex; }
+
 /* Your review — album/stats-side column; 12px left pad aligns with stats text.
    flex column so the header/stars/textarea stack tight and Post can go lower-right. */
 .v3-rev-mine {
@@ -4651,8 +4714,40 @@
 .s-home-v3--review.s-home-v3--album .v3-rev-mine {
   align-items: stretch;
   padding-left: 0; padding-right: 0;
+  /* ⚠️ Clears the CREDITS. `.v3-blue` is absolutely positioned, and in this
+     state it is `height: auto; overflow: visible` — so the three credit rows
+     (Produced by / Mixed by / Label) grow it DOWNWARD out of its own box, and
+     nothing in normal flow below knows they are there. The CTA row was landing
+     on top of them. `--rev-cred-h` is that overhang; see the screen-level rule
+     below for why it is declared there and not here. */
+  margin-top: calc(26px + var(--rev-cred-h, 0px));
 }
-.s-home-v3--review.s-home-v3--album .v3-rev-cta-row { width: 100%; }
+/* ⚠️ Declared on the SCREEN, not on `.v3-rev-mine`. Custom properties inherit
+   DOWN, and `.v3-blue-credits` is a sibling of `.v3-rev-mine`, not a child — so
+   a var set on the column is invisible to the block it is measuring. The screen
+   is the nearest ancestor of both.
+   The number: 3 rows × 10px names at line-height 1.28 ≈ 38px, so 40 leaves a
+   hair of air. Turn this if the credit rows are ever restyled. */
+.s-home-v3--review.s-home-v3--album { --rev-cred-h: 40px; }
+/* Coverage is patchy (MusicBrainz is volunteer-entered) and the whole block is
+   `hidden` when nothing came back — in which case there is no overhang to clear
+   and the reserved space would just be a hole. */
+.s-home-v3--review.s-home-v3--album:has(.v3-blue-credits[hidden]) { --rev-cred-h: 0px; }
+/* ⚠️ 80%, not 100%. Full width put the row on the album's own grid, which
+   read as correct next to the histogram and the tracklist — but it also made
+   the page's one ACTION the widest element on it, so it stopped reading as a
+   button and became another band of layout. The 20% it gives up is what makes
+   it look pressable again.
+   ⚠️ CENTRED, via `margin-inline: auto`. `.v3-rev-mine` is a flex COLUMN, so
+   the cross axis is horizontal and `align-items: stretch` is what positions
+   this — once the row has an explicit width, stretch has nothing to stretch and
+   drops it on the left edge. `margin-inline: auto` is what re-centres a
+   fixed-width item on a flex cross axis; `justify-content` here would move the
+   column's children vertically instead. */
+.s-home-v3--review.s-home-v3--album .v3-rev-cta-row {
+  width: 80%;
+  margin-inline: auto;
+}
 .s-home-v3--review.s-home-v3--album .v3-rev-cta {
   flex: 1 1 auto;
   width: auto;              /* was fit-content — that's what kept it text-sized */
@@ -5719,51 +5814,275 @@
 .s-home-v3--light .pl2-add:hover { background: #f4f0e8; }
 .pl2-sec[hidden] { display: none; }
 
-/* — Lists — geometry from PlaylistBox.svg / PlaylistHLBox.svg (688×158,
-   scaled ~0.51): a split card — near-square image panel · thin gap · info
-   panel. The --hl variant clips the info panel's top-right corner on a
-   diagonal and seats a rounded dog-ear tag (Eric's exact SVG path) in the
-   notch; the notch itself is a screen-bg triangle (fillet-style negative
-   space). First use: Popular = 25+ favorites. */
-.pl2-list-card { display: flex; height: 80px; margin-bottom: 9px; }
-.pl2-list-img {
-  width: 78px; flex-shrink: 0;
-  border-radius: 5px 0 0 5px;
+/* ═══════════════════════════════════════════════════════════════
+   THE PLAYLIST WALL — one card, done properly
+   ═══════════════════════════════════════════════════════════════
+   Two things were tried and dropped on the way here, and both are worth knowing
+   before changing this:
+
+     1. A wall of 80px split ROWS. Too small to be anything — a playlist is the
+        one object in the app the user actually made, and a row gave it nothing.
+     2. FIVE user-pickable themes (poster / polaroid / tape / index / classic).
+        Killed on purpose: a wall where every card is a different shape reads as
+        a mess, and most people never open a picker — so the wall ends up being
+        judged on the default anyway. ⚠️ Do not reintroduce per-card shapes.
+
+   What is left is ONE card, and the variety comes from where it should: the
+   ARTWORK, which is different for every playlist because the user chose it, and
+   the badges. The frame stays constant so ten of them stack into a wall instead
+   of a pile.
+
+   ⚠️ `aspect-ratio`, not a fixed height. The phone frame is not one width (the
+   viewer zooms, and the mobile prototype is the real device), and a card locked
+   to 230px goes squat on a wide frame and cramped on a narrow one. 3:2 keeps
+   the crop and the type in proportion at any size. */
+.pl2-card {
+  position: relative;
+  aspect-ratio: 3 / 2;
+  margin-bottom: 14px;
+  border-radius: 14px;
+  overflow: hidden;
+  cursor: pointer;
+  background: rgba(255,255,255,0.05);
+  /* A hairline INSIDE the radius, so the card reads as an object with an edge
+     rather than a photograph bleeding into the page. `inset` because an outer
+     ring would sit outside `overflow: hidden` and fight the corner. */
+  box-shadow: inset 0 0 0 1px rgba(232,226,214,0.10);
+  transition: transform .18s cubic-bezier(.22,1,.36,1);
+}
+.pl2-card:active { transform: scale(0.985); }
+
+/* ⚠️ The art is scaled 1.04 and animates on press. The card is mostly picture,
+   so the press has to happen to the PICTURE or it reads as the text moving. */
+.pl2-card-art {
+  position: absolute; inset: 0;
   background-size: cover; background-position: center;
   background-color: rgba(255,255,255,0.05);
+  transform: scale(1.04);
+  transition: transform .5s cubic-bezier(.22,1,.36,1);
 }
-.pl2-list-body {
-  position: relative; flex: 1; min-width: 0;
-  border-radius: 0 5px 5px 0;
-  background: rgba(255,255,255,0.05);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
-  padding: 11px 13px 9px;
+.pl2-card:active .pl2-card-art { transform: scale(1.07); }
+/* A video cover fills the same box a still would. ⚠️ `object-fit: cover` is the
+   video equivalent of `background-size: cover` — without it the frame is letter-
+   boxed inside the card and the crop stops matching every other cover on the
+   wall. Playback is driven by `plVideoWatch` (app.js), not by an autoplay
+   attribute; see the note there. */
+.pl2-art-vid { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* The scrim. ⚠️ A gradient LAYER, never a `filter` on the art: darkening the
+   whole image to make the type readable throws away the picture the card exists
+   to show. Two stops rather than one — a single linear ramp leaves a visible
+   band across the middle of the card at this height. */
+.pl2-card::after {
+  content: ''; position: absolute; inset: 0; z-index: 1;
+  background:
+    linear-gradient(to top, rgba(8,7,6,0.94) 0%, rgba(8,7,6,0.72) 22%,
+                    rgba(8,7,6,0.30) 48%, rgba(8,7,6,0) 74%);
+}
+
+.pl2-card-body {
+  position: absolute; z-index: 2; left: 0; right: 0; bottom: 0;
+  padding: 0 16px 15px;
   display: flex; flex-direction: column;
 }
-.pl2-list-name {
-  font-size: 15.5px; font-weight: 800; letter-spacing: -0.3px; color: #e8e2d6;
+.pl2-card-name {
+  margin: 0;
+  font-family: var(--font-main);
+  font-size: 24px; font-weight: 800; letter-spacing: -0.7px; line-height: 1.1;
+  color: #fff;
+  /* Two lines, then clamp. These titles are user-typed and some run long on
+     purpose ("crying in the club (derogatory)") — one line ellipsised away is
+     the joke lost, three lines is a paragraph sitting on someone's artwork. */
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+  overflow: hidden;
+  /* The titles carry emoji and stray symbols, which land on unpredictable parts
+     of a photograph. A soft shadow keeps them legible over a blown-out sky
+     without darkening the whole scrim for the sake of one card. */
+  text-shadow: 0 1px 12px rgba(0,0,0,0.45);
+}
+.pl2-card-by {
+  font-size: 10.5px; margin-top: 6px;
+  color: rgba(255,255,255,0.6);
+  text-shadow: 0 1px 8px rgba(0,0,0,0.4);
+}
+.pl2-card-by b { font-weight: 700; color: rgba(255,255,255,0.92); }
+/* ⚠️ `·` separators come from CSS, not the markup — a leading dot before an
+   empty first item is the classic version of this bug, and `:not(:first-child)`
+   cannot happen in a template string. */
+.pl2-card-meta {
+  display: flex; margin-top: 9px;
+  font-family: var(--font-mono); font-size: 9.5px;
+  color: rgba(255,255,255,0.55);
+  text-shadow: 0 1px 8px rgba(0,0,0,0.4);
+}
+.pl2-card-meta span + span::before { content: '\00b7'; margin: 0 6px; opacity: 0.55; }
+
+/* ── Badges ── the emblems you pin on. Drawn in the DOT SYSTEM like every other
+   icon in the app, so a badge is the same material as the nav and the log
+   buttons rather than a sticker imported from somewhere else. Now that the card
+   is fixed, these and the artwork are the ONLY things that vary — which is why
+   they each get their own colour: a card wearing three should read as three
+   things, not as a row of identical chips. */
+.pl2-badges { position: absolute; z-index: 3; top: 12px; right: 12px; display: flex; gap: 6px; }
+.pl2-badge {
+  width: 24px; height: 24px; border-radius: 999px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(12,11,10,0.5);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18);
+  color: #e8e2d6;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+}
+.pl2-badge .sd-dot-ico { width: 12px; height: 12px; }
+/* The badge editor, riding in the badge row. ⚠️ Same footprint as a badge but
+   DASHED and uncoloured — it has to read as an empty slot rather than as a
+   seventh badge, which is also what makes it legible on a card wearing none. */
+.pl2-badge-add {
+  border: 0; padding: 0; cursor: pointer;
+  background: rgba(12,11,10,0.35);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.28);
+  color: rgba(255,255,255,0.85);
+  transition: background .14s, color .14s;
+}
+.pl2-badge-add:hover { background: rgba(12,11,10,0.62); color: #fff; }
+.pl2-badge-add svg { width: 12px; height: 12px; }
+
+.pl2-badge--gem   { color: #9fd0e8; }
+.pl2-badge--flame { color: #ff8a4c; }
+.pl2-badge--moon  { color: #a9a5e8; }
+.pl2-badge--bolt  { color: var(--star, #e8a83c); }
+.pl2-badge--drop  { color: #7fb3e8; }
+.pl2-badge--sun   { color: #ffd166; }
+
+/* ── The editorial tag ── crown = community favourite (favs > 25), candle =
+   staff pick; staff wins if both apply.
+   ⚠️ The ONE mark on a card its owner cannot choose, so it is deliberately a
+   different object from a badge — square not round, top-LEFT not top-right. A
+   badge is self-expression; this is a verdict from outside, and the two must not
+   be mistaken for each other. */
+.pl2-card-tag {
+  position: absolute; top: 12px; left: 12px; z-index: 3;
+  height: 24px; padding: 0 8px; border-radius: 7px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(12,11,10,0.5);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.14);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+}
+.pl2-card-tag svg { width: 14px; height: 14px; }
+.pl2-card-tag--fav   { color: var(--star, #e8a83c); }
+.pl2-card-tag--staff { color: #6f9fe8; }
+
+/* The customise handle — only on playlists you made. Sits opposite the title
+   block, on the one corner nothing else claims. */
+.pl2-card-edit {
+  position: absolute; right: 12px; bottom: 12px; z-index: 4;
+  width: 28px; height: 28px; border-radius: 999px;
+  border: 0; padding: 0; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(12,11,10,0.5);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.14);
+  color: rgba(255,255,255,0.8);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  opacity: 0; transition: opacity .16s;
+}
+.pl2-card:hover .pl2-card-edit,
+.pl2-card:focus-within .pl2-card-edit { opacity: 1; }
+/* ⚠️ On a touch screen there IS no hover — the handle would never appear and the
+   feature would be unreachable on the device this is designed for. */
+@media (hover: none) { .pl2-card-edit { opacity: 1; } }
+.pl2-card-edit svg { width: 15px; height: 15px; }
+
+/* ⚠️ NO light-theme overrides, and that is deliberate. Every piece of type on
+   this card sits on a PHOTOGRAPH, not on the page — so it stays white in both
+   themes, exactly as album art does everywhere else in the app. The only thing
+   the light theme touches is the empty state behind an image that has not
+   loaded. */
+.s-home-v3--light .pl2-card { background: rgba(26,18,8,0.06); }
+.s-home-v3--light .pl2-card-art { background-color: rgba(26,18,8,0.06); }
+
+@media (prefers-reduced-motion: reduce) {
+  .pl2-card, .pl2-card-art, .pl2-card-edit, .pl2-badge-add { transition: none; }
+  .pl2-card:active .pl2-card-art { transform: scale(1.04); }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   THE CUSTOMISE SHEET — behind the ⋯ on your own cards
+   ═══════════════════════════════════════════════════════════════
+   Rides `.sd-log-overlay` for the scrim and the mounting so there is one
+   bottom-sheet behaviour in the app. ⚠️ It sizes to its CONTENT rather than
+   taking a fixed 75% like the log sheet — this one is a header and a single row
+   of badges, and a three-quarter-height sheet holding one row reads as something
+   that failed to load. */
+.plc-sheet {
+  width: calc(100% - 20px); margin-bottom: 10px;
+  background: #1c1c22; color: #e8e2d6;
+  border-radius: 20px;
+  padding: 9px 14px 14px;
+  box-shadow: 0 -10px 34px rgba(0,0,0,0.5);
+  transform: translateY(130%);
+  transition: transform .3s cubic-bezier(.22,1,.36,1);
+  font-family: var(--font-main);
+  max-height: 82%; overflow-y: auto; scrollbar-width: none;
+}
+.plc-sheet::-webkit-scrollbar { display: none; }
+.plc-overlay.open .plc-sheet { transform: translateY(0); }
+
+.plc-head { display: flex; align-items: center; gap: 11px; margin-bottom: 14px; }
+.plc-cover {
+  width: 42px; height: 42px; border-radius: 7px; flex-shrink: 0;
+  background: #333 center/cover no-repeat;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.45);
+}
+.plc-head-txt { flex: 1; min-width: 0; }
+.plc-title {
+  font-size: 15px; font-weight: 800; letter-spacing: -0.3px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.pl2-list-by { font-size: 9.5px; color: rgba(232,226,214,0.42); margin-top: 2px; }
-.pl2-list-by b { font-weight: 700; color: rgba(232,226,214,0.7); }
-.pl2-list-meta { margin-top: auto; font-family: var(--font-mono); font-size: 9.5px; color: rgba(232,226,214,0.4); }
-/* Lower-right tag slot (PlaylistBox_NEW / PlaylistHLBox_NEW.svg @ ~0.51):
-   the carve is a screen-bg scoop out of the info panel's corner; the rounded
-   tag seats in it, recolored per type, icon centered inside. */
-.pl2-list-carve {
-  position: absolute; right: 0; bottom: 0; z-index: 1;
-  width: 54.4px; height: 32.2px;
-  color: #111116;                     /* screen bg — theme-specific */
-  pointer-events: none;
+.plc-sub { font-family: var(--font-mono); font-size: 9px; color: rgba(232,226,214,0.42); margin-top: 2px; }
+.plc-x {
+  flex-shrink: 0; width: 26px; height: 26px; border-radius: 999px;
+  border: 0; cursor: pointer;
+  background: rgba(232,226,214,0.09); color: rgba(232,226,214,0.7);
+  font-size: 12px; line-height: 1;
 }
-.pl2-list-tag2 {
-  position: absolute; right: 0; bottom: 0; z-index: 2;
-  width: 43.5px; height: 20.3px;
+
+.plc-sec-hd {
+  display: flex; align-items: baseline; gap: 7px; margin: 0 0 9px;
+  font-size: 12px; font-weight: 700; letter-spacing: -0.2px;
 }
-.pl2-list-tag2--fav   { color: var(--star); }   /* yellow + crown — community favorite */
-.pl2-list-tag2--staff { color: #6f9fe8; }       /* blue + candle — staff pick */
-.pl2-tag-ico { fill: #16130d; }
-.pl2-list-card--hl .pl2-list-meta { padding-right: 58px; }   /* clear the tag */
+.plc-sec-hd span {
+  font-family: var(--font-mono); font-size: 8.5px; font-weight: 400;
+  color: rgba(232,226,214,0.38);
+}
+
+/* Badges — a grid, because they are peers and a rail would imply an order. */
+.plc-badges { display: grid; grid-template-columns: repeat(6, 1fr); gap: 7px; }
+.plc-badge {
+  border: 0; padding: 8px 2px 6px; border-radius: 10px; cursor: pointer;
+  background: rgba(232,226,214,0.06);
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  color: inherit; font-family: inherit;
+  transition: background .14s, box-shadow .14s;
+}
+.plc-badge .pl2-badge { width: 26px; height: 26px; }
+.plc-badge .sd-dot-ico { width: 13px; height: 13px; }
+.plc-badge-name {
+  font-family: var(--font-mono); font-size: 7.5px;
+  color: rgba(232,226,214,0.45);
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.plc-badge.is-on { box-shadow: inset 0 0 0 1.5px var(--star, #e8a83c); }
+.plc-badge.is-on .plc-badge-name { color: var(--star, #e8a83c); font-weight: 700; }
+
+
+.plc-note {
+  margin: 14px 0 0;
+  font-family: var(--font-mono); font-size: 8px; line-height: 1.5;
+  color: rgba(232,226,214,0.3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plc-sheet, .plc-badge { transition: none; }
+}
 
 /* — Artists — */
 .pl2-artist {
@@ -5821,19 +6140,13 @@
 }
 .pl2-genre-cover + .pl2-genre-cover { margin-left: -14px; }
 
-/* Playlists — light theme */
-.s-home-v3--light .pl2-list-body,
+/* Playlists — light theme. The card itself has no light overrides on purpose:
+   all its type sits on a photograph. See the card block above. */
 .s-home-v3--light .pl2-genre { background: rgba(26,18,8,0.05); box-shadow: inset 0 1px 0 rgba(255,255,255,0.5); }
-.s-home-v3--light .pl2-list-img { background-color: rgba(26,18,8,0.05); }
-.s-home-v3--light .pl2-list-carve { color: #f0ece3; }
 .s-home-v3--light .pl2-genre:hover { background: rgba(26,18,8,0.09); }
-.s-home-v3--light .pl2-list-name,
 .s-home-v3--light .pl2-artist-name,
 .s-home-v3--light .pl2-song-title,
 .s-home-v3--light .pl2-genre-name { color: #1a1208; }
-.s-home-v3--light .pl2-list-by { color: rgba(26,18,8,0.45); }
-.s-home-v3--light .pl2-list-by b { color: rgba(26,18,8,0.7); }
-.s-home-v3--light .pl2-list-meta,
 .s-home-v3--light .pl2-artist-genre,
 .s-home-v3--light .pl2-song-sub,
 .s-home-v3--light .pl2-genre-stats { color: rgba(26,18,8,0.45); }
@@ -5878,6 +6191,10 @@
   border-radius: 5px 0 0 5px;
   background-size: cover; background-position: center;
   background-color: rgba(255,255,255,0.05);
+  /* A video cover renders as a <video> with this same class (`plArtHtml`), so
+     the box has to crop the frame the way the background-size above crops a
+     still — and clip it, or the video's own corners square off the panel. */
+  object-fit: cover; overflow: hidden;
 }
 .plp-hero-shape { position: absolute; inset: 0; width: 100%; height: 100%; }
 .plp-shape-panel { fill: rgba(255,255,255,0.05); }
@@ -5931,6 +6248,12 @@
 }
 .plp-plat { position: absolute; right: 0; top: 100%; margin-top: -4px; z-index: 50; }
 .plp-plat-item { display: flex; align-items: center; gap: 8px; }
+/* A service row while its link is being resolved, and when there isn't one.
+   Same two states the preview button has (`.v3-stream-preview.none`) and the
+   same language: the row dips rather than throwing an error at you. Most taps
+   see neither — the menu warms all three links as it opens. */
+.plp-plat-item.is-wait { opacity: .5; pointer-events: none; }
+.plp-plat-item.none { opacity: .45; }
 .plp-plat-ico {
   width: 18px; height: 18px; border-radius: 5px; flex-shrink: 0;
   display: inline-flex; align-items: center; justify-content: center;
@@ -6003,6 +6326,16 @@
 .plnew-cover:hover { border-color: var(--star); }
 .plnew-cover--set { border-color: transparent; }
 .plnew-file { display: none; }
+/* The well's video preview — created by `plnewSyncOne` only when the chosen
+   cover is a video, and removed again when it is not. ⚠️ `position: absolute`
+   over the well rather than in its flow: the well is a centring flex box for
+   the upload hint, and a video in that flow would push the hint around instead
+   of covering it. */
+.plnew-cover-vid {
+  position: absolute; inset: 0; z-index: 1;
+  width: 100%; height: 100%; object-fit: cover;
+  border-radius: inherit;
+}
 .plnew-cover-hint {
   display: flex; flex-direction: column; align-items: center; gap: 5px;
   font-family: var(--font-mono); font-size: 8px; letter-spacing: .06em;
@@ -6454,6 +6787,190 @@
 .ob-h .ob-sub { font-size: 13.5px; color: var(--text2); line-height: 1.45; }
 .ob-h .ob-sub b { color: var(--text); font-weight: 700; }
 
+/* ══════════════════════════════════════════════════════════════
+   THE MIX DIAL — Pro's multi-genre shelf (the logo as the input)
+   ══════════════════════════════════════════════════════════════
+   Built by `mixDialSvg` in app.js; the geometry is all there, so this file only
+   says what the parts are MADE of. The one rule to keep: an unpicked genre is a
+   HOLE (an outline, a gap in the plate) and a picked one is a PULLEY (solid,
+   heavier, on the belt). The whole read depends on those two being obviously
+   different objects, not two states of the same dot.
+   (It briefly lived in onboarding — see the note on `mixDialBuild`.) */
+/* ── The mix dial, INSIDE the bento's album cell ─────────────────────────
+   ⚠ This was a bottom sheet (`.mix-overlay` / `.mix-sheet`) and must not go
+   back to being one. The dial chooses what the bento shows, so it belongs in
+   the bento: the ring covers `.v3-album` — the same square the shelf wheel
+   covers — and the commit sits in `.v3-blue` right under it. A window in front
+   of the object hid the thing you were deciding about.
+   Same three layers as `.shop-pick`, for the reasons documented there: a
+   PAINTED blur of the cover, a wash over it, then the content. */
+.mix-inline {
+  position: absolute; inset: 0; z-index: 5;
+  overflow: hidden; border-radius: inherit;
+  opacity: 0; pointer-events: none;
+  transition: opacity .2s;
+  /* ⚠ Carries its own DARK tokens, exactly as the sheet did. The dial draws in
+     `var(--text)` and friends, and on a light home it would otherwise come out
+     as near-black ink on a dark, tinted cover — invisible. */
+  --bg: #1c1c22; --surface: #24242d; --surface2: #2b2b35;
+  --border: rgba(232,226,214,0.16);
+  --text: #e8e2d6; --text2: rgba(232,226,214,0.62); --text3: rgba(232,226,214,0.30);
+  /* ⚠ Tinted by the ALBUM, not by gold — the same rule the shelf wheel follows.
+     `--v3-accent` is extracted from the cover by `applyAlbumColors` and set on
+     the screen, so it inherits down here and the belt re-tints with the art. */
+  --accent: var(--v3-accent, #e6b866);
+}
+.s-home-v3--mixing .mix-inline { opacity: 1; pointer-events: auto; }
+/* `scale` overscans so the blur's own soft edge is pushed outside the box's
+   `overflow: hidden` instead of showing as a pale rim inside it. */
+.mix-inline-bg {
+  position: absolute; inset: 0;
+  background-size: cover; background-position: center;
+  filter: blur(11px); transform: scale(1.14);
+}
+/* A LAYER, not a background on `.mix-inline`: a parent's own background paints
+   beneath its children, i.e. under the very thing it is meant to darken. */
+.mix-inline-tint { position: absolute; inset: 0; background: rgba(10,9,8,.62); }
+/* Fills the cell. The viewBox is square and the album cell is 291×289 at the
+   393px frame, so `meet` letterboxes by about a pixel — which is why the label
+   budget in `DIAL` is measured against 158, not 160. */
+.mix-inline .ob-dial {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  touch-action: manipulation;   /* taps, not a drag — nothing to claim */
+}
+
+/* The belt. Never filled — it is a strap, and a fill would make it a blob the
+   moment it wraps three or more wheels. */
+.ob-dial-belt {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 3;
+  stroke-linejoin: round;
+  opacity: .92;
+  transition: stroke .22s;
+}
+
+/* ⚠ The ring no longer TURNS, so it has no transform-origin and no spring — the
+   gesture is a tap. It stays a group because the belt has to live inside it
+   with the holes it wraps. */
+
+/* A genre's tap target: the 18° wedge it owns, hole and label inside it.
+   Invisible, and the only thing in the group that takes a pointer. */
+.ob-hole { cursor: pointer; }
+.ob-hole-hit { fill: transparent; }
+.ob-hole-c {
+  fill: var(--bg);
+  stroke: var(--text3);
+  stroke-width: 1.5;
+  pointer-events: none;
+  transition: r .22s cubic-bezier(.2,.9,.25,1), fill .22s, stroke .22s;
+}
+/* A pulley: solid, and it now belongs to the belt. */
+.ob-hole.is-on .ob-hole-c {
+  fill: var(--accent);
+  stroke: var(--accent);
+}
+/* ⚠ EVERY label, always. An earlier cut faded them in only once a genre was
+   picked — fine with a cursor, useless on a phone, where there is no hover and
+   you would be choosing blind. They fit because they RADIATE (see
+   `mixDialSvg`): radial text costs ANGLE, not arc, so a label subtends about 4°
+   where each genre owns 18°. Tangential text is what could never fit.
+
+   ⚠ ROBOTO FLEX, and specifically for its `wdth` axis — the same variable face
+   the album title uses (`.v3-blue-info-row`), already loaded in index.html with
+   all three axes at full range (opsz 8..144, wdth 25..151, wght 100..900).
+   The labels are the one thing on this dial with no room to spare: they radiate
+   outward from r=90 into a viewBox that ends at 160, so every genre gets the
+   same ~68 units whatever its name is. Half of them are short — Pop, Jazz, R&B,
+   Folk, Soul — and a few are not: Alternative, Electronic. A fixed face has to
+   be small enough for the LONGEST name, which throws away the space the short
+   ones aren't using. A variable one is set big and CONDENSED PER LABEL by
+   `mixDialFitLabels`, so only the names that actually overflow pay for it, and
+   they pay in width rather than in size. That is what took this off SUSE Mono,
+   which has no width axis to give.
+   ⚠ `opsz` is PINNED to 9 rather than left on `auto`. The SVG is scaled by its
+   viewBox (~0.9px per unit), so the used font-size `auto` would read is the
+   unscaled 12 — an optical size for text half again as big as what lands.
+   ⚠ The axes arrive as CUSTOM PROPERTIES because `font-variation-settings`
+   replaces the whole tuple: a plain `font-weight` on the picked state is
+   ignored while this property is set, and the JS fit pass would wipe the weight
+   if it wrote the tuple itself. One variable each, so they compose. */
+.ob-hole-t {
+  --lwdth: 100;   /* per label, set by mixDialFitLabels() */
+  --lwght: 420;
+  font-family: 'Roboto Flex', var(--font-main);
+  /* ⚠ 13 units, set for the SHORT names and condensed down for the long ones —
+     that is the whole point of using a variable face here. A fixed face had to
+     sit at 10 so "Alternative" would fit, which left Pop, Jazz and R&B three
+     sizes smaller than they needed to be. This is the one dial to turn if the
+     labels read too small or too tight: raise it and more names get condensed,
+     lower it and fewer do.
+     ⚠ 14 rather than 13 because the long names now sit in the CORNERS
+     (`dialSeating`), where a label has ~88 units instead of ~70 — the extra
+     room went into size for everybody rather than slack for a few. */
+  font-size: 14px;
+  font-variation-settings: 'opsz' 9, 'wdth' var(--lwdth), 'wght' var(--lwght);
+  letter-spacing: .005em;
+  fill: var(--text2);
+  dominant-baseline: middle;
+  pointer-events: none;
+  transition: fill .22s;
+}
+.ob-hole.is-on .ob-hole-t { --lwght: 680; fill: var(--text); }
+
+/* The hub: the record. Groove + spindle hole, and nothing else — the readout it
+   used to carry moved to the info box, where there is room to say it in words.
+   ⚠ Not a target. Every tap belongs to a wedge, and a disc swallowing the
+   middle would be a dead spot in the centre of the dial. */
+.ob-dial-hub { pointer-events: none; }
+.ob-hub-disc   { fill: var(--surface2); stroke: var(--border); stroke-width: 1; }
+.ob-hub-groove { fill: none; stroke: var(--border); stroke-width: 1; opacity: .7; }
+.ob-hub-hole   { fill: var(--bg); }
+
+/* ── The commit, in the INFO BOX ─────────────────────────────────────────
+   The box that normally tells you what this album is tells you what the mix is
+   instead. ⚠ It covers `.v3-blue` COMPLETELY and stops the bubble in JS, which
+   is also what takes that box's tap-to-open-album off the table while you are
+   choosing — otherwise committing a mix could navigate away from the screen it
+   was committed for. */
+.v3-blue-mix {
+  position: absolute; inset: 0; z-index: 3;
+  display: none;
+  align-items: center; justify-content: space-between; gap: 8px;
+  padding: 9px 12px;
+}
+.s-home-v3--mixing .v3-blue-mix { display: flex; }
+/* Everything the box normally says is about ONE album, and while you are
+   building a mix there isn't one yet. `visibility` rather than `display` so the
+   box keeps the height its own content gives it and nothing below shifts. */
+.s-home-v3--mixing .v3-blue > *:not(.v3-blue-mix) { visibility: hidden; }
+.v3-blue-mix-txt { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.v3-blue-mix-n {
+  font-family: var(--font-head); font-size: 15px; font-weight: 800;
+  letter-spacing: -.2px; color: var(--text);
+}
+/* The serif italic is the same annotation voice the shelf wheel's counts use —
+   a different voice, so the number reads as a note on the dial rather than a
+   second label. */
+.v3-blue-mix-g {
+  font-family: 'Crimson Text', Georgia, serif; font-style: italic;
+  font-size: 11.5px; color: var(--text2);
+}
+.v3-blue-mix-go {
+  flex-shrink: 0; border: 0; border-radius: 999px;
+  padding: 9px 15px;
+  background: var(--v3-accent, #e6b866); color: #1a1208;
+  font-family: var(--font-head); font-size: 12px; font-weight: 800;
+  cursor: pointer; transition: opacity .18s;
+}
+/* ⚠ ONE genre is a valid mix — there is no minimum pick count, and don't put
+   one back: the dial is an alternative way to cut the catalogue, not a
+   combining puzzle. The only thing that disables this is the floor the QUEUE
+   needs (`commitShelf` refuses a shelf under two albums), and the label names
+   which case you are in rather than failing silently. */
+.v3-blue-mix-go:disabled { opacity: .34; cursor: default; }
+
 /* 0 | Username */
 .ob-userwrap {
   display: flex; align-items: center; gap: 4px;
@@ -6677,14 +7194,27 @@
 }
 
 /* Scroll area inside v3-body — matches the homepage bento's ~10px side margins */
+/* ⚠ The 12px side padding is cancelled by `.prof-fav-rail`'s `margin-inline`
+   so the favourites carousel can run edge to edge. Change this and change that. */
 .prof2-scroll { padding: 6px 12px 75px; }
 
 
-/* ── Profile card — traced from ProfileTheme_Regular4.svg (690×466) ──
-   A short, wide card topped by a name-banner tab that holds a white username
-   pill: left pane = profile picture, right pane = bio / meta / stats + a follow
-   pill in the bottom-right notch, and the 5 favourite-album CDs in a row below. */
-.prof-canvas { position: relative; width: 100%; margin: 2px auto 0; aspect-ratio: 690 / 466; }
+/* ── Profile card — traced from ProfileTheme_Regular4 (1).svg ────────────
+   A card topped by a name-banner tab holding a white username pill: left pane =
+   profile picture, right pane = stats / bio / location / one action button.
+   ⚠ EVERY PERCENTAGE IN THIS BLOCK RESOLVES AGAINST 690×460. Horizontals are
+   `x / 690`, verticals are `y / 460`; a value copied from an older revision of
+   this block lands in the wrong place WITHOUT looking obviously wrong, which is
+   the trap every time the artwork changes. It has been 466, then 608, now 460.
+   ⚠ Why 460 and not the file's 608: the artwork's bottom 150 units are the five
+   favourite-album circles, and those are no longer in the card — they are a
+   swipeable rail in their own section (`.prof-favs`). The canvas stops where
+   the CARD stops, at y=449, plus a little air.
+   What the revision itself changed: the card got TALLER (74.7→449 where it was
+   65.7→328) and the picture pane much WIDER (0→374.5 where it stopped at
+   262.3). The right pane pays for it — 45.6% of the width where it had 61.8% —
+   which is why the stats are a 2×2 grid rather than one row of four. */
+.prof-canvas { position: relative; width: 100%; margin: 2px auto 0; aspect-ratio: 690 / 460; }
 .prof-base {
   position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1;
   pointer-events: none; overflow: visible;
@@ -6701,112 +7231,275 @@
 /* White username pill nested in the banner. Left/top/height fixed; width is set
    by sizeProfName() so it grows with the banner. Inset shadow seats it in. */
 .prof-name-pill {
-  position: absolute; z-index: 2; left: 2.32%; top: 3.11%; height: 8.09%;
+  /* 16/690, 13.5/460, 47.5/460 — the pill is an explicit path in the new file
+     (x 16→360, y 13.5→61) rather than something eyeballed into the banner. */
+  position: absolute; z-index: 2; left: 2.32%; top: 2.93%; height: 10.33%;
   border-radius: 999px; background: var(--pf-slot); pointer-events: none;
   box-shadow: inset 0 2px 4px var(--pf-well-dk), inset 0 -1px 2px var(--pf-well-lt);
 }
 
 /* Username seated in the pill — unbold; white on dark, black on light */
 .prof-name-tab-lbl {
-  position: absolute; z-index: 4; left: 6%; top: 3.1%; height: 8.1%;
+  position: absolute; z-index: 4; left: 6%; top: 2.9%; height: 10.3%;
   display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; pointer-events: none;
 }
 .prof-name-nick { font-size: 13px; font-weight: 500; color: var(--pf-slot-ink); letter-spacing: -0.2px; font-family: var(--font-head); }
 .prof-name-at   { font-size: 10px; font-weight: 400; color: var(--pf-slot-ink2); font-family: var(--font-mono); }
 
 /* Profile image — fills the SVG's left pane, below the banner (flush left, no gaps).
-   Bottom-left corner rounded to the card; other corners square (banner / divide). */
+   Bottom-left corner rounded to the card; other corners square (banner / divide).
+   ⚠ The pane is x 0.5→374.5, y 74.5→449.5 — 54.28% of the width, and against a
+   canvas that now stops at the card it is 81.5% of the height. Nearly half the
+   card where it used to be 37.9% × 56.3%; this is the whole reason for the
+   retrace: "the profile pic is a lot larger in this version". */
 .prof-pic {
-  position: absolute; z-index: 2; left: 0.4%; top: 14.4%; width: 37.2%; height: 56%;
-  border-radius: 0 10px 0 6%; background-size: cover; background-position: center;
+  position: absolute; z-index: 2; left: 0.4%; top: 16.5%; width: 53.88%; height: 81.2%;
+  border-radius: 0 10px 0 5%; background-size: cover; background-position: center;
   background-color: #0c0b0a;
   box-shadow: inset 0 2px 6px var(--pf-well-dk), inset 0 -1px 4px var(--pf-well-lt);
 }
 
-/* Info block — location/occupation (bold) then the description, sitting below
-   the stats row in the right pane. */
-.prof-info { position: absolute; z-index: 3; left: 41%; top: 36.4%; width: 55%; }
+/* ── The right pane: x 374.5→688.9 = 54.28%→99.84%, y 74.7→449 = 16.24%→97.61%.
+   ⚠ ONE flex column, not three separately positioned boxes. Stats / bio /
+   location each used to carry a hand-computed `top`, and any restyle inside one
+   of them silently pushed it into the next — giving the stats their inset wells
+   grew that block by ~20px and dropped the bio on top of it. A column cannot
+   overlap itself, and the numbers below are just the pane's own bounds.
+   The bottom stops short of the pane: the action button owns that corner. */
+.prof-right {
+  position: absolute; z-index: 3;
+  /* The pane runs 16.2% → 97.6% (the card's own top and bottom edges). The
+     column now holds ONLY the stats, so it takes nearly all of that and centres
+     them in it — there is no longer a stack whose order could go wrong, just one
+     block that should sit in the middle of the space it has.
+     ⚠ The action button no longer lives at the bottom of this pane, so nothing
+     has to be left clear down there. */
+  left: 56.4%; width: 41.4%; top: 18%; bottom: 6%;
+  display: flex; flex-direction: column; justify-content: center;
+  min-height: 0;
+}
+/* ⚠ `position: relative` because these are flow children now. The `.pfe-slot`
+   badge and outline are absolutely positioned INSIDE their slot, and they used
+   to get their containing block for free from the slot being absolute itself. */
+.prof-info { position: relative; z-index: 3; min-width: 0; }
+/* ⚠ Four lines, not two. The pane gained ~40% of its height in this trace and
+   the bio is the only thing in it that can use the room. */
 .prof-desc {
   font-size: 10px; color: var(--pf-ink2); line-height: 1.4;
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
 }
-.prof-meta { position: absolute; z-index: 3; left: 41%; bottom: calc(30.8% + 10px); display: flex; flex-wrap: wrap; gap: 3px 12px; }
-.prof-meta-item { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 800; color: var(--pf-ink); }
+/* Last in the column; `margin-top: auto` pins it to the bottom of the stack so
+   a short bio leaves the gap above the location rather than below it. */
+.prof-meta {
+  position: relative; z-index: 3; margin-top: auto; min-width: 0;
+  display: flex; flex-wrap: wrap; gap: 3px 12px;
+}
+/* ⚠ Never wraps. `.prof-meta` is the LAST thing in the column and clears the
+   action button by about 3px — a location long enough to take a second line
+   (measured: the row has ~116px and "United Kingdom" needs ~98) would land on
+   top of it. It ellipses instead. */
+.prof-meta-item {
+  display: inline-flex; align-items: center; gap: 5px; min-width: 0;
+  font-size: 10.5px; font-weight: 800; color: var(--pf-ink);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 .prof-meta-item svg { width: 12px; height: 12px; opacity: 1; }
 
-/* Numbers — near the top of the right pane, above the bio */
+/* ⚠ STACKED, not a row. Three figures side by side in a 149px column meant
+   every one of them was capped by the width of its own label — "Following" at
+   7px was already 40px of the ~45px each column had — so the numbers could
+   never be bigger than a caption no matter how much vertical space the pane had.
+   Down the column each figure gets the full width and they are only limited by
+   height, of which there is plenty: three blocks at ~43px in a ~183px box.
+   ⚠ No emboss. Each figure briefly sat in its own inset well; stacked, three
+   wells read as a list of controls rather than as a readout. */
 .prof-stats {
-  position: absolute; z-index: 3; left: 41%; top: calc(17.1% + 8px); width: 56%;
-  display: flex; justify-content: space-between; gap: 4px;
+  flex: 0 0 auto;
+  display: flex; flex-direction: column; justify-content: space-evenly;
+  align-items: flex-end; gap: 4px; height: 100%;
 }
-.prof-stat { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
-.prof-stat-n { font-size: 13.5px; font-weight: 800; color: var(--pf-ink); font-family: var(--font-head); letter-spacing: -0.3px; line-height: 1; }
-.prof-stat-l { font-size: 6.8px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--pf-ink2); font-family: var(--font-mono); }
+/* ⚠ Right-aligned, and it has to be set on BOTH boxes: `align-items` on the
+   column ranges the blocks against the pane's right edge, and the same on each
+   block ranges its label under its own number. Either one alone leaves a ragged
+   edge — the numbers vary in width ("214" against "1.9k") and so do the labels
+   ("Following" against "Review score"). The pane's right edge is the card's, so
+   this is the one edge in the block that lines up with something. */
+.prof-stat { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; min-width: 0; }
+/* ⚠ 30px, and the stack is what pays for it. Side by side these were capped at
+   17 by the WIDTH three columns left each other; down the column the only limit
+   is the pane's width, and the widest value ("41.8k", five glyphs) is ~87px of
+   the ~149 available. The label can go back to a real word for the same reason:
+   "Review score" at 9px is ~67px, where the row could only afford "Score".
+   Measured at 34: each block is ~47px and three of them plus the gaps come to
+   ~141px in a 161px column, and the widest value ("41.8k") is ~99px of the
+   ~131px the pane gives. Height is what binds now, not width. */
+.prof-stat-n {
+  font-size: 34px; font-weight: 800; color: var(--pf-ink);
+  font-family: var(--font-head); letter-spacing: -1px; line-height: 1;
+  white-space: nowrap;
+}
+.prof-stat-l {
+  font-size: 9px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--pf-ink2); font-family: var(--font-mono);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+}
 
-/* Edit pencil — pinned to the upper-right, in the empty strip right of the banner */
-.prof-edit {
-  position: absolute; z-index: 4; right: 1.5%; top: calc(1% - 3px); left: auto;
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 27px; height: 27px; border-radius: 50%;
-  border: none; cursor: pointer; color: var(--pf-ink); background: var(--pf-base);
-  box-shadow: -1.5px -1.5px 4px var(--pf-lt), 2px 2px 5px var(--pf-dk);
-}
-.prof-edit:active { box-shadow: inset -1.5px -1.5px 4px var(--pf-lt), inset 2px 2px 4px var(--pf-dk); }
-.prof-edit svg { width: 13.5px; height: 13.5px; }
-
-/* Favourite-album wells — horizontal row below the card, embossed IN.
-   Height % is of the 690×401 canvas, keeping each well a true circle. */
-.prof-alb {
-  position: absolute; z-index: 3;
-  width: 15.94%; height: 23.61%; padding: 0; border: none; background: none;
-  border-radius: 50%; cursor: pointer; transition: transform .15s;
-}
-.prof-alb:hover { transform: scale(1.05); }
-.prof-alb:active { transform: scale(.95); }
-.prof-alb-img {
-  display: block; width: 100%; height: 100%; border-radius: 50%;
-  background-size: cover; background-position: center; background-color: #0c0b0a;
-  box-shadow: inset 3px 4px 8px var(--pf-well-dk), inset -2px -3px 7px var(--pf-well-lt);
-}
-/* Centre hole → reads as a CD; stays put while the art spins during preview */
-.prof-alb-hole {
-  position: absolute; top: 50%; left: 50%; width: 24%; height: 24%;
-  transform: translate(-50%, -50%); border-radius: 50%;
-  background: var(--pf-face); z-index: 2; pointer-events: none;
-  box-shadow: inset 0 1px 2px rgba(0,0,0,.6), 0 0 0 2px rgba(0,0,0,.28);
-}
-.prof-alb-img.prof-alb--spin { animation: v3spin 3.2s linear infinite; }
-
-/* CD preview/platforms popup — reuses .wall2-menu/.v3-cd-menu look, opening
-   upward above the CD row (left/right/bottom set inline per slot). */
-.prof-cd-menu { left: auto; right: auto; top: auto; bottom: auto; width: 172px; }
-.prof-alb--empty {
-  display: flex; align-items: center; justify-content: center; border-radius: 50%;
-  background: #0c0b0a; box-shadow: inset 3px 4px 8px var(--pf-well-dk);
-}
-.prof-alb-add { font-size: 18px; font-weight: 300; color: rgba(255,255,255,.5); line-height: 1; }
-
-/* Dot-mascot Follow button — seats in the pill notch at the card's bottom-right
-   (traced from ProfileTheme_Regular.svg). Reuses the homepage .v3-ring dots in
-   the arrow formation; toggles to a filled "Following" state. */
-.prof-follow {
-  position: absolute; z-index: 4; left: 75.5%; top: 54.32%; width: 21%; height: 11.37%;
+/* ── The card's ONE action button — UPPER RIGHT ──────────────────────────
+   ⚠ Edit on your own profile, Follow on someone else's — the same button, not
+   two. They were separate elements once, which meant both rendered on your own
+   page; giving them one box then made the later one in the DOM hide the other,
+   and the pencil vanished. A page offers one action here, so there is one
+   element and `PROFILE_GUEST` decides what it says.
+   ⚠ It sat in the card's LOWER right and has moved. Down there it was inside the
+   card, level with the stats, and read as part of that block rather than as the
+   page's one action; up here it is on the strip above the card, opposite the
+   name banner — where the trace puts a pill (x 600→688, y 1→55) and where a
+   profile's follow control is expected.
+   ⚠ Wider than that traced pill on purpose: 12.75% is ~46px at the 393 frame and
+   the dots plus "FOLLOW" want ~58. 17% gives ~61px and still starts at 81.5%,
+   clear of the name banner, which ends at 67.8%. */
+.prof-act {
+  position: absolute; z-index: 4; left: auto; right: 1.5%; top: 0.2%;
+  width: 17%; height: 11.7%;
   display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 6px;
   padding: 0 9px; border: none; cursor: pointer; background: var(--pf-base);
   border-radius: 999px; box-shadow: -2px -2px 5px var(--pf-lt), 3px 3px 7px var(--pf-dk);
-  transition: box-shadow .18s;
+  transition: box-shadow .18s; font-family: inherit;
 }
-.prof-follow .v3-ring { width: 20px; height: 20px; color: var(--pf-ink); }
-.prof-follow .v3-ring-dot { width: 3.2px; height: 3.2px; }
-.prof-follow-lbl {
+.prof-act:active { box-shadow: inset -2px -2px 5px var(--pf-lt), inset 2px 2px 5px var(--pf-dk); }
+.prof-act .v3-ring { width: 20px; height: 20px; color: var(--pf-ink); }
+.prof-act .v3-ring-dot { width: 3.2px; height: 3.2px; }
+.prof-act-ico { display: inline-flex; color: var(--pf-ink); }
+.prof-act-ico svg { width: 13px; height: 13px; }
+.prof-act-lbl {
   font-size: 7.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
   color: var(--pf-ink2); font-family: var(--font-mono); line-height: 1;
 }
-.prof-follow.is-following {
+.prof-act.is-following {
   box-shadow: inset -2px -2px 5px var(--pf-lt), inset 2px 2px 6px var(--pf-dk);
 }
-.prof-follow.is-following .v3-ring { color: var(--star); }
-.prof-follow.is-following .prof-follow-lbl { color: var(--star); }
+.prof-act.is-following .v3-ring   { color: var(--star); }
+.prof-act.is-following .prof-act-lbl { color: var(--star); }
+
+/* CD preview/platforms popup — reuses the .wall2-menu / .v3-cd-menu look. */
+.prof-cd-menu { left: auto; right: auto; top: auto; bottom: auto; width: 172px; }
+/* The favourites rail's own popup — the width and the reset stay, the position
+   comes from `.prof-favs` below (one menu per slot, all centred over the rail). */
+
+/* ── Favourite albums — a rail of three, one centred ─────────────────────
+   ⚠ This replaces five small wells traced into the bottom of the card. At that
+   size the COVER WAS ALL YOU GOT — no title, no artist, no year — and a cover is
+   not enough to know an album by. Three big ones with the middle one framed
+   leaves room under the rail to say what you are actually looking at.
+   ⚠ CSS scroll-snap, NOT a hand-rolled gesture. This has to feel native under a
+   thumb, and the browser's own momentum, rubber-band and snap beat anything
+   written here; the swipe engines elsewhere exist because they animate a bento
+   cell, which this does not. */
+.prof-favs { position: relative; }
+.prof-fav-rail {
+  /* ⚠ `position: relative` is load-bearing, not decoration: it makes the rail
+     each button's `offsetParent`, which is what puts `offsetLeft` in the same
+     coordinate space as `scrollLeft` for `profFavPaint`. */
+  position: relative;
+  display: flex; gap: 12px;
+  overflow-x: auto; overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  /* ⚠ NO horizontal padding, ever. Percentage `flex-basis` resolves against the
+     flex container's CONTENT box, so side padding of 19% made each disc 62% of
+     the remaining 62% — 38.4% of the rail — and NOTHING could line up: the
+     centring arithmetic below is written in percentages of the rail, and padding
+     silently redefines what a percentage means here. The end spacers do the same
+     job as elements, in the same units as the discs. */
+  padding: 4px 0 2px;
+  /* ⚠ FULL BLEED — cancels `.prof2-scroll`'s 12px side padding so the rail runs
+     edge to edge while its heading and info panel stay inset with everything
+     else. A carousel that stops short of the screen reads as a boxed-in list;
+     one that runs off both sides reads as something you can keep pulling.
+     ⚠ These 12s are `.prof2-scroll`'s padding written a second time — change
+     that and change this. The percentages inside are unaffected: they resolve
+     against the rail's own (now wider) box, so the discs and the spacers scale
+     together and the centring still lands. */
+  margin-inline: -12px;
+}
+.prof-fav-rail::-webkit-scrollbar { display: none; }
+/* ⚠ The `- 12px` is the `gap` that lands between the spacer and the first disc.
+   Without it every disc sits one gap right of centre. Centre of disc 1 =
+   (19% - 12px) + 12px + 31% = 50%. */
+.prof-fav-pad { flex: 0 0 calc(19% - 12px); }
+.prof-fav {
+  position: relative;            /* the centre hole is absolute inside it */
+  flex: 0 0 62%; aspect-ratio: 1;
+  scroll-snap-align: center;
+  padding: 0; border: none; background: none; border-radius: 50%;
+  cursor: pointer;
+  /* The two neighbours are present but clearly not the subject — smaller and
+     dimmed, so the rail reads as one album with context either side of it. */
+  transform: scale(.82); opacity: .5;
+  transition: transform .28s cubic-bezier(.22,1,.36,1), opacity .28s;
+}
+.prof-fav.is-mid { transform: scale(1); opacity: 1; }
+.prof-fav-img {
+  display: block; width: 100%; height: 100%; border-radius: 50%;
+  background-size: cover; background-position: center; background-color: #0c0b0a;
+  box-shadow: inset 3px 4px 10px var(--pf-well-dk), inset -2px -3px 9px var(--pf-well-lt),
+              0 6px 18px rgba(0,0,0,.35);
+}
+/* Centre hole → reads as a CD; stays put while the art spins during preview */
+/* ⚠ 13%, not the 21% the small wells carried. A spindle hole is a fixed size on
+   a real record — it does NOT grow with the disc — so a percentage that read
+   right at 60px reads like a doughnut at 200. */
+.prof-fav-hole {
+  position: absolute; top: 50%; left: 50%; width: 13%; height: 13%;
+  transform: translate(-50%, -50%); border-radius: 50%;
+  background: var(--pf-face); z-index: 2; pointer-events: none;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,.6), 0 0 0 2px rgba(0,0,0,.28);
+}
+.prof-fav-img.prof-fav--spin { animation: v3spin 3.2s linear infinite; }
+.prof-fav--empty {
+  display: flex; align-items: center; justify-content: center;
+  background: #0c0b0a; box-shadow: inset 3px 4px 10px var(--pf-well-dk);
+}
+.prof-fav-add { font-size: 30px; font-weight: 300; color: rgba(255,255,255,.45); line-height: 1; }
+
+/* The panel under the rail. Written by `profFavPaint` from whichever disc is
+   centred — the markup carries no album at all, so it cannot go stale against
+   the rail's scroll position. */
+.prof-fav-info { text-align: center; margin-top: 12px; padding: 0 8px; min-height: 62px; }
+/* Title and year on one line. The year is set quieter and lighter so it reads as
+   part of naming the record rather than as a second fact competing with it. */
+.prof-fav-alb {
+  display: flex; align-items: baseline; justify-content: center; gap: 6px;
+  min-width: 0;
+}
+.prof-fav-name {
+  font-size: 15px; font-weight: 700; color: var(--pf-fg);
+  font-family: var(--font-head); letter-spacing: -.2px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.prof-fav-yr {
+  flex-shrink: 0; font-size: 11px; font-weight: 400; color: var(--pf-fg2);
+  font-family: var(--font-mono); letter-spacing: .02em;
+}
+.prof-fav-artist { font-size: 11.5px; font-weight: 700; color: var(--pf-fg2); margin-top: 1px; }
+.prof-fav-sub {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  margin-top: 5px; flex-wrap: wrap;
+}
+.prof-fav-stars { display: inline-flex; line-height: 1; }
+.prof-fav-meta {
+  font-size: 9.5px; letter-spacing: .04em; color: var(--pf-fg2);
+  font-family: var(--font-mono);
+}
+/* ⚠ One menu per slot, all centred over the rail rather than hung off their own
+   disc: only the CENTRED album is actionable, so that is the only place a popup
+   ever needs to appear. They also sit outside the rail — it is
+   `overflow-x: auto` and would clip them. */
+.prof-favs .prof-cd-menu {
+  position: absolute; z-index: 20;
+  left: 50%; transform: translateX(-50%); bottom: 12px;
+}
 
 /* ── Content sections below the card (artists · songs · playlists · reviews) ── */
 .prof-sec { margin-top: 20px; }
@@ -6865,24 +7558,22 @@
 .prof-pl-nm { font-size: 11.5px; font-weight: 700; color: var(--pf-fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .prof-pl-meta { font-size: 9.5px; color: var(--pf-fg2); font-family: var(--font-mono); margin-top: -3px; }
 
-/* Recently rated — feed below the card ("more content below") */
+/* ── Review history — the home feed's row, on a profile ──────────────────
+   ⚠ There is no `.prof-rv-*` component any more, and there should not be one.
+   The rows ARE `.ntf-row` — the same anatomy, the same sentence order and the
+   same engagement pills the home feed uses — because a review is a review, and
+   a profile that renders one its own way is a second component that will drift
+   from the first. `--sd-*` reaches them because the profile screen is itself an
+   `.s-home-v3`, which is where those tokens are scoped.
+   The only thing this section adds is a bigger tap target: on home the pills sit
+   in a scrolling feed of many verbs, here they are the point of the page. */
 .prof-feed { margin-top: 20px; }
-.prof-rr {
-  display: flex; align-items: center; gap: 11px; width: 100%; padding: 8px;
-  margin-bottom: 6px; background: none; border: none; cursor: pointer;
-  text-align: left; border-radius: 12px; transition: background .14s;
+.v3-up--prof {
+  font-size: 12.5px;
+  padding: 7px 13px 7px 11px;
+  gap: 7px;
 }
-.prof-rr:hover { background: color-mix(in srgb, var(--pf-fg) 6%, transparent); }
-.prof-rr-art {
-  width: 44px; height: 44px; flex-shrink: 0; border-radius: 8px;
-  background-size: cover; background-position: center; background-color: #0c0b0a;
-  box-shadow: 0 3px 8px rgba(0,0,0,.22);
-}
-.prof-rr-meta { display: flex; flex-direction: column; min-width: 0; flex: 1; gap: 1px; }
-.prof-rr-alb { font-size: 13px; font-weight: 400; color: var(--pf-fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.prof-rr-artist { font-size: 11px; font-weight: 700; color: var(--pf-fg2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.prof-rr-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
-.prof-rr-time { font-size: 9.5px; color: var(--pf-fg2); font-family: var(--font-mono); }
+.v3-up--prof svg { width: 17px; height: 17px; }
 
 /* ── Favourite-album picker sheet ── */
 .prof-picker {
@@ -6954,12 +7645,12 @@
 
 /* ── a filled slot: outline it on hover ──
    NOTE: no blanket `position: relative` here. The card's regions (.prof-pic,
-   .prof-info, .prof-meta, .prof-name-tab-lbl, .prof-alb) are all absolutely
+   .prof-info, .prof-meta, .prof-name-tab-lbl) are all absolutely
    positioned from the traced SVG coordinates, and relative would drop them back
    into normal flow and wreck the layout. They already establish a containing
    block for ::after; only the flow-level rows below need it added. */
 .pfe-slot { cursor: pointer; }
-.prof-pl.pfe-slot, .prof-song.pfe-slot { position: relative; }
+.prof-pl.pfe-slot, .prof-song.pfe-slot, .prof-fav.pfe-slot { position: relative; }
 .pfe-slot::after {
   content: ''; position: absolute; inset: -4px;
   border: 1px dashed transparent; border-radius: 8px;
@@ -6967,7 +7658,7 @@
 }
 .pfe-slot:hover::after { border-color: var(--star); background: rgba(232,168,60,0.07); }
 /* the round album discs get a round outline instead of a rounded rect */
-.prof-alb.pfe-slot::after { inset: -3px; border-radius: 50%; }
+.prof-fav.pfe-slot::after { inset: -3px; border-radius: 50%; }
 
 /* ── the "+" badge — sits on EVERY slot, filled or not, so it's obvious the
    content is swappable without having to hover to find out ── */
@@ -6990,7 +7681,7 @@
 .prof-info.pfe-slot::before         { top: 0;    right: 0; }
 .prof-meta.pfe-slot::before         { top: 50%;  right: -21px; margin-top: -8px; }
 .prof-name-tab-lbl.pfe-slot::before { top: 50%;  right: -21px; margin-top: -8px; }
-.prof-alb.pfe-slot::before          { top: auto; bottom: -1px; right: -1px; }
+.prof-fav.pfe-slot::before          { top: auto; bottom: 4px;  right: 4px; }
 .prof-pl.pfe-slot::before           { top: -5px; right: -5px; }
 /* song rows already carry a play glyph on the right — put the badge on the art */
 .prof-song.pfe-slot::before         { top: 4px;  right: auto; left: 30px; }
@@ -7398,3 +8089,377 @@
   transition: background .15s;
 }
 .set-signout:hover { background: rgba(224,90,107,0.12); }
+
+/* ── SHOP BUTTON — the nav scoop ──────────────────────────────
+   Sits exactly where the pet did: same 63×30 box, same 49.1% centre (the notch
+   in BOTTOM_NAV_FULL_INDENT.svg is a few units left of true centre), same
+   z-index 7 to clear the emboss. The one difference that matters is
+   `pointer-events` — the pet was decorative, this is pressable, so it takes the
+   whole scoop as its hit area. Keep the geometry here in step with `.sd-scene`
+   above; if the pet ever comes back they have to land on the same spot. */
+.sd-shop-btn {
+  position: absolute;
+  left: 49.1%; transform: translateX(-50%);
+  bottom: 2px;
+  z-index: 7;
+  width: 63px; height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0; border: 0; background: none;
+  cursor: pointer;
+  color: var(--sd-ink3);
+  transition: color .18s, transform .18s;
+}
+/* ⚠️ The scoop's FLAT TOP is 63px, not its 123px opening — the notch narrows as
+   it rises, so the glyph is sized against the narrow end, same as the face was.
+   22px square leaves the bag breathing room on all four sides at 30px depth. */
+.sd-shop-btn .sd-dot-ico { width: 22px; height: 22px; }
+.sd-shop-btn:hover  { color: var(--star, #e8a83c); transform: translateX(-50%) translateY(-1px); }
+.sd-shop-btn:active { transform: translateX(-50%) translateY(0) scale(.94); }
+.sd-shop-btn.active { color: var(--star, #e8a83c); }
+.sd-shop-btn:focus-visible { outline: 2px solid var(--star, #e8a83c); outline-offset: 3px; border-radius: 8px; }
+
+/* ── SHOP SCREEN — bento sheets ───────────────────────────────
+   The system in one line: a section is a SHEET, a sheet is TILES that butt
+   together over a 3px seam of screen bg. Density inside a sheet, air between
+   sheets. Three sheet types only — `--bento`, `--shelf`, `--row`.
+
+   ⚠️ Colour comes from the TILE, not the sheet. Frames and badges pass a
+   `--tint` (an "r,g,b" triple) and the field fills with a soft wash of it; the
+   home bento takes its colour from the cover, and this is the same idea applied
+   to a product. Gold stays reserved for what you can act on. */
+.shop-scroll { padding: 4px 12px 75px; }
+
+/* ⚠️ 34px, not Settings' 26px. This is the Apple-Store half of the brief
+   showing up in the type: a store opens with its name set big and tight, and
+   the shop is the one screen here that is not a list of your own stuff. */
+.shop-title {
+  margin: 6px 0 1px; font-size: 34px; font-weight: 800;
+  letter-spacing: -1.2px; line-height: 1; color: var(--sd-ink);
+}
+.shop-lede {
+  margin-bottom: 16px;
+  font-family: var(--font-mono); font-size: 9.5px; color: var(--sd-ink3);
+}
+
+.shop-sec-hd {
+  display: flex; align-items: baseline; gap: 7px;
+  padding: 18px 4px 7px;
+  font-family: var(--font-mono); font-size: 9.5px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: .09em; color: var(--sd-ink3);
+}
+.shop-sec-hd span { text-transform: none; letter-spacing: 0; opacity: .62; }
+
+/* The sheet. `overflow: hidden` is what rounds the tiles at the outer corners
+   without any tile having to know it is on an edge — the same trick the bento's
+   frame plays, and what keeps the inner junctions square. */
+.shop-sheet {
+  position: relative;
+  border-radius: 18px;
+  overflow: hidden;
+}
+/* ⚠️ The SHEET casts nothing — the tiles are what sit proud, and they do it
+   the way every other card here does: an inset top highlight, no cast shadow.
+   Each sheet type styles its own tiles (`.shop-tile--theme`, `.shop-tile--sm`);
+   there is no shared tile base, because the two have nothing in common beyond
+   that fill. */
+
+/* ── Pro showcase — the real compact bento, on display ────────
+   The bento inside here is the same component the home screen renders, so this
+   block styles the CASE, never the bento. ⚠️ Anything that reaches inside and
+   restyles a `.v3-*` will drift from home the first time home changes — if the
+   showcase needs the bento to look different, that is a sign the bento should
+   change, not that the shop should override it. */
+/* ── The Pro showcase, as a SCALE MODEL ────────────────────────────
+   The showcase is the real bento, and at full size it reads as the home screen
+   with a shop bolted above it — you are looking at your phone, not at a
+   product. Shrunk and centred, with air on every side, the same object reads as
+   a display model: the thing on the shelf, not the thing you are using.
+
+   ⚠ The scale is a TRANSFORM on a wrapper, never a width. Everything inside the
+   bento is px (type, radii, the CD) against a %-positioned frame, so narrowing
+   the box would shrink the frame and leave the type at full size — the layout
+   would break rather than scale. `transform: scale()` is the only thing that
+   takes the whole object down uniformly, which is what a scale model IS.
+   ⚠ And it lives on `.shop-model`, not on `.v3-bento`: the showcase styles the
+   CASE, never the product. */
+.shop-showcase {
+  --shop-model: 0.76;      /* the model's size against the real thing */
+  position: relative;
+  margin: 0 -2px 10px;
+  padding-top: 6px;        /* the display needs air above it, not just beside */
+}
+.shop-model {
+  transform: scale(var(--shop-model));
+  transform-origin: top center;
+  /* ⚠ A transform does not change the LAYOUT box, so the model's full-size
+     height would leave a hole under it. Take the difference back. A percentage
+     margin resolves against the parent's WIDTH, and the bento's height is its
+     width × `--v3-bento-hw`, so this is exactly the height the scale removed. */
+  margin-bottom: calc(-1 * (1 - var(--shop-model)) * var(--v3-bento-hw) * 100%);
+}
+/* The bento carries its own margin for the home screen's gutters; the shop has
+   its own padding, so take that back rather than paying for it twice. */
+.shop-showcase .v3-bento { margin: 0; }
+/* `touch-action` for the cover is set with `.v3-album` / `.v3-album--wheel`,
+   up by the cover's own rules — one place, ordered by specificity. It used to
+   be two inline writes from JS racing each other, which is why a rule down here
+   could never land. */
+
+/* The one label. It sits ON the case, not in the bento, so nothing about the
+   component has to know it is being sold. */
+/* ⚠ The tag does NOT scale with the model. It is a label on the display, not a
+   part of the product — shrinking it would make it a feature of the bento. It
+   is therefore positioned off the MODEL's left edge, which the scale moved
+   inward by half the width the model gave up. */
+.shop-pro-tag {
+  position: absolute; z-index: 8; top: -1px;
+  left: calc((1 - var(--shop-model)) / 2 * 100% - 2px);
+  padding: 4px 10px; border-radius: 999px;
+  font-family: var(--font-mono); font-size: 9px; font-weight: 700;
+  letter-spacing: .12em; text-transform: uppercase;
+  background: var(--star, #e8a83c); color: #1a1208;
+  box-shadow: 0 2px 8px rgba(0,0,0,.35);
+}
+
+/* ── The shelf wheel — what Pro adds to the hold ──
+   Built by `proWheelInit` and appended INTO `.v3-album`, so it inherits the
+   art's rounded corners and covers exactly the thing you are holding. Appears
+   in two places: always in the shop's showcase (it is the demo), and on the
+   home bento only for a Pro account. */
+/* ⚠ NO `backdrop-filter` here — this used to blur the backdrop and it could
+   not be made to cover the cover. `backdrop-filter` samples its backdrop in the
+   coordinate space of its BACKDROP ROOT, and `.v3-album` sits under both a
+   `transform` (the sub-pixel optical nudge, `--album-dx`) and the viewer's
+   `zoom` on `#phone-container`. Neither is accounted for, so the sampled rect
+   lands offset and a strip of the cover stayed sharp. Growing the box only
+   moved which edge the strip appeared on — left, then bottom — because the
+   offset is in the sampling, not in the geometry.
+
+   The blur is an ordinary painted layer instead (`.shop-pick-bg`): a copy of
+   the cover, blurred with `filter`. Ancestors clip normal content reliably, so
+   it cannot fall short, and it costs one background-image the browser has
+   already decoded.
+
+   ⚠ `inset: -4px` (symmetric) stays as belt and braces for the sub-pixel
+   nudge, and the parent's `overflow: hidden` trims it. It MUST stay symmetric:
+   `top: calc(50% - 13px)` below centres the wheel on this box, and a box grown
+   equally on both sides has the same centre — an uneven bleed would slide the
+   selection off the lens by half the difference. */
+.shop-pick {
+  /* ⚠️ ONE number, four jobs: the row height, the lens height, and the two
+     `calc(50% - var(--pick-h)/2)` that centre the lens and the list on the art.
+     It must equal `SHOP_PICK_H` in app.js, which is what `paint()` MOVES the
+     list by — if they disagree, the row under the lens stops being the row you
+     get. The finger is counted separately, in rendered px (`rowPx()`), because
+     the shop scales the whole model and CSS px stop being screen px. */
+  --pick-h: 34px;
+  position: absolute; inset: -4px; z-index: 4;
+  overflow: hidden; border-radius: inherit;
+  opacity: 0; pointer-events: none;
+  transition: opacity .18s;
+}
+/* The blurred cover. `scale` overscans so the blur's own soft, half-transparent
+   edge is pushed outside the wheel's `overflow: hidden` instead of showing as a
+   pale rim inside it. Filled by `syncBg()` on every arm. */
+.shop-pick-bg {
+  position: absolute; inset: 0;
+  background-size: cover; background-position: center;
+  filter: blur(9px); transform: scale(1.14);
+}
+/* The wash, over the blur — so it must be a LAYER, not a background on
+   `.shop-pick`: a parent's own background paints beneath its children, which
+   would put the tint under the very thing it is meant to darken. */
+.shop-pick-tint { position: absolute; inset: 0; background: rgba(10,9,8,.55); }
+/* Two hosts: the shop's case, and — once you own Pro — the home bento itself. */
+.shop-showcase.is-armed .shop-pick,
+.v3-bento.is-armed .shop-pick { opacity: 1; }
+/* ⚠️ The same `calc(50% - var(--pick-h) / 2)` on BOTH the list and the lens
+   centres selection 0 under the lens without either knowing the art's size.
+   The art is square and sized by the bento's percentage grid, so there is no
+   height to hard-code. Derived from `--pick-h` rather than written out, so the
+   row height and the centring cannot drift apart. */
+/* ⚠ Colour comes from the ALBUM, not from gold. `--v3-accent` is extracted
+   from the cover by `applyAlbumColors` and set on the screen element, so it
+   inherits down to here and the wheel re-tints with every album — the bento's
+   own "album art drives colour" rule, applied to the thing sitting on top of
+   the art. Gold is the fallback only, for a screen with no cover to extract
+   from. `color-mix` because the var is one colour and the lens needs it at two
+   alphas; a fixed `rgba()` triple cannot follow a variable. */
+.shop-pick-lens {
+  position: absolute; top: calc(50% - var(--pick-h) / 2);
+  left: 10px; right: 10px; height: var(--pick-h);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--v3-accent, #e8a83c) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--v3-accent, #e8a83c) 50%, transparent);
+}
+.shop-pick-list {
+  position: absolute; top: calc(50% - var(--pick-h) / 2); left: 0; right: 0;
+  list-style: none; margin: 0; padding: 0;
+  transition: transform .2s cubic-bezier(.22,1,.36,1);
+}
+/* ⚠️ A ROW IS A FIXED BOX. `height: var(--pick-h)` and `line-height: 1` keep it
+   one — the type inside is free to change size, the box is not. Let the row
+   grow with its font and every row below it shifts, so the drag arithmetic
+   (whole units of `--pick-h`) walks out of step with what is under the lens.
+   Flex + `align-items: center` is what lets 24px type sit in a 34px box without
+   a line-height to re-tune every time the size changes. */
+.shop-pick-i {
+  display: flex; align-items: center; gap: 9px;
+  height: var(--pick-h); line-height: 1; padding: 0 18px;
+  font-family: var(--font-main); font-size: 13px; font-weight: 500;
+  color: rgba(232,226,214,.38);
+  transition: color .18s, font-size .18s, letter-spacing .18s;
+}
+.shop-pick-l { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* The count — how many albums the shelf holds, so reading down the wheel shows
+   where your listening actually sits. ⚠️ SERIF, against the labels' DM Sans: a
+   different voice reads as an annotation on the list rather than as part of a
+   label. Crimson Text is the app's serif — it sets the review composer.
+   Fixed min-width so the labels stay on one left edge as the digits change. */
+.shop-pick-n {
+  flex-shrink: 0; min-width: 22px; text-align: right;
+  font-family: 'Crimson Text', Georgia, serif; font-style: italic;
+  font-size: 12px; font-weight: 400;
+  color: inherit; opacity: .5;
+}
+/* The row under the lens is set BIGGER, not just brighter — that is what makes
+   a list read as a wheel, the selection nearest the eye.
+   ⚠ `height` and `line-height` stay pinned at 26px (= SHOP_PICK_H). Only the
+   glyphs grow. Let the row itself grow and every row below it shifts, so the
+   drag arithmetic — which counts in whole units of SHOP_PICK_H — would walk
+   out of step with what is under the lens. */
+/* The row under the lens is set MUCH bigger, not just brighter — the SIZE STEP
+   is what makes a list read as a wheel, the selection nearest the eye. The
+   number steps up with it but stays well under the label, so it keeps
+   annotating rather than competing. */
+.shop-pick-i.is-on {
+  color: var(--v3-accent, #e8a83c);
+  font-size: 24px; font-weight: 700; letter-spacing: -.7px;
+}
+.shop-pick-i.is-on .shop-pick-n { font-size: 14px; opacity: .75; }
+
+/* The pitch row under the showcase — a plain sheet, because the bento above it
+   is already doing all the talking. */
+.shop-sheet--pro {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 11px 13px;
+  background: var(--sd-card); box-shadow: var(--sd-card-hi);
+}
+.shop-buy-l { font-family: var(--font-mono); font-size: 8.5px; line-height: 1.5; color: var(--sd-ink2); }
+.shop-buy-l b {
+  display: block; margin-bottom: 1px;
+  font-family: var(--font-main); font-size: 17px; font-weight: 800;
+  letter-spacing: -.5px; color: var(--sd-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shop-pick, .shop-pick-list, .shop-pick-i { transition: none; }
+}
+
+.shop-pro-btn {
+  flex-shrink: 0; padding: 8px 15px; border: 0; border-radius: 999px;
+  font-family: var(--font-main); font-size: 13.5px; font-weight: 800;
+  background: var(--star, #e8a83c); color: #1a1208; cursor: pointer;
+  transition: filter .15s, transform .15s;
+}
+.shop-pro-btn small { font-size: 9px; font-weight: 700; opacity: .72; }
+.shop-pro-btn:hover  { filter: brightness(1.08); }
+.shop-pro-btn:active { transform: scale(.96); }
+
+/* ── sheet: --shelf ──
+   The `.v3-aa-row` idiom, unchanged: bleed the rail to the frame edge, pad it
+   back, and match `scroll-padding-left` to the pad so a snap does not scroll the
+   padding away. The last tile peeking is the point — it says "keep going". */
+.shop-sheet--shelf {
+  display: flex; gap: 3px;
+  overflow-x: auto; scroll-snap-type: x proximity;
+  margin: 0 -12px; padding: 0 12px;
+  scroll-padding-left: 12px;
+  scrollbar-width: none;
+  border-radius: 0;   /* the tiles round themselves — a scrolling rail cannot clip them */
+}
+.shop-sheet--shelf::-webkit-scrollbar { display: none; }
+.shop-tile--theme {
+  flex: 0 0 116px; scroll-snap-align: start;
+  display: flex; flex-direction: column; gap: 1px;
+  padding: 9px 9px 10px; border-radius: 15px;
+  background: var(--sd-card); box-shadow: var(--sd-card-hi);
+}
+.shop-tile--theme .shop-field { aspect-ratio: 1; margin-bottom: 8px; }
+.shop-tile--theme .shop-buy,
+.shop-tile--theme .shop-owned { margin-top: 8px; align-self: flex-start; }
+
+/* ── sheet: --row ──
+   N equal tiles across. `1fr` columns rather than a fixed width so four frames
+   and four badges line up on the same grid without either knowing about the
+   other. */
+.shop-sheet--row {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px;
+}
+.shop-tile--sm {
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  padding: 10px 5px 9px;
+  background: var(--sd-card); box-shadow: var(--sd-card-hi);
+}
+.shop-tile--sm .shop-field { width: 42px; height: 42px; }
+
+/* The field — where the product sits. Themes fill it with their own palette
+   (inline), everything else washes it with the tile's `--tint`. */
+.shop-field {
+  position: relative; border-radius: 12px; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+}
+.shop-field--tint {
+  background: rgba(var(--tint), .13);
+  color: rgb(var(--tint));
+}
+.shop-field--ico .sd-dot-ico { width: 15px; height: 15px; }
+.shop-chip {
+  position: absolute; left: 9px; bottom: 9px;
+  width: 13px; height: 13px; border-radius: 14%;   /* SD_DOTS' cornerFrac */
+}
+.shop-ring { width: 24px; height: 24px; border-radius: 50%; }
+
+.shop-tile-name {
+  font-size: 12.5px; font-weight: 800; letter-spacing: -.2px; color: var(--sd-ink);
+  text-align: center;
+}
+.shop-tile--theme .shop-tile-name { font-size: 14px; text-align: left; }
+.shop-tile-sub { font-family: var(--font-mono); font-size: 8.5px; color: var(--sd-ink2); }
+
+/* Buy / Owned share a footprint so nothing reflows when sdBuy swaps one for
+   the other. The price IS the button — there is no second word to read. */
+.shop-buy, .shop-owned {
+  flex-shrink: 0; text-align: center;
+  padding: 5px 11px; border-radius: 999px;
+  font-family: var(--font-mono); font-size: 9.5px; font-weight: 700;
+  letter-spacing: .04em;
+}
+.shop-buy {
+  border: 1px solid rgba(232,226,214,.16); background: none;
+  color: var(--sd-ink); cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.s-home-v3--light .shop-buy { border-color: rgba(26,18,8,.16); }
+.shop-buy:hover { background: var(--star, #e8a83c); border-color: var(--star, #e8a83c); color: #1a1208; }
+.shop-buy:focus-visible { outline: 2px solid var(--star, #e8a83c); outline-offset: 2px; }
+/* ⚠ Visible by DEFAULT. The fade belongs to the pill `sdBuy` swaps in, not to
+   the pill the markup already ships — the tiles you start out owning (Funky 01,
+   Hairline, Devotee) render straight from `shopHtml` with no JS to add `is-in`,
+   so an `opacity: 0` base left all three blank. The fade is opt-in now. */
+.shop-owned {
+  border: 1px solid transparent; color: var(--sd-ink3);
+  transition: opacity .22s;
+}
+.shop-owned--new { opacity: 0; }
+.shop-owned--new.is-in { opacity: 1; }
+.shop-owned--pro { color: var(--star, #e8a83c); }
+
+.shop-note {
+  margin-top: 18px; padding: 0 4px;
+  font-family: var(--font-mono); font-size: 9px; line-height: 1.5; color: var(--sd-ink3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shop-owned, .shop-buy, .shop-pro-btn { transition: none; }
+}

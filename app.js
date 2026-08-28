@@ -88,6 +88,10 @@ function init() {
   const p = params.get('screen');
   if (p) { const i = SCREENS.findIndex(s => s.id === p); if (i !== -1) currentIdx = i; }
 
+  /* Before the first render: the plan decides what some screens are made of
+     (see PLAN above), so `body.sd-pro` has to be on before anything paints. */
+  initPlan();
+
   if (isMobile) { initMobile(); } else { initViewer(); }
   initFillets();
   // After the first render: fills the persona switcher and, if one was in use
@@ -95,6 +99,15 @@ function init() {
   initPersonas();
   if (!isMobile) { initDevBox(); initRecBox(); }
 }
+
+/* ⚠️ NO AUTOPLAY, and not because it is hard. Previews were briefly armed by the
+   first touch of the phone (a browser will not allow sound before one — `play()`
+   before a gesture is rejected, and iOS additionally needs the element itself
+   played once inside a real gesture, which is what `unlockAudio` is for). It
+   worked, and it is not what this app is: music that starts on its own is a
+   thing to switch off, not a feature. The row in the CD's menu is the whole of
+   it — you ask for a preview, you get one. Don't wire this back up.
+   The service handoff is what the CD is for: see LISTEN ON above. */
 
 // ============================================================
 //  DESKTOP VIEWER
@@ -130,8 +143,38 @@ function renderViewer() {
 /* Everything that has to run against the freshly-built screens. Kept separate
    so any path that rebuilds the DOM can re-run it — a rebuild without this is
    a screen full of placeholder markup. */
+/* ═══════════════════════════════════════════════════════════════════
+   VIDEO COVERS — play only what is on screen (`plVideoWatch`)
+   ═══════════════════════════════════════════════════════════════════
+   ⚠️ This is why the markup ships no `autoplay`. A wall of ten cards can hold
+   ten videos, and ten decoders running at once is what turns a scroll into a
+   slideshow — on Eric's phone over 5G, the exact case this prototype exists to
+   test. Nothing plays until it is actually visible, and it stops again on the
+   way out.
+
+   ⚠️ The root is `.v3-body`, the element that actually scrolls, NOT the
+   viewport. In the desktop viewer the phone is a box on a page that never
+   scrolls itself, so a viewport-rooted observer would report every card as
+   permanently visible and play all ten. */
+function plVideoWatch(screenEl) {
+  const vids = screenEl.querySelectorAll('.pl2-art-vid');
+  if (!vids.length || screenEl._vidWatch) return;
+  const root = screenEl.querySelector('.v3-body');
+  screenEl._vidWatch = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      const v = e.target;
+      // `play()` rejects if the element is torn down mid-promise (a re-render
+      // between the callback and the decode). Nothing to recover, so swallow it.
+      if (e.isIntersecting) v.play().catch(() => {});
+      else v.pause();
+    });
+  }, { root: root || null, rootMargin: '40px' });
+  vids.forEach(v => screenEl._vidWatch.observe(v));
+}
+
 function paintAfterRender() {
   document.querySelectorAll('.s-home-v3').forEach(el => populateHomeData(el));
+  document.querySelectorAll('.s-pl2').forEach(plVideoWatch);
   document.querySelectorAll('.s-onboarding').forEach(obInit);
   applyFilletMasks();
   initScenes();   // the nav scoop's face — repainted whenever the shells are rebuilt
@@ -311,7 +354,11 @@ function setMainAlbum(screenEl, album, animate = false, animateText = animate) {
   if (albumEl) {
     if (animate) slideIn(albumEl, album.image);
     else sdCover(albumEl, album.image);
-    albumEl.onclick = (e) => {
+    /* ⚠️ Not in the shop's Pro showcase. There the cover's gesture is a HOLD
+       (shopProInit), and a tap-through would navigate the shop screen itself
+       to an album page. Re-checked on every album change because this handler
+       is reassigned each time. */
+    albumEl.onclick = albumEl.closest('.shop-showcase') ? null : (e) => {
       if (albumEl._swiped) { if (e) e.stopPropagation(); return; }  // a swipe, not a tap
       if (e) e.stopPropagation();   // don't let the tap bubble and undo the fullscreen state
       window.activeAlbum = album;
@@ -460,6 +507,27 @@ function measure2Line(scr) {
   scr.classList.toggle('v3-rev-title-2line', alb.getBoundingClientRect().height > lh * 1.5);
   alb.style.transition = ''; alb.style.fontSize = '';
 }
+/* The cover's two gestures — swipe for the next album, hold for the shelf
+   wheel — are BENTO gestures, and only the bento's. Fullscreen reuses the very
+   same `.v3-album` element as the album page's header, where there is exactly
+   one album, it is the one you just chose, and swiping it away undoes the tap
+   that got you there. So the cover stops taking the finger and hands it back to
+   the page, which by then is a page you scroll.
+   ⚠ Both gestures are wired ONCE per element (`_swipeInit` / `_wired`) and the
+   album page is that element in a different state — so the question has to be
+   asked at gesture START, never at wire time.
+   ⚠ `--review` is never set without `--album`, and `--artist` layers on top of
+   both, so this one class covers the album page and the artist page alike. */
+/* ⚠ The mix dial counts as "gestures off" too. It covers `.v3-album`, so while
+   it is up the swipe underneath it would change the album out from under the
+   dial and the cover-hold would arm the shelf wheel on top of it — both reading
+   the same drag the dial's taps are landing in. */
+function bentoGesturesOn(screenEl) {
+  return !!screenEl
+      && !screenEl.classList.contains('s-home-v3--review')
+      && !screenEl.classList.contains('s-home-v3--mixing');
+}
+
 // Drop straight into the album page for `album`, all classes set at once (no review flash).
 function enterAlbumPageState(scr, album) {
   setMainAlbum(scr, album, false);
@@ -504,10 +572,11 @@ window.goBack = function (fallbackId) {
 // ── Bento → album page ────────────────────────────────────────
 // There used to be a plain fullscreen "review" state in between: tapping the
 // bento opened it, and tapping the album title *inside* it stepped up to the
-// album page. That middle layer is gone. The album page is swipeable in its own
-// right, so the review state was a whole extra level of navigation that showed
-// nearly the same thing (plus the For You box) — going straight there is the
-// same screen one tap sooner.
+// album page. That middle layer is gone: the review state was a whole extra
+// level of navigation that showed nearly the same thing (plus the For You box)
+// — going straight there is the same screen one tap sooner. (It was ALSO
+// swipeable then. It isn't now — `bentoGesturesOn` keeps the swipe and the hold
+// on the bento, so the cover here is a header and nothing else.)
 //
 // ⚠️ `--review` is therefore never set without `--album`. The class pair is kept
 // because the CSS is tuned for the combination, but there is no longer any way
@@ -825,7 +894,9 @@ window.PLNEW_CREATED = [];
 // mode: 'search' (type to find anything) | 'library' (browse your own playlists)
 // libOpen: the playlist name being browsed inside library mode, or null for the
 // list of playlists. cover is a data: URL once the user uploads one.
-const PLNEW = { name: '', cover: null, privacy: 'public', songs: [], q: '', mode: 'search', libOpen: null };
+// `editing` is the stable key of the playlist being edited, or null when this is
+// a new one. It is what makes `plnewCreate` update instead of insert.
+const PLNEW = { name: '', cover: null, privacy: 'public', songs: [], q: '', mode: 'search', libOpen: null, editing: null };
 const PLNEW_FALLBACK_COVER = 'images/spindeck-appicon.png';
 
 // Every song in the archive, flattened once — songsFor() is deterministic per
@@ -850,12 +921,35 @@ function plnewPool() {
 }
 
 window.openNewPlaylist = function () {
+  PLNEW.editing = null;            // ⚠️ or "+" would silently overwrite whatever was edited last
   PLNEW.name = ''; PLNEW.cover = null; PLNEW.privacy = 'public';
   PLNEW.songs = []; PLNEW.q = ''; PLNEW.mode = 'search'; PLNEW.libOpen = null;
   backStack.push(captureLocation());
   navigate('playlist-new');
 };
-window.plnewCancel = function () { goBack('playlists'); };
+/* EDIT an existing playlist — the same page, seeded.
+   ⚠️ There is no separate edit screen and there should not be one: everything
+   you can change about a playlist (name, cover, privacy, tracks) is already a
+   field on this one, and a second screen would be the same form drifting out of
+   sync with the first. `PLNEW.editing` holds the playlist's stable `key` and is
+   the only thing that tells the two apart. */
+window.openEditPlaylist = function (key) {
+  const pl = plLists().find(l => l.key === key || l.name === key);
+  if (!pl) return;
+  PLNEW.editing = pl.key || pl.name;
+  PLNEW.name = pl.name;
+  PLNEW.cover = pl.image || null;
+  PLNEW.privacy = pl.private ? 'private' : 'public';
+  // The sample lists have no authored tracklist — `plTracksFor` deals them a
+  // deterministic one, which is what the detail page already shows, so the
+  // editor opens on the songs the user believes are in there.
+  PLNEW.songs = (typeof plTracksFor === 'function' ? plTracksFor(pl) : (pl.songs || [])).slice();
+  PLNEW.q = ''; PLNEW.mode = 'search'; PLNEW.libOpen = null;
+  backStack.push(captureLocation());
+  navigate('playlist-new');
+};
+
+window.plnewCancel = function () { PLNEW.editing = null; goBack('playlists'); };
 
 window.plnewSetName = function (v) { PLNEW.name = v;  plnewSync(); };
 window.plnewSetPriv = function (p) { PLNEW.privacy = p; plnewSync(); };
@@ -908,6 +1002,33 @@ window.plnewRemoveSong = function (key) {
 window.plnewCreate = function () {
   const name = PLNEW.name.trim();
   if (!name) return;                               // the button is disabled anyway
+
+  /* EDITING an existing one. Two homes to write to, because a playlist can come
+     from either place:
+       • one you created lives as a real object in PLNEW_CREATED — mutate it.
+       • an authored sample lives in `plLists()`, which is regenerated on every
+         call — so the change goes to `plCustom` under the STABLE KEY and gets
+         merged back over the literal. Storing under the key rather than the
+         name is what lets a rename stick without orphaning the badges. */
+  if (PLNEW.editing) {
+    const key = PLNEW.editing;
+    const made = (window.PLNEW_CREATED || []).find(l => l.name === key);
+    const patch = {
+      name,
+      image: PLNEW.cover || (PLNEW.songs[0] && PLNEW.songs[0].image) || PLNEW_FALLBACK_COVER,
+      private: PLNEW.privacy === 'private',
+      tracks: PLNEW.songs.length,
+      songs: PLNEW.songs.slice(),
+      edited: 'just now',
+    };
+    if (made) Object.assign(made, patch);
+    else plSetCustom(key, patch);
+    PLNEW.editing = null;
+    window.activePlaylist = plLists().find(l => l.key === key || l.name === name) || null;
+    navigate('playlist');
+    return;
+  }
+
   const pl = {
     name,
     creator: 'you',
@@ -1008,7 +1129,8 @@ window.plnewResultsHtml = function () {
 window.plnewCountLabel  = function () { const n = PLNEW.songs.length; return n === 1 ? '1 song' : `${n} songs`; };
 window.plnewCreateLabel = function () {
   const n = PLNEW.songs.length;
-  return n ? `Create playlist · ${n} song${n === 1 ? '' : 's'}` : 'Create playlist';
+  const verb = PLNEW.editing ? 'Save changes' : 'Create playlist';
+  return n ? `${verb} · ${n} song${n === 1 ? '' : 's'}` : verb;
 };
 
 // Patch every live .s-plnew after an edit. The screen's own getter already
@@ -1020,13 +1142,29 @@ function plnewSyncOne(root) {
   const q = sel => root.querySelector(`[data-plnew="${sel}"]`);
   const cover = PLNEW.cover;
 
+  /* ⚠️ A video cover cannot be previewed as a `background-image` — it would
+     paint nothing and read as a failed upload. The well keeps a `<video>` of its
+     own, created only when one is needed and removed the moment it is not, so a
+     still cover leaves no idle element behind. */
   const coverEl = q('cover');
   if (coverEl) {
-    coverEl.style.backgroundImage = cover ? `url('${cover}')` : '';
+    const vid = plIsVideo(cover);
+    coverEl.style.backgroundImage = (cover && !vid) ? `url('${cover}')` : '';
     coverEl.classList.toggle('plnew-cover--set', !!cover);
+    let v = coverEl.querySelector('.plnew-cover-vid');
+    if (vid) {
+      if (!v) {
+        v = document.createElement('video');
+        v.className = 'plnew-cover-vid';
+        v.muted = true; v.loop = true; v.playsInline = true;
+        coverEl.appendChild(v);
+      }
+      if (v.getAttribute('src') !== cover) v.src = cover;
+      v.play().catch(() => {});          // a blocked autoplay is not an error here
+    } else if (v) { v.remove(); }
   }
   const cd = q('cd');
-  if (cd) cd.style.backgroundImage = cover ? `url('${cover}')` : '';
+  if (cd) cd.style.backgroundImage = (cover && !plIsVideo(cover)) ? `url('${cover}')` : '';
 
   // Only write an input when it actually differs — assigning .value on the field
   // being typed in would jump the caret to the end. The typing instance already
@@ -1176,6 +1314,9 @@ window.onCdTap = function (el, e) {
   reactRing(scr, 'cd');
   const menu = scr.querySelector('.v3-cd-menu');
   if (menu) menu.hidden = !menu.hidden;
+  // Resolve the three service links while the menu is coming in, so the row you
+  // then tap can open its tab synchronously — see `openOnService`.
+  if (menu && !menu.hidden) warmServiceLinks(scr._album || currentBentoAlbum());
 };
 
 // Play a 30s preview from the stream sheet — toggles play/pause on the button itself.
@@ -1201,6 +1342,11 @@ window.playPreview = function (el, e) {
 window.onLivePill = function (btn) {
   const scr = btn.closest('.s-home-v3');
   if (!scr) return;
+  /* Checked FIRST. The mix dial is a state you are HELD in — the cover-hold
+     handed over to it and the gesture does not resolve until you pick a mix or
+     leave — so while the dial is up this pill means "back" ahead of anything
+     the screen underneath would otherwise make it mean. */
+  if (scr.classList.contains('s-home-v3--mixing')) { closeMixDial(); return; }
   if (scr.classList.contains('s-home-v3--review')) { goBack(); return; }
   toggleHand();   // regular bento state: the pill is the hand-layout switch
 };
@@ -2103,7 +2249,13 @@ function feedEvents() {
         ? ((window.ARTIST_IMG && window.ARTIST_IMG[f.artist]) || f.image)
         : f.image,
       playlist: list ? list.name : '',
-      rating: f.rating, quote: f.quote, ago: f.ago, likes: f.likes || 0,
+      /* ⚠ `comments` has to be copied across like everything else. It was
+         missing, and `acts()` reads `e.comments || 0` — so every row on the home
+         feed showed a comment count of ZERO while `FRIEND_ACTIVITY` had real
+         numbers sitting in it the whole time. Found by putting the feed next to
+         the profile's review history, which builds its own counts. */
+      rating: f.rating, quote: f.quote, ago: f.ago,
+      likes: f.likes || 0, comments: f.comments || 0,
       // The inbox fills its unread rows and leaves the rest flat on the bg —
       // that contrast is most of why the screen reads as well as it does. A
       // feed has no read state, so "today" stands in for it: the newest group
@@ -2412,9 +2564,454 @@ function scenePlay(kind) {
   sceneTick();                     // cut to it now, don't wait out the current hold
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   SHOP — the Pro showcase (`shopProInit`)
+   ══════════════════════════════════════════════════════════════════════════
+   The showcase is the REAL compact-state bento — same `bentoHtml()` the home
+   screen renders, filled by the same `populateHomeData`. This function only
+   adds the one thing Pro contributes: hold the cover, a vertical wheel comes up
+   over the art, drag to pick For You or a genre, release and the bento MOVES TO
+   THAT SHELF for real — `setMainAlbum` re-tints the box, re-runs the typewriter
+   and swaps the art, exactly as it would on the home screen.
+
+   ⚠️ The picker is built HERE, not in `bentoHtml()`. That component is shared
+   with the home screen and must stay pristine; the shop is the one that wants
+   an overlay, so the shop is what adds it.
+   ⚠️ HOLD, not tap. The delay is what separates "open this album" from "change
+   shelf" on the real screen, so the demo has to teach the delay too. */
+const SHOP_HOLD_MS = 240;   // long enough to read as a hold, short enough not to feel broken
+/* ⚠ The drag/selection unit, in px. It is ONE number in TWO files: this, and
+   `--pick-h` on `.shop-pick` in app.css (which sizes the rows and centres both
+   the lens and the list). The drag counts in whole units of it, so if the two
+   disagree the row under the lens stops being the row you get. Change both. */
+const SHOP_PICK_H  = 34;
+
+/* Two callers, one wheel:
+     shopProInit — the storefront demo. Anyone can hold it, Free included; that
+                   is the point of a showcase.
+     homeProInit — the real feature, on your own home bento. Pro only.
+   `box` is whatever carries `is-armed` and holds the art; `root` is the screen,
+   because `setMainAlbum` moves the WHOLE screen to the chosen shelf. */
+function shopProInit(root) { proWheelInit(root, root.querySelector('#shopPro')); }
+
+/* The home bento's cover, once you own Pro. Same wheel, one difference: here
+   the cover still has its tap-to-open-album handler, so an armed release has to
+   eat the click that follows it (see `suppressClick`). The shop drops that
+   handler entirely instead. */
+function homeProInit(root) {
+  if (!isPro()) return;
+  proWheelInit(root, root.querySelector('.v3-bento'), { suppressClick: true, realShelf: true });
+}
+
+/* On home the cover is still a link to the album page, and every pointerup is
+   followed by a click — so releasing the wheel would change shelf AND navigate
+   away from the screen it just changed.
+
+   ⚠ Listen on DOCUMENT, not on the cover. At the TARGET phase the DOM fires
+   capture and bubble listeners in the order they were REGISTERED, so a capture
+   listener added to `.v3-album` still runs after the `onclick` `setMainAlbum`
+   put there first. Only an ancestor's capture listener is guaranteed to go
+   first, and `document` is the one ancestor that is always there.
+
+   Self-removing, with a timer in case no click ever arrives (pointercancel,
+   a release outside the frame) — otherwise it would sit and eat an innocent
+   click much later. */
+/* What "move to that shelf" means — and why it differs by host.
+
+   SHOP (showcase) — COSMETIC. `setMainAlbum` swaps the cover, the tint and the
+   text on that one bento and nothing else. A storefront demo must not re-deal
+   the real home screen sitting behind it.
+
+   HOME (the feature) — REAL. The shelf becomes the QUEUE. `albumSeq()` is built
+   from `featuredAlbum` + `trendingAlbums`, and the For You box shows `seq[i+1]`,
+   so writing those two globals moves the main cover, the For You box AND every
+   album you would swipe into next. Swapping only the main cover (what this used
+   to do) left For You and the whole queue on the shelf you just left.
+
+   ⚠ This is `reshuffleHome` scoped to one genre — same two globals, same
+   `shuffled` deal. If the deal ever changes there, it changes here too. */
+/* One shelf → its albums. The ONLY place that knows what each shelf means, and
+   it is called twice: when the wheel is built (to drop any shelf that cannot
+   field two albums) and again at commit (so a shelf reflects an ARCHIVE that
+   `expandRecs` may have widened in the meantime). */
+function shelfPool(shelf) {
+  const A = window.ARCHIVE || [];
+  switch (shelf.kind) {
+    // The unfiltered catalogue — the shelf you are on before you choose one.
+    case 'all': return A.slice();
+    /* Albums a friend actually logged. `friendRecFor` is the same lookup the
+       feed and the bento's friend tag use, so this shelf can never disagree
+       with the "… rated this" line that shows up on the cover. */
+    case 'friends': return A.filter(a => window.friendRecFor && window.friendRecFor(a));
+    /* Charted off the review counts already in the catalogue — no new data, and
+       it stays true as the archive grows. */
+    case 'popular': return A.slice()
+                            .sort((x, y) => (y.reviewCount || 0) - (x.reviewCount || 0))
+                            .slice(0, 20);
+    /* Several primary genres at once — Pro's mix dial.
+       ⚠ The dial's labels are an EDITORIAL list (`SD_GENRES` in screens.js), NOT
+       read back out of the archive the way the wheel's rows are — so they have
+       to be matched loosely or they match nothing. This was an exact,
+       case-sensitive compare, and the archive writes `Hip-hop` where the dial
+       says `Hip-Hop`: the single biggest genre in the catalogue (38 albums)
+       scored ZERO, so the hub read "0 albums" and the button stayed dead.
+       Lowercased containment fixes the casing and folds the compound names in
+       with it, which is what a broad genre shelf is supposed to mean —
+       `Indie` takes Indie rock / Indie pop / Indie Folk, `Rock` takes
+       Alternative rock / Art rock / Noise rock / J-rock, `Soul` takes Neo-soul
+       and Electronic soul. `Pop` deliberately also takes K-Pop and Hyperpop.
+       ⚠ An album can now match SEVERAL picked genres, so the old note that "an
+       album has ONE primary genre, so it can match at most one member" no
+       longer holds — but `filter` visits each album exactly once, so the pool
+       still cannot contain a duplicate. Don't rewrite this as a pass per genre
+       that concatenates the results: that one can. */
+    case 'mix': {
+      const want = (shelf.genres || []).map(g => String(g).toLowerCase());
+      if (!want.length) return [];
+      return A.filter(a => {
+        const p = String(a.genre || '').split('/')[0].trim().toLowerCase();
+        return !!p && want.some(w => p.includes(w));
+      });
+    }
+    // Primary genre only — the part before the `/`.
+    default: return A.filter(a => String(a.genre || '').split('/')[0].trim() === shelf.label);
+  }
+}
+
+function commitShelf(shelf) {
+  const pool = shelfPool(shelf);
+  if (pool.length < 2) return;      // belt and braces; the wheel already filters these out
+  const order = shuffled(pool);
+  window.featuredAlbum  = order[0];
+  window.trendingAlbums = order.slice(1);
+  window.activeAlbum    = window.featuredAlbum;
+  /* EVERY home shell, not just the one being held. The queue is global, so
+     leaving the other variant on the old shelf would be two phones on stage
+     disagreeing about the same state — the same reason `toggleHand` iterates.
+     The shop is excluded: its bento is the demo, and it runs on its own. */
+  document.querySelectorAll('.s-home-v3:not(.s-shop)').forEach(el =>
+    applyAlbumIndex(el, 0, true, true));
+}
+
+function eatNextClick(el) {
+  const stop = e => {
+    clearTimeout(t);
+    document.removeEventListener('click', stop, true);
+    if (el.contains(e.target) || e.target === el) { e.stopPropagation(); e.preventDefault(); }
+  };
+  const t = setTimeout(() => document.removeEventListener('click', stop, true), 400);
+  document.addEventListener('click', stop, true);
+}
+
+function proWheelInit(root, box, opts) {
+  opts = opts || {};
+  if (!box || box._wired) return;
+  const album = box.querySelector('.v3-album');
+  if (!album) return;             // bento not built yet — a later repaint will catch it
+  box._wired = true;
+
+  /* The wheel's drag is VERTICAL, so it needs the one gesture the swipe leaves
+     to the page: `touch-action: none` takes both axes.
+     ⚠ A CLASS, not an inline write. This and `setupAlbumSwipe` both want a say
+     over the same element, and two inline writes can only ever resolve by who
+     ran last — which also meant no rule in app.css could win, whichever way it
+     was aimed. As a class it is ordinary specificity, so the album page can
+     out-specify both and hand the finger back to the page. */
+  album.classList.add('v3-album--wheel');
+
+  /* Shelves are read from the catalogue, not invented: primary genre only (the
+     part before the '/'), first album in that genre stands for it, For You
+     pinned first and carrying whatever the bento is already showing. */
+  /* The order is editorial, and it goes broad → narrow: the three ways of
+     cutting the WHOLE catalogue first, then the genres underneath them. Genres
+     are read from the catalogue rather than listed, so the wheel can never
+     offer a shelf the archive cannot fill. */
+  const byGenre = new Map();
+  (window.ARCHIVE || []).forEach(a => {
+    const g = String(a.genre || '').split('/')[0].trim();
+    if (!g) return;
+    if (!byGenre.has(g)) byGenre.set(g, []);
+    byGenre.get(g).push(a);
+  });
+  const all = [{ label: 'For You',     kind: 'all' },
+               { label: 'Friends',     kind: 'friends' },
+               { label: 'Popular USA', kind: 'popular' },
+               ...[...byGenre.keys()].slice(0, 8).map(g => ({ label: g, kind: 'genre' }))];
+
+  /* ⚠ A shelf you cannot swipe is not a shelf. Anything that cannot field two
+     albums is dropped HERE, at build time, so it never appears — rather than
+     appearing and then doing nothing when you release on it. Friends is the one
+     that really needs this: it depends on who the persona follows. */
+  const shelves = all.filter(sh => shelfPool(sh).length >= 2);
+  shelves.forEach(sh => {
+    const pool = shelfPool(sh);
+    sh.album = pool[0] || null;   // the shop's cosmetic commit needs one album per shelf
+    sh.count = pool.length;       // and the wheel prints it, see below
+  });
+  /* The last row is the way OUT of the wheel and into the mix dial, so it is
+     appended AFTER the two-album filter — it has no pool of its own to pass it.
+     ⚠ Only on the real home. The shop's showcase commits cosmetically to one
+     bento, and a sheet sliding up over the storefront to change a demo would be
+     the demo reaching out of its case. */
+  if (opts.realShelf) shelves.push({ label: 'Custom mix', kind: 'mix-open', count: '+' });
+
+  const wheel = document.createElement('div');
+  wheel.className = 'shop-pick';
+  wheel.setAttribute('aria-hidden', 'true');
+  /* Four layers, painted in DOM order: a blurred copy of the cover, a dark
+     wash over it, then the lens and the list. See the CSS for why the blur is
+     a real layer and not `backdrop-filter`. */
+  wheel.innerHTML =
+    `<span class="shop-pick-bg"></span>` +
+    `<span class="shop-pick-tint"></span>` +
+    `<span class="shop-pick-lens"></span><ul class="shop-pick-list">${
+      shelves.map((s, i) => `<li class="shop-pick-i${i === 0 ? ' is-on' : ''}">` +
+        /* The count is the "how much of me is this" number: For You is the whole
+           catalogue, a genre is your slice of it, so reading down the wheel
+           tells you where your listening actually sits. It is set in the serif
+           against the labels' DM Sans — a different voice, so it reads as an
+           annotation on the list rather than part of a label. */
+        `<span class="shop-pick-n">${s.count}</span>` +
+        `<span class="shop-pick-l">${s.label}</span></li>`).join('')}</ul>`;
+  album.appendChild(wheel);
+  const list  = wheel.querySelector('.shop-pick-list');
+  const items = [...wheel.querySelectorAll('.shop-pick-i')];
+  const bg    = wheel.querySelector('.shop-pick-bg');
+
+  /* Copied on every arm, not once at wire time — the cover under the wheel
+     changes with every swipe and every shelf commit, and a blur of the album
+     you were looking at three swipes ago is worse than no blur at all.
+     `sdCover` writes the url to `style.backgroundImage`, so that is where it
+     is read from. */
+  const syncBg = () => { if (bg) bg.style.backgroundImage = album.style.backgroundImage; };
+
+  /* ⚠ The finger is measured in RENDERED px; the list is moved in CSS px. On
+     the home screen those are the same number. They are NOT in the shop, where
+     the whole model is `transform: scale()`d — nor anywhere when the desktop
+     viewer is zoomed. `paint()` moves the list from INSIDE the scaled box, so
+     it keeps `SHOP_PICK_H`; the drag happens outside it, so it counts in what a
+     row actually measures on screen. The wheel only has `opacity: 0` when
+     idle, never `display: none`, so this measures correctly before the arm. */
+  const rowPx = () => (items[0] && items[0].getBoundingClientRect().height) || SHOP_PICK_H;
+
+  let idx = 0, startIdx = 0, startY = 0, holdT = null, armed = false;
+
+  // The list slides so the chosen row sits under the lens, which is centred on
+  // the art — that is what makes it read as a wheel rather than a menu.
+  function paint() {
+    list.style.transform = `translateY(${-idx * SHOP_PICK_H}px)`;
+    items.forEach((el, i) => el.classList.toggle('is-on', i === idx));
+  }
+  /* The shelf the bento is actually ON. ⚠ Releasing on the shelf you are
+     already on must do NOTHING — a hold that ends where it started is a
+     cancelled gesture, and re-dealing there would throw away the album you were
+     looking at for no reason the user can see. */
+  let liveIdx = 0;
+
+  function commit() {
+    const shelf = shelves[idx];
+    /* Checked BEFORE the no-op guard: releasing on this row is a request to
+       open the dial, and it stays a request the second and third time. It also
+       never becomes `liveIdx` — the wheel has not moved shelf, it has handed
+       over to something that will. */
+    if (shelf && shelf.kind === 'mix-open') { openMixDial(root); return; }
+    if (idx === liveIdx) return;
+    liveIdx = idx;
+    if (opts.realShelf) { commitShelf(shelf); return; }
+    const a = shelf.album;
+    if (a) setMainAlbum(root, a, true);   // showcase: this one cover, cosmetically
+  }
+  function disarm() {
+    clearTimeout(holdT); holdT = null;
+    if (!armed) return;
+    armed = false;
+    box.classList.remove('is-armed');
+    if (opts.suppressClick) eatNextClick(album);
+    commit();
+  }
+
+  album.addEventListener('pointerdown', e => {
+    if (!bentoGesturesOn(root)) return;   // album page: no shelf wheel over the header
+    startY = e.clientY; startIdx = idx;
+    holdT = setTimeout(() => {
+      armed = true;
+      syncBg();                       // blur the cover that is actually under the finger
+      box.classList.add('is-armed');
+      album.setPointerCapture?.(e.pointerId);
+    }, SHOP_HOLD_MS);
+  });
+  album.addEventListener('pointermove', e => {
+    if (!armed) return;
+    e.preventDefault(); e.stopPropagation();   // this drag is ours, not the album swipe's
+    // Drag DOWN moves down the list, so the row you pull toward the lens is the
+    // one you get — matching how the list itself travels.
+    const next = Math.max(0, Math.min(items.length - 1,
+      Math.round(startIdx + (e.clientY - startY) / rowPx())));
+    if (next !== idx) { idx = next; paint(); }
+  }, true);
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev =>
+    album.addEventListener(ev, disarm));
+
+  paint();
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   CUSTOMISE A PLAYLIST (`openPlCustomize`)
+   ═══════════════════════════════════════════════════════════════════════
+   The sheet behind the ⋯ on your own playlist cards: pin up to PL_BADGE_MAX
+   badges. Reuses `.sd-log-overlay`'s geometry and mounting so there is one
+   bottom-sheet behaviour in the app rather than two.
+
+   ⚠️ BADGES ONLY. This briefly also picked between five card themes; the themes
+   are gone (see the card block in app.css — a wall of different shapes reads as
+   a mess) and the card is fixed for everyone. Badges survive because they are
+   small, they sit in a slot the design reserves for them, and no arrangement of
+   them can make the wall look broken.
+   ⚠️ WRITES THROUGH IMMEDIATELY. No Save button, the same as the log sheet and
+   the dev box: every tap lands in `plSetCustom` and re-renders the wall behind
+   the sheet, so you choose against the real card rather than a preview.
+   ⚠️ EVERYTHING IS UNLOCKED and there is no ownership check to add back — these
+   were briefly sold, and charging for how a user dresses their own work turns it
+   into a tier list. Every playlist has the same editability. */
+/* `light` remembers WHICH shell the sheet was opened from. Dark and Light are
+   two separate screen elements, and every change re-renders both — without this
+   the sheet would re-mount onto whichever one `querySelector` happened to reach
+   first and could jump variants mid-edit. */
+const PLC = { name: null, light: false };
+
+// The `.s-pl2` matching the shell the sheet belongs to.
+function plcHost() {
+  const sel = PLC.light ? '.s-pl2.s-home-v3--light' : '.s-pl2:not(.s-home-v3--light)';
+  return document.querySelector(sel) || document.querySelector('.s-pl2')
+      || document.querySelector('.app-screen');
+}
+
+function ensurePlcSheet() {
+  let ov = document.getElementById('plc');
+  if (ov) return ov;
+  ov = document.createElement('div');
+  ov.id = 'plc';
+  ov.className = 'sd-log-overlay plc-overlay';
+  ov.innerHTML = `
+    <div class="plc-sheet" role="dialog" aria-modal="true">
+      <div class="sd-log-grab"></div>
+      <div class="plc-head">
+        <div class="plc-cover"></div>
+        <div class="plc-head-txt">
+          <div class="plc-title"></div>
+          <div class="plc-sub">Make it yours</div>
+        </div>
+        <button class="plc-x" aria-label="Close">✕</button>
+      </div>
+      <div class="plc-sec-hd">Badges<span>up to ${PL_BADGE_MAX}</span></div>
+      <div class="plc-badges"></div>
+      <p class="plc-note">Badges are free — pin whichever fit the list.</p>
+    </div>`;
+
+  ov.addEventListener('click', e => { if (e.target === ov) closePlCustomize(); });
+  ov.querySelector('.plc-x').addEventListener('click', closePlCustomize);
+  return ov;
+}
+
+/* The playlist as it stands right now. Re-read on every paint rather than held,
+   because each change re-renders the wall and re-deals `plLists()`.
+   ⚠️ Matched on `key`, the stable original name — not on the displayed name,
+   which the editor can change. `name` is kept as a fallback only for callers
+   that predate the key. */
+function plcCurrent() {
+  return (plLists().find(l => l.key === PLC.name || l.name === PLC.name)) || null;
+}
+
+function plcPaint() {
+  const ov = document.getElementById('plc');
+  const pl = plcCurrent();
+  if (!ov || !pl) return;
+
+  ov.querySelector('.plc-title').textContent = pl.name;
+  ov.querySelector('.plc-cover').style.backgroundImage = `url('${pl.image}')`;
+
+  const badges = pl.badges || [];
+  ov.querySelector('.plc-badges').innerHTML = PL_BADGES.map(b => `
+            <button class="plc-badge${badges.indexOf(b.id) !== -1 ? ' is-on' : ''}" data-badge="${b.id}">
+              <span class="pl2-badge pl2-badge--${b.id}">${SD_ICONS[b.id] || ''}</span>
+              <span class="plc-badge-name">${b.name}</span>
+            </button>`).join('');
+
+  ov.querySelectorAll('.plc-badge').forEach(el =>
+    el.addEventListener('click', () => plcToggleBadge(el.dataset.badge)));
+}
+
+function plcToggleBadge(id) {
+  const pl = plcCurrent();
+  if (!pl) return;
+  const list = (pl.badges || []).slice();
+  const i = list.indexOf(id);
+  if (i !== -1) { list.splice(i, 1); }
+  else {
+    if (list.length >= PL_BADGE_MAX) return;   // the cap is the design; see PL_BADGES
+    list.push(id);
+  }
+  plSetCustom(pl.key || PLC.name, { badges: list });
+  plcApply();
+}
+
+/* Re-render the wall UNDER the open sheet, then repaint the sheet.
+   ⚠️ `renderViewer` rebuilds the screens from scratch, which throws away the
+   overlay we are standing in — so it has to be re-mounted and re-opened after,
+   and the `open` class re-applied on the next frame or the transition replays
+   from the bottom every time you tap a badge. */
+function plcApply() {
+  renderViewer();
+  requestAnimationFrame(() => {
+    const host = plcHost();
+    const ov = ensurePlcSheet();
+    if (host) host.appendChild(ov);
+    ov.classList.add('open');
+    plcPaint();
+  });
+}
+
+window.openPlCustomize = function (name, triggerEl) {
+  PLC.name = name;
+  const scr = triggerEl && triggerEl.closest && triggerEl.closest('.app-screen');
+  PLC.light = !!(scr && scr.classList.contains('s-home-v3--light'));
+  const host = scr || plcHost();
+  const ov = ensurePlcSheet();
+  if (host) host.appendChild(ov);
+  plcPaint();
+  requestAnimationFrame(() => ov.classList.add('open'));
+};
+
+function closePlCustomize() {
+  const ov = document.getElementById('plc');
+  if (ov) ov.classList.remove('open');
+}
+
+/* Shop — placeholder purchase. There is no cart, no price total and no
+   payment: the button becomes the state it would have bought. Enough to show
+   what owning something looks like without pretending to charge for it. */
+window.sdBuy = function (btn) {
+  if (!btn || btn.disabled) return;
+  /* ⚠ Pro is not a purchase, it is the PLAN. Everything else in here changes
+     one button; Pro changes what the whole app renders as, so it routes through
+     `setPlan` — which re-renders the screen, and brings this row back already
+     reading "Active" from `shopHtml`. Nothing to swap in by hand. */
+  if (btn.classList.contains('shop-pro-btn')) { setPlan(true); return; }
+  const owned = document.createElement('span');
+  owned.className = 'shop-owned shop-owned--new';   // --new = start transparent, fade in below
+  owned.textContent = 'Owned';
+  btn.replaceWith(owned);
+  requestAnimationFrame(() => owned.classList.add('is-in'));
+};
+
 /* The one entry point. Call it from anywhere the user does a thing. */
 window.sceneReact = function (kind) {
   if (!SCENE_REACTIONS[kind]) return;
+  /* ⚠️ The pet is PARKED (screens.js `SD_PET_ENABLED`) — the nav scoop holds the
+     shop button instead, so nothing carries `.sd-scene`. Bail before the queue:
+     with no pet to flush to, `sceneFlush`'s 400ms interval would start on the
+     first reaction and tick forever. */
+  if (!document.querySelector('.sd-scene')) return;
   if (!sceneVisible()) {
     if (_sceneQ[_sceneQ.length - 1] !== kind) _sceneQ.push(kind);
     if (_sceneQ.length > 3) _sceneQ.shift();   // a queue, not a parade
@@ -2566,6 +3163,12 @@ function fitNowText(textEl) {
   textEl.style.fontVariationSettings = `'wdth' 25, 'opsz' ${opsz}`;
 }
 
+/* How long a friend holds the bar. It is also a READING window, not just a
+   ticker interval — the bar is now a tap target, so it has to sit still long
+   enough to notice a name, decide, and reach it. 4.2s was tuned for something
+   you only glance at. */
+const NOW_SWAP_MS = 10000;
+
 function renderNowBar(screenEl) {
   const bar = screenEl.querySelector('.v3-nowbar');
   if (!bar) return;
@@ -2579,6 +3182,20 @@ function renderNowBar(screenEl) {
   if (screenEl._nowTimer) { clearInterval(screenEl._nowTimer); screenEl._nowTimer = null; }
   let i = 0;
   paintNow(textEl, list[i]);
+  bar._nowItem = list[i];
+
+  /* The bar is a link to whoever is on it. ⚠ The handler reads `bar._nowItem`
+     rather than closing over `list[i]` — the ticker swaps every SWAP_MS, so a
+     captured value would send you to the person who was on the bar when the
+     screen was built, not the one you actually tapped. */
+  if (!bar._tapWired) {
+    bar._tapWired = true;
+    bar.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const it = bar._nowItem;
+      if (it && it.name) window.openFriendProfile(it.name);
+    });
+  }
 
   // Shuffle through friends if more than one is listening at once.
   if (list.length > 1) {
@@ -2587,11 +3204,68 @@ function renderNowBar(screenEl) {
       setTimeout(() => {
         i = (i + 1) % list.length;
         paintNow(textEl, list[i]);
+        bar._nowItem = list[i];                    // keep the tap target in step
         bar.classList.remove('is-swapping');       // fade back in
       }, 300);
-    }, 4200);
+    }, NOW_SWAP_MS);
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   PLAN — Free vs Pro (`isPro()` · `setPlan()` · `renderPlanBar()`)
+   ═══════════════════════════════════════════════════════════════════════
+   ONE global: which account is looking at the mockup. It is a VIEWER control,
+   not an in-app setting — the toolbar switch sits beside the persona switcher
+   because it answers the same question (who is looking at this screen), and the
+   whole app re-renders as that account.
+
+   ⚠ The gate is `body.sd-pro`, NOT a class per screen. Dark and Light are two
+   live phones on stage at once, and the mobile prototype has no toolbar at all
+   — one write on `body` covers every shell. CSS gates with `body.sd-pro .x`,
+   JS gates with `isPro()`.
+   ⚠ Buying Pro in the shop routes through `setPlan(true)`, so the storefront
+   and the toolbar can never disagree about what you own. There is one source of
+   truth for the plan and this is it. */
+const PLAN_KEY = 'spindeck-pro';
+let SD_PRO = false;
+try { SD_PRO = localStorage.getItem(PLAN_KEY) === '1'; } catch (e) {}
+
+window.isPro = function () { return SD_PRO; };
+
+window.setPlan = function (pro) {
+  pro = !!pro;
+  if (pro === SD_PRO) return;
+  SD_PRO = pro;
+  try { localStorage.setItem(PLAN_KEY, SD_PRO ? '1' : '0'); } catch (e) {}
+  applyPlanClass();
+  renderPlanBar();
+  /* Full rebuild, not a patch. Pro changes what screens are MADE OF (the shop's
+     pitch row becomes a status row, the home cover grows a gesture) — the same
+     reason `applyPersona` re-renders rather than reaching in. */
+  renderViewer();
+};
+
+// Stamped on `body`, so it survives every screen rebuild without being re-applied.
+function applyPlanClass() { document.body.classList.toggle('sd-pro', SD_PRO); }
+
+const PLANS = [
+  { id: 'free', label: 'Free', hint: 'View the app as a free account' },
+  { id: 'pro',  label: 'Pro',  hint: 'View the app as a Pro subscriber' },
+];
+
+function renderPlanBar() {
+  const bar = document.getElementById('plan-bar');
+  if (!bar) return;
+  bar.innerHTML = PLANS.map(p => {
+    const on = (p.id === 'pro') === SD_PRO;
+    return `<button class="tb-plan-b${on ? ' active' : ''}" data-plan="${p.id}" title="${p.hint}">` +
+           `${p.id === 'pro' ? '<span class="tb-plan-star">✦</span>' : ''}${p.label}</button>`;
+  }).join('');
+  bar.querySelectorAll('.tb-plan-b').forEach(b =>
+    b.addEventListener('click', () => setPlan(b.dataset.plan === 'pro')));
+}
+
+function initPlan() { applyPlanClass(); renderPlanBar(); }
 
 // ── Hand layout (left/right) ──────────────────────────────────
 function getHand() { return localStorage.getItem('spindeck-hand') || 'left'; }
@@ -2671,6 +3345,11 @@ function populateHomeData(screenEl) {
   }
 
   setupAlbumSwipe(screenEl);
+  /* The shop's Pro showcase is a real bento, so it comes through this function
+     like any home — it just wants one extra thing hung off the finished art.
+     On an actual home screen the same wheel is what Pro buys, so it is gated. */
+  if (screenEl.classList.contains('s-shop')) shopProInit(screenEl);
+  else                                       homeProInit(screenEl);
 }
 
 // Swipe the album art to move through albums: drag-left = next, drag-right = previous.
@@ -2679,7 +3358,7 @@ function setupAlbumSwipe(screenEl) {
   const album = screenEl.querySelector('.v3-album');
   if (!album || album._swipeInit) return;
   album._swipeInit = true;
-  album.style.touchAction = 'pan-y';   // vertical scroll works normally; horizontal is cancelled below
+  // `touch-action` lives in app.css now (`.v3-album`) — see the note there.
 
   let startX = 0, startY = 0, progress = 0, width = 1;
   let active = false, decided = false, horizontal = false, dir = 0, targetIdx = 0, stepDir = 1;
@@ -2798,6 +3477,7 @@ function setupAlbumSwipe(screenEl) {
   }
 
   function onDown(e) {
+    if (!bentoGesturesOn(screenEl)) return;   // album page: the cover is a header, not a deck
     if (e.button != null && e.button > 0) return;
     if (cur) return;   // a previous swipe is still animating
     active = true; decided = false; horizontal = false; progress = 0;
@@ -2875,23 +3555,95 @@ function jsonp(url, timeout = 6000) {
   });
 }
 
+/* Matching one of our records to an iTunes result — worst bug first: a search
+   for "Phoebe Bridgers Punisher" returns a COVER of Punisher, by a different
+   artist, above anything of hers, and the old picker took it (the title
+   contained the album, so it stopped looking). The artist has to agree before
+   the title counts at all.
+
+   Two title tests, because each catches what the other cannot:
+     `normFull` keeps everything — "Crystal Castles (II)" and "(III)" are
+       different records, and stripping the numeral would merge them.
+     `normBase` drops parentheses and edition suffixes — "In Utero" has to match
+       "In Utero (20th Anniversary Edition)", which is the only In Utero there.
+   Within a tier the SHORTEST title wins: that is what keeps a plain album ahead
+   of its own deluxe reissue (SOS over "SOS Deluxe: LANA").
+
+   ⚠️ Tier 2 — right artist, wrong record — is still RETURNED, not dropped. The
+   preview wants something by this artist and has always settled for that. The
+   Apple *link* does not: see `serviceUrlFor`, which refuses to point at a
+   record it cannot vouch for. Callers decide how much certainty they need. */
+const normFull = t => String(t || '').toLowerCase().replace(/&/g, ' and ')
+  .replace(/[^a-z0-9]+/g, ' ').trim();
+const normBase = t => normFull(String(t || '')
+  .replace(/[\(\[][^\)\]]*[\)\]]/g, ' ')
+  .replace(/\s+-\s+(single|ep|deluxe.*|.*edition|.*version|remaster.*)$/i, ' '));
+
+function pickItunesAlbum(results, album) {
+  const wantA = normFull(album.artist), wantF = normFull(album.album), wantB = normBase(album.album);
+  /* The archive stores self-titled-with-a-numeral records as the numeral alone
+     — Crystal Castles' second album is literally `"(II)"` — where the service
+     lists the full "Crystal Castles (II)". Comparing artist+title as well is
+     what closes that gap; on every other record the two agree anyway. */
+  const wantAF = normFull(album.artist + ' ' + album.album);
+  const artistOk = r => {
+    const n = normFull(r.artistName);
+    return !!n && (n === wantA || n.includes(wantA) || wantA.includes(n));
+  };
+  const tier = r => {
+    if (!artistOk(r)) return 3;                              // someone else entirely
+    const cf = normFull(r.collectionName);
+    if (cf === wantF || cf === wantAF) return 0;             // the record
+    // ⚠ `wantB` guard: "(II)" strips to nothing, and an empty string would
+    // then match every other title that also strips to nothing.
+    if (wantB && normBase(r.collectionName) === wantB) return 1;   // the record, reissued
+    return 2;                                                // right artist, wrong record
+  };
+  const best = results.map(r => ({ r, t: tier(r), len: normFull(r.collectionName).length }))
+                      .sort((x, y) => x.t - y.t || x.len - y.len)[0];
+  if (!best) return null;
+  best.r._sdTier = best.t;
+  return best.r;
+}
+
+/* The album search, lifted out of `fetchPreviewUrl` — two features want the
+   SAME iTunes record now. The preview needs its `collectionId` to reach the
+   tracks; "Listen on Apple Music" needs its `collectionViewUrl`. They are used
+   within a second of each other on the same album, so they share one request
+   and one cache. `null` is cached too: a record iTunes doesn't have is asked
+   about once, not on every tap. */
+const ITUNES_CACHE = new Map();     // "artist – album" (lowercased) → the picked album result | null
+const ITUNES_PENDING = new Map();
+function fetchItunesAlbum(album) {
+  const key = albumKey(album).toLowerCase();
+  if (ITUNES_CACHE.has(key))   return Promise.resolve(ITUNES_CACHE.get(key));
+  if (ITUNES_PENDING.has(key)) return ITUNES_PENDING.get(key);
+  const p = (async () => {
+    let pick = null;
+    try {
+      const term = encodeURIComponent(album.artist + ' ' + album.album);
+      const ad = await jsonp(`https://itunes.apple.com/search?term=${term}&entity=album&limit=6`);
+      pick = pickItunesAlbum((ad && ad.results) || [], album);
+    } catch (e) { /* leave pick null */ }
+    ITUNES_CACHE.set(key, pick);
+    ITUNES_PENDING.delete(key);
+    return pick;
+  })();
+  ITUNES_PENDING.set(key, p);
+  return p;
+}
+
 // In-flight dedupe: concurrent lookups for the same album share one request instead of
 // firing parallel JSONP calls (mirrors COLOR_PENDING). Completed results land in PREVIEW_CACHE.
 const PREVIEW_PENDING = new Map();
 function fetchPreviewUrl(album) {
-  const key = (album.artist + ' – ' + album.album).toLowerCase();
+  const key = albumKey(album).toLowerCase();
   if (PREVIEW_CACHE.has(key))   return Promise.resolve(PREVIEW_CACHE.get(key));
   if (PREVIEW_PENDING.has(key)) return PREVIEW_PENDING.get(key);
   const p = (async () => {
     let url = null;
     try {
-      const term = encodeURIComponent(album.artist + ' ' + album.album);
-      const ad = await jsonp(`https://itunes.apple.com/search?term=${term}&entity=album&limit=6`);
-      const results = (ad && ad.results) || [];
-      const wantAlbum = album.album.toLowerCase(), wantArtist = album.artist.toLowerCase();
-      const pick = results.find(a => (a.collectionName || '').toLowerCase().includes(wantAlbum))
-                || results.find(a => (a.artistName || '').toLowerCase().includes(wantArtist))
-                || results[0];
+      const pick = await fetchItunesAlbum(album);
       if (pick && pick.collectionId) {
         const sd = await jsonp(`https://itunes.apple.com/lookup?id=${pick.collectionId}&entity=song&limit=4`);
         const track = ((sd && sd.results) || []).find(s => s.wrapperType === 'track' && s.previewUrl);
@@ -2904,6 +3656,125 @@ function fetchPreviewUrl(album) {
   })();
   PREVIEW_PENDING.set(key, p);
   return p;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LISTEN ON — handing the album off to a streaming service
+   ══════════════════════════════════════════════════════════════════════════
+   The rows under the preview in a CD's menu. In a shipped app these are deep
+   links and the OS swaps to Spotify / Apple Music / Deezer. Nothing has to be
+   faked here to test that: the URLs below are the ones a phone actually
+   resolves — Apple's and Deezer's album pages are UNIVERSAL LINKS, so tapping
+   one on a real device opens the app on that album, and on desktop the same URL
+   opens the web player.
+
+   ⚠️ SPOTIFY IS A SEARCH, NOT AN ALBUM LINK. Spotify's API needs an OAuth
+   token, and a static page with no server has nowhere to keep one — there is no
+   keyless way to turn "artist + album" into a Spotify album id.
+   `open.spotify.com/search/<artist album>` is the honest stand-in: still a
+   universal link, still opens the app, lands one tap from the record. Apple and
+   Deezer both have open endpoints, so they get the real page.
+   (If exact Spotify album links matter later: Odesli / song.link takes one
+   service's URL and returns every other service's, free and keyless — one more
+   hop on top of the Apple lookup we already do.)
+
+   ⚠️ THE TAB IS OPENED INSIDE THE GESTURE. `window.open` called after an
+   `await` is a popup, and every browser blocks it — the feature would silently
+   do nothing on the first tap of each album, which is indistinguishable from a
+   dead button. So a warm link opens directly, and a cold one opens a BLANK tab
+   now and steers it when the lookup lands. It is also why opening the menu
+   warms all three (`warmServiceLinks`): by the time a finger travels from the
+   CD to a row, the tap is almost always the clean path.
+   ⚠️ Cached BY SERVICE, and `null` is a real answer — "Deezer hasn't got this
+   record" is worth remembering, or every tap re-asks and the row goes on
+   feeling broken in a new way each time. */
+const SERVICE_URL_CACHE = new Map();   // "svc|artist – album" → url | null
+
+/* Deezer needs no search for most albums: anything dealt out of the rec pool
+   already carries `deezerId` (see `expandRecs`), and an id is a URL with no
+   request at all. Only the baked archive albums have to be looked up. */
+function fetchDeezerAlbumUrl(album) {
+  if (album.deezerId) return Promise.resolve('https://www.deezer.com/album/' + album.deezerId);
+  return dz('search/album?limit=1&q=' + encodeURIComponent(album.artist + ' ' + album.album))
+    .then(d => (d && d.data && d.data[0] && d.data[0].link) || null)
+    .catch(() => null);
+}
+
+function serviceUrlFor(album, svc) {
+  if (!album) return Promise.resolve(null);
+  const key = svc + '|' + albumKey(album).toLowerCase();
+  if (SERVICE_URL_CACHE.has(key)) return Promise.resolve(SERVICE_URL_CACHE.get(key));
+  let p;
+  if (svc === 'spotify') {
+    p = Promise.resolve('https://open.spotify.com/search/' +   // no lookup possible — see the ⚠ above
+        encodeURIComponent(album.artist + ' ' + album.album));
+  } else if (svc === 'apple') {
+    /* Only link to a record we can vouch for (tier 0 or 1). The iTunes Search
+       API indexes the STORE, not all of Apple Music, so plenty of real albums
+       simply are not in it — Blonde and Loveless among them — and the top
+       result is then an unrelated single by the right artist. Handing someone a
+       search page there is the correct answer, the same shape as Spotify's.
+       ⚠ Deezer deliberately does NOT do this: its API reflects its actual
+       catalogue, so a miss means the record isn't there, and a search page for
+       a record a service hasn't got is a dead end. */
+    p = fetchItunesAlbum(album).then(a =>
+      (a && a._sdTier <= 1 && a.collectionViewUrl) ||
+      'https://music.apple.com/search?term=' + encodeURIComponent(album.artist + ' ' + album.album));
+  } else {
+    p = fetchDeezerAlbumUrl(album);
+  }
+  return p.then(url => { SERVICE_URL_CACHE.set(key, url || null); return url || null; });
+}
+
+/* Which album a menu belongs to. The bento's menu reads the SHELL it sits in
+   (`_album`, written by `setMainAlbum`) rather than a global: there are several
+   `.s-home-v3` in the DOM at once and the first is often not the visible one —
+   the same trap that made previews play the wrong track. The profile card's
+   menus cannot use that, since five CDs share one screen, so they name their
+   favourite's slot instead. */
+function menuAlbum(el, slot) {
+  if (slot != null) {
+    const name = ((window.PROFILE && window.PROFILE.favs) || [])[slot];
+    return (name && (window.ARCHIVE || []).find(a => a.album === name)) || null;
+  }
+  const scr = el.closest('.s-home-v3');
+  return (scr && scr._album) || currentBentoAlbum() || window.activeAlbum || window.featuredAlbum || null;
+}
+
+// Nothing to open. The row dips and comes back — the same "no result" language
+// the preview button already speaks, rather than a new kind of error.
+function serviceMiss(el) {
+  el.classList.add('none');
+  setTimeout(() => el.classList.remove('none'), 1400);
+}
+
+window.openOnService = function (el, svc, slot) {
+  const menu = el.closest('.wall2-menu');
+  const album = menuAlbum(el, slot);
+  if (!album) { if (menu) menu.hidden = true; return; }
+  const cached = SERVICE_URL_CACHE.get(svc + '|' + albumKey(album).toLowerCase());
+  if (cached) { if (menu) menu.hidden = true; window.open(cached, '_blank', 'noopener'); return; }
+  if (cached === null) { serviceMiss(el); return; }    // asked before; this service has not got it
+  /* Cold — open the tab in the gesture and point it once the lookup answers.
+     `noopener` cannot ride along here (we need the handle to steer it), so the
+     link back is cut by hand instead. */
+  const w = window.open('', '_blank');
+  el.classList.add('is-wait');
+  serviceUrlFor(album, svc).then(url => {
+    el.classList.remove('is-wait');
+    if (!url) { if (w) w.close(); serviceMiss(el); return; }
+    if (menu) menu.hidden = true;
+    if (w) { try { w.opener = null; } catch (e) {} w.location.replace(url); }
+    else window.open(url, '_blank', 'noopener');
+  });
+};
+
+/* Called when a CD menu OPENS, so the tap that follows is the synchronous path.
+   Costs one iTunes call and at most one Deezer call per album — both cached,
+   and on most albums both already paid for by the preview and credits lookups. */
+function warmServiceLinks(album) {
+  if (!album) return;
+  SD_SERVICES.forEach(s => serviceUrlFor(album, s.id));
 }
 
 // Previews are OFF by default. The speaker button arms "preview mode": the current album
@@ -2975,7 +3846,7 @@ function albumKey(album) { return album ? album.artist + ' – ' + album.album :
 // album it landed on, a tap passes the visible album — so it never guesses via the DOM and
 // switching albums always loads the matching track. Everything that changes intent bumps gen
 // and calls this; a stale fetch bails on the gen/key check instead of fighting current state.
-const PREVIEWS_ENABLED = false;   // 30s previews disabled for now
+const PREVIEWS_ENABLED = false;   // 30s previews are not a feature — see the note below
 
 async function playPreviewFor(album, gen) {
   const a = previewAudioEl();
@@ -2996,17 +3867,32 @@ async function playPreviewFor(album, gen) {
   preloadPreviews(albumSeq(), album);
 }
 
-/* Warm the preview cache across the SAME window as preloadColors.
-   ⚠️ This used to take the WHOLE queue — `seq.forEach(fetchPreviewUrl)` — which
-   against a 100-album rec deal is 100 iTunes JSONP lookups fired at once. Its
-   own comment claimed it mirrored preloadColors; it didn't, and the difference
-   only stayed invisible because PREVIEWS_ENABLED is false. It would have landed
-   the moment previews came back on. */
+/* Warm the preview cache around the album playing now.
+   ⚠️ This once took the WHOLE queue — `seq.forEach(fetchPreviewUrl)` — which
+   against a 100-album rec deal is 100 iTunes lookups fired at once. It then
+   took the same five-wide window as `preloadColors`, which is right for images
+   and wrong for a rate-limited API. Now:
+
+   FORWARD ONLY, for the same reason `preloadForYou` is — a swipe goes forward,
+   For You shows what's next, and the album behind you is already cached, so
+   warming backwards spends a budget you cannot get back.
+
+   STAGGERED, because iTunes starts refusing outright when several requests land
+   in the same instant (measured: a ~120ms gap errors, 400ms+ is clean, and the
+   empty results in between were real catalogue gaps, not throttling).
+
+   ⚠️ The album you are ACTUALLY listening to is never in this queue —
+   `playPreviewFor` fetches it directly, so nothing warm is ever in front of the
+   thing making sound. */
+const PREVIEW_WARM_FWD = 2, PREVIEW_WARM_GAP = 400;
 function preloadPreviews(seq, current) {
   if (!PREVIEW.on) return;
   const list = seq || [];
   if (!list.length) return;
-  windowAround(list, Math.max(0, list.indexOf(current))).forEach(a => { if (a) fetchPreviewUrl(a); });
+  windowAround(list, Math.max(0, list.indexOf(current)), 0, PREVIEW_WARM_FWD)
+    .forEach((a, i) => {
+      if (a && a !== current) setTimeout(() => fetchPreviewUrl(a), i * PREVIEW_WARM_GAP);
+    });
 }
 // Called on every album change (swipe). While muted it just warms the cache so a later
 // unmute is instant; while armed it plays THIS album's preview (tied to the album passed in,
@@ -3295,9 +4181,14 @@ function applyAlbumColors(screenEl) {
 // Applied to every .s-prof2 instance so the dark + light variants stay matched.
 // Rebuild the name-banner path with its right-side anchor points shifted by `dx`
 // SVG units (the move Eric described as "drag the right points to the right").
+/* The banner, with every point on its RIGHT half slid out by `dx` — the left
+   edge, the corner radius and the slant's shape are untouched, so the tab grows
+   without deforming. Retraced from ProfileTheme_Regular4 (1).svg: the banner is
+   both taller (bottom 69 → 74.9) and wider (right 409.9 → 467.5) than the one
+   it replaces. */
 function profNameTabPath(dx) {
   const x = n => (n + dx).toFixed(3);
-  return `M0.500122 69H${x(409.862)}H${x(386.803)}C${x(369.967)} 69 ${x(354.261)} 57.1754 ${x(345.016)} 43.105L${x(328.872)} 18.5347C${x(321.476)} 7.27835 ${x(308.911)} 0.5 ${x(295.443)} 0.5H35.5001C16.1702 0.5 0.500122 16.17 0.500122 35.5V69Z`;
+  return `M0.500139 74.9079H${x(467.5)}H${x(437.414)}C${x(420.568)} 74.9079 ${x(404.855)} 66.4255 ${x(395.612)} 52.3422L${x(373.436)} 18.5525C${x(366.042)} 7.28593 ${x(353.471)} 0.5 ${x(339.995)} 0.5H35.5001C16.1702 0.5 0.500139 16.17 0.500139 35.5V74.9079Z`;
 }
 
 // Size the pill (and the banner around it) so the right edge clears the username.
@@ -3314,18 +4205,32 @@ function sizeProfName(screenEl) {
   const u = 690 / cw;                              // px → SVG units
   const textUnits = lbl.offsetWidth * u;
   const labelLeft = 0.06 * 690;                    // .prof-name-tab-lbl left (6%) in units
-  const padR = 18;                                 // gap from text end to the pill's straight-edge point
-  // The pill's right straight point sits at 295.502 by default; push it to
-  // labelLeft + text + padR when wider. The banner's anchor (295.443) shares the
-  // same dx, so tab + pill grow together. Clamp so the slanted tab stays on-canvas.
-  const dx = Math.max(0, Math.min(270, labelLeft + textUnits + padR - 295.502));
+  const padR = 20;                                 // gap from text end to the pill's straight-edge point
+  /* ⚠ All four numbers below are read off ProfileTheme_Regular4 (1).svg and move
+     together — they are the banner's slant anchor (339.995), the white pill's
+     left edge (16) and its right cap (360). The pill sits 20 units inside the
+     anchor in the new file exactly as it sat 18.9 inside the old one, so the tab
+     and the pill still grow as one shape. Clamp so the slant stays on-canvas:
+     the banner's right edge is 467.5, and 467.5 + 200 = 667.5 is still inside
+     the 690 box. */
+  const dx = Math.max(0, Math.min(200, labelLeft + textUnits + padR - 339.995));
   tab.setAttribute('d', profNameTabPath(dx));
-  // Pill div: left is 16.0403u, right cap reaches 314.351u+dx → width in %.
-  pill.style.width = ((314.351 + dx - 16.0403) / 690 * 100).toFixed(2) + '%';
+  // Pill div: left is 16u, right cap reaches 360u+dx → width in %.
+  pill.style.width = ((360 + dx - 16) / 690 * 100).toFixed(2) + '%';
 }
 
 function applyProfColors(screenEl) {
   sizeProfName(screenEl);
+  /* ⚠ SYNCHRONOUS — do not wrap this in `requestAnimationFrame`. It was, and
+     the rail then failed to initialise at all in a tab that is not frontmost:
+     browsers throttle rAF to nothing in a backgrounded or occluded tab, so the
+     callback simply never arrived and the rail sat on disc 1 with an empty info
+     panel until the user scrolled it by hand. Caught by driving the viewer
+     through CDP, where the tab is exactly that.
+     Nothing here needs a frame. If the rail already has a width `profFavBoot`
+     finishes immediately; if it does not, its ResizeObserver picks it up when
+     one arrives — and observers are not tied to the frame clock. */
+  if (screenEl) screenEl.querySelectorAll('.prof-fav-rail').forEach(r => profFavBoot(r));
   const pic = screenEl && screenEl.querySelector('.prof-pic');
   if (!pic) return;
   const bg = getComputedStyle(pic).backgroundImage;
@@ -3799,6 +4704,11 @@ window.goToMobileScreen = function(idx) {
 
 // ── navigate() — called from screen HTML onclick ─────────────
 window.navigate = function(targetId, direction) {
+  /* Leaving the screen leaves the dial. `renderViewer` rebuilds the shells, so
+     the markup carrying `--mixing` is thrown away either way — this is what
+     stops `mixHost` from being left pointing at a detached node, which would
+     read as "still open" to `mixDialSync` and to the corner pill. */
+  closeMixDial();
   // search / album / artist / review are no longer standalone screens — any
   // onclick that still asks for them routes to the live in-app flow instead.
   // 'review' is a legacy id: the state it named is gone, and the album page is
@@ -3817,8 +4727,13 @@ window.navigate = function(targetId, direction) {
   const idx = SCREENS.findIndex(s => s.id === targetId);
   if (idx === -1) return;
   activeNavId = targetId;
-  // New personality on a fresh visit, but NOT when Back restores an earlier profile.
-  if (targetId === 'profile' && direction !== 'back' && !window.ACTIVE_PERSONA) randomizeProfile();
+  /* Any navigation that is not the one opening a guest hands your own profile
+     back — including a tap on Profile in the nav, which means YOURS. */
+  if (window.PROFILE_GUEST && direction !== 'guest') restoreOwnProfile();
+  // New personality on a fresh visit, but NOT when Back restores an earlier
+  // profile, and not when we have just dealt a friend's.
+  if (targetId === 'profile' && direction !== 'back' && direction !== 'guest'
+      && !window.ACTIVE_PERSONA) randomizeProfile();
 
   if (isMobile) {
     if (mobileViewMode !== 'live') {
@@ -4594,10 +5509,534 @@ function obSyncFooter(root) {
   if (!next) return;
   if (step === 7)      { next.textContent = 'Start exploring';                       next.disabled = false; }
   else if (step === 0) { next.textContent = 'Continue';                              next.disabled = !obUserValid(); }
+  else if (step === 3) { next.textContent = OB.genres.size    ? `Continue · ${OB.genres.size}`    : 'Continue'; next.disabled = false; }
   else if (step === 4) { next.textContent = OB.artists.size   ? `Continue · ${OB.artists.size}`   : 'Continue'; next.disabled = false; }
   else if (step === 5) { next.textContent = OB.albums.size    ? `Continue · ${OB.albums.size}`    : 'Continue'; next.disabled = false; }
   else if (step === 6) { next.textContent = OB.following.size ? `Continue · ${OB.following.size}` : 'Continue'; next.disabled = false; }
   else                 { next.textContent = 'Continue';                              next.disabled = false; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THE MIX DIAL — Pro's multi-genre shelf (`mixInlineBuild` · `openMixDial`)
+   ══════════════════════════════════════════════════════════════════════════
+   The logo is a belt drive, so this builds one. Genres are the holes of a dial;
+   picking one turns it into a PULLEY and the belt re-wraps to take it in. Pick
+   one and the shape on screen is the Spindeck logo exactly — big wheel, small
+   wheel, belt. Pick six and it is a machine you built. The mark isn't printed
+   on the screen, it is what your choices make.
+
+   ⚠️ THIS IS NOT ONBOARDING, and it was. Step 3 is plain chips again: a new
+   user's first thirty seconds is the worst possible place to teach a gesture,
+   and a wall of chips is instantly legible in a way a dial is not. Here the
+   audience is a Pro user who has already held the cover to change shelf — the
+   dial is the reward for knowing the app, not the toll to enter it.
+
+   WHERE IT SITS — IN THE BENTO, not in a window.
+   Pro's cover-hold opens the shelf wheel: a vertical scroll that picks ONE
+   shelf, over the album art. Its bottom row is **Custom mix**, which opens this
+   dial instead of committing. The dial takes the SAME square — `.v3-album` —
+   and the commit sits in `.v3-blue` directly beneath it, so the whole thing
+   happens on the object it changes.
+   ⚠️ It was a bottom sheet, and must not go back to being one. A window sliding
+   up in front of the bento covered the very thing you were deciding about, and
+   added a surface you then had to get out of.
+
+   THE GESTURE — a TAP (`mixDialTap`)
+   ⚠️ It was a rotary turn: press a hole, turn it clockwise to a finger stop.
+   That was a lovely gesture in a sheet 340px wide and it does not survive the
+   move into a 291px square, where the same travel is a few degrees of a much
+   smaller circle. Tapping is also the only thing that lets you add a second
+   genre without undoing the first, which is the entire point of a mix.
+   The belt is untouched by any of this: it was never the gesture, it is the
+   picture of what you have built.
+   ⚠️ Each genre's target is the 18° WEDGE it owns (`dialWedge`), not its hole.
+   Twenty holes on a 74-unit ring sit 23 units apart, so a hole grown into a
+   decent target would touch its neighbours.
+
+   ⚠️ EVERY HOLE IS LABELLED, always. An earlier cut showed a label only once
+   the genre was picked, which reads fine on a desktop with a cursor and is
+   useless on a phone: there is no hover, so you would be choosing blind. The
+   labels RADIATE — each one rotated to point out of the ring, flipped on the
+   left half so it never reads upside down — because radial text costs angle,
+   not arc: a label subtends about 4° where each genre owns 18°. Tangential
+   text is what could never fit, not the labels themselves.
+
+   ⚠️ ONE INSTANCE PER SCREEN, built into whichever home opened it, and `MIX` is
+   the truth — the SVG is only a picture of it. */
+
+/* What the dial is holding. Kept OUTSIDE the DOM so closing and reopening the
+   sheet returns you to the mix you were building rather than a blank dial. */
+const MIX = { genres: new Set() };
+
+/* ⚠ EVERY NUMBER HERE IS SIZED TO THE BENTO'S ALBUM CELL, not to a sheet.
+   The dial used to be a bottom sheet 340px wide; it now lives inside
+   `.v3-album`, which is ~291×289 at the 393px frame, so the 320-unit viewBox
+   renders at about 0.91 px per unit and everything has to fit inside it —
+   labels included, and they radiate OUTWARD.
+   The budget, from the middle out: ring + holeOn + 5 (label gap) + the longest
+   label must stay under 158. "Alternative" at 10 units is ~57, so
+   74 + 11 + 5 + 57 = 147. That is what caps `ring`, and it is why pulling the
+   genres in toward the centre is what made this fit at all. */
+const DIAL = {
+  vb: 320,        // square viewBox; every number below is in its units
+  cx: 160, cy: 160,
+  /* ⚠ These five are one set, and `ring` + `holeOn` are what the label budget
+     is left over from: a corner slice reaches 177.6, a label starts at
+     `ring + holeOn + 5`, and "Alternative" needs ~77 of what remains. At 80/12
+     that leaves 80.6 — about three units of slack. Push `ring` past 84 or
+     `holeOn` past 12 and the longest names start condensing again.
+     The other limit is that neighbours must not merge: holes sit
+     `2·ring·sin(9°)` apart, so a picked pair at 80/12 clears by 1.0 units. */
+  ring: 80,       // where the holes sit — IN from 120, see the budget above
+  hole: 10,       // a hole …
+  holeOn: 12,     // … and a picked one, so a pulley reads heavier than a hole
+  hub: 30,        // the record in the middle
+  gap: 5,         // belt clearance off every wheel — the logo's belt never touches
+  /* ⚠ There is no `hit` radius any more, and don't add one back: how far a
+     slice may reach is not one number. `dialReach` computes it per angle,
+     because a wedge pointing at a corner has 41% further to go than one
+     pointing at an edge — which is the whole reason the long names are seated
+     where they are. */
+};
+
+// Degrees clockwise from 12 o'clock → a point on a circle about the hub.
+function dialPt(deg, r) {
+  const a = (deg - 90) * Math.PI / 180;
+  return { x: DIAL.cx + Math.cos(a) * r, y: DIAL.cy + Math.sin(a) * r };
+}
+const dialAngleOf = i => i * 360 / SD_GENRES.length;
+
+/* ── The box is a SQUARE and the dial is a CIRCLE, so the corners are free ──
+   How far the middle can reach before it hits the viewBox depends entirely on
+   which way it is pointing: `vb/2` straight up, and `vb/2 × √2` — 41% further —
+   into a corner. A ring of labels that all budget for the WORST direction
+   throws that away, and it is a lot: 160 units on the axes against 226 on the
+   diagonals. */
+function dialRoom(deg) {
+  const a = (deg - 90) * Math.PI / 180;
+  return (DIAL.vb / 2) / Math.max(Math.abs(Math.cos(a)), Math.abs(Math.sin(a)));
+}
+
+/* How far a genre's slice may reach — the room at its NARROWEST edge, not along
+   its centre line. A wedge drawn to the room at its middle would poke out of
+   the square along the edge nearer an axis, and the label with it. */
+function dialReach(deg) {
+  const half = 360 / SD_GENRES.length / 2;
+  return Math.min(dialRoom(deg - half), dialRoom(deg + half)) - 2;
+}
+
+/* ── Seating: the longest names get the roomiest slots ──────────────────
+   The eight holes flanking the diagonals have ~81 units for a label; the other
+   twelve have ~63. So "Alternative" and "Electronic" go in the corners and
+   "Pop" and "R&B" take the axes, and every name fits at FULL WIDTH — the
+   condensing in `mixDialFitLabels` becomes the safety net it should be rather
+   than the thing holding the dial together.
+
+   ⚠ This is the one place the dial stops following `SD_GENRES` order, and it is
+   a real trade: that list is editorial (related genres adjacent), and seating
+   by length scrambles that around the ring. It was worth it once the dial
+   stopped TURNING — adjacency used to mean "a related pick is a short turn",
+   and there is no turn any more. Return `SD_GENRES.map((_, i) => i)` here to
+   put the editorial order back; nothing else needs to change.
+   ⚠ Both sorts fall back to the original index on a tie, so the seating is
+   deterministic — the ring must not reshuffle between renders. */
+function dialSeating() {
+  const slots = SD_GENRES.map((_, i) => ({ i, room: dialReach(dialAngleOf(i)) }))
+                         .sort((a, b) => (b.room - a.room) || (a.i - b.i));
+  const byLen = SD_GENRES.map((g, i) => ({ g, i }))
+                         .sort((a, b) => (b.g.length - a.g.length) || (a.i - b.i));
+  const seat = new Array(SD_GENRES.length);
+  byLen.forEach((e, k) => { seat[slots[k].i] = e.i; });
+  return seat;
+}
+// seat[hole] = genre index, and its inverse. Computed once: `SD_GENRES` is a
+// constant and `screens.js` is loaded before this file.
+const DIAL_SEAT = dialSeating();
+const DIAL_HOLE = (() => { const m = []; DIAL_SEAT.forEach((g, h) => { m[g] = h; }); return m; })();
+// Where a GENRE sits, as opposed to where a hole is.
+const dialAngleOfGenre = gi => dialAngleOf(DIAL_HOLE[gi]);
+
+/* A genre's TAP TARGET: the wedge it owns, from the hub out to its reach, with
+   its hole and its label both inside.
+   ⚠ Without this the target is the hole itself — 16 units across, about 15px on
+   a phone. Twenty holes on a 74-unit ring sit 23 units apart, so the holes
+   cannot simply be grown into a decent target; they would touch. The wedge is
+   the way out: each genre already OWNS 18° of the dial, so tapping anywhere in
+   its slice — the name most of all — is unambiguous, and the target becomes a
+   ~26×80px slab instead of a dot. */
+function dialWedge(a, half, r0, r1) {
+  const f = n => n.toFixed(2);
+  const A = dialPt(a - half, r0), B = dialPt(a - half, r1);
+  const C = dialPt(a + half, r1), D = dialPt(a + half, r0);
+  return `M ${f(A.x)} ${f(A.y)} L ${f(B.x)} ${f(B.y)}` +
+         ` A ${r1} ${r1} 0 0 1 ${f(C.x)} ${f(C.y)}` +
+         ` L ${f(D.x)} ${f(D.y)}` +
+         ` A ${r0} ${r0} 0 0 0 ${f(A.x)} ${f(A.y)} Z`;
+}
+
+/* ── The belt: the convex hull of a set of CIRCLES ───────────────────────
+   Not the hull of their centres. The wheels have different radii — the hub is
+   three times a pulley — so an outline offset from a centre-hull would cut
+   through the hub and float off the small ones. The real thing is what a belt
+   physically is: an external tangent between each consecutive pair of wheels,
+   joined by the arc each wheel actually wraps.
+
+   Gift-wrapping, one wheel at a time. Standing on wheel `cur` with the outward
+   normal at angle `ang`, the next wheel is whichever needs the least clockwise
+   turn to reach. For an external tangent touching both wheels on the same side,
+   the shared normal φ satisfies
+
+       (c2 − c1) · n(φ) = r1 − r2      →      φ = atan2(dy,dx) ± acos((r1−r2)/d)
+
+   ⚠ MINUS, not plus. The two solutions are the two external tangents, one down
+   each side, and only one of them belongs to a CLOCKWISE walk with an outward
+   normal — take the other and the loop still closes for two wheels (which is
+   why the logo case can pass while everything else is wrong) but from three
+   wheels up the least-turn choice starts skipping wheels and the belt runs
+   straight through the hub. Sanity check it on two equal circles side by side:
+   the top run's outward normal points UP, i.e. base − acos.
+
+   Start from the topmost extreme point, which is always on the hull.
+
+   ⚠ Radii arrive already grown by `DIAL.gap`, so the belt is drawn where a belt
+   sits — off the wheels, with the clearance the logo has.
+   ⚠ The iteration cap is not decoration: a degenerate set (two wheels sharing a
+   centre) would otherwise wrap forever and hang the tab instead of drawing
+   nothing. */
+function beltPath(circles) {
+  const cs = circles.map(c => ({ x: c.x, y: c.y, r: c.r + DIAL.gap }));
+  const f = n => n.toFixed(2);
+  if (!cs.length) return '';
+  if (cs.length === 1) {                       // nothing picked: the hub alone
+    const c = cs[0];
+    return `M ${f(c.x)} ${f(c.y - c.r)} A ${c.r} ${c.r} 0 1 1 ${f(c.x)} ${f(c.y + c.r)}` +
+           ` A ${c.r} ${c.r} 0 1 1 ${f(c.x)} ${f(c.y - c.r)} Z`;
+  }
+
+  const TAU = Math.PI * 2;
+  const at = (i, a) => ({ x: cs[i].x + Math.cos(a) * cs[i].r, y: cs[i].y + Math.sin(a) * cs[i].r });
+
+  let start = 0;
+  for (let i = 1; i < cs.length; i++) if (cs[i].y - cs[i].r < cs[start].y - cs[start].r) start = i;
+
+  const startAng = -Math.PI / 2;               // outward normal, pointing up
+  let cur = start, ang = startAng, d = `M ${f(at(start, startAng).x)} ${f(at(start, startAng).y)}`;
+
+  for (let guard = 0; guard < cs.length * 2 + 4; guard++) {
+    let best = -1, bestTurn = Infinity, bestAng = 0;
+    for (let j = 0; j < cs.length; j++) {
+      if (j === cur) continue;
+      const dx = cs[j].x - cs[cur].x, dy = cs[j].y - cs[cur].y;
+      const dist = Math.hypot(dx, dy);
+      if (!dist) continue;
+      const t = (cs[cur].r - cs[j].r) / dist;
+      if (t < -1 || t > 1) continue;           // one wheel swallows the other
+      const phi = Math.atan2(dy, dx) - Math.acos(t);
+      const turn = ((phi - ang) % TAU + TAU) % TAU;
+      if (turn < bestTurn) { bestTurn = turn; best = j; bestAng = phi; }
+    }
+    if (best < 0) break;
+
+    const wrapEnd = at(cur, bestAng);          // arc this wheel wraps …
+    d += ` A ${cs[cur].r} ${cs[cur].r} 0 ${bestTurn > Math.PI ? 1 : 0} 1 ${f(wrapEnd.x)} ${f(wrapEnd.y)}`;
+    const land = at(best, bestAng);            // … then the straight run
+    d += ` L ${f(land.x)} ${f(land.y)}`;
+    cur = best; ang = bestAng;
+
+    if (cur === start) {                       // closed: the start wheel's last arc
+      const close = ((startAng - ang) % TAU + TAU) % TAU;
+      const pe = at(cur, startAng);
+      d += ` A ${cs[cur].r} ${cs[cur].r} 0 ${close > Math.PI ? 1 : 0} 1 ${f(pe.x)} ${f(pe.y)}`;
+      break;
+    }
+  }
+  return d + ' Z';
+}
+
+// What the belt has to wrap: the hub, plus a pulley for every picked genre.
+function dialWheels() {
+  const w = [{ x: DIAL.cx, y: DIAL.cy, r: DIAL.hub }];
+  SD_GENRES.forEach((g, i) => {
+    if (!MIX.genres.has(g)) return;
+    const p = dialPt(dialAngleOfGenre(i), DIAL.ring);   // where this GENRE sits
+    w.push({ x: p.x, y: p.y, r: DIAL.holeOn });
+  });
+  return w;
+}
+
+function mixDialSvg() {
+  const half = 360 / SD_GENRES.length / 2;
+  const lr = DIAL.ring + DIAL.holeOn + 5;
+  /* ⚠ Walks HOLES, not genres — `DIAL_SEAT` decides which name sits in which,
+     so that the long ones land in the corners. `data-i` stays the GENRE index,
+     because that is what `MIX`, `mixToggle` and `mixDialSync` speak in. */
+  const holes = DIAL_SEAT.map((gi, h) => {
+    const g = SD_GENRES[gi];
+    const a = dialAngleOf(h);
+    const p = dialPt(a, DIAL.ring);
+    const reach = dialReach(a);
+    /* Radial labels. The text is laid out along +x at the label radius and the
+       whole group is turned to the hole's bearing, so it points straight out of
+       the ring. `a - 90` because the SVG's 0° is 3 o'clock and the dial's is 12.
+       ⚠ FLIPPED on the left half (a > 180): without it every label from 7
+       o'clock round to 11 reads upside down. The flip swaps the anchor with it,
+       so text still grows away from the ring rather than back across it. */
+    const flip = a > 180;
+    const t = flip
+      ? `rotate(${(a - 90 + 180).toFixed(2)}) translate(${-lr} 0)`
+      : `rotate(${(a - 90).toFixed(2)}) translate(${lr} 0)`;
+    /* ⚠ The budget is stamped on the label, not recomputed later: it is a
+       property of WHERE this one sits, and `mixDialFitLabels` would otherwise
+       have to walk back from `data-i` through the seating to find the angle. */
+    const budget = (reach - lr).toFixed(1);
+    /* ⚠ The hit wedge is FIRST, so it paints under its own hole and label. It
+       is invisible but it is the only thing here that takes a pointer — the
+       circle and the text are `pointer-events: none`, so a tap anywhere in the
+       slice reports the same target and there are no dead gaps between them. */
+    return `<g class="ob-hole" data-i="${gi}">
+        <path class="ob-hole-hit" d="${dialWedge(a, half, DIAL.hub, reach)}"/>
+        <circle class="ob-hole-c" cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="${DIAL.hole}"/>
+        <g transform="translate(${DIAL.cx} ${DIAL.cy})">
+          <text class="ob-hole-t" data-w="${budget}" transform="${t}"
+                text-anchor="${flip ? 'end' : 'start'}">${obEsc(g)}</text>
+        </g>
+      </g>`;
+  }).join('');
+
+  /* ⚠ No faceplate, no finger stop, and no readout in the hub — all three were
+     about TURNING. You tap a genre now, so there is no plate to turn against
+     and no stop to turn to; and the readout moved to the info box below, where
+     there is room to say it in words. What is left is the machine: a record in
+     the middle and the belt that wraps whatever you picked. */
+  return `<svg class="ob-dial" viewBox="0 0 ${DIAL.vb} ${DIAL.vb}" role="group" aria-label="Pick genres">
+      <!-- ⚠ The belt stays INSIDE the group with the holes it wraps, and first,
+           so the wheels sit on top of it. -->
+      <g class="ob-dial-ring">
+        <path class="ob-dial-belt" d=""/>
+        ${holes}
+      </g>
+      <g class="ob-dial-hub">
+        <circle class="ob-hub-disc" cx="${DIAL.cx}" cy="${DIAL.cy}" r="${DIAL.hub}"/>
+        <circle class="ob-hub-groove" cx="${DIAL.cx}" cy="${DIAL.cy}" r="${DIAL.hub - 7}"/>
+        <circle class="ob-hub-hole" cx="${DIAL.cx}" cy="${DIAL.cy}" r="3.6"/>
+      </g>
+    </svg>`;
+}
+
+/* ⚠ TAP, not turn. The rotary drag is gone: it was a lovely gesture in a sheet
+   340px wide, and it does not survive being moved into a 291px square where a
+   genre's whole travel is a few degrees of a much smaller circle. Tapping is
+   also the only thing that lets you pick a second genre without undoing the
+   first, which is the point of a mix.
+   The belt survives all of it — that was never the gesture, it is the picture
+   of what you have built, and it still redraws on every toggle. */
+/* ── Fitting the labels: MEASURED, not estimated ────────────────────────
+   Roboto Flex's `wdth` axis is what lets a long genre keep the same type size
+   as a short one — it gives up width instead. Which labels need it, and how
+   much, is not something to guess at: it depends on the face that actually
+   loaded, the axis position, and the letter-spacing, so this asks the engine.
+   `getComputedTextLength()` reports in USER UNITS, the same units as the budget
+   below, and the rotate/translate the label sits under preserve length.
+
+   ⚠ Iterated, because width is NOT linear in `wdth` — the first guess is a
+   proportional one and two corrections land it. It bails the moment a pass
+   stops making the label narrower, so a name that cannot fit even fully
+   condensed settles rather than looping.
+   ⚠ `DIAL_WDTH_MIN` is 60, not the axis floor of 25. Roboto Flex will happily
+   go to a hairline at 25 and the label stops being readable long before it
+   stops fitting; a name that needs more than this should be shortened in
+   `SD_GENRES` instead. */
+const DIAL_WDTH_MIN = 60;
+
+function mixDialFitLabels(svg) {
+  if (!svg) return;
+  /* What a label actually has, radially: from where it starts out to the
+     viewBox edge, less two units so a glyph never sits flush on the crop.
+     Derived from `DIAL` rather than written out, so moving the ring in or out
+     moves the budget with it. */
+  svg.querySelectorAll('.ob-hole-t').forEach(t => {
+    /* ⚠ PER LABEL, read off the element. A name in a corner has ~88 units and
+       one on an axis has ~70, so a single shared budget would either condense
+       the corners for nothing or let the axes overflow. Stamped by
+       `mixDialSvg`, which is where the angle is known. */
+    const budget = parseFloat(t.dataset.w);
+    if (!budget) return;
+    let wdth = 100;
+    t.style.setProperty('--lwdth', wdth);
+    for (let pass = 0; pass < 3; pass++) {
+      let w = 0;
+      try { w = t.getComputedTextLength(); } catch (e) { return; }
+      if (!w || w <= budget) break;
+      const next = Math.max(DIAL_WDTH_MIN, Math.floor(wdth * budget / w));
+      if (next >= wdth) break;          // already as narrow as it will go
+      wdth = next;
+      t.style.setProperty('--lwdth', wdth);
+    }
+  });
+}
+
+function mixDialTap(svg) {
+  if (!svg || svg._wired) return;
+  svg._wired = true;
+  svg.addEventListener('click', (e) => {
+    /* ⚠ Swallowed whether or not it hit a genre. The dial covers `.v3-album`,
+       which carries `onAlbumArt` — a tap on the empty middle would otherwise
+       fall through and navigate to the album page out from under the dial. */
+    e.stopPropagation();
+    const g = e.target.closest && e.target.closest('.ob-hole');
+    if (!g) return;
+    const genre = SD_GENRES[+g.dataset.i];
+    if (genre) mixToggle(genre);
+  });
+}
+
+function mixToggle(g) {
+  MIX.genres.has(g) ? MIX.genres.delete(g) : MIX.genres.add(g);
+  mixDialSync();
+}
+
+function mixDialSync() {
+  const host = mixHost;
+  if (!host) return;
+  const svg = host.querySelector('.mix-inline .ob-dial');
+  if (!svg) return;
+  svg.querySelectorAll('.ob-hole').forEach(g => {
+    const on = MIX.genres.has(SD_GENRES[+g.dataset.i]);
+    g.classList.toggle('is-on', on);
+    const c = g.querySelector('.ob-hole-c');
+    if (c) c.setAttribute('r', on ? DIAL.holeOn : DIAL.hole);
+  });
+  const belt = svg.querySelector('.ob-dial-belt');
+  if (belt) belt.setAttribute('d', beltPath(dialWheels()));
+
+  /* The readout lives in the INFO BOX now, not in the hub. The box that
+     normally says what this album is says what the mix is instead — same slot,
+     same voice, and it has the room to count in words where a 52-unit record
+     did not.
+     ⚠ It counts ALBUMS, not genres. "3 picked" tells you what you did; "41
+     albums" tells you whether the shelf is worth having. */
+  const n = mixPool().length, picked = MIX.genres.size;
+  const nEl = host.querySelector('.v3-blue-mix-n');
+  const gEl = host.querySelector('.v3-blue-mix-g');
+  if (nEl) nEl.textContent = !picked ? 'Build a mix'
+                           : n + (n === 1 ? ' album' : ' albums');
+  if (gEl) gEl.textContent = !picked ? 'Tap the genres you want'
+                           : picked + (picked === 1 ? ' genre' : ' genres');
+
+  /* ⚠ NO MINIMUM NUMBER OF GENRES — one genre is a mix. The dial is an
+     ALTERNATIVE way to cut the catalogue, not a "combine several things"
+     puzzle, and making you add a second genre you don't want is a toll on the
+     way to a shelf you have already described. The only floor left is the one
+     the QUEUE needs: a shelf you cannot swipe is not a shelf, which is what
+     `commitShelf` refuses under two albums — and the button says WHICH of the
+     two is stopping you rather than sitting dead under one generic label. */
+  const go = host.querySelector('.v3-blue-mix-go');
+  if (go) {
+    go.disabled = !picked || n < 2;
+    go.textContent = !picked ? 'Pick a genre'
+                   : n < 2   ? (n ? 'Too few' : 'Empty')
+                   : 'Play this mix';
+  }
+}
+
+const mixShelf = () => ({ label: 'Your mix', kind: 'mix', genres: [...MIX.genres] });
+const mixPool  = () => (MIX.genres.size ? shelfPool(mixShelf()) : []);
+
+/* ── Mounted IN THE BENTO ───────────────────────────────────────────────
+   ⚠ This was a bottom sheet (`.sd-log-overlay` + `.mix-sheet`) and deliberately
+   is not any more. The dial chooses what the bento shows, so it belongs in the
+   bento: the ring goes in `.v3-album` — the same square the shelf wheel covers
+   — and the commit goes in `.v3-blue` underneath it. A window sliding up in
+   front of the object is one more surface to get out of, and the thing it was
+   covering was the thing you were deciding about.
+
+   ⚠ Built by JS into the finished bento, NOT added to `bentoHtml()`. That
+   component is shared with the shop's showcase and stays pristine — the same
+   rule `proWheelInit` follows for the shelf wheel. */
+
+// The screen the dial is currently open on — and the flag for whether it is
+// open at all. `mixDialSync` scopes every lookup to it.
+let mixHost = null;
+
+function mixInlineBuild(host) {
+  const album = host.querySelector('.v3-album');
+  const blue  = host.querySelector('.v3-blue');
+  if (!album || !blue) return false;          // bento not built yet
+
+  if (!album.querySelector('.mix-inline')) {
+    const wrap = document.createElement('div');
+    wrap.className = 'mix-inline';
+    /* The same three layers as `.shop-pick`, for the same reasons documented
+       there: a PAINTED blur of the cover (not `backdrop-filter`, which samples
+       in the wrong coordinate space under the bento's transform and the
+       viewer's zoom), a wash over it, then the dial. */
+    wrap.innerHTML = `<span class="mix-inline-bg"></span>` +
+                     `<span class="mix-inline-tint"></span>` +
+                     mixDialSvg();
+    wrap.addEventListener('click', e => e.stopPropagation());
+    album.appendChild(wrap);
+    const dial = wrap.querySelector('.ob-dial');
+    mixDialTap(dial);
+    /* ⚠ Measurable HERE because `.mix-inline` is only `opacity: 0` when idle,
+       never `display: none` — the same reason the shelf wheel's `rowPx()` can
+       measure a row before the wheel is armed. */
+    mixDialFitLabels(dial);
+    /* ⚠ And again once the webfont has actually landed. Roboto Flex arrives
+       over the network; until it does, the first pass measures the FALLBACK
+       face, which has no `wdth` axis to condense and reports somebody else's
+       widths. */
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(() => mixDialFitLabels(dial));
+    }
+  }
+
+  if (!blue.querySelector('.v3-blue-mix')) {
+    const bar = document.createElement('div');
+    bar.className = 'v3-blue-mix';
+    bar.innerHTML = `<div class="v3-blue-mix-txt">` +
+                      `<span class="v3-blue-mix-n"></span>` +
+                      `<span class="v3-blue-mix-g"></span>` +
+                    `</div>` +
+                    `<button class="v3-blue-mix-go" type="button"></button>`;
+    /* ⚠ `.v3-blue` opens the album page on click. The bar covers it completely
+       and stops the bubble, so choosing a mix cannot navigate away from the
+       screen you are choosing it for. */
+    bar.addEventListener('click', e => e.stopPropagation());
+    bar.querySelector('.v3-blue-mix-go').addEventListener('click', () => {
+      if (!MIX.genres.size || mixPool().length < 2) return;
+      commitShelf(mixShelf());
+      closeMixDial();
+    });
+    blue.appendChild(bar);
+  }
+  return true;
+}
+
+window.openMixDial = function (fromEl) {
+  const host = (fromEl && fromEl.closest && fromEl.closest('.s-home-v3'))
+            || document.querySelector('.s-home-v3:not(.s-shop)');
+  if (!host || !mixInlineBuild(host)) return;
+  /* ⚠ Taken off the OLD host first: the dial can be reopened from the other
+     home variant, and a screen left marked keeps a dial over its cover and a
+     pill saying Back with nothing to go back from. */
+  if (mixHost && mixHost !== host) mixHost.classList.remove('s-home-v3--mixing');
+  mixHost = host;
+  /* Copied on every open, not once at build: the cover changes with every swipe
+     and every shelf commit, and a blur of the album you were looking at three
+     swipes ago is worse than no blur at all. */
+  const bg = host.querySelector('.mix-inline-bg');
+  const album = host.querySelector('.v3-album');
+  if (bg && album) bg.style.backgroundImage = album.style.backgroundImage;
+  /* The class does the rest in app.css: shows the dial, swaps the info box for
+     the mix readout, and flips the corner pill to Back — the app's one
+     dedicated back button, which is how you leave a gesture still "held". */
+  host.classList.add('s-home-v3--mixing');
+  mixDialSync();
+};
+
+function closeMixDial() {
+  if (mixHost) mixHost.classList.remove('s-home-v3--mixing');
+  mixHost = null;
 }
 
 // ── Walls (artists / albums) ──────────────────────────────────
@@ -4767,16 +6206,41 @@ const PROFILE_PHOTOS = [
 // ── Random persona: rolled once on load so every visit shows a new profile ──
 // (image · nickname/handle · bio · location · job · numbers · favourite albums ·
 //  artists · playlists · recently-rated). Edits (picker) still persist per visit.
-function randomizeProfile() {
+/* A string → a repeatable stream of numbers. Used to deal a FRIEND's profile:
+   the same name must produce the same person every time you open them, or the
+   app looks like it forgot who they were between taps. FNV-1a into mulberry32
+   — both are four lines and neither needs to be good, only stable. */
+function seedRng(str) {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return function () {
+    h |= 0; h = h + 0x6D2B79F5 | 0;
+    let t = Math.imul(h ^ h >>> 15, 1 | h);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+/* Deal a profile into `window.PROFILE`.
+
+   No argument — a fresh random person, the demo's own behaviour on every visit
+   to your profile.
+   `seedName` — THAT person, dealt from a seeded stream and wearing that name.
+   This is how a friend's page works: the profile screen reads one global
+   object, so viewing someone else is a temporary, repeatable overwrite of it.
+   ⚠ Every draw below goes through `R`, never `Math.random` directly — one
+   stray call and a seeded profile stops being stable. */
+function randomizeProfile(seedName) {
   const A = window.ARCHIVE || [];
   if (!A.length) return;
-  const rnd = arr => arr[Math.floor(Math.random() * arr.length)];
+  const R = seedName ? seedRng(seedName) : Math.random;
+  const rnd = arr => arr[Math.floor(R() * arr.length)];
   const sample = (arr, n) => {
     const c = arr.slice();
-    for (let i = c.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [c[i], c[j]] = [c[j], c[i]]; }
+    for (let i = c.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); [c[i], c[j]] = [c[j], c[i]]; }
     return c.slice(0, n);
   };
-  const ri = (lo, hi) => lo + Math.floor(Math.random() * (hi - lo + 1));
+  const ri = (lo, hi) => lo + Math.floor(R() * (hi - lo + 1));
 
   const nicks = ['Mira', 'Dev', 'Sasha', 'Ken', 'Luca', 'Noa', 'Remy', 'Yuki', 'Ira', 'Theo', 'Juno', 'Cass', 'Wren', 'Sol', 'Nadia', 'Bram', 'Pax', 'Indie', 'Roan', 'Suki', 'Milo', 'Fern', 'Dae', 'Otis', 'Vera', 'Kai',
     // Long-username examples — the pill + banner stretch to fit these, no overflow
@@ -4839,7 +6303,7 @@ function randomizeProfile() {
     const a = A.find(x => x.album === albName);
     if (!a) return null;
     const tr = (typeof songsFor === 'function') ? songsFor(a) : [];
-    const t = tr.length ? tr[Math.floor(Math.random() * tr.length)] : null;
+    const t = tr.length ? tr[Math.floor(R() * tr.length)] : null;
     return { title: t ? t.title : a.album, artist: a.artist, album: a.album };
   }).filter(Boolean);
   P.reviews = ri(12, 940);
@@ -4850,8 +6314,44 @@ function randomizeProfile() {
   P.playlistNames = sample(pls, Math.min(3, pls.length)).map(p => p.name);
   P.playlistCovers = sample(pics, 3);   // photo covers for the shown playlists
   P.recent = sample(A, 4).map(a => a.album);
+
+  // A named friend keeps their name; only the rest of the person is dealt.
+  if (seedName) { P.name = seedName; P.handle = seedName.toLowerCase(); }
 }
 randomizeProfile();
+
+/* ═══════════════════════════════════════════════════════════════════
+   SOMEONE ELSE'S PROFILE (`openFriendProfile` · `restoreOwnProfile`)
+   ═══════════════════════════════════════════════════════════════════
+   There is no second profile screen. `profileHtml` reads ONE global object, so
+   opening a friend is a temporary overwrite of it: stash yours, deal theirs
+   into the same object, navigate. Leaving hands yours back.
+
+   ⚠ The stash is what makes that safe. Without it your own profile would
+   quietly stay whoever you looked at last — the screen has no idea it is
+   showing a guest.
+   ⚠ Dealt from the NAME (`randomizeProfile(name)` → `seedRng`), so a friend is
+   the same person every time you open them. Re-rolling per visit would read as
+   the app forgetting who they were. */
+let PROFILE_OWNER = null;             // your profile, parked while a guest is up
+window.PROFILE_GUEST = null;          // the name being viewed, or null
+
+window.openFriendProfile = function (name) {
+  if (!name) return;
+  if (!PROFILE_OWNER) PROFILE_OWNER = Object.assign({}, window.PROFILE);
+  randomizeProfile(name);
+  window.PROFILE_GUEST = name;
+  /* 'guest' is what keeps `navigate` from re-rolling the profile we just dealt
+     and from restoring the one we just stashed. */
+  navigate('profile', 'guest');
+};
+
+function restoreOwnProfile() {
+  if (!PROFILE_OWNER) return;
+  Object.assign(window.PROFILE, PROFILE_OWNER);
+  PROFILE_OWNER = null;
+  window.PROFILE_GUEST = null;
+}
 
 /* ══════════════════════════════════════════════════════════════════════════
    PERSONAS — the mockup, shown as four different people
@@ -5703,15 +7203,135 @@ window.profBaseColors = function (hue) {
 };
 
 // ── Favourite CD → preview / platforms popup (like the homepage) ──
-window.toggleProfCd = function (btn, e) {
+/* ── The favourites rail ─────────────────────────────────────────────────
+   A tap on a CD that ISN'T the centred one brings it to the middle instead of
+   acting on it. That is what a carousel means, and it is the only sane reading
+   of a tap on a disc that is half off the screen — the alternative is opening a
+   menu for an album you can barely see. */
+window.profFavTap = function (btn, e, slot, picker) {
   if (e) e.stopPropagation();
-  const menu = btn.nextElementSibling;
-  if (!menu || !menu.classList.contains('prof-cd-menu')) return;
+  const rail = btn.closest('.prof-fav-rail');
+  if (rail && !btn.classList.contains('is-mid')) {
+    rail.scrollTo({ left: btn.offsetLeft - (rail.clientWidth - btn.offsetWidth) / 2,
+                    behavior: 'smooth' });
+    return;
+  }
+  if (picker) { openProfPicker(slot, btn); return; }
+  toggleProfCd(btn, e, slot);
+};
+
+/* Scroll → which disc is centred → the panel underneath.
+   ⚠ rAF-throttled. `scroll` fires far faster than paint, and this measures every
+   item on each call; without the gate a flick down the rail runs the whole loop
+   dozens of times per frame. */
+/* ⚠ The rail opens on the SECOND disc, not the first. At `scrollLeft: 0` the
+   first disc is centred against an empty spacer — nothing to its left, one
+   neighbour to its right — which reads as the start of a list rather than as a
+   carousel you can work in both directions. One step in and it is three discs
+   with the middle one framed, from the moment the page lands.
+   ⚠ Once per rail (`_favInit`). `renderViewer` rebuilds the DOM, so the flag
+   goes with it and a genuine re-render re-centres; what it stops is a repaint
+   yanking the rail back under a finger mid-scroll. Set directly rather than
+   smooth-scrolled: this is the starting position, not a movement. */
+/* ⚠ A ResizeObserver, NOT a retry counter. Both steps below need a laid-out
+   rail, and this was `requestAnimationFrame` up to three times — which is a
+   race, and one the profile loses often enough to see: the viewer builds both
+   theme variants and the screen can be zero-width for an unbounded number of
+   frames while it is assembled. When the retries ran out the rail was left
+   sitting on disc 1 with a blank info panel until you happened to touch it.
+   An observer fires exactly when there IS a width, however long that takes.
+   ⚠ `_favInit` is set HERE, not in `profFavStart`, and only on a run that
+   actually did the work — a bailed attempt must not count as having run, or a
+   later paint would yank the rail back to disc 2 under the user's finger. */
+function profFavBoot(rail) {
+  if (!rail || rail._favInit) return;
+  const go = () => {
+    if (rail._favInit || !rail.clientWidth) return false;
+    rail._favInit = 1;
+    profFavStart(rail);   // centre disc 2 BEFORE the first paint, not after
+    profFavPaint(rail);
+    return true;
+  };
+  if (go() || rail._favRO) return;
+  rail._favRO = new ResizeObserver(() => {
+    if (!go()) return;
+    rail._favRO.disconnect();
+    rail._favRO = null;
+  });
+  rail._favRO.observe(rail);
+}
+
+function profFavStart(rail) {
+  if (!rail || !rail.clientWidth) return;
+  const items = rail.querySelectorAll('.prof-fav');
+  const el = items[1] || items[0];
+  if (el) rail.scrollLeft = el.offsetLeft - (rail.clientWidth - el.offsetWidth) / 2;
+}
+
+window.profFavSync = function (rail) {
+  if (!rail || rail._favRaf) return;
+  rail._favRaf = requestAnimationFrame(() => { rail._favRaf = 0; profFavPaint(rail); });
+};
+
+function profFavPaint(rail) {
+  const sec = rail && rail.closest('.prof-favs');
+  if (!sec) return;
+  const items = [].slice.call(rail.querySelectorAll('.prof-fav'));
+  if (!items.length || !rail.clientWidth) return;
+  /* Measured against the rail's own scroll box, so `.prof-fav-rail` must stay
+     `position: relative` — that is what makes it each button's `offsetParent`
+     and keeps `offsetLeft` in the same space as `scrollLeft`. */
+  const mid = rail.scrollLeft + rail.clientWidth / 2;
+  let best = 0, bd = Infinity;
+  items.forEach((el, i) => {
+    const d = Math.abs(el.offsetLeft + el.offsetWidth / 2 - mid);
+    if (d < bd) { bd = d; best = i; }
+  });
+  items.forEach((el, i) => el.classList.toggle('is-mid', i === best));
+
+  const set  = (sel, v) => { const el = sec.querySelector(sel); if (el) el.textContent = v; };
+  const setH = (sel, v) => { const el = sec.querySelector(sel); if (el) el.innerHTML = v; };
+  const name = items[best].dataset.alb;
+  const a = name && (window.ARCHIVE || []).find(x => x.album === name);
+  if (!a) {
+    set('.prof-fav-name', 'Empty slot');
+    set('.prof-fav-yr', '');
+    set('.prof-fav-artist', 'Tap to add a favourite');
+    setH('.prof-fav-stars', '');
+    set('.prof-fav-meta', '');
+    return;
+  }
+  /* The whole reason the rail exists: a cover alone does not tell you what an
+     album is. ⚠ The YEAR sits with the title — it is part of naming a record,
+     not a statistic about it — and the genre is gone. It said little at this
+     size, and the archive's genre strings are inconsistent enough ("Hip-hop",
+     "Experimental hip-hop", "Korean hip-hop") that it read as noise. */
+  set('.prof-fav-name', a.album);
+  set('.prof-fav-yr', a.year ? String(a.year) : '');
+  set('.prof-fav-artist', a.artist);
+  setH('.prof-fav-stars', (typeof halfStars === 'function') ? halfStars(a.rating || 0, 11) : '');
+  const rc = window.fmtRc ? fmtRc(a.reviewCount || 0) : (a.reviewCount || 0);
+  set('.prof-fav-meta', rc + ' reviews');
+}
+
+window.toggleProfCd = function (btn, e, slot) {
+  if (e) e.stopPropagation();
+  /* ⚠ Found by `data-slot`, not by adjacency. The favourites rail is
+     `overflow-x: auto` and would clip a popup, so the menus live AFTER it as
+     siblings of the rail rather than next to their own button. The old
+     `nextElementSibling` lookup is kept as the first branch for any caller that
+     still pairs them. */
+  const menu = (btn.nextElementSibling && btn.nextElementSibling.classList &&
+                btn.nextElementSibling.classList.contains('prof-cd-menu'))
+    ? btn.nextElementSibling
+    : (btn.closest('.prof-favs') || document).querySelector('.prof-cd-menu[data-slot="' + slot + '"]');
+  if (!menu) return;
   const willOpen = menu.hidden;
   const scope = btn.closest('.app-screen') || document;
   scope.querySelectorAll('.prof-cd-menu').forEach(m => { if (m !== menu) m.hidden = true; });
   menu.hidden = !willOpen;
   if (willOpen) {
+    warmServiceLinks(menuAlbum(btn, slot));   // same reason as the bento's CD
     const close = ev => {
       if (!menu.contains(ev.target) && !btn.contains(ev.target)) {
         menu.hidden = true;
@@ -5728,20 +7348,24 @@ window.profCdPreview = function (prevBtn, slot) {
   const album = name && (window.ARCHIVE || []).find(a => a.album === name);
   if (!album) return;
   const menu = prevBtn.closest('.prof-cd-menu');
-  const cdBtn = menu && menu.previousElementSibling;         // the .prof-alb
-  const img = cdBtn && cdBtn.querySelector('.prof-alb-img');
+  // Same reason as `toggleProfCd`: the menu sits after the rail, not beside its
+  // own CD, so the disc is found by slot.
+  const sec = menu && menu.closest('.prof-favs');
+  const cdBtn = sec && sec.querySelector('.prof-fav[data-i="' + slot + '"]');
+  const img = cdBtn && cdBtn.querySelector('.prof-fav-img');
+  if (!cdBtn) return;
   const a = previewAudioEl();
   unlockAudio(a);                                            // iOS: unlock in-gesture
-  const stop = () => { prevBtn.classList.remove('playing'); if (img) img.classList.remove('prof-alb--spin'); };
+  const stop = () => { prevBtn.classList.remove('playing'); if (img) img.classList.remove('prof-fav--spin'); };
   if (prevBtn.classList.contains('playing')) { a.pause(); stop(); return; }
   // stop any other CD that was spinning
   (cdBtn.closest('.app-screen') || document).querySelectorAll('.prof-cd-prev.playing').forEach(b => b.classList.remove('playing'));
-  (cdBtn.closest('.app-screen') || document).querySelectorAll('.prof-alb-img.prof-alb--spin').forEach(x => x.classList.remove('prof-alb--spin'));
+  (cdBtn.closest('.app-screen') || document).querySelectorAll('.prof-fav-img.prof-fav--spin').forEach(x => x.classList.remove('prof-fav--spin'));
   a.onended = stop;
   const start = (url) => {
     if (!url) { prevBtn.classList.add('none'); setTimeout(() => prevBtn.classList.remove('none'), 1400); return; }
     if (a.src !== url) { a.src = url; a.currentTime = 0; }
-    a.play().then(() => { PREVIEW.unlocked = true; prevBtn.classList.add('playing'); if (img) img.classList.add('prof-alb--spin'); }).catch(() => {});
+    a.play().then(() => { PREVIEW.unlocked = true; prevBtn.classList.add('playing'); if (img) img.classList.add('prof-fav--spin'); }).catch(() => {});
   };
   const cached = PREVIEW_CACHE.get(albumKey(album).toLowerCase());
   if (cached !== undefined) start(cached);
@@ -5755,7 +7379,7 @@ window.profCdPreview = function (prevBtn, slot) {
 window.toggleProfFollow = function (btn) {
   const on = btn.classList.toggle('is-following');
   btn.setAttribute('aria-pressed', on ? 'true' : 'false');
-  const lbl = btn.querySelector('.prof-follow-lbl');
+  const lbl = btn.querySelector('.prof-act-lbl');
   if (lbl) lbl.textContent = on ? 'Following' : 'Follow';
   sceneReact(on ? 'follow' : 'undo');
 };

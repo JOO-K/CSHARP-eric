@@ -45,6 +45,49 @@ const SD_DOT_ICONS = {
            'xxxxx',
            '.xxx.',
            '..x..'],
+  // Shopping bag — two handles over a box. The shop button in the nav scoop.
+  bag:    ['.x.x.',
+           'xxxxx',
+           'x...x',
+           'x...x',
+           'xxxxx'],
+
+  /* ── Playlist badges ── the emblems you pin on a playlist card. Same 5×5
+     budget and the same right-angle / 45° rule as everything above: these sit
+     at ~13px on a card, smaller than the log icons, so anything with an inner
+     curve turns to mush. Each one is a MOOD, not a category — a playlist is
+     aesthetic expression, so the vocabulary is weather and feeling rather than
+     genre, which the track list already says. */
+  gem:    ['..x..',          // a cut stone — the free one everybody starts with
+           '.xxx.',
+           'xxxxx',
+           '.xxx.',
+           '..x..'],
+  flame:  ['..x..',          // heat / heavy rotation
+           '..xx.',
+           '.xxx.',
+           'xxxxx',
+           '.xxx.'],
+  moon:   ['.xxx.',          // a crescent, open to the right — night listening
+           'xx...',
+           'xx...',
+           'xx...',
+           '.xxx.'],
+  bolt:   ['...xx',          // a 45° slash that swells in the middle — energy
+           '..xx.',
+           '.xxx.',
+           '.xx..',
+           'xx...'],
+  drop:   ['..x..',          // a teardrop, point up — the sad ones
+           '..x..',
+           '.xxx.',
+           'xxxxx',
+           '.xxx.'],
+  sun:    ['x.x.x',          // body with rays at the corners — bright / summer
+           '.xxx.',
+           'xxxxx',
+           '.xxx.',
+           'x.x.x'],
 };
 
 /* ⚠️ Built at parse time, which is why dots.js has to load before screens.js —
@@ -106,9 +149,147 @@ SD_ICONS.logbox = sdBoxIcon();
    is a static template literal evaluated while this file parses, and it calls
    sdScene() inline. Declared below the SCREENS array, the `const` would still be
    in its temporal dead zone at that moment. */
-function sdScene() {
+/* ⚠️ PARKED — the scoop is the SHOP button now (see sdShopBtn below). Flip this
+   to true to put the pet back; the whole engine (paintScene / sceneTick /
+   sceneReact / SCENE_REACTIONS, all the .sd-face CSS, the ☺ Pet box) is intact
+   and untouched behind it. Only the two can't share the notch: it is 63×30 and
+   the face was already sized against its worst formation. */
+const SD_PET_ENABLED = false;
+
+function sdScene(active) {
+  if (!SD_PET_ENABLED) return sdShopBtn(active);
   return `<div class="sd-scene" aria-hidden="true"><span class="sd-face sd-face--smile">${
     '<i class="sd-face-dot"></i>'.repeat(6)}</span></div>`;
+}
+
+/* The shop button, cradled in the nav's scoop where the pet used to sit.
+   Same 63×30 box and the same 49.1% centre (see `.sd-shop-btn` in app.css) —
+   but `pointer-events: auto`, because unlike the pet this one is pressable.
+   The glyph is the dot-language bag, so the one interactive thing in the notch
+   is still made of the same rounded-square dot as every other brand asset. */
+function sdShopBtn(active) {
+  return `<button class="sd-shop-btn${active === 'shop' ? ' active' : ''}" onclick="navigate('shop')" title="Shop" aria-label="Shop">
+            ${SD_ICONS.bag}
+          </button>`;
+}
+
+/* The COMPACT-STATE BENTO — the home hero, and now also the Pro showcase at
+   the top of the shop (`shopHtml`). It was inlined TWICE: Float·Dark and
+   Float·Light were byte-identical apart from three comments, so this is one
+   copy with three callers rather than two copies drifting apart.
+   ⚠️ Declared up here for the same reason as sdScene(): the home screen's
+   `html:` is a static template literal evaluated while this file parses, so a
+   `const` declared below SCREENS would still be in its temporal dead zone. */
+/* ── Listen on — the three services a CD hands you off to ───────────────
+   ONE table and ONE row builder. These same three rows are emitted by the
+   bento's CD menu and by every CD on the profile card; they used to be two
+   copies of the same wall of inline SVG, which is exactly how two menus that
+   are meant to be the same menu drift apart.
+   `openOnService` (app.js) is what a row DOES — see the block there for why
+   Spotify is a search where the other two are real album links.
+   ⚠️ SoundCloud used to sit where Deezer does. It went because there is no
+   keyless way to resolve an album on it, and a row that opens nothing is worse
+   than a row that isn't there. Add one back only with a link to go with it. */
+const SD_SERVICES = [
+  { id: 'spotify', name: 'Spotify',     bg: '#1DB954',
+    ico: `<svg width="11" height="11" viewBox="0 0 24 24" fill="white"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.52 17.34c-.24.36-.66.48-1.02.24-2.82-1.74-6.36-2.1-10.56-1.14-.42.12-.78-.18-.9-.54-.12-.42.18-.78.54-.9 4.56-1.02 8.52-.6 11.64 1.32.42.18.48.66.3 1.02zm1.44-3.3c-.3.42-.84.6-1.26.3-3.24-1.98-8.16-2.58-11.94-1.38-.48.12-1.02-.12-1.14-.6-.12-.48.12-1.02.6-1.14 4.38-1.32 9.78-.72 13.5 1.56.36.24.54.84.24 1.26zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.3c-.6.18-1.2-.18-1.38-.72-.18-.6.18-1.2.72-1.38 4.26-1.26 11.28-1.02 15.72 1.62.54.3.72 1.02.42 1.56-.3.42-1.02.6-1.56.3z"/></svg>` },
+  { id: 'apple',   name: 'Apple Music', bg: 'linear-gradient(135deg,#fc3c44,#fc6f32)',
+    ico: `<svg width="9" height="11" viewBox="0 0 13 16" fill="white"><path d="M6.5 0L8 3.5 13 4.3l-3.5 3.4.8 4.8L6.5 10.5 2.2 12.5l.8-4.8L0 4.3l5-.8z"/></svg>` },
+  { id: 'deezer',  name: 'Deezer',      bg: 'linear-gradient(135deg,#a238ff,#ff0092)',
+    ico: `<svg width="12" height="9" viewBox="0 0 24 18" fill="white"><rect x="14" y="0" width="9" height="2.6" rx="1.3"/><rect x="1" y="5" width="9" height="2.6" rx="1.3"/><rect x="14" y="5" width="9" height="2.6" rx="1.3"/><rect x="1" y="10" width="9" height="2.6" rx="1.3"/><rect x="14" y="10" width="9" height="2.6" rx="1.3"/><rect x="1" y="15" width="9" height="2.6" rx="1.3"/><rect x="14" y="15" width="9" height="2.6" rx="1.3"/></svg>` },
+];
+/* `slot` is the profile card's favourite index — that menu belongs to one of
+   five pinned albums, so it has to name which. The bento passes nothing and
+   `openOnService` reads the album off the shell instead. */
+function platRowsHtml(slot) {
+  const arg = slot == null ? '' : ', ' + slot;
+  return SD_SERVICES.map(s => `
+              <button class="wall2-menu-item plp-plat-item" onclick="event.stopPropagation(); openOnService(this, '${s.id}'${arg})">
+                <span class="plp-plat-ico" style="background:${s.bg}">${s.ico}</span>
+                ${s.name}
+              </button>`).join('');
+}
+
+function bentoHtml() {
+  return `<!-- BENTO: all children absolutely positioned in 690×670 SVG coordinate space -->
+          <div class="v3-bento">
+
+            <!-- Background fill: paints album color inside the bento frame shape.
+                 Two silhouettes (right/left hand) — CSS shows one via .s-home-v3--left -->
+            <svg class="v3-bg-fill" viewBox="0 0 689 730" xmlns="http://www.w3.org/2000/svg">
+              <path class="bg-right" fill="currentColor" d="M518.5 0.5H20.5C9.454 0.5 0.5 9.4543 0.5 20.5V709.147C0.5 720.192 9.454 729.147 20.5 729.147H518.5C529.546 729.147 538.5 720.192 538.5 709.147L538.5 609C538.5 570.34 569.84 539 608.5 539H668.5C679.546 539 688.5 530.046 688.5 519V107.5C688.5 96.4543 679.546 87.5 668.5 87.5H558.5C547.454 87.5 538.5 78.5457 538.5 67.5V20.5C538.5 9.4543 529.546 0.5 518.5 0.5Z"/>
+              <path class="bg-left" fill="currentColor" d="M170.5 0.5H668.5C679.546 0.5 688.5 9.45432 688.5 20.5V709.147C688.5 720.192 679.546 729.147 668.5 729.147H170.5C159.454 729.147 150.5 720.192 150.5 709.147L150.5 609C150.5 570.34 119.16 539 80.4999 539H20.4999C9.45422 539 0.499939 530.046 0.499939 519V107.5C0.499939 96.4543 9.45422 87.5 20.4999 87.5H130.5C141.546 87.5 150.5 78.5457 150.5 67.5V20.5C150.5 9.45431 159.454 0.5 170.5 0.5Z"/>
+            </svg>
+
+            <!-- Master SVG frame — viewBox matches bento aspect-ratio exactly -->
+            <svg class="v3-master-frame" viewBox="0 0 689 730" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M518 0.5H21C9.9543 0.5 1 9.4543 1 20.5V534.5H518C529.046 534.5 538 525.546 538 514.5V451.927V73.4325V20.5C538 9.45431 529.046 0.5 518 0.5Z" stroke="currentColor" vector-effect="non-scaling-stroke"/>
+              <path d="M518.5 0.5H20.5C9.454 0.5 0.5 9.4543 0.5 20.5V709.147C0.5 720.192 9.454 729.147 20.5 729.147H518.5C529.546 729.147 538.5 720.192 538.5 709.147L538.5 609C538.5 570.34 569.84 539 608.5 539H668.5C679.546 539 688.5 530.046 688.5 519V107.5C688.5 96.4543 679.546 87.5 668.5 87.5H558.5C547.454 87.5 538.5 78.5457 538.5 67.5V20.5C538.5 9.4543 529.546 0.5 518.5 0.5Z" stroke="currentColor" vector-effect="non-scaling-stroke"/>
+              <path d="M654.409 517H571.806C563.403 517 556.64 510.098 556.81 501.697L558.617 412.351C558.703 408.077 560.609 404.044 563.855 401.263L654.756 323.394C661.282 317.804 671.354 322.504 671.261 331.097L669.408 502.162C669.319 510.383 662.63 517 654.409 517Z" stroke="currentColor" vector-effect="non-scaling-stroke"/>
+              <path d="M664.035 291.857L569.72 373.062C564.534 377.527 556.5 373.843 556.5 367V123C556.5 114.716 563.216 108 571.5 108H654.247C662.532 108 669.247 114.716 669.247 123V280.49C669.247 284.857 667.344 289.007 664.035 291.857Z" stroke="currentColor" vector-effect="non-scaling-stroke"/>
+              <circle cx="615.5" cy="614" r="55" stroke="currentColor" vector-effect="non-scaling-stroke"/>
+              <path d="M557 35.5V30.5C557 13.9315 570.431 0.5 587 0.5H659C675.569 0.5 689 13.9315 689 30.5V35.5C689 52.0685 675.569 65.5 659 65.5H587C570.431 65.5 557 52.0685 557 35.5Z" stroke="currentColor" vector-effect="non-scaling-stroke"/>
+            </svg>
+
+            <!-- Album art: SVG x=1–538, y=0.5–534.5 → left 0.14% top 0.07% w 77.83% h 79.70% -->
+            <div class="v3-album" onclick="onAlbumArt(this)"
+                 style="background-image:url('images/album-crystalcastles1.png')"></div>
+
+            <!-- Stats strip: expanded to top 77% h 22.92% to fit album/artist name -->
+            <div class="v3-blue" onclick="event.stopPropagation(); enterAlbumPage(this.closest('.s-home-v3'))">
+              <div class="v3-blue-info-row">
+                <span class="v3-blue-title"><span class="v3-blue-album"></span><span class="v3-blue-date v3-blue-date--fs"></span></span>
+                <span class="v3-blue-sep">·</span>
+                <span class="v3-blue-artist" onclick="event.stopPropagation(); onArtistName(this)"></span>
+                <span class="v3-blue-date v3-blue-date--inline"></span>
+              </div>
+              <div class="v3-blue-stars-row">
+                <span class="v3-blue-score">4.4</span>
+                ${halfStars(4.4, 16)}
+                <span class="v3-blue-count">19,284 reviews</span>
+              </div>
+              <div class="v3-blue-quote"><span class="v3-blue-quote-text"></span></div>
+              <!-- Producer / engineering credits, filled by populateCredits() from
+                   MusicBrainz. Hidden until something comes back. -->
+              <div class="v3-blue-credits" hidden></div>
+            </div>
+
+            <!-- ForYou: single panel, cycles through trending albums on click -->
+            <div class="v3-for-single"></div>
+
+            <!-- CD: SVG cx=615.5 cy=614 r=55 → left 81.23% top 83.43% w 15.94% h 16.42% -->
+            <div class="v3-cd"
+                 style="background-image:url('images/album-crystalcastles1.png')"
+                 title="Play / pause preview"
+                 onclick="onCdTap(this, event)">
+              <div class="v3-cd-hole"></div>
+            </div>
+            <!-- Compact CD popup — preview + streaming platforms (mirrors the playlist plat menu) -->
+            <div class="wall2-menu v3-cd-menu" hidden>
+              <button class="v3-stream-preview v3-cd-prev" onclick="event.stopPropagation(); playPreview(this, event)">
+                <span class="v3-stream-preview-ico"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
+                <span class="v3-stream-preview-txt">Listen to preview</span>
+                <span class="v3-stream-preview-dur">0:30</span>
+              </button>
+              <div class="v3-cd-menu-sep"></div>${platRowsHtml()}
+            </div>
+
+            <!-- Preview autoplay toggle — muted by default; tap to enable autoplay previews -->
+            <button class="v3-preview-btn" title="Autoplay music previews" onclick="togglePreviewMode(event)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M11 5 6 9H2v6h4l5 4z"/>
+                <g class="v3-spk-x"><path d="M22 9l-5 6M17 9l5 6"/></g>
+                <g class="v3-spk-wave"><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></g>
+              </svg>
+            </button>
+
+            <!-- Live corner button — sits in the bento's top corner notch; becomes Back in review mode -->
+            <button class="v3-search-pill v3-live-pill" onclick="event.stopPropagation(); onLivePill(this)">
+              <span class="v3-live-content"><span class="v3-ring v3-arrow"><span class="v3-ring-spin"><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i></span></span></span>
+              <span class="v3-back-content"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Back</span>
+            </button>
+
+          </div>`;
 }
 
 const SCREENS = [
@@ -180,97 +361,7 @@ const SCREENS = [
           <!-- Scrollable body: bento + feed scroll together -->
           <div class="v3-body">
 
-          <!-- BENTO: all children absolutely positioned in 690×670 SVG coordinate space -->
-          <div class="v3-bento">
-
-            <!-- Background fill: paints album color inside the bento frame shape.
-                 Two silhouettes (right/left hand) — CSS shows one via .s-home-v3--left -->
-            <svg class="v3-bg-fill" viewBox="0 0 689 730" xmlns="http://www.w3.org/2000/svg">
-              <path class="bg-right" fill="currentColor" d="M518.5 0.5H20.5C9.454 0.5 0.5 9.4543 0.5 20.5V709.147C0.5 720.192 9.454 729.147 20.5 729.147H518.5C529.546 729.147 538.5 720.192 538.5 709.147L538.5 609C538.5 570.34 569.84 539 608.5 539H668.5C679.546 539 688.5 530.046 688.5 519V107.5C688.5 96.4543 679.546 87.5 668.5 87.5H558.5C547.454 87.5 538.5 78.5457 538.5 67.5V20.5C538.5 9.4543 529.546 0.5 518.5 0.5Z"/>
-              <path class="bg-left" fill="currentColor" d="M170.5 0.5H668.5C679.546 0.5 688.5 9.45432 688.5 20.5V709.147C688.5 720.192 679.546 729.147 668.5 729.147H170.5C159.454 729.147 150.5 720.192 150.5 709.147L150.5 609C150.5 570.34 119.16 539 80.4999 539H20.4999C9.45422 539 0.499939 530.046 0.499939 519V107.5C0.499939 96.4543 9.45422 87.5 20.4999 87.5H130.5C141.546 87.5 150.5 78.5457 150.5 67.5V20.5C150.5 9.45431 159.454 0.5 170.5 0.5Z"/>
-            </svg>
-
-            <!-- Master SVG frame — viewBox matches bento aspect-ratio exactly -->
-            <svg class="v3-master-frame" viewBox="0 0 689 730" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M518 0.5H21C9.9543 0.5 1 9.4543 1 20.5V534.5H518C529.046 534.5 538 525.546 538 514.5V451.927V73.4325V20.5C538 9.45431 529.046 0.5 518 0.5Z" stroke="currentColor" vector-effect="non-scaling-stroke"/>
-              <path d="M518.5 0.5H20.5C9.454 0.5 0.5 9.4543 0.5 20.5V709.147C0.5 720.192 9.454 729.147 20.5 729.147H518.5C529.546 729.147 538.5 720.192 538.5 709.147L538.5 609C538.5 570.34 569.84 539 608.5 539H668.5C679.546 539 688.5 530.046 688.5 519V107.5C688.5 96.4543 679.546 87.5 668.5 87.5H558.5C547.454 87.5 538.5 78.5457 538.5 67.5V20.5C538.5 9.4543 529.546 0.5 518.5 0.5Z" stroke="currentColor" vector-effect="non-scaling-stroke"/>
-              <path d="M654.409 517H571.806C563.403 517 556.64 510.098 556.81 501.697L558.617 412.351C558.703 408.077 560.609 404.044 563.855 401.263L654.756 323.394C661.282 317.804 671.354 322.504 671.261 331.097L669.408 502.162C669.319 510.383 662.63 517 654.409 517Z" stroke="currentColor" vector-effect="non-scaling-stroke"/>
-              <path d="M664.035 291.857L569.72 373.062C564.534 377.527 556.5 373.843 556.5 367V123C556.5 114.716 563.216 108 571.5 108H654.247C662.532 108 669.247 114.716 669.247 123V280.49C669.247 284.857 667.344 289.007 664.035 291.857Z" stroke="currentColor" vector-effect="non-scaling-stroke"/>
-              <circle cx="615.5" cy="614" r="55" stroke="currentColor" vector-effect="non-scaling-stroke"/>
-              <path d="M557 35.5V30.5C557 13.9315 570.431 0.5 587 0.5H659C675.569 0.5 689 13.9315 689 30.5V35.5C689 52.0685 675.569 65.5 659 65.5H587C570.431 65.5 557 52.0685 557 35.5Z" stroke="currentColor" vector-effect="non-scaling-stroke"/>
-            </svg>
-
-            <!-- Album art: SVG x=1–538, y=0.5–534.5 → left 0.14% top 0.07% w 77.83% h 79.70% -->
-            <div class="v3-album" onclick="onAlbumArt(this)"
-                 style="background-image:url('images/album-crystalcastles1.png')"></div>
-
-            <!-- Stats strip: expanded to top 77% h 22.92% to fit album/artist name -->
-            <div class="v3-blue" onclick="event.stopPropagation(); enterAlbumPage(this.closest('.s-home-v3'))">
-              <div class="v3-blue-info-row">
-                <span class="v3-blue-title"><span class="v3-blue-album"></span><span class="v3-blue-date v3-blue-date--fs"></span></span>
-                <span class="v3-blue-sep">·</span>
-                <span class="v3-blue-artist" onclick="event.stopPropagation(); onArtistName(this)"></span>
-                <span class="v3-blue-date v3-blue-date--inline"></span>
-              </div>
-              <div class="v3-blue-stars-row">
-                <span class="v3-blue-score">4.4</span>
-                ${halfStars(4.4, 16)}
-                <span class="v3-blue-count">19,284 reviews</span>
-              </div>
-              <div class="v3-blue-quote"><span class="v3-blue-quote-text"></span></div>
-              <!-- Producer / engineering credits, filled by populateCredits() from
-                   MusicBrainz. Hidden until something comes back. -->
-              <div class="v3-blue-credits" hidden></div>
-            </div>
-
-            <!-- ForYou: single panel, cycles through trending albums on click -->
-            <div class="v3-for-single"></div>
-
-            <!-- CD: SVG cx=615.5 cy=614 r=55 → left 81.23% top 83.43% w 15.94% h 16.42% -->
-            <div class="v3-cd"
-                 style="background-image:url('images/album-crystalcastles1.png')"
-                 title="Play / pause preview"
-                 onclick="onCdTap(this, event)">
-              <div class="v3-cd-hole"></div>
-            </div>
-            <!-- Compact CD popup — preview + streaming platforms (mirrors the playlist plat menu) -->
-            <div class="wall2-menu v3-cd-menu" hidden>
-              <button class="v3-stream-preview v3-cd-prev" onclick="event.stopPropagation(); playPreview(this, event)">
-                <span class="v3-stream-preview-ico"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
-                <span class="v3-stream-preview-txt">Listen to preview</span>
-                <span class="v3-stream-preview-dur">0:30</span>
-              </button>
-              <div class="v3-cd-menu-sep"></div>
-              <button class="wall2-menu-item plp-plat-item" onclick="event.stopPropagation(); this.closest('.v3-cd-menu').hidden = true">
-                <span class="plp-plat-ico" style="background:#1DB954"><svg width="11" height="11" viewBox="0 0 24 24" fill="white"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.52 17.34c-.24.36-.66.48-1.02.24-2.82-1.74-6.36-2.1-10.56-1.14-.42.12-.78-.18-.9-.54-.12-.42.18-.78.54-.9 4.56-1.02 8.52-.6 11.64 1.32.42.18.48.66.3 1.02zm1.44-3.3c-.3.42-.84.6-1.26.3-3.24-1.98-8.16-2.58-11.94-1.38-.48.12-1.02-.12-1.14-.6-.12-.48.12-1.02.6-1.14 4.38-1.32 9.78-.72 13.5 1.56.36.24.54.84.24 1.26zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.3c-.6.18-1.2-.18-1.38-.72-.18-.6.18-1.2.72-1.38 4.26-1.26 11.28-1.02 15.72 1.62.54.3.72 1.02.42 1.56-.3.42-1.02.6-1.56.3z"/></svg></span>
-                Spotify
-              </button>
-              <button class="wall2-menu-item plp-plat-item" onclick="event.stopPropagation(); this.closest('.v3-cd-menu').hidden = true">
-                <span class="plp-plat-ico" style="background:linear-gradient(135deg,#fc3c44,#fc6f32)"><svg width="9" height="11" viewBox="0 0 13 16" fill="white"><path d="M6.5 0L8 3.5 13 4.3l-3.5 3.4.8 4.8L6.5 10.5 2.2 12.5l.8-4.8L0 4.3l5-.8z"/></svg></span>
-                Apple Music
-              </button>
-              <button class="wall2-menu-item plp-plat-item" onclick="event.stopPropagation(); this.closest('.v3-cd-menu').hidden = true">
-                <span class="plp-plat-ico" style="background:linear-gradient(135deg,#ff5500,#ff8800)"><svg width="12" height="8" viewBox="0 0 24 16" fill="white"><rect x="2" y="7" width="1.8" height="6" rx=".9"/><rect x="6" y="4" width="1.8" height="9" rx=".9"/><rect x="10" y="6" width="1.8" height="7" rx=".9"/><rect x="14" y="2" width="1.8" height="11" rx=".9"/><rect x="18" y="8" width="1.8" height="5" rx=".9"/></svg></span>
-                SoundCloud
-              </button>
-            </div>
-
-            <!-- Preview autoplay toggle — muted by default; tap to enable autoplay previews -->
-            <button class="v3-preview-btn" title="Autoplay music previews" onclick="togglePreviewMode(event)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M11 5 6 9H2v6h4l5 4z"/>
-                <g class="v3-spk-x"><path d="M22 9l-5 6M17 9l5 6"/></g>
-                <g class="v3-spk-wave"><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></g>
-              </svg>
-            </button>
-
-            <!-- Live corner button — sits in the bento's top corner notch; becomes Back in review mode -->
-            <button class="v3-search-pill v3-live-pill" onclick="event.stopPropagation(); onLivePill(this)">
-              <span class="v3-live-content"><span class="v3-ring v3-arrow"><span class="v3-ring-spin"><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i></span></span></span>
-              <span class="v3-back-content"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Back</span>
-            </button>
-
-          </div>
+          ${bentoHtml()}
 
           <!-- SCROLL: activity feed — notification-style rows, filled by
                renderFriendFeed(). The "you may know" rails used to sit above it. -->
@@ -462,97 +553,7 @@ const SCREENS = [
           <!-- Scrollable body: bento + feed scroll together -->
           <div class="v3-body">
 
-          <!-- BENTO: all children absolutely positioned in 690×670 SVG coordinate space -->
-          <div class="v3-bento">
-
-            <!-- Background fill: paints album color inside the bento frame shape.
-                 Two silhouettes (right/left hand) — CSS shows one via .s-home-v3--left -->
-            <svg class="v3-bg-fill" viewBox="0 0 689 730" xmlns="http://www.w3.org/2000/svg">
-              <path class="bg-right" fill="currentColor" d="M518.5 0.5H20.5C9.454 0.5 0.5 9.4543 0.5 20.5V709.147C0.5 720.192 9.454 729.147 20.5 729.147H518.5C529.546 729.147 538.5 720.192 538.5 709.147L538.5 609C538.5 570.34 569.84 539 608.5 539H668.5C679.546 539 688.5 530.046 688.5 519V107.5C688.5 96.4543 679.546 87.5 668.5 87.5H558.5C547.454 87.5 538.5 78.5457 538.5 67.5V20.5C538.5 9.4543 529.546 0.5 518.5 0.5Z"/>
-              <path class="bg-left" fill="currentColor" d="M170.5 0.5H668.5C679.546 0.5 688.5 9.45432 688.5 20.5V709.147C688.5 720.192 679.546 729.147 668.5 729.147H170.5C159.454 729.147 150.5 720.192 150.5 709.147L150.5 609C150.5 570.34 119.16 539 80.4999 539H20.4999C9.45422 539 0.499939 530.046 0.499939 519V107.5C0.499939 96.4543 9.45422 87.5 20.4999 87.5H130.5C141.546 87.5 150.5 78.5457 150.5 67.5V20.5C150.5 9.45431 159.454 0.5 170.5 0.5Z"/>
-            </svg>
-
-            <!-- Master SVG frame — viewBox matches bento aspect-ratio exactly -->
-            <svg class="v3-master-frame" viewBox="0 0 689 730" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M518 0.5H21C9.9543 0.5 1 9.4543 1 20.5V534.5H518C529.046 534.5 538 525.546 538 514.5V451.927V73.4325V20.5C538 9.45431 529.046 0.5 518 0.5Z" stroke="currentColor" vector-effect="non-scaling-stroke"/>
-              <path d="M518.5 0.5H20.5C9.454 0.5 0.5 9.4543 0.5 20.5V709.147C0.5 720.192 9.454 729.147 20.5 729.147H518.5C529.546 729.147 538.5 720.192 538.5 709.147L538.5 609C538.5 570.34 569.84 539 608.5 539H668.5C679.546 539 688.5 530.046 688.5 519V107.5C688.5 96.4543 679.546 87.5 668.5 87.5H558.5C547.454 87.5 538.5 78.5457 538.5 67.5V20.5C538.5 9.4543 529.546 0.5 518.5 0.5Z" stroke="currentColor" vector-effect="non-scaling-stroke"/>
-              <path d="M654.409 517H571.806C563.403 517 556.64 510.098 556.81 501.697L558.617 412.351C558.703 408.077 560.609 404.044 563.855 401.263L654.756 323.394C661.282 317.804 671.354 322.504 671.261 331.097L669.408 502.162C669.319 510.383 662.63 517 654.409 517Z" stroke="currentColor" vector-effect="non-scaling-stroke"/>
-              <path d="M664.035 291.857L569.72 373.062C564.534 377.527 556.5 373.843 556.5 367V123C556.5 114.716 563.216 108 571.5 108H654.247C662.532 108 669.247 114.716 669.247 123V280.49C669.247 284.857 667.344 289.007 664.035 291.857Z" stroke="currentColor" vector-effect="non-scaling-stroke"/>
-              <circle cx="615.5" cy="614" r="55" stroke="currentColor" vector-effect="non-scaling-stroke"/>
-              <path d="M557 35.5V30.5C557 13.9315 570.431 0.5 587 0.5H659C675.569 0.5 689 13.9315 689 30.5V35.5C689 52.0685 675.569 65.5 659 65.5H587C570.431 65.5 557 52.0685 557 35.5Z" stroke="currentColor" vector-effect="non-scaling-stroke"/>
-            </svg>
-
-            <!-- Album art -->
-            <div class="v3-album" onclick="onAlbumArt(this)"
-                 style="background-image:url('images/album-crystalcastles1.png')"></div>
-
-            <!-- Stats strip -->
-            <div class="v3-blue" onclick="event.stopPropagation(); enterAlbumPage(this.closest('.s-home-v3'))">
-              <div class="v3-blue-info-row">
-                <span class="v3-blue-title"><span class="v3-blue-album"></span><span class="v3-blue-date v3-blue-date--fs"></span></span>
-                <span class="v3-blue-sep">·</span>
-                <span class="v3-blue-artist" onclick="event.stopPropagation(); onArtistName(this)"></span>
-                <span class="v3-blue-date v3-blue-date--inline"></span>
-              </div>
-              <div class="v3-blue-stars-row">
-                <span class="v3-blue-score">4.4</span>
-                ${halfStars(4.4, 16)}
-                <span class="v3-blue-count">19,284 reviews</span>
-              </div>
-              <div class="v3-blue-quote"><span class="v3-blue-quote-text"></span></div>
-              <!-- Producer / engineering credits, filled by populateCredits() from
-                   MusicBrainz. Hidden until something comes back. -->
-              <div class="v3-blue-credits" hidden></div>
-            </div>
-
-            <!-- ForYou: single panel, cycles through trending albums on click -->
-            <div class="v3-for-single"></div>
-
-            <!-- CD -->
-            <div class="v3-cd"
-                 style="background-image:url('images/album-crystalcastles1.png')"
-                 title="Play / pause preview"
-                 onclick="onCdTap(this, event)">
-              <div class="v3-cd-hole"></div>
-            </div>
-            <!-- Compact CD popup — preview + streaming platforms (mirrors the playlist plat menu) -->
-            <div class="wall2-menu v3-cd-menu" hidden>
-              <button class="v3-stream-preview v3-cd-prev" onclick="event.stopPropagation(); playPreview(this, event)">
-                <span class="v3-stream-preview-ico"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
-                <span class="v3-stream-preview-txt">Listen to preview</span>
-                <span class="v3-stream-preview-dur">0:30</span>
-              </button>
-              <div class="v3-cd-menu-sep"></div>
-              <button class="wall2-menu-item plp-plat-item" onclick="event.stopPropagation(); this.closest('.v3-cd-menu').hidden = true">
-                <span class="plp-plat-ico" style="background:#1DB954"><svg width="11" height="11" viewBox="0 0 24 24" fill="white"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.52 17.34c-.24.36-.66.48-1.02.24-2.82-1.74-6.36-2.1-10.56-1.14-.42.12-.78-.18-.9-.54-.12-.42.18-.78.54-.9 4.56-1.02 8.52-.6 11.64 1.32.42.18.48.66.3 1.02zm1.44-3.3c-.3.42-.84.6-1.26.3-3.24-1.98-8.16-2.58-11.94-1.38-.48.12-1.02-.12-1.14-.6-.12-.48.12-1.02.6-1.14 4.38-1.32 9.78-.72 13.5 1.56.36.24.54.84.24 1.26zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.3c-.6.18-1.2-.18-1.38-.72-.18-.6.18-1.2.72-1.38 4.26-1.26 11.28-1.02 15.72 1.62.54.3.72 1.02.42 1.56-.3.42-1.02.6-1.56.3z"/></svg></span>
-                Spotify
-              </button>
-              <button class="wall2-menu-item plp-plat-item" onclick="event.stopPropagation(); this.closest('.v3-cd-menu').hidden = true">
-                <span class="plp-plat-ico" style="background:linear-gradient(135deg,#fc3c44,#fc6f32)"><svg width="9" height="11" viewBox="0 0 13 16" fill="white"><path d="M6.5 0L8 3.5 13 4.3l-3.5 3.4.8 4.8L6.5 10.5 2.2 12.5l.8-4.8L0 4.3l5-.8z"/></svg></span>
-                Apple Music
-              </button>
-              <button class="wall2-menu-item plp-plat-item" onclick="event.stopPropagation(); this.closest('.v3-cd-menu').hidden = true">
-                <span class="plp-plat-ico" style="background:linear-gradient(135deg,#ff5500,#ff8800)"><svg width="12" height="8" viewBox="0 0 24 16" fill="white"><rect x="2" y="7" width="1.8" height="6" rx=".9"/><rect x="6" y="4" width="1.8" height="9" rx=".9"/><rect x="10" y="6" width="1.8" height="7" rx=".9"/><rect x="14" y="2" width="1.8" height="11" rx=".9"/><rect x="18" y="8" width="1.8" height="5" rx=".9"/></svg></span>
-                SoundCloud
-              </button>
-            </div>
-
-            <!-- Preview autoplay toggle — muted by default; tap to enable autoplay previews -->
-            <button class="v3-preview-btn" title="Autoplay music previews" onclick="togglePreviewMode(event)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M11 5 6 9H2v6h4l5 4z"/>
-                <g class="v3-spk-x"><path d="M22 9l-5 6M17 9l5 6"/></g>
-                <g class="v3-spk-wave"><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></g>
-              </svg>
-            </button>
-
-            <!-- Live corner button — sits in the bento's top corner notch; becomes Back in review mode -->
-            <button class="v3-search-pill v3-live-pill" onclick="event.stopPropagation(); onLivePill(this)">
-              <span class="v3-live-content"><span class="v3-ring v3-arrow"><span class="v3-ring-spin"><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i></span></span></span>
-              <span class="v3-back-content"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Back</span>
-            </button>
-
-          </div>
+          ${bentoHtml()}
 
           <!-- SCROLL: activity feed — notification-style rows, filled by
                renderFriendFeed(). The "you may know" rails used to sit above it. -->
@@ -780,6 +781,15 @@ const SCREENS = [
     ]
   },
 
+  // ── 15. SHOP (behind the nav scoop's bag button) ────────────
+  {
+    id: 'shop', name: 'Shop', statusTheme: 'light',
+    variants: [
+      { label: 'Float·Dark',  version: 'v1', thumb: ['w50','accent','w70','w80','w60'], get html() { return shopHtml(false); } },
+      { label: 'Float·Light', version: 'v1', thumb: ['w50','accent','w70','w80','w60'], get html() { return shopHtml(true);  } },
+    ]
+  },
+
 
 ];
 
@@ -921,10 +931,17 @@ function obServiceBtn(id, name, brand) {
   </button>`;
 }
 
+/* The genre vocabulary, one list, two readers: onboarding's chips (below) and
+   Pro's **mix dial** (`mixDialBuild` in app.js). Plain strings — the `&` is a
+   real ampersand and gets escaped at render, not stored pre-escaped.
+   ⚠ The ORDER is the dial's hole order, clockwise from 12 o'clock, so it is
+   editorial: related genres sitting next to each other means a related pick is
+   a short turn of the dial. The chips just read it top to bottom. */
+const SD_GENRES = ['Electronic','Ambient','Trip-hop','Dream Pop','Shoegaze','Indie',
+  'Alternative','Punk','Metal','Rock','Pop','Latin','Country','Folk','Blues','Jazz',
+  'Funk','Soul','R&B','Hip-Hop'];
+
 function onboardingHtml(light) {
-  const genres = ['Electronic','Indie','Hip-Hop','Jazz','R&amp;B / Soul','Alternative',
-    'Classical','Pop','Metal','Folk','Ambient','Latin','Country','Punk','Funk','Blues',
-    'Shoegaze','Soul','Trip-hop','Dream Pop'];
   return `
       <div class="app-screen s-onboarding ${sdTheme(light)}">
         <div class="ob-top">
@@ -984,7 +1001,10 @@ function onboardingHtml(light) {
             </div>
           </section>
 
-          <!-- 3 · GENRES -->
+          <!-- 3 · GENRES — plain chips, and deliberately so. The rotary dial
+               that briefly lived here is a PRO feature now (mixDialBuild):
+               onboarding is somebody's first thirty seconds in the app and is
+               not the place to teach a gesture. -->
           <section class="ob-panel" data-step="3">
             <div class="ob-h">
               <div class="ob-title">What do you listen to?</div>
@@ -992,7 +1012,7 @@ function onboardingHtml(light) {
             </div>
             <div class="ob-body">
               <div class="genre-chips">
-                ${genres.map(g => `<button class="chip" onclick="obToggleGenre(this,'${g.replace(/&amp;/g,'&').replace(/'/g,"\\'")}')">${g}</button>`).join('')}
+                ${SD_GENRES.map(g => `<button class="chip" onclick="obToggleGenre(this,'${obOc(g)}')">${obEsc(g)}</button>`).join('')}
               </div>
             </div>
           </section>
@@ -1106,7 +1126,7 @@ function songHtml(light) {
 // a right pane with location/occupation + bio + the four stat numbers, and a
 // rounded Follow pill in the card's bottom-right notch. The 5 favourite-album
 // wells sit as a horizontal row of embossed-in circles below the card, and a
-// "Recently rated" feed follows. Home shell (header · v3-body · nowBar ·
+// review-history feed follows. Home shell (header · v3-body · nowBar ·
 // bottomNav). Funky·Dark / Funky·Light.
 // The profile CARD itself (the embossed silhouette + name banner + picture +
 // bio + stats + the five favourite-album CDs). Shared, because the Edit Profile
@@ -1123,83 +1143,55 @@ function profCanvasHtml(P, opts) {
   const stat = (n, l) => `<div class="prof-stat"><span class="prof-stat-n">${n}</span><span class="prof-stat-l">${l}</span></div>`;
   const esc  = s => String(s).replace(/'/g, '\\\'');
 
-  const spotIco  = `<svg width="11" height="11" viewBox="0 0 24 24" fill="white"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.52 17.34c-.24.36-.66.48-1.02.24-2.82-1.74-6.36-2.1-10.56-1.14-.42.12-.78-.18-.9-.54-.12-.42.18-.78.54-.9 4.56-1.02 8.52-.6 11.64 1.32.42.18.48.66.3 1.02zm1.44-3.3c-.3.42-.84.6-1.26.3-3.24-1.98-8.16-2.58-11.94-1.38-.48.12-1.02-.12-1.14-.6-.12-.48.12-1.02.6-1.14 4.38-1.32 9.78-.72 13.5 1.56.36.24.54.84.24 1.26zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.3c-.6.18-1.2-.18-1.38-.72-.18-.6.18-1.2.72-1.38 4.26-1.26 11.28-1.02 15.72 1.62.54.3.72 1.02.42 1.56-.3.42-1.02.6-1.56.3z"/></svg>`;
-  const applIco  = `<svg width="9" height="11" viewBox="0 0 13 16" fill="white"><path d="M6.5 0L8 3.5 13 4.3l-3.5 3.4.8 4.8L6.5 10.5 2.2 12.5l.8-4.8L0 4.3l5-.8z"/></svg>`;
-  const scPltIco = `<svg width="12" height="8" viewBox="0 0 24 16" fill="white"><rect x="2" y="7" width="1.8" height="6" rx=".9"/><rect x="6" y="4" width="1.8" height="9" rx=".9"/><rect x="10" y="6" width="1.8" height="7" rx=".9"/><rect x="14" y="2" width="1.8" height="11" rx=".9"/><rect x="18" y="8" width="1.8" height="5" rx=".9"/></svg>`;
   const penIco   = `<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>`;
   const editIco  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>`;
   const pinIco   = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`;
 
-  // Favourite-album CDs — circle centres (r=55) from ProfileTheme_Regular.svg
-  // (690×401) → bbox left/top %. Filled CD → preview/platforms popup (like the
-  // homepage); empty → picker. On the edit screen every slot is the picker.
-  const slots = [
-    { l: 0.16, t: 76.16 }, { l: 21.01, t: 76.16 }, { l: 41.86, t: 76.16 },
-    { l: 62.84, t: 76.16 }, { l: 83.82, t: 76.16 },
-  ];
-  const slotHtml = slots.map((s, i) => {
-    const a = findAlb((P.favs || [])[i]);
-    if (!a || o.edit) {
-      // A filled disc in edit mode is a slot (outline + "+" badge). An empty one
-      // already shows its own big "+", so it doesn't take the badge as well.
-      const cls = a ? (o.edit ? 'prof-alb pfe-slot' : 'prof-alb') : 'prof-alb prof-alb--empty';
-      const inner = a
-        ? `<span class="prof-alb-img" style="background-image:url('${a.image}')"></span><span class="prof-alb-hole"></span>`
-        : `<span class="prof-alb-add">+</span>`;
-      return `<button class="${cls}" style="left:${s.l}%;top:${s.t}%" onclick="openProfPicker(${i}, this)" title="${a ? 'Replace ' + esc(a.album) : 'Add favourite ' + (i + 1)}">${inner}</button>`;
-    }
-    // Menu opens upward above the CD; anchor to canvas edges so it stays in frame.
-    const hpos = i <= 1 ? `left:${s.l}%` : i >= 3 ? `right:${(100 - s.l - 15.94).toFixed(2)}%` : `left:50%;transform:translateX(-50%)`;
-    const menuPos = `bottom:24.5%;${hpos}`;
-    return `<button class="prof-alb" style="left:${s.l}%;top:${s.t}%" onclick="toggleProfCd(this, event)" title="${esc(a.album)}">
-        <span class="prof-alb-img" style="background-image:url('${a.image}')"></span>
-        <span class="prof-alb-hole"></span>
-      </button>
-      <div class="wall2-menu v3-cd-menu prof-cd-menu" hidden style="${menuPos}">
-        <button class="v3-stream-preview prof-cd-prev" onclick="event.stopPropagation(); profCdPreview(this, ${i})">
-          <span class="v3-stream-preview-ico"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
-          <span class="v3-stream-preview-txt">Listen to preview</span>
-          <span class="v3-stream-preview-dur">0:30</span>
-        </button>
-        <div class="v3-cd-menu-sep"></div>
-        <button class="wall2-menu-item plp-plat-item" onclick="event.stopPropagation(); this.closest('.prof-cd-menu').hidden=true">
-          <span class="plp-plat-ico" style="background:#1DB954">${spotIco}</span>Spotify
-        </button>
-        <button class="wall2-menu-item plp-plat-item" onclick="event.stopPropagation(); this.closest('.prof-cd-menu').hidden=true">
-          <span class="plp-plat-ico" style="background:linear-gradient(135deg,#fc3c44,#fc6f32)">${applIco}</span>Apple Music
-        </button>
-        <button class="wall2-menu-item plp-plat-item" onclick="event.stopPropagation(); this.closest('.prof-cd-menu').hidden=true">
-          <span class="plp-plat-ico" style="background:linear-gradient(135deg,#ff5500,#ff8800)">${scPltIco}</span>SoundCloud
-        </button>
-        <div class="v3-cd-menu-sep"></div>
-        <button class="wall2-menu-item plp-plat-item" onclick="event.stopPropagation(); this.closest('.prof-cd-menu').hidden=true; openProfPicker(${i}, this)">
-          <span class="plp-plat-ico" style="background:var(--pf-base)">${penIco}</span>Replace album
-        </button>
-      </div>`;
-  }).join('');
+  /* ⚠ The favourite-album CDs are NO LONGER IN THE CARD. They were five small
+     wells traced into the bottom of the artwork; they are now a swipeable rail
+     of three big ones in their own section (`profFavsHtml`), because a cover at
+     that size is all anyone got — no title, no artist, no year. The canvas
+     therefore stops at the card: 690×460, not 690×608. */
 
   // In edit mode every editable region of the card becomes a slot you tap: it
   // carries .pfe-slot (which paints the + / pencil badge in CSS) and opens the
   // category-aware editor. Empty regions show a "+ Add …" placeholder rather
   // than collapsing, so there's always something to aim at.
   const ed  = (kind, slot) => o.edit ? ` pfe-slot" onclick="event.stopPropagation(); openProfEditor('${kind}'${slot != null ? `, '${slot}'` : ''})` : '';
+  /* Kept, unused, alongside `pinIco`: the location block is out of the card for
+     now, not gone for good. Both this and the `.prof-meta*` rules in app.css are
+     what it costs to put it back — a few lines, against re-deriving the markup. */
   const metaHtml = P.location
     ? `<span class="prof-meta-item">${pinIco}${P.location}</span>`
     : (o.edit ? `<span class="prof-meta-item prof-meta-item--add">${pinIco}Add location</span>` : '');
 
   return `
             <div class="prof-canvas">
-              <!-- Embossed card silhouette (traced from ProfileTheme_Regular4.svg) -->
-              <svg class="prof-base" viewBox="0 0 690 466" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-                <path class="prof-base-main" d="M668.876 65.6968L0.609863 65.6967L0.609853 299.988L0.609853 307.953C0.609791 318.999 9.56414 327.953 20.6099 327.953L38.1656 327.953L50.497 327.953L624.855 328.367L669.006 328.082C680.001 328.01 688.876 319.077 688.876 308.082L688.876 299.988L688.876 85.6968C688.876 74.6511 679.922 65.6968 668.876 65.6968Z"/>
-                <path class="prof-divide" d="M262.306 328.059L262.306 65.6479L0.902954 65.6479L0.902944 308.059C0.902943 319.105 9.85724 328.059 20.9029 328.059L41.324 328.059L226.604 328.059L262.306 328.059Z"/>
+              <!-- Embossed card silhouette — retraced from ProfileTheme_Regular4 (1).svg.
+                   ⚠ 690×608, NOT the old 690×466: the card grew and the picture
+                   pane grew with it (x 0→374.5 where it used to stop at 262.3),
+                   which is the point of the revision. Every percentage in
+                   app.css's profile block resolves against THIS box — change
+                   the viewBox and they all move. -->
+              <!-- WARNING: the viewBox height and .prof-canvas's aspect-ratio are
+                   ONE number. preserveAspectRatio=meet scales the drawing to fit
+                   the SHORTER axis, so a 608-tall viewBox inside a 460-tall box
+                   renders the whole card at 75.7% and centres it, while every
+                   percentage-positioned element on top stays where it was. Nothing
+                   looks broken on its own and the card is completely wrong.
+                   The source file is 608 tall; we crop to 460 because its bottom
+                   150 units are the favourite-album circles, and those are their
+                   own section now. -->
+              <svg class="prof-base" viewBox="0 0 690 460" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+                <path class="prof-base-main" d="M668.874 74.6963L0.608337 74.6963L0.608383 429C0.608382 440.045 9.56267 449 20.6084 449L668.875 449C679.92 449 688.875 440.045 688.875 429L688.875 308.987L688.874 94.6963C688.874 83.6506 679.92 74.6963 668.874 74.6963Z"/>
+                <path class="prof-divide" d="M374.498 449.5L374.498 94.4995C374.498 83.4538 365.544 74.4995 354.498 74.4995L0.497955 74.4995L0.49794 429.5C0.497939 440.545 9.45225 449.5 20.4979 449.5L58.33 449.5L323.418 449.5L374.498 449.5Z"/>
                 <!-- Name banner — right edge is resized to the username by sizeProfName().
                      Bottom edge runs a few units into the card so the fill hides the seam. -->
-                <path class="prof-name-tab" d="M0.500122 69H409.862H386.803C369.967 69 354.261 57.1754 345.016 43.105L328.872 18.5347C321.476 7.27835 308.911 0.5 295.443 0.5H35.5001C16.1702 0.5 0.500122 16.17 0.500122 35.5V69Z"/>
+                <path class="prof-name-tab" d="M0.500139 74.9079H467.5H437.414C420.568 74.9079 404.855 66.4255 395.612 52.3422L373.436 18.5525C366.042 7.28593 353.471 0.5 339.995 0.5H35.5001C16.1702 0.5 0.500139 16.17 0.500139 35.5V74.9079Z"/>
               </svg>
 
               <!-- White username pill inside the banner — width grows with the banner -->
-              <div class="prof-name-pill" style="width:43.23%"></div>
+              <div class="prof-name-pill" style="width:49.86%"></div>
 
               <!-- Username, seated inside the white pill (black text) -->
               <div class="prof-name-tab-lbl${ed('name')}">
@@ -1209,30 +1201,242 @@ function profCanvasHtml(P, opts) {
 
               <!-- Profile image fills the left pane entirely -->
               <div class="prof-pic${ed('photo')}" style="background-image:url('${P.pic || ''}')"></div>
-              ${o.edit ? '' : `<button class="prof-edit" title="Edit profile" onclick="event.stopPropagation(); openProfileEdit()">${editIco}</button>`}
-
-              <!-- Info: description; location (bold) pinned to the pane's lower-left -->
-              <div class="prof-info${ed('text', 'bio')}">
-                <div class="prof-desc${o.edit && !P.bio ? ' prof-desc--add' : ''}">${P.bio || (o.edit ? 'Add a bio' : 'Tell people what you are into.')}</div>
+              <!-- The right pane: THREE NUMBERS, stacked, and nothing else.
+                   The bio and the location were pulled out (temporarily) -- the
+                   pane was a stat row, a two-line paragraph and a pin all
+                   competing in a 149px column, and none of them had the room to
+                   be read properly. With the column to themselves the figures
+                   can be set at a size that actually reads as a headline.
+                   WARNING: dropping .prof-info / .prof-meta also drops their
+                   pfe-slot edit affordances, so bio and location currently have
+                   no entry point on the edit screen. Put the blocks back (the
+                   CSS for both is still in app.css) when they return. -->
+              <div class="prof-right">
+                <div class="prof-stats">
+                  ${stat(nf(P.following || 0), 'Following')}
+                  ${stat(nf(P.followers || 0), 'Followers')}
+                  ${stat(profScore(P), 'Review score')}
+                </div>
               </div>
-              ${metaHtml ? `<div class="prof-meta${ed('text', 'location')}">${metaHtml}</div>` : ''}
 
-              <!-- Numbers at the bottom of the base -->
-              <div class="prof-stats">
-                ${stat(nf(P.reviews || 0), 'Reviews')}
-                ${stat(nf(P.playlists || 0), 'Playlists')}
-                ${stat(nf(P.followers || 0), 'Followers')}
-                ${stat(nf(P.following || 0), 'Following')}
+              <!-- ONE action button: Edit on your own page, Follow on someone
+                   else's. It sits in the UPPER RIGHT, in the pill the trace puts
+                   at x 600-688 / y 1-55 -- above the card, opposite the name
+                   banner. It was in the lower right, which put it inside the
+                   card's own bottom corner where it read as part of the stats
+                   block rather than as the page's one action. -->
+              ${o.edit ? '' : (window.PROFILE_GUEST
+                ? `<button class="prof-act prof-act--follow" onclick="toggleProfFollow(this)" aria-pressed="false" title="Follow">
+                <span class="v3-ring v3-ring--smile prof-act-ring"><span class="v3-ring-spin"><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i></span></span>
+                <span class="prof-act-lbl">Follow</span>
+              </button>`
+                : `<button class="prof-act prof-act--edit" title="Edit profile" onclick="event.stopPropagation(); openProfileEdit()">
+                <span class="prof-act-ico">${editIco}</span>
+                <span class="prof-act-lbl">Edit</span>
+              </button>`)}
+            </div>`;
+}
+
+/* ── The review history — the feed at the bottom of a profile ─────────────
+   ⚠ Replaces "Recently rated", which was four covers, four hardcoded star
+   values and four hardcoded ages. A history has to carry what the person
+   actually SAID: that is the difference between a list of albums they touched
+   and a record of their taste, which is what a profile is for.
+
+   ⚠ DERIVED here rather than stored on `PROFILE`. That object is written from
+   three places — the literal in app.js, `randomizeProfile` for a random or
+   seeded visitor, and a persona — so a field added to one of them is missing
+   from the other two. Seeded off the handle through `dzSeed`, which gives this
+   the same guarantee `randomizeProfile`'s seeded stream gives a friend's page:
+   open the same profile twice and it says the same things.
+   ⚠ `dzSeed` lives in app.js, which loads AFTER this file. That is fine because
+   this runs at render time, not while this file parses — the same reason
+   `bentoHtml`'s callers can reach `populateHomeData`. */
+const PROF_RV_LINES = [
+  'first listen did nothing for me. fourth listen rearranged my week.',
+  'the sequencing is the whole argument. do not shuffle this one.',
+  'i keep coming back to the back half and pretending the front half exists',
+  'production so clean it took me a year to notice how sad the words are',
+  'this is the one i put on when i need to feel like a person again',
+  'genuinely perfect for about thirty minutes and then it forgets what it was',
+  'overrated by people who have only heard the singles. underrated by everyone else.',
+  'i have no critical distance from this record and i am not seeking any',
+  'the drums alone. whoever mixed this deserves a raise and a nap.',
+  'grew on me like a slow bruise. now it is in my top five.',
+  'you can hear them figuring it out in real time and that is the appeal',
+  'my most played of the year and i still could not tell you why',
+  'a bit long. cut three tracks and this is a classic.',
+  'played this on a night bus once and ruined it for every other context',
+  'not their best but their most honest, and i will take that trade',
+  'sounds enormous on speakers and tiny on headphones. wild.',
+  'i was too young for this when it came out and exactly the right age now',
+  'the lyrics are fine, the atmosphere is the point, and the atmosphere is immense',
+  'objectively a 4 but personally a 5 and this is my account',
+  'came for one song, stayed for the two either side of it',
+];
+
+/* ⚠ `dzSeed` is a rolling hash (h = h*131 + c) and is NOT safe to take a small
+   remainder of directly. 131² ≡ 1 (mod 20) and ≡ 1 (mod 8), so
+   `dzSeed(seed, 'x', i) % 20` collapses to `(C(seed) + i) % 20` — LINEAR in the
+   index. Every profile then draws the same review lines in the same cyclic
+   order, merely rotated by a per-name offset, and the same goes for the star
+   values. Verified: ericd → 17 18 19 0 1 2, moonlit_echo → 18 19 0 1 2 3.
+   This is an avalanche step to break that up before the modulo. Anywhere else
+   that wants `dzSeed(...) % smallN` needs it too. */
+function profMix(n) {
+  n = (n ^ 61) ^ (n >>> 16);
+  n = (n + (n << 3)) & 0x7FFFFFFF;
+  n = n ^ (n >>> 4);
+  n = Math.imul(n, 0x27d4eb2d) & 0x7FFFFFFF;
+  return (n ^ (n >>> 15)) & 0x7FFFFFFF;
+}
+
+const profAgo = d => d < 7   ? d + 'd'
+                   : d < 30  ? Math.round(d / 7) + 'w'
+                   : d < 365 ? Math.round(d / 30) + 'mo'
+                   :           Math.round(d / 365) + 'y';
+
+function profReviewLog(P) {
+  const A = window.ARCHIVE || [];
+  if (!A.length) return [];
+  const seed = String(P.handle || P.name || 'you');
+  const raw = (typeof dzSeed === 'function') ? dzSeed : ((...a) => a.join('').length);
+  const h = (...a) => profMix(raw(...a));
+  // Their own picks first, then topped up from the archive — a history runs
+  // longer than the four-item strip it replaces.
+  const names = [];
+  (P.recent || []).forEach(n => { if (n && names.indexOf(n) < 0) names.push(n); });
+  for (let i = 0; i < A.length * 2 && names.length < 9; i++) {
+    const nm = A[h(seed, 'a', i) % A.length].album;
+    if (names.indexOf(nm) < 0) names.push(nm);
+  }
+  const STARS = [5, 4.5, 4.5, 4, 4, 3.5, 5, 3];
+  let ago = 1 + h(seed, 'd0') % 5;
+  return names.map((nm, i) => {
+    const a = A.find(x => x.album === nm);
+    if (!a) return null;
+    const e = { album: a,
+                rating: STARS[h(seed, 'r', i) % STARS.length],
+                text:   PROF_RV_LINES[h(seed, 't', i) % PROF_RV_LINES.length],
+                when:   profAgo(ago),
+                /* Engagement. A review with no traction is the common case, so
+                   the floor is 0 and the curve is skewed low — a feed where
+                   every row has hundreds of likes reads as fake. */
+                likes:    h(seed, 'lk', i) % 240,
+                comments: h(seed, 'cm', i) % 9 };
+    ago += 2 + h(seed, 'g', i) % 38;   // strictly increasing → the list reads newest-first
+    return e;
+  }).filter(Boolean);
+}
+
+/* ── Review score: POINTS, not an average rating ─────────────────────────
+   ⚠ It is NOT the mean of their star ratings — that was the wrong reading, and
+   a 4.1 next to "Followers 1.9k" also read as a completely different kind of
+   quantity from the numbers beside it. The score is what you EARN: points for
+   writing reviews, plus points for other people liking them. It lands in the
+   tens of thousands, which is why it belongs in a row of counts.
+
+   `PROF_PTS_WRITE` / `PROF_PTS_LIKE` are the rates. Likes are seeded per handle
+   at 1–6 per review — a prolific reviewer nobody reads and a rarely-posting one
+   everybody likes can reach the same score, which is the point of counting both. */
+const PROF_PTS_WRITE = 20;   // per review posted
+const PROF_PTS_LIKE  = 5;    // per like received on one
+
+function profLikes(P) {
+  const reviews = P.reviews || 0;
+  const raw = (typeof dzSeed === 'function') ? dzSeed(String(P.handle || P.name || 'you'), 'lk') : 0;
+  return Math.round(reviews * (1 + (profMix(raw) % 500) / 100));
+}
+
+function profScore(P) {
+  const pts = (P.reviews || 0) * PROF_PTS_WRITE + profLikes(P) * PROF_PTS_LIKE;
+  return window.fmtRc ? fmtRc(pts) : String(pts);
+}
+
+/* ── Favourite albums — a rail of three, one centred ─────────────────────
+   ⚠ This replaces five small wells traced into the bottom of the card. At that
+   size the cover was ALL you got — no title, no artist, no year — and a cover
+   is not enough to know an album by. Three big ones with the middle one framed
+   leaves room under the rail to actually say what you are looking at.
+
+   ⚠ It is CSS scroll-snap, not a custom gesture. This is the one screen element
+   that has to feel native under a thumb on a real phone, and the browser's own
+   momentum, rubber-band and snap beat anything hand-rolled — the swipe engines
+   elsewhere in this app exist because they animate a bento cell, which this
+   does not. `padding-inline` on the rail is what lets the FIRST and LAST items
+   reach the centre; without it `scroll-snap-align: center` can never centre
+   them and the rail looks broken at both ends.
+   ⚠ The five menus live AFTER the rail, not inside it: the rail is
+   `overflow-x: auto`, which would clip a popup. `toggleProfCd` finds them by
+   `data-slot` for that reason. */
+function profFavsHtml(P, o) {
+  const findAlb = name => (window.ARCHIVE || []).find(a => a.album === name);
+  const esc = s2 => String(s2).replace(/'/g, '\'');
+  const penIco = `<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>`;
+  const favs = [0, 1, 2, 3, 4];
+
+  const cds = favs.map(i => {
+    const a = findAlb((P.favs || [])[i]);
+    if (!a || o.edit) {
+      /* A filled disc in edit mode is a SLOT (outline + "+" badge). An empty
+         one already shows its own big "+", so it doesn't take the badge too. */
+      const cls = a ? 'prof-fav pfe-slot' : 'prof-fav prof-fav--empty';
+      const inner = a
+        ? `<span class="prof-fav-img" style="background-image:url('${a.image}')"></span><span class="prof-fav-hole"></span>`
+        : `<span class="prof-fav-add">+</span>`;
+      return `<button class="${cls}" data-i="${i}" data-alb="${a ? esc(a.album) : ''}" onclick="profFavTap(this, event, ${i}, 1)" title="${a ? 'Replace ' + esc(a.album) : 'Add favourite ' + (i + 1)}">${inner}</button>`;
+    }
+    return `<button class="prof-fav" data-i="${i}" data-alb="${esc(a.album)}" onclick="profFavTap(this, event, ${i}, 0)" title="${esc(a.album)}">
+        <span class="prof-fav-img" style="background-image:url('${a.image}')"></span>
+        <span class="prof-fav-hole"></span>
+      </button>`;
+  }).join('');
+
+  const menus = favs.map(i => {
+    const a = findAlb((P.favs || [])[i]);
+    if (!a || o.edit) return '';
+    return `<div class="wall2-menu v3-cd-menu prof-cd-menu" data-slot="${i}" hidden>
+        <button class="v3-stream-preview prof-cd-prev" onclick="event.stopPropagation(); profCdPreview(this, ${i})">
+          <span class="v3-stream-preview-ico"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
+          <span class="v3-stream-preview-txt">Listen to preview</span>
+          <span class="v3-stream-preview-dur">0:30</span>
+        </button>
+        <div class="v3-cd-menu-sep"></div>
+        ${platRowsHtml(i)}
+        <div class="v3-cd-menu-sep"></div>
+        <button class="wall2-menu-item plp-plat-item" onclick="event.stopPropagation(); this.closest('.prof-cd-menu').hidden=true; openProfPicker(${i}, this)">
+          <span class="plp-plat-ico" style="background:var(--pf-base)">${penIco}</span>Replace album
+        </button>
+      </div>`;
+  }).join('');
+
+  /* The panel under the rail. Filled by `profFavSync` from whichever CD is
+     centred — the markup carries no album, so it cannot go stale against the
+     rail's scroll position. */
+  return `
+            <div class="prof-sec prof-favs">
+              <div class="prof-sec-hd">Favourite albums</div>
+              <!-- WARNING: the end spacers are what let the FIRST and LAST discs
+                   reach the middle, and they are ELEMENTS rather than padding on
+                   the rail for a reason. Percentage flex-basis resolves against
+                   the flex container's CONTENT box, so 19% of side padding made
+                   every disc 62% of the remaining 62% -- 38.4% of the rail -- and
+                   nothing could ever centre. With no padding the content box IS
+                   the rail, and both percentages finally mean the same thing. -->
+              <div class="prof-fav-rail" onscroll="profFavSync(this)"><span class="prof-fav-pad"></span>${cds}<span class="prof-fav-pad"></span></div>
+              <div class="prof-fav-info">
+                <!-- The year rides with the title, where it belongs: it is part of
+                     naming a record, not a statistic about it. Genre is gone from
+                     here -- it said little at this size and the archive's genre
+                     strings are inconsistent enough that it read as noise. -->
+                <div class="prof-fav-alb"><span class="prof-fav-name"></span><span class="prof-fav-yr"></span></div>
+                <div class="prof-fav-artist"></div>
+                <div class="prof-fav-sub">
+                  <span class="prof-fav-stars"></span>
+                  <span class="prof-fav-meta"></span>
+                </div>
               </div>
-
-              <!-- Favourite-album wells — choose 5 (right column) -->
-              ${slotHtml}
-
-              ${o.edit ? '' : `<!-- Dot mascot → Follow (top-right notch) -->
-              <button class="prof-follow" onclick="toggleProfFollow(this)" aria-pressed="false" title="Follow">
-                <span class="v3-ring v3-ring--smile prof-follow-ring"><span class="v3-ring-spin"><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i></span></span>
-                <span class="prof-follow-lbl">Follow</span>
-              </button>`}
+              ${menus}
             </div>`;
 }
 
@@ -1243,24 +1447,49 @@ function profileHtml(light) {
 
 
 
-  // Recently rated — the persona's picks (falls back to the top of the archive).
-  const recent  = (P.recent && P.recent.length)
-    ? P.recent.map(nm => findAlb(nm)).filter(Boolean)
-    : (window.ARCHIVE || []).slice(0, 4);
-  const rTimes  = ['2h', '1d', '4d', '1w'];
-  const rRates  = [5, 4.5, 4, 4.5];
-  const recentHtml = recent.map((a, i) => `
-    <button class="prof-rr" onclick="openAlbumPage(ARCHIVE.find(x=>x.album==='${a.album.replace(/'/g, '\\\'')}')||ARCHIVE[0])">
-      <span class="prof-rr-art" style="background-image:url('${a.image}')"></span>
-      <span class="prof-rr-meta">
-        <span class="prof-rr-alb">${a.album}</span>
-        <span class="prof-rr-artist">${a.artist}</span>
-      </span>
-      <span class="prof-rr-right">
-        <span class="prof-rr-stars">${halfStars(rRates[i], 11)}</span>
-        <span class="prof-rr-time">${rTimes[i]}</span>
-      </span>
-    </button>`).join('');
+  /* Review history — built from the HOME FEED'S row, not a shape of its own.
+     ⚠ Same `.ntf-*` anatomy, same sentence order (SUBJECT · VERB · OBJECT), the
+     same `upvoteHtml` pill and the same comment button: a review is a review,
+     and a profile that renders one differently from the way home renders it is
+     two components that will drift. The only thing that changes is the subject
+     — every row here has the same author, so the avatar is theirs.
+     `upvoteHtml` and `CMT_SVG` live in app.js, which loads after this file;
+     fine, because this runs at render time. */
+  const rvName  = P.name || 'They';
+  const rvFace  = P.pic || '';
+  const rvBadge = '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/>';
+  const logHtml = profReviewLog(P).map(e => {
+    const a = e.album;
+    const open = `openAlbumPage(ARCHIVE.find(x=>x.album==='${esc(a.album)}')||ARCHIVE[0])`;
+    // ⚠ Guarded the same way the feed guards it: "Weezer by Weezer" reads as a
+    // bug, and nobody says the artist twice out loud either.
+    const rec = `<i>${a.album}</i>` + (a.artist && a.artist !== a.album ? ` by <b>${a.artist}</b>` : '');
+    const key = 'prof::' + (P.handle || 'you') + '::' + a.album;
+    return `
+    <div class="ntf-row" onclick="${open}">
+      <div class="ntf-who">
+        <div class="ntf-ava" style="background-image:url('${rvFace}')">
+          <span class="ntf-badge ntf-badge--review"><svg viewBox="0 0 24 24" fill="currentColor">${rvBadge}</svg></span>
+        </div>
+        <div class="ntf-time">${e.when}</div>
+      </div>
+      <div class="ntf-body">
+        <div class="ntf-text"><b>${rvName}</b> reviewed ${rec} a <b class="ntf-line-score">${Number(e.rating).toFixed(1)}</b></div>
+        <div class="ntf-quote">${e.text}</div>
+        <div class="ntf-foot">
+          <div class="ntf-acts">
+            ${window.upvoteHtml ? upvoteHtml(key, e.likes, 'v3-up--feed v3-up--prof') : ''}
+            <button class="v3-up v3-up--feed v3-up--prof" type="button" aria-label="Comments"
+              onclick="event.stopPropagation(); ${open}">${typeof CMT_SVG !== 'undefined' ? CMT_SVG : ''}<span class="v3-up-n">${e.comments}</span></button>
+          </div>
+        </div>
+      </div>
+      <div class="ntf-obj">
+        <div class="ntf-art" style="background-image:url('${a.image}')"
+             onclick="event.stopPropagation(); ${open}"></div>
+      </div>
+    </div>`;
+  }).join('');
 
 
   // Favourite songs (5) — artwork borrowed from the song's album cover.
@@ -1300,6 +1529,8 @@ function profileHtml(light) {
 
             ${profCanvasHtml(P)}
 
+            ${profFavsHtml(P, {})}
+
             <!-- Top playlists -->
             <div class="prof-sec">
               <div class="prof-sec-hd">Playlists</div>
@@ -1312,10 +1543,11 @@ function profileHtml(light) {
               <div class="prof-songs">${favSongsHtml}</div>
             </div>
 
-            <!-- Reviews -->
+            <!-- Review history — last section on the page, deliberately: it is
+                 the longest and the one you scroll INTO, not past. -->
             <div class="prof-feed">
-              <div class="prof-feed-hd">Recently rated</div>
-              ${recentHtml}
+              <div class="prof-feed-hd">Review history</div>
+              ${logHtml}
             </div>
 
           </div>
@@ -1405,6 +1637,10 @@ function profileEditHtml(light) {
             ${profCanvasHtml(D, { edit: true })}
 
             <div class="pfe-hint">Tap anything to change it.</div>
+
+            <!-- The favourites moved out of the card, so the editor needs them
+                 here or there is no way to change them any more. -->
+            ${profFavsHtml(D, { edit: true })}
 
             <div class="prof-sec">
               <div class="prof-sec-hd">Playlists</div>
@@ -1521,6 +1757,73 @@ function wallHtml(light) {
       </div>`;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════
+   PLAYLIST THEMES — what a card IS, not what colour it is
+   ═══════════════════════════════════════════════════════════════════════
+   A playlist is the one thing in the app that is purely YOURS — the archive is
+   facts and the reviews are opinions, but a playlist is a made object. So a
+   theme changes the card's SHAPE, its type and how it treats the artwork, not
+   a tint: five cards in five themes should not look like one card five times.
+
+   ⚠ Every theme is one class on `.pl2-card` and pure CSS from there — no theme
+   gets its own markup branch. The card ships the same parts (art, title,
+   byline, meta, badges) and each theme decides what to do with them; the moment
+   one needs an extra element, every other theme has to carry it too. */
+/* ═══════════════════════════════════════════════════════════════════
+   PLAYLIST COVERS — a still, a GIF, or a VIDEO (`plIsVideo` · `plArtHtml`)
+   ═══════════════════════════════════════════════════════════════════
+   The card is mostly picture, so the picture is where the expression lives —
+   and a loop says things a still cannot. A GIF needs nothing special: it
+   animates as a `background-image` like any other file. Only VIDEO has to
+   become a real element, so that is the only case worth detecting.
+
+   ⚠️ Detect on the data: MIME as well as the extension. An uploaded cover
+   arrives from `FileReader` as a `data:` URL with no filename on it at all, so
+   an extension test alone would render every uploaded video as a blank box. */
+function plIsVideo(src) {
+  src = String(src || '');
+  return /^data:video\//i.test(src) || /\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(src);
+}
+
+/* One art layer, whichever kind of file it is.
+   ⚠️ NO `autoplay`, and `preload="none"`. The wall can hold ten of these, and
+   ten decoders running at once is what turns a scroll into a slideshow on a
+   phone. `plVideoWatch` in app.js starts and stops them by visibility instead.
+   ⚠️ `muted` + `playsinline` are not optional: without `muted` a browser will
+   refuse to play at all without a gesture, and without `playsinline` iOS takes
+   the video fullscreen the moment it starts. */
+function plArtHtml(src, cls) {
+  return plIsVideo(src)
+    ? `<video class="${cls} pl2-art-vid" src="${src}" muted loop playsinline preload="none"></video>`
+    : `<div class="${cls}" style="background-image:url('${src}')"></div>`;
+}
+
+/* The emblems you pin on a card. ⚠ Up to PL_BADGE_MAX — the cap is the design:
+   the badges are meant to read as a chosen few, and a card wearing six of them
+   says nothing at all. */
+const PL_BADGE_MAX = 3;
+const PL_BADGES = [
+  { id: 'gem',   name: 'Gem' },
+  { id: 'flame', name: 'Hot' },
+  { id: 'moon',  name: 'Night' },
+  { id: 'bolt',  name: 'Bolt' },
+  { id: 'drop',  name: 'Tears' },
+  { id: 'sun',   name: 'Sun' },
+];
+
+/* Per-playlist customisation, keyed by name. Kept apart from `plLists()` so the
+   authored sample data stays readable — and so anything you change survives the
+   catalogue being re-dealt under a different persona. */
+const PL_CUSTOM_KEY = 'spindeck-pl-custom';
+function plCustom() {
+  try { return JSON.parse(localStorage.getItem(PL_CUSTOM_KEY)) || {}; } catch (e) { return {}; }
+}
+window.plSetCustom = function (name, patch) {
+  const all = plCustom();
+  all[name] = Object.assign({}, all[name], patch);
+  try { localStorage.setItem(PL_CUSTOM_KEY, JSON.stringify(all)); } catch (e) {}
+};
+
 // Song playlists — the shared data for the Lists tab and the playlist page.
 // Each has ONE custom image (archive covers stand in for uploads), a free-form
 // title, a creator, a track count and a favorites count. favs > 25 → "Popular"
@@ -1533,19 +1836,35 @@ function wallHtml(light) {
 // up in app.js) ride at the FRONT — the array is "most recently edited first",
 // and one you just made is the most recent thing there is.
 function plLists() {
+  const custom = plCustom();
+  /* The authored `badges` below are DEFAULTS — anything set in the customise
+     sheet wins. They exist so the wall is not a column of bare cards on first
+     load, and they are chosen to fit the list: the 3am one wears a moon and a
+     tear, the gym one just the tear.
+
+     Two covers are MOVING, on purpose — one `.mp4` and one `.gif`, so both
+     paths are exercised by the sample data rather than only by an upload:
+     `plArtHtml` builds a <video> for the first and a plain background for the
+     second. Both were generated from the stills beside them (a slow zoom,
+     mirrored so the loop is seamless), which is why they cost 93KB and 283KB
+     rather than a megabyte each. */
   return [
     ...(window.PLNEW_CREATED || []),
-    { name: 'desert island picks ✧',        creator: 'you',         tracks: 24, favs: 87,  plays: 12400, edited: '2h ago', image: 'images/playlist-cyano-birds.jpg' },
-    { name: 'nite drives ~ no destination', creator: 'you',         tracks: 18, favs: 12,  plays: 2100,  edited: '1d ago', image: 'images/playlist-car-dash.jpg' },
-    { name: '3am and raining',              creator: 'staticfog',   tracks: 31, favs: 24,  plays: 8900,  edited: '3d ago', image: 'images/playlist-misty-lake.jpg', staff: true },
-    { name: 'gym but make it sad :(',       creator: 'echoplex',    tracks: 15, favs: 9,   plays: 1400,  edited: '4d ago', image: 'images/playlist-chrome-ooh.jpg' },
-    { name: 'HEAVY ROTATION™',              creator: 'velvetblast', tracks: 42, favs: 138, plays: 31000, edited: '1w ago', image: 'images/playlist-city-red.jpg' },
-    { name: 'sunday reset ✿',               creator: 'you',         tracks: 21, favs: 4,   plays: 800,   edited: '1w ago', image: 'images/playlist-wildflowers.jpg' },
-    { name: 'first date jitters ♡',         creator: 'moonwire',    tracks: 13, favs: 18,  plays: 3200,  edited: '2w ago', image: 'images/playlist-hibiscus.jpg' },
-    { name: 'crying in the club (derogatory)', creator: 'staticfog', tracks: 27, favs: 22, plays: 5600,  edited: '3w ago', image: 'images/playlist-statue-night.jpg' },
-    { name: 'headphones on, world off.',    creator: 'echoplex',    tracks: 36, favs: 19,  plays: 7300,  edited: '1mo ago', image: 'images/playlist-ink-alley.jpg', staff: true },
-    { name: 'songs my dad showed me',       creator: 'velvetblast', tracks: 17, favs: 21,  plays: 4100,  edited: '2mo ago', image: 'images/playlist-cyano-horse.jpg' },
-  ];
+    { name: 'desert island picks ✧',        creator: 'you',         tracks: 24, favs: 87,  plays: 12400, edited: '2h ago', image: 'images/playlist-cyano-birds.jpg',   badges: ['gem', 'sun'] },
+    { name: 'nite drives ~ no destination', creator: 'you',         tracks: 18, favs: 12,  plays: 2100,  edited: '1d ago', image: 'images/playlist-car-dash.mp4',     badges: ['moon', 'bolt'] },
+    { name: '3am and raining',              creator: 'staticfog',   tracks: 31, favs: 24,  plays: 8900,  edited: '3d ago', image: 'images/playlist-misty-lake.jpg', badges: ['moon', 'drop'], staff: true },
+    { name: 'gym but make it sad :(',       creator: 'echoplex',    tracks: 15, favs: 9,   plays: 1400,  edited: '4d ago', image: 'images/playlist-chrome-ooh.jpg',  badges: ['drop'] },
+    { name: 'HEAVY ROTATION™',              creator: 'velvetblast', tracks: 42, favs: 138, plays: 31000, edited: '1w ago', image: 'images/playlist-city-red.jpg',   badges: ['flame', 'bolt', 'gem'] },
+    { name: 'sunday reset ✿',               creator: 'you',         tracks: 21, favs: 4,   plays: 800,   edited: '1w ago', image: 'images/playlist-wildflowers.gif', badges: ['sun'] },
+    { name: 'first date jitters ♡',         creator: 'moonwire',    tracks: 13, favs: 18,  plays: 3200,  edited: '2w ago', image: 'images/playlist-hibiscus.jpg',  badges: ['gem'] },
+    { name: 'crying in the club (derogatory)', creator: 'staticfog', tracks: 27, favs: 22, plays: 5600,  edited: '3w ago', image: 'images/playlist-statue-night.jpg',    badges: ['drop', 'moon'] },
+    { name: 'headphones on, world off.',    creator: 'echoplex',    tracks: 36, favs: 19,  plays: 7300,  edited: '1mo ago', image: 'images/playlist-ink-alley.jpg',   badges: ['moon'], staff: true },
+    { name: 'songs my dad showed me',       creator: 'velvetblast', tracks: 17, favs: 21,  plays: 4100,  edited: '2mo ago', image: 'images/playlist-cyano-horse.jpg', badges: ['gem', 'flame'] },
+  /* ⚠️ `key` is stamped LAST and from the literal's own name, so it cannot be
+     overridden. Every customisation is stored under it — `custom[key]`, not
+     `custom[displayed name]` — which is what lets the editor rename a playlist
+     without orphaning its badges. */
+  ].map(l => Object.assign({ badges: [] }, l, custom[l.name] || {}, { key: l.name }));
 }
 
 // Playlists / Library — adapted to the home shell like the wall. The old five
@@ -1569,21 +1888,50 @@ function playlistsHtml(light) {
     fav:   '<path d="M3 17.5V8.2L8 12L12 5.2L16 12L21 8.2V17.5H3Z"/>',                                     // crown
     staff: '<path d="M12 3.2C13.6 5.4 14.8 6.8 12 9C9.2 6.8 10.4 5.4 12 3.2Z"/><path d="M9.6 11H14.4V20.4A0.8 0.8 0 0 1 13.6 21.2H10.4A0.8 0.8 0 0 1 9.6 20.4V11Z"/>', // candle
   };
+  /* ONE card, for every playlist. This briefly carried five user-pickable themes
+     and they came out: a wall where each card is a different shape reads as a
+     mess, and most people never open a picker — so the default has to be the
+     GOOD one, not the safe one. What varies card to card is the ARTWORK and the
+     badges, which is variation the user gets just by making the playlist. */
+  /* Badges, and — on your own lists — the control that edits them, sitting in
+     the same row. ⚠️ The two edit affordances on a card are deliberately
+     different glyphs for different scopes: `+` here adds to the badges it is
+     standing next to, and the PENCIL in the opposite corner edits the whole
+     playlist. Two pencils in two corners would be a coin flip.
+     ⚠️ The row still renders on your own card when there are no badges yet —
+     otherwise the only way to get a first badge would be a control that only
+     appears once you already have one. */
+  const badgeHtml = (ids, mine, key) => {
+    const on = (ids || []).slice(0, PL_BADGE_MAX).filter(id => SD_ICONS[id]);
+    if (!on.length && !mine) return '';
+    return `<div class="pl2-badges">${on.map(id =>
+      `<span class="pl2-badge pl2-badge--${id}" title="${(PL_BADGES.find(b => b.id === id) || {}).name || id}">${SD_ICONS[id]}</span>`
+    ).join('')}${mine ? `
+                  <button class="pl2-badge pl2-badge-add" title="Edit badges" aria-label="Edit badges"
+                          onclick="event.stopPropagation(); openPlCustomize('${esc(key)}', this)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 6v12M6 12h12"/></svg>
+                  </button>` : ''}</div>`;
+  };
+
   const listCard = l => {
     const tag = l.staff ? 'staff' : (l.favs > 25 ? 'fav' : '');   // staff pick wins the corner slot
     const tagTitle = l.staff ? 'Staff pick' : 'Community favorite — 25+ favorites';
+    const mine = l.creator === 'you';
     return `
-              <div class="pl2-list-card${tag ? ' pl2-list-card--hl' : ''}" onclick="openPlaylistPage('${esc(l.name)}')">
-                <div class="pl2-list-img" style="background-image:url('${l.image}')"></div>
-                <div class="pl2-list-body">
-                  <div class="pl2-list-name">${l.name}</div>
-                  <div class="pl2-list-by">by <b>${l.creator}</b>${l.edited ? ` · edited ${l.edited}` : ''}</div>
-                  <div class="pl2-list-meta">${l.tracks} songs · ♥ ${l.favs}</div>
-                  ${tag ? `
-                  <svg class="pl2-list-carve" viewBox="579.759 93.4336 106.904 63.2844" aria-hidden="true"><path fill="currentColor" d="M686.663 93.4336C686.663 98.6801 682.409 102.933 677.163 102.934H633.543C607.275 102.934 585.981 124.228 585.981 150.495C585.981 153.932 583.195 156.718 579.759 156.718H686.663V93.4336Z"/></svg>
-                  <svg class="pl2-list-tag2 pl2-list-tag2--${tag}" viewBox="601.196 116.923 85.466 39.795"><title>${tagTitle}</title><path fill="currentColor" d="M636.958 116.923H666.764C677.753 116.923 686.662 125.831 686.662 136.821C686.662 147.81 677.753 156.718 666.764 156.718H605.229C603.002 156.718 601.196 154.912 601.196 152.685C601.196 132.934 617.207 116.923 636.958 116.923Z"/><g class="pl2-tag-ico" transform="translate(650 137.5) scale(0.9) translate(-12 -12)">${TAG_ICONS[tag]}</g></svg>` : ''}
+              <article class="pl2-card${tag ? ' is-hl' : ''}" onclick="openPlaylistPage('${esc(l.name)}')">
+                ${plArtHtml(l.image, 'pl2-card-art')}
+                <div class="pl2-card-body">
+                  <h3 class="pl2-card-name">${l.name}</h3>
+                  <div class="pl2-card-by">by <b>${l.creator}</b>${l.edited ? ` · ${l.edited}` : ''}</div>
+                  <div class="pl2-card-meta"><span>${l.tracks} songs</span><span>♥ ${l.favs}</span></div>
                 </div>
-              </div>`;
+                ${badgeHtml(l.badges, mine, l.key)}
+                ${tag ? `<span class="pl2-card-tag pl2-card-tag--${tag}" title="${tagTitle}"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">${TAG_ICONS[tag]}</svg></span>` : ''}
+                ${mine ? `<button class="pl2-card-edit" title="Edit this playlist" aria-label="Edit playlist"
+                            onclick="event.stopPropagation(); openEditPlaylist('${esc(l.key)}')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4l10-10a2.6 2.6 0 0 0-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg>
+                          </button>` : ''}
+              </article>`;
   };
 
   return `
@@ -1685,7 +2033,7 @@ function playlistNewHtml(light) {
               <label class="plp-hero-img plnew-cover${S.cover ? ' plnew-cover--set' : ''}" data-plnew="cover"
                      title="Upload a cover"
                      style="${S.cover ? `background-image:url('${S.cover}')` : ''}">
-                <input type="file" accept="image/*" class="plnew-file" onchange="plnewUpload(this)">
+                <input type="file" accept="image/*,video/mp4,video/webm" class="plnew-file" onchange="plnewUpload(this)">
                 <span class="plnew-cover-hint">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 16V4"/><path d="m7.5 8.5 4.5-4.5 4.5 4.5"/><path d="M4 15v3.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V15"/></svg>
                   <i>upload a cover</i>
@@ -1764,7 +2112,7 @@ function playlistPageHtml(light) {
               <span class="v3-ring plp-ring"><span class="v3-ring-spin"><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i></span></span>
             </button>
             <div class="plp-hero${hot ? ' plp-hero--hl' : ''}">
-              <div class="plp-hero-img" style="background-image:url('${pl.image}')"></div>
+              ${plArtHtml(pl.image, 'plp-hero-img')}
               <svg class="plp-hero-shape" viewBox="0 0 688 303" preserveAspectRatio="none" aria-hidden="true">
                 <path class="plp-shape-panel" d="M640.322 0.601501L686.662 48.7753V151.386C686.662 162.155 677.932 170.886 667.162 170.886H608.625C570.514 170.886 539.619 201.781 539.619 239.892C539.619 250.425 531.08 258.965 520.546 258.965H253.095V0.601501H640.322Z"/>
                 ${hot ? '<path class="plp-shape-tag" d="M672.162 0.601501C680.17 0.601501 686.662 7.09337 686.662 15.1015V48.791L640.405 0.601501H672.162Z"><title>Popular — 25+ favorites</title></path>' : ''}
@@ -2121,6 +2469,144 @@ function settingsHtml(light) {
       </div>`;
 }
 
+/* ── SHOP ─────────────────────────────────────────────────────
+   Reached from the SHOP BUTTON IN THE NAV SCOOP (sdShopBtn), which took the
+   pet's place. In-app goods only — things that change YOUR Spindeck, not
+   physical merch.
+
+   THE SYSTEM — "sheets". A section is one `.shop-sheet`: tiles that butt
+   together with a 3px seam of screen bg between them, one outer radius, one
+   shadow. Bento density INSIDE a sheet, Apple-Store air BETWEEN sheets. Three
+   sheet types and no more:
+
+     --bento   the home bento's own silhouette, rebuilt out of products:
+               big square + two stacked + a wide tile under the square, leaving
+               the bottom-right as a CORNER GAP with a real fillet at its inner
+               corner. The one place the shop admits it is the same object as
+               the home screen. Used once, for Pro.
+     --shelf   a horizontal rail that bleeds to the frame edge and peeks (the
+               `.v3-aa-row` idiom, already the app's convention). Used for
+               themes, where the swatch IS the preview and browsing beats
+               reading.
+     --row     N equal tiles across. Used for frames and badges — small things
+               where the product is the glyph.
+
+   ⚠️ Every tile carries its own `--tint`. That is the bento's procedural-colour
+   idea moved onto products: the home bento takes its colour from the cover, and
+   in here each tile takes its colour from what it sells. It is the only source
+   of colour on the screen besides the gold. */
+function shopHtml(light) {
+  const dots = '<i class="v3-ring-dot"></i>'.repeat(6);
+  const pro  = typeof isPro === 'function' && isPro();
+
+  const buy = (price, owned) => owned
+    ? `<span class="shop-owned">Owned</span>`
+    : `<button class="shop-buy" onclick="event.stopPropagation(); sdBuy(this)">${price}</button>`;
+
+  const sec = (title, sub) => `
+              <div class="shop-sec-hd">${title}${sub ? `<span>${sub}</span>` : ''}</div>`;
+
+  // Theme tile — the swatch IS the preview, so it takes most of the card.
+  const theme = (name, sub, a, b, c, price, owned) => `
+                  <div class="shop-tile shop-tile--theme">
+                    <div class="shop-field" style="background:linear-gradient(145deg,${a},${b})">
+                      <span class="shop-chip" style="background:${c}"></span>
+                    </div>
+                    <div class="shop-tile-name">${name}</div>
+                    <div class="shop-tile-sub">${sub}</div>
+                    ${buy(price, owned)}
+                  </div>`;
+
+  // Frame tile — a ring on a tinted field. The ring is the product; there is
+  // nothing to describe that the shape doesn't already say.
+  const frame = (name, ring, tint, price, owned) => `
+                  <div class="shop-tile shop-tile--sm" style="--tint:${tint}">
+                    <div class="shop-field shop-field--tint"><span class="shop-ring" style="${ring}"></span></div>
+                    <div class="shop-tile-name">${name}</div>
+                    ${buy(price, owned)}
+                  </div>`;
+
+  const badge = (glyph, name, tint, price, owned) => `
+                  <div class="shop-tile shop-tile--sm" style="--tint:${tint}">
+                    <div class="shop-field shop-field--tint shop-field--ico">${glyph}</div>
+                    <div class="shop-tile-name">${name}</div>
+                    ${buy(price, owned)}
+                  </div>`;
+
+
+  return `
+      <div class="app-screen s-home-v3 s-shop${light ? ' s-home-v3--light' : ''}">
+        ${appHeader()}
+        <div class="v3-body">
+          <div class="shop-scroll">
+            <button class="plp-back-pill" onclick="navigate('home')" title="Back">
+              <span class="v3-ring plp-ring"><span class="v3-ring-spin">${dots}</span></span>
+            </button>
+
+            <h2 class="shop-title">Shop</h2>
+            <p class="shop-lede">Make Spindeck yours.</p>
+
+            <!-- Pro showcase — the REAL compact-state bento, the same
+                 bentoHtml() the home screen renders, driven by the same
+                 engine (populateHomeData finds it and fills it like any home).
+                 Showing the actual object beats drawing a picture of it, and it
+                 means the showcase can never drift from the thing it sells.
+                 The Pro gesture is wired onto it by shopProInit in app.js. -->
+            <div class="shop-showcase" id="shopPro">
+              <span class="shop-pro-tag">Pro</span>
+              <!-- The model's own box. The scale lives HERE and not on the
+                   bento, so the showcase still styles the case and never the
+                   product — see `.shop-model` in app.css. -->
+              <div class="shop-model">${bentoHtml()}</div>
+            </div>
+            <!-- The pitch row is also the STATUS row. Read from the plan
+                 (isPro), so the storefront and the toolbar switch can never
+                 disagree — and buying here flips the plan for the whole app
+                 rather than just swapping this one button's label. -->
+            <div class="shop-sheet shop-sheet--pro">
+              <span class="shop-buy-l"><b>Pro</b>${pro
+                ? 'Hold the cover on your home screen<br/>to change shelf.'
+                : 'Hold the cover to swipe between<br/>For You and genres.'}</span>
+              ${pro
+                ? `<span class="shop-owned shop-owned--pro">Active</span>`
+                : `<button class="shop-pro-btn" onclick="event.stopPropagation(); sdBuy(this)">$3<small>/mo</small></button>`}
+            </div>
+
+            ${sec('Themes', 'the look of your page')}
+            <div class="shop-sheet shop-sheet--shelf">
+              ${theme('Funky 01', 'the one you have', '#2a2119', '#171319', '#e8a83c', '$2', true)}
+              ${theme('Midnight', 'ink &amp; deep blue',  '#141824', '#0e1018', '#5b7cc4', '$2')}
+              ${theme('Bleach',   'paper &amp; red',      '#e9e4d8', '#cfc7b6', '#c8492f', '$2')}
+              ${theme('Chrome',   'silver &amp; glass',   '#2b2d33', '#1a1b20', '#b8bcc6', '$3')}
+            </div>
+
+            <!-- ⚠️ Playlist themes and badges are NOT sold here, and should not be
+                 added back. They dress up what the user MADE, not the user — see
+                 PL_BADGES. Everything below dresses up YOU, which is the line. -->
+            ${sec('Frames', 'rings your favourites sit in')}
+            <div class="shop-sheet shop-sheet--row">
+              ${frame('Hairline', 'border:2px solid currentColor',  '232,226,214', '&#8212;',  true)}
+              ${frame('Gold',     'border:4px solid #e8a83c',       '232,168,60',  '$1')}
+              ${frame('Dashed',   'border:3px dashed currentColor', '232,226,214', '$1')}
+              ${frame('Double',   'border:2px solid #e8a83c; box-shadow:0 0 0 4px rgba(232,168,60,.28)', '232,168,60', '$2')}
+            </div>
+
+            ${sec('Badges', 'they sit next to your name')}
+            <div class="shop-sheet shop-sheet--row">
+              ${badge(SD_ICONS.heart,  'Devotee',   '224,97,111', '$1', true)}
+              ${badge(SD_ICONS.ear,    'Deep Cuts', '91,124,196', '$1')}
+              ${badge(SD_ICONS.clock,  'Day One',   '232,168,60', '$2')}
+              ${badge(SD_ICONS.pencil, 'Critic',    '124,168,120','$2')}
+            </div>
+
+            <p class="shop-note">Prototype storefront — nothing is charged and nothing is kept.</p>
+          </div>
+        </div>
+        ${nowBar()}
+        ${bottomNav('shop')}
+      </div>`;
+}
+
 function bottomNav(active = 'home') {
   const on = id => active === id ? ' active' : '';
   // ⚠️ The fade and the nest are SIBLINGS of the nav, not children: both fill
@@ -2157,5 +2643,5 @@ function bottomNav(active = 'home') {
                the only way to get a drop-shadow that follows a mask.
                The scene moved out of the nav so it can sit ABOVE this. -->
           <div class="v3-nav-emboss" aria-hidden="true"><i></i></div>
-          ${sdScene()}`;
+          ${sdScene(active)}`;
 }

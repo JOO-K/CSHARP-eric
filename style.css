@@ -218,6 +218,35 @@ body {
 .tb-pers:hover { color: var(--vtext); }
 .tb-pers.active { background: rgba(136,146,164,0.20); color: var(--vtext); }
 
+/* Plan switcher — Free / Pro. Deliberately the SAME segmented control as
+   .tb-persona: both answer "who is looking at this screen", so they should
+   read as one family of switch. The one difference is the armed colour —
+   Pro lights GOLD, the app's own reserved-for-paid accent (--sd-gold in
+   app.css), so the toolbar agrees with what the shop is selling. */
+.tb-plan {
+  display: flex; align-items: center; gap: 2px;
+  flex-shrink: 0;
+  height: 26px; box-sizing: border-box;
+  padding: 0 2px;
+  border-radius: 8px; background: rgba(136,146,164,0.10);
+}
+.tb-plan-b {
+  background: none; border: none; cursor: pointer;
+  height: 22px; padding: 0 10px; border-radius: 6px;
+  display: inline-flex; align-items: center; gap: 4px;
+  font-family: inherit; font-size: 11px; line-height: 1; white-space: nowrap;
+  color: var(--vdim);
+  transition: color .12s, background .12s;
+}
+.tb-plan-b:hover { color: var(--vtext); }
+.tb-plan-b.active { background: rgba(136,146,164,0.20); color: var(--vtext); }
+/* Pro armed: gold fill, dark text — the only gold in the viewer chrome, so it
+   is unmistakable at a glance which account you are looking at. */
+.tb-plan-b[data-plan="pro"].active {
+  background: #e8a83c; color: #17140e; font-weight: 600;
+}
+.tb-plan-star { font-size: 9px; line-height: 1; }
+
 /* ============================================================
    DEV BOX — live-tune the compact bento's two info lines.
    Floats over #stage on the right; the phone stays centred because
