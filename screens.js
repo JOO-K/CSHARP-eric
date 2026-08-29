@@ -51,6 +51,34 @@ const SD_DOT_ICONS = {
            'x...x',
            'x...x',
            'xxxxx'],
+  /* ── Four more profile badges ── added for the shop's Badges aisle, which
+     needed more than one row of stock to be worth a tab of its own. Same 5×5
+     budget and the same rule as everything above: right angles and 45° steps,
+     nothing that needs an inner curve to read at 15px. */
+  // Ticket — two stubs either side of a perforation. Front Row.
+  ticket: ['xxxxx',
+           'x.x.x',
+           'x.x.x',
+           'x.x.x',
+           'xxxxx'],
+  // Crown — three points, a band, and a hollow the head goes in. Patron.
+  crown:  ['x.x.x',
+           'xxxxx',
+           'xxxxx',
+           'x...x',
+           'xxxxx'],
+  // Equalizer — five bars at four heights. Loud.
+  wave:   ['...x.',
+           '.x.x.',
+           '.xxx.',
+           'xxxxx',
+           'xxxxx'],
+  // Microphone — capsule over a stand. Encore.
+  mic:    ['.xxx.',
+           '.xxx.',
+           '.xxx.',
+           'x.x.x',
+           '.xxx.'],
 
   /* ── Playlist badges ── the emblems you pin on a playlist card. Same 5×5
      budget and the same right-angle / 45° rule as everything above: these sit
@@ -1334,6 +1362,17 @@ function profReviewLog(P) {
   // longer than the four-item strip it replaces.
   const names = [];
   (P.recent || []).forEach(n => { if (n && names.indexOf(n) < 0) names.push(n); });
+  /* Then their FAVOURITES. You are far more likely to have written about the
+     five records you pinned to your own profile than about a random one off the
+     shelf — and this log is also what the favourites rail reads to put a review
+     under a disc (`profFavPaint`), so without this the panel had almost nothing
+     to show: measured across the five personas it was 1, 2, 0, 1, 1 of five.
+     ⚠ Seeded on a coin flip, NOT all five. "No review yet" has to stay a real state
+     that you actually meet while scrolling the rail, or the conditional under
+     the disc is a branch that never runs. */
+  (P.favs || []).forEach((n, i) => {
+    if (n && names.indexOf(n) < 0 && h(seed, 'fv', i) % 2) names.push(n);
+  });
   for (let i = 0; i < A.length * 2 && names.length < 9; i++) {
     const nm = A[h(seed, 'a', i) % A.length].album;
     if (names.indexOf(nm) < 0) names.push(nm);
@@ -1397,6 +1436,16 @@ function profScore(P) {
    ⚠ Tapping a disc raises the NAV CONSOLE, not a popup — see `profFavTap`. The
    rail is `overflow-x: auto` and would clip a popup anyway, which is half of why
    the console is the better home for it. */
+/* How many times the five discs are repeated to fake an endless rail.
+   ⚠ FIVE copies, not three, and the number is set by how far one fling travels.
+   The wrap only runs once the scroll SETTLES (writing `scrollLeft` mid-fling
+   kills the momentum, see `profFavSettle`), so the buffer either side of the
+   middle copy has to outlast the longest gesture a thumb can produce. From the
+   middle copy that is ten discs of runway in each direction — about 2500px,
+   comfortably past a hard fling. Three copies would leave only five, and a
+   determined flick would hit the emergency wrap and stop dead. */
+const PROF_FAV_LOOPS = 5;
+
 function profFavsHtml(P, o) {
   const findAlb = name => (window.ARCHIVE || []).find(a => a.album === name);
   const esc = s2 => String(s2).replace(/'/g, '\'');
@@ -1433,14 +1482,24 @@ function profFavsHtml(P, o) {
   return `
             <div class="prof-sec prof-favs">
               <div class="prof-sec-hd">Favourite albums</div>
-              <!-- WARNING: the end spacers are what let the FIRST and LAST discs
-                   reach the middle, and they are ELEMENTS rather than padding on
-                   the rail for a reason. Percentage flex-basis resolves against
-                   the flex container's CONTENT box, so 19% of side padding made
-                   every disc 62% of the remaining 62% -- 38.4% of the rail -- and
-                   nothing could ever centre. With no padding the content box IS
-                   the rail, and both percentages finally mean the same thing. -->
-              <div class="prof-fav-rail" onscroll="profFavSync(this)"><span class="prof-fav-pad"></span>${cds}<span class="prof-fav-pad"></span></div>
+              <!-- THE RAIL LOOPS. The same five discs are emitted PROF_FAV_LOOPS
+                   times over, and profFavLoop teleports the scroll back to the
+                   middle copy by exactly one set width once it settles. The jump
+                   cannot be seen because what is either side of the seam is the
+                   same five records in the same order -- you are always looking
+                   at an identical stretch of an endless wheel.
+                   ⚠ data-n is the number of REAL favourites. app.js divides the
+                   centred index by it to work out which copy you have drifted
+                   into, so this is what makes the wrap arithmetic possible.
+                   ⚠ The end spacers went with the ends. They existed to let the
+                   FIRST and LAST disc reach the middle -- with a loop there is no
+                   first or last, and a spacer sitting at a seam would be a hole
+                   in the middle of the wheel. The rail still must never get
+                   horizontal PADDING (see the rule in app.css): percentage
+                   flex-basis resolves against the content box, so side padding
+                   silently redefines what every percentage in here means. -->
+              <div class="prof-fav-rail" data-n="${favs.length}" onscroll="profFavSync(this)">${
+                Array.from({ length: PROF_FAV_LOOPS }, () => cds).join('')}</div>
               <div class="prof-fav-info">
                 <!-- The year rides with the title, where it belongs: it is part of
                      naming a record, not a statistic about it. Genre is gone from
@@ -1452,6 +1511,13 @@ function profFavsHtml(P, o) {
                   <span class="prof-fav-stars"></span>
                   <span class="prof-fav-meta"></span>
                 </div>
+                <!-- What THEY wrote about it, when they wrote anything. Filled
+                     by profFavPaint from the same profReviewLog() the review
+                     history below is built from -- one source of truth, so the
+                     line under the disc and the row further down the page can
+                     never quote the same person differently. Empty and hidden
+                     for a record they have not reviewed. -->
+                <div class="prof-fav-rv" hidden></div>
               </div>
             </div>`;
 }
@@ -2511,20 +2577,110 @@ function settingsHtml(light) {
    idea moved onto products: the home bento takes its colour from the cover, and
    in here each tile takes its colour from what it sells. It is the only source
    of colour on the screen besides the gold. */
+/* ════════════════════════════════════════════════════════════════════════════
+   SHOP — the four aisles (SHOP_CATS) and the tickets (SHOP_EVENTS)
+   ════════════════════════════════════════════════════════════════════════════
+   GENERAL is not a category, it is the FRONT of the store — a little of each of
+   the other three, in the order you would want to meet them. The other tabs are
+   the full shelf. That is why a tile can belong to two aisles at once
+   (data-cat="general events"): the storefront shows the same tile the Events tab
+   does, rather than a second copy of it that can drift.
+
+   ⚠️ The filter is CSS, not a re-render — see the .s-shop[data-cat=...] block
+   in app.css. Switching tabs must not rebuild the screen: the Pro showcase is a
+   LIVE bento with a shelf wheel bound to it, and a rebuild would throw that away
+   every time you glanced at Themes. */
+const SHOP_CATS = [
+  { id: 'general', label: 'General' },
+  { id: 'events',  label: 'Events'  },
+  { id: 'themes',  label: 'Themes'  },
+  { id: 'badges',  label: 'Badges'  },
+];
+
+/* Which aisle you are standing in. On `window` because it has to survive a
+   renderViewer() — buying Pro rebuilds every shell, and a tab that snapped back
+   to General each time you bought something would be its own bug. shopCat() in
+   app.js writes it; shopHtml reads it back on the way out. */
+window.SHOP_CAT = window.SHOP_CAT || 'general';
+
+/* The word SHOP, spelled in the dot language.
+   ⚠️ There is no "wordmark font" to set this in — the SPINDECK lockup is
+   images/spindeck-wordmark.png, a drawn mark with no typeface behind it. What
+   the mark is BUILT from is a kind of typeface though: the rounded-square module
+   that draws every icon in here. So the title is spelled in that, by the same
+   generator, and picks up the same currentColor tint as the bag in the nav
+   scoop. 4-wide letters on a 5-row body with one empty column between them —
+   the same 5-row budget SD_DOT_ICONS works to.
+   ⚠️ SD_DOTS ships its <svg> aria-hidden, so the actual word rides beside it
+   in a .shop-sr span. Change these rows, change that text. */
+const SHOP_WORD = ['.xxx.x..x..xx..xxx.',
+                   'x....x..x.x..x.x..x',
+                   '.xx..xxxx.x..x.xxx.',
+                   '...x.x..x.x..x.x...',
+                   'xxx..x..x..xx..x...'];
+
+/* ════════════════════════════════════════════════════════════════════════════
+   EVENTS — the one thing in the shop that is not a cosmetic
+   ════════════════════════════════════════════════════════════════════════════
+   Everything else in here dresses up your page. A ticket gets you into a room,
+   and that difference is why it gets its own sheet type (--list) instead of
+   another tray of swatches: a theme is a picture you judge at a glance, an event
+   is four facts you read in ORDER — who, what, where-and-when, how much — and a
+   square swatch has nowhere to put them.
+
+   ⚠️ `pro: true` is the exclusive half, and it renders BOTH states — the
+   locked pill AND the real price button — with body.sd-pro choosing which one
+   shows (app.css). No JS, no rebuild: flipping the toolbar's Free/Pro switch
+   unlocks the whole list in front of you, which is the entire demo. Gating it in
+   JS would have meant a re-render, and a re-render loses the shelf wheel.
+
+   ⚠️ `feat: true` is what General shows, and it is TWO of them, one of each
+   kind. The storefront gets two rows to say both "there are tickets here" and
+   "some of these are Pro's", so it cannot spend them on two of the same thing.
+
+   The art is album art already in images/ — these are artists whose records are
+   in the archive, so the storefront never bills a record the app has never
+   heard of. */
+const SHOP_EVENTS = [
+  { id: 'bugseed',  feat: true,  pro: false, price: '$28',
+    who: 'Bugseed',         what: 'Soundcraft, end to end',     where: 'Zebulon · Los Angeles',   when: 'Oct 04',
+    art: 'images/album-bugseed-soundcraft.jpg' },
+  { id: 'earl',     feat: true,  pro: true,  price: '$22',
+    who: 'Earl Sweatshirt', what: 'Members listening room',     where: 'Lodge Room · Los Angeles', when: 'Nov 02',
+    art: 'images/album-earlsweatshirt-doris.jpg' },
+  { id: 'floating', feat: false, pro: false, price: '$46',
+    who: 'Floating Points', what: 'Crush live, three hours',    where: 'Knockdown · New York',    when: 'Oct 18',
+    art: 'images/album-floatingpoints-crush.png' },
+  { id: 'burial',   feat: false, pro: false, price: '$34',
+    who: 'Burial',          what: 'Untrue, all night',          where: 'Corsica · London',        when: 'Nov 15',
+    art: 'images/album-burial-untrue.jpg' },
+  { id: 'arca',     feat: false, pro: true,  price: '$52',
+    who: 'Arca',            what: 'Soundcheck, twenty people',  where: 'Berghain · Berlin',       when: 'Dec 06',
+    art: 'images/album-arca-mutant.jpg' },
+  { id: 'epikhigh', feat: false, pro: false, price: '$40',
+    who: 'Epik High',       what: 'Shoebox anniversary',        where: 'Olympic Hall · Seoul',    when: 'Dec 20',
+    art: 'images/album-epikhigh-shoebox.png' },
+];
+
 function shopHtml(light) {
   const dots = '<i class="v3-ring-dot"></i>'.repeat(6);
   const pro  = typeof isPro === 'function' && isPro();
+  const cat  = window.SHOP_CAT;
+
+  /* Which aisles a thing belongs to. NO attribute at all = never filtered,
+     which is what the back pill, the title, the tabs and the footnote want. */
+  const at = cats => cats ? ` data-cat="${cats}"` : '';
 
   const buy = (price, owned) => owned
     ? `<span class="shop-owned">Owned</span>`
     : `<button class="shop-buy" onclick="event.stopPropagation(); sdBuy(this)">${price}</button>`;
 
-  const sec = (title, sub) => `
-              <div class="shop-sec-hd">${title}${sub ? `<span>${sub}</span>` : ''}</div>`;
+  const sec = (title, sub, cats) => `
+              <div class="shop-sec-hd"${at(cats)}>${title}${sub ? `<span>${sub}</span>` : ''}</div>`;
 
   // Theme tile — the swatch IS the preview, so it takes most of the card.
-  const theme = (name, sub, a, b, c, price, owned) => `
-                  <div class="shop-tile shop-tile--theme">
+  const theme = (name, sub, a, b, c, price, owned, cats) => `
+                  <div class="shop-tile shop-tile--theme"${at(cats)}>
                     <div class="shop-field" style="background:linear-gradient(145deg,${a},${b})">
                       <span class="shop-chip" style="background:${c}"></span>
                     </div>
@@ -2536,22 +2692,40 @@ function shopHtml(light) {
   // Frame tile — a ring on a tinted field. The ring is the product; there is
   // nothing to describe that the shape doesn't already say.
   const frame = (name, ring, tint, price, owned) => `
-                  <div class="shop-tile shop-tile--sm" style="--tint:${tint}">
+                  <div class="shop-tile shop-tile--sm" style="--tint:${tint}" data-cat="themes">
                     <div class="shop-field shop-field--tint"><span class="shop-ring" style="${ring}"></span></div>
                     <div class="shop-tile-name">${name}</div>
                     ${buy(price, owned)}
                   </div>`;
 
-  const badge = (glyph, name, tint, price, owned) => `
-                  <div class="shop-tile shop-tile--sm" style="--tint:${tint}">
+  const badge = (glyph, name, tint, price, owned, cats) => `
+                  <div class="shop-tile shop-tile--sm" style="--tint:${tint}"${at(cats)}>
                     <div class="shop-field shop-field--tint shop-field--ico">${glyph}</div>
                     <div class="shop-tile-name">${name}</div>
                     ${buy(price, owned)}
                   </div>`;
 
+  /* One event, as a ROW: the art, the three lines that answer who / what /
+     where-and-when, then the price. A Pro event ships the locked pill AND the
+     price button — see SHOP_EVENTS for why both are in the markup at once.
+     data-owned is what sdBuy swaps the button for: a ticket you hold is not
+     "Owned", it is somewhere you are Going. */
+  const ev = (e, cats) => `
+                  <div class="shop-tile shop-tile--event${e.pro ? ' is-pro' : ''}"${at(cats)}>
+                    <span class="shop-ev-art" style="background-image:url('${e.art}')">${
+                      e.pro ? '<span class="shop-ev-pro">Pro</span>' : ''}</span>
+                    <span class="shop-ev-line">
+                      <span class="shop-ev-who">${e.who}</span>
+                      <span class="shop-ev-what">${e.what}</span>
+                      <span class="shop-ev-where">${e.where} · ${e.when}</span>
+                    </span>
+                    ${e.pro ? `<span class="shop-lock">Pro only</span>` : ''}
+                    <button class="shop-buy shop-buy--ev" data-owned="Going"
+                            onclick="event.stopPropagation(); sdBuy(this)">${e.price}</button>
+                  </div>`;
 
   return `
-      <div class="app-screen s-home-v3 s-shop${light ? ' s-home-v3--light' : ''}">
+      <div class="app-screen s-home-v3 s-shop${light ? ' s-home-v3--light' : ''}" data-cat="${cat}">
         ${appHeader()}
         <div class="v3-body">
           <div class="shop-scroll">
@@ -2559,8 +2733,17 @@ function shopHtml(light) {
               <span class="v3-ring plp-ring"><span class="v3-ring-spin">${dots}</span></span>
             </button>
 
-            <h2 class="shop-title">Shop</h2>
-            <p class="shop-lede">Make Spindeck yours.</p>
+            <!-- The name of the store, spelled in the dot language rather than
+                 set in a face. See SHOP_WORD for why there is no font to use. -->
+            <h2 class="shop-title">${SD_DOTS.svg(SHOP_WORD, { cls: 'shop-title-mark' })}<span class="shop-sr">Shop</span></h2>
+
+            <!-- The aisles. Sticky, because the name of the store is a greeting
+                 you read once and the aisle you are in is where you ARE. -->
+            <div class="shop-cats" role="tablist" aria-label="Shop categories">${SHOP_CATS.map(c => `
+              <button class="shop-cat${c.id === cat ? ' is-on' : ''}" type="button" role="tab"
+                      aria-selected="${c.id === cat}" data-go="${c.id}"
+                      onclick="event.stopPropagation(); shopCat(this, '${c.id}')">${c.label}</button>`).join('')}
+            </div>
 
             <!-- Pro showcase — the REAL compact-state bento, the same
                  bentoHtml() the home screen renders, driven by the same
@@ -2568,54 +2751,72 @@ function shopHtml(light) {
                  Showing the actual object beats drawing a picture of it, and it
                  means the showcase can never drift from the thing it sells.
                  The Pro gesture is wired onto it by shopProInit in app.js. -->
-            <div class="shop-showcase" id="shopPro">
+            <div class="shop-showcase" id="shopPro" data-cat="general">
               <span class="shop-pro-tag">Pro</span>
               <!-- The model's own box. The scale lives HERE and not on the
                    bento, so the showcase still styles the case and never the
-                   product — see `.shop-model` in app.css. -->
+                   product — see .shop-model in app.css. -->
               <div class="shop-model">${bentoHtml()}</div>
             </div>
             <!-- The pitch row is also the STATUS row. Read from the plan
                  (isPro), so the storefront and the toolbar switch can never
                  disagree — and buying here flips the plan for the whole app
-                 rather than just swapping this one button's label. -->
-            <div class="shop-sheet shop-sheet--pro">
+                 rather than just swapping this one button's label.
+                 ⚠️ It rides along to Events as well: that is the tab where half
+                 the list is locked, so it is the one place the offer answers a
+                 question the user is already asking. -->
+            <div class="shop-sheet shop-sheet--pro" data-cat="general events">
               <span class="shop-buy-l"><b>Pro</b>${pro
-                ? 'Hold the cover on your home screen<br/>to change shelf.'
-                : 'Hold the cover to swipe between<br/>For You and genres.'}</span>
+                ? 'Exclusive tickets, and hold the cover<br/>on your home screen to change shelf.'
+                : 'Exclusive tickets, and hold the cover<br/>to swipe between For You and genres.'}</span>
               ${pro
                 ? `<span class="shop-owned shop-owned--pro">Active</span>`
                 : `<button class="shop-pro-btn" onclick="event.stopPropagation(); sdBuy(this)">$3<small>/mo</small></button>`}
             </div>
 
-            ${sec('Themes', 'the look of your page')}
-            <div class="shop-sheet shop-sheet--shelf">
-              ${theme('Funky 01', 'the one you have', '#2a2119', '#171319', '#e8a83c', '$2', true)}
-              ${theme('Midnight', 'ink &amp; deep blue',  '#141824', '#0e1018', '#5b7cc4', '$2')}
-              ${theme('Bleach',   'paper &amp; red',      '#e9e4d8', '#cfc7b6', '#c8492f', '$2')}
-              ${theme('Chrome',   'silver &amp; glass',   '#2b2d33', '#1a1b20', '#b8bcc6', '$3')}
+            ${sec('Events', 'tickets, and rooms only Pro gets into', 'general events')}
+            <div class="shop-sheet shop-sheet--list" data-cat="general events">${SHOP_EVENTS.map(e =>
+              ev(e, e.feat ? 'general events' : 'events')).join('')}
+            </div>
+
+            ${sec('Themes', 'the look of your page', 'general themes')}
+            <div class="shop-sheet shop-sheet--shelf" data-cat="general themes">
+              ${theme('Funky 01', 'the one you have',    '#2a2119', '#171319', '#e8a83c', '$2', true,  'general themes')}
+              ${theme('Midnight', 'ink &amp; deep blue', '#141824', '#0e1018', '#5b7cc4', '$2', false, 'general themes')}
+              ${theme('Bleach',   'paper &amp; red',     '#e9e4d8', '#cfc7b6', '#c8492f', '$2', false, 'general themes')}
+              ${theme('Chrome',   'silver &amp; glass',  '#2b2d33', '#1a1b20', '#b8bcc6', '$3', false, 'general themes')}
+              ${theme('Verdigris','copper &amp; patina', '#1b2a26', '#101a18', '#5fae95', '$3', false, 'themes')}
+              ${theme('Ultra',    'black &amp; signal',  '#101014', '#08080a', '#d64dff', '$3', false, 'themes')}
             </div>
 
             <!-- ⚠️ Playlist themes and badges are NOT sold here, and should not be
                  added back. They dress up what the user MADE, not the user — see
-                 PL_BADGES. Everything below dresses up YOU, which is the line. -->
-            ${sec('Frames', 'rings your favourites sit in')}
-            <div class="shop-sheet shop-sheet--row">
+                 PL_BADGES. Everything below dresses up YOU, which is the line.
+                 ⚠️ Frames sit under the THEMES tab rather than an aisle of their
+                 own: four categories was the brief, and the ring around your
+                 favourites is the look of your page the same way a theme is. -->
+            ${sec('Frames', 'rings your favourites sit in', 'themes')}
+            <div class="shop-sheet shop-sheet--row" data-cat="themes">
               ${frame('Hairline', 'border:2px solid currentColor',  '232,226,214', '&#8212;',  true)}
               ${frame('Gold',     'border:4px solid #e8a83c',       '232,168,60',  '$1')}
               ${frame('Dashed',   'border:3px dashed currentColor', '232,226,214', '$1')}
               ${frame('Double',   'border:2px solid #e8a83c; box-shadow:0 0 0 4px rgba(232,168,60,.28)', '232,168,60', '$2')}
             </div>
 
-            ${sec('Badges', 'they sit next to your name')}
-            <div class="shop-sheet shop-sheet--row">
-              ${badge(SD_ICONS.heart,  'Devotee',   '224,97,111', '$1', true)}
-              ${badge(SD_ICONS.ear,    'Deep Cuts', '91,124,196', '$1')}
-              ${badge(SD_ICONS.clock,  'Day One',   '232,168,60', '$2')}
-              ${badge(SD_ICONS.pencil, 'Critic',    '124,168,120','$2')}
+            ${sec('Badges', 'they sit next to your name', 'general badges')}
+            <div class="shop-sheet shop-sheet--row" data-cat="general badges">
+              ${badge(SD_ICONS.heart,  'Devotee',   '224,97,111',  '$1', true,  'general badges')}
+              ${badge(SD_ICONS.ear,    'Deep Cuts', '91,124,196',  '$1', false, 'general badges')}
+              ${badge(SD_ICONS.clock,  'Day One',   '232,168,60',  '$2', false, 'general badges')}
+              ${badge(SD_ICONS.pencil, 'Critic',    '124,168,120', '$2', false, 'general badges')}
+              ${badge(SD_ICONS.ticket, 'Front Row', '198,140,232', '$2', false, 'badges')}
+              ${badge(SD_ICONS.crown,  'Patron',    '232,168,60',  '$3', false, 'badges')}
+              ${badge(SD_ICONS.wave,   'Loud',      '92,186,178',  '$1', false, 'badges')}
+              ${badge(SD_ICONS.mic,    'Encore',    '224,97,111',  '$2', false, 'badges')}
             </div>
 
-            <p class="shop-note">Prototype storefront — nothing is charged and nothing is kept.</p>
+            <p class="shop-note">Prototype storefront — nothing is charged, no ticket is
+              real, and nothing is kept.</p>
           </div>
         </div>
         ${nowBar()}

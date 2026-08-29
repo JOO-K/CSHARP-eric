@@ -2671,6 +2671,36 @@ const SHOP_PICK_H  = 34;
    because `setMainAlbum` moves the WHOLE screen to the chosen shelf. */
 function shopProInit(root) { proWheelInit(root, root.querySelector('#shopPro')); }
 
+/* ── The shop's aisles (`shopCat`) ────────────────────────────
+   Tapping a category writes ONE attribute and lets CSS do the hiding — see the
+   `.s-shop[data-cat=...]` block in app.css.
+
+   ⚠ Not a re-render, deliberately. The Pro showcase is a live bento with the
+   shelf wheel bound to it (`shopProInit`), and rebuilding the screen to change
+   tabs would tear that down and rebuild it four times a browse. It would also
+   drop the tiles you had already bought back to their price.
+
+   ⚠ Every shell on stage, not just the one you clicked. Float·Dark and
+   Float·Light are the SAME screen in two themes, and a filter that moved on one
+   of them would read as two different storefronts standing side by side — the
+   same reason the plan switch writes to `body` rather than to a screen.
+
+   ⚠ And back to the top: the aisle you just asked for starts at its first
+   shelf, not wherever the last one happened to leave you. */
+window.shopCat = function (btn, id) {
+  window.SHOP_CAT = id;
+  document.querySelectorAll('.s-shop').forEach(scr => {
+    scr.setAttribute('data-cat', id);
+    scr.querySelectorAll('.shop-cat').forEach(b => {
+      const on = b.dataset.go === id;
+      b.classList.toggle('is-on', on);
+      b.setAttribute('aria-selected', on);
+    });
+    const body = scr.querySelector('.v3-body');
+    if (body) body.scrollTop = 0;
+  });
+};
+
 /* The home bento's cover, once you own Pro. Same wheel, one difference: here
    the cover still has its tap-to-open-album handler, so an armed release has to
    eat the click that follows it (see `suppressClick`). The shop drops that
@@ -3076,7 +3106,11 @@ window.sdBuy = function (btn) {
   if (btn.classList.contains('shop-pro-btn')) { setPlan(true); return; }
   const owned = document.createElement('span');
   owned.className = 'shop-owned shop-owned--new';   // --new = start transparent, fade in below
-  owned.textContent = 'Owned';
+  /* ⚠ The word is the TILE's to choose. Everything cosmetic in here becomes
+     "Owned", but a ticket is not a thing you own, it is a night you are Going
+     to — and a storefront that told you you now own Berghain would be reading
+     as a bug. `data-owned` on the button, 'Owned' when it says nothing. */
+  owned.textContent = btn.dataset.owned || 'Owned';
   btn.replaceWith(owned);
   requestAnimationFrame(() => owned.classList.add('is-in'));
 };
@@ -7362,6 +7396,7 @@ function profFavBoot(rail) {
   const go = () => {
     if (rail._favInit || !rail.clientWidth) return false;
     rail._favInit = 1;
+    profFavSettle(rail);  // arm the loop's wrap-on-idle before anything can scroll
     profFavStart(rail);   // centre disc 2 BEFORE the first paint, not after
     profFavPaint(rail);
     return true;
@@ -7378,33 +7413,192 @@ function profFavBoot(rail) {
 function profFavStart(rail) {
   if (!rail || !rail.clientWidth) return;
   const items = rail.querySelectorAll('.prof-fav');
-  const el = items[1] || items[0];
+  // Open in the MIDDLE copy, not at item 0 — there has to be runway on both
+  // sides from the first frame or the first flick left runs straight off the end.
+  const el = items[profFavHome(rail, items) + 1] || items[0];
   if (el) rail.scrollLeft = el.offsetLeft - (rail.clientWidth - el.offsetWidth) / 2;
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   THE RAIL LOOPS (`profFavLoop` · `profFavSettle`)
+   ══════════════════════════════════════════════════════════════════════════
+   There is no end to reach. `profFavsHtml` emits the five discs five times over
+   and this teleports the scroll back to the middle copy by exactly ONE SET
+   WIDTH. That jump is invisible: either side of the seam is the same five
+   records in the same order, so the pixels before and after are identical and
+   the disc you were looking at is still under your thumb.
+
+   ⚠ It runs when the scroll SETTLES, not the moment you drift out of the middle
+   copy. Writing `scrollLeft` during a fling cancels the momentum in Chrome —
+   wrapping eagerly would stop the rail dead in your hand every few discs. The
+   settle timer is what buys the jump a moment when nothing is moving.
+
+   ⚠ The one exception is the EMERGENCY wrap in `profFavPaint`: if the centred
+   disc has reached the outermost copy, a stalled fling is still better than
+   running out of rail, so that one goes through immediately. With five copies
+   it should never fire — it is the backstop, not the mechanism.
+
+   ⚠ `scroll-snap-type` does not fight this. The jump is a whole number of disc
+   pitches, so it lands on an equivalent snap position and the scroller has
+   nothing to correct. */
+function profFavHome(rail, items) {
+  const n = +rail.dataset.n || 0;
+  const copies = n ? Math.round(items.length / n) : 1;
+  return (copies >= 3) ? (copies >> 1) * n : 0;
+}
+
+function profFavLoop(rail, items, best, urgentOnly) {
+  const n = +rail.dataset.n || 0;
+  const copies = n ? Math.round(items.length / n) : 0;
+  if (copies < 3) return false;                       // not a looping rail
+  const home = copies >> 1;
+  const copy = Math.min(copies - 1, Math.max(0, Math.floor(best / n)));
+  if (copy === home) return false;
+  if (urgentOnly && copy !== 0 && copy !== copies - 1) return false;
+  const setW = items[n].offsetLeft - items[0].offsetLeft;
+  if (!setW) return false;
+  rail.scrollLeft -= (copy - home) * setW;
+  return true;
+}
+
+/* ⚠ `scrollend` where it exists, a timer where it does not. The timer is not a
+   fallback nobody hits — it is also what covers a fling that decays without the
+   browser firing anything, and it is cheap: one pending timeout per rail. */
+function profFavSettle(rail) {
+  if (rail._favEnd) return;
+  rail._favEnd = 1;
+  const settle = () => {
+    const items = [].slice.call(rail.querySelectorAll('.prof-fav'));
+    if (!items.length || !rail.clientWidth) return;
+    if (profFavLoop(rail, items, profFavMid(rail, items), false)) profFavPaint(rail);
+  };
+  if ('onscrollend' in rail) rail.addEventListener('scrollend', settle);
+  rail._favSettle = () => { clearTimeout(rail._favT); rail._favT = setTimeout(settle, 180); };
+}
+
 window.profFavSync = function (rail) {
-  if (!rail || rail._favRaf) return;
+  if (!rail) return;
+  if (rail._favSettle) rail._favSettle();
+  if (rail._favRaf) return;
   rail._favRaf = requestAnimationFrame(() => { rail._favRaf = 0; profFavPaint(rail); });
 };
 
-function profFavPaint(rail) {
-  const sec = rail && rail.closest('.prof-favs');
-  if (!sec) return;
-  const items = [].slice.call(rail.querySelectorAll('.prof-fav'));
-  if (!items.length || !rail.clientWidth) return;
-  /* Measured against the rail's own scroll box, so `.prof-fav-rail` must stay
-     `position: relative` — that is what makes it each button's `offsetParent`
-     and keeps `offsetLeft` in the same space as `scrollLeft`. */
+/* ══════════════════════════════════════════════════════════════════════════
+   THE FAVOURITES WHEEL (`profFavArc`)
+   ══════════════════════════════════════════════════════════════════════════
+   The discs do not sit on a line, they sit on the rim of a BIG WHEEL whose hub
+   is a long way below the screen. Scrolling turns the wheel, so a disc leaving
+   the centre swings DOWN and away rather than sliding flat — the side discs end
+   up lower than the middle one, and tilted by however far round they have gone.
+
+   ⚠ The hub is not a made-up number. `PROF_ARC_DEG` says how far a disc has
+   turned by the time it reaches its NEIGHBOUR's slot, and the radius falls out
+   of that: R = spacing / θ. So the wheel is re-derived from the measured layout
+   every paint and stays right at any frame width — there is no magic px here to
+   go stale when the rail changes size.
+
+   ⚠ The X is left alone. A true wheel would also pull the discs horizontally
+   towards the centre (x = R·sinθ, not R·θ), but the rail's x is owned by
+   scroll-snap, and fighting the scroller for it is how a carousel starts
+   feeling slippery under a thumb. At 12° the two differ by well under a pixel.
+
+   ⚠ `u` is CLAMPED to one neighbour. Past that the drop grows fast (the second
+   neighbour would be ~100px down), and it buys nothing: a disc two slots out is
+   completely outside the rail — its near edge lands at 383px from the centre of
+   a box that is only 192px wide. The clamp is also what bounds the rail's
+   bottom padding, which is the room the drop has to live in. */
+/* ⚠ 24°, up from 12. At twelve the wheel was arithmetically real and visually
+   deniable — you had to be told it was there. Halving the radius (θ doubles, and
+   R = spacing/θ) doubles the tilt and near-quadruples the drop, because the fall
+   goes with 1−cos θ rather than with θ: 26px became 52px. That second number is
+   the one with a cost — it is the room `.prof-fav-rail`'s bottom padding has to
+   find, and the reason the padding moved with this. */
+const PROF_ARC_DEG = 24;     // how far a disc has turned once it is one slot out
+const PROF_ARC_DIM = 0.55;   // opacity given up over that same slot
+const PROF_ARC_SHR = 0.24;   // and scale — a touch deeper, so the swing reads as
+                             // going AWAY from you and not merely downward
+
+function profFavArc(rail, items) {
+  const w = rail.clientWidth;
+  if (!w || items.length < 2) return;
+  const spacing = items[1].offsetLeft - items[0].offsetLeft;
+  if (!spacing) return;
+  const step = PROF_ARC_DEG * Math.PI / 180;
+  const R    = spacing / step;                       // the hub, in the rail's own px
+  const mid  = rail.scrollLeft + w / 2;
+  /* ⚠ The class is what turns OFF the CSS transition. The discrete
+     `.prof-fav` / `.is-mid` transform pair still ships as the no-JS base, and
+     its .28s ease would smear every one of these per-frame writes into mush. A
+     transform driven straight off scrollLeft needs no easing — the scroll IS
+     the easing. */
+  rail.classList.add('is-arc');
+  items.forEach(el => {
+    const dx  = el.offsetLeft + el.offsetWidth / 2 - mid;
+    const u   = Math.max(-1, Math.min(1, dx / spacing));
+    const th  = u * step;
+    const dy  = R * (1 - Math.cos(th));              // how far the rim has fallen
+    const s   = 1 - PROF_ARC_SHR * Math.abs(u);
+    el.style.transform = 'translateY(' + dy.toFixed(2) + 'px) rotate(' +
+                         (th * 180 / Math.PI).toFixed(2) + 'deg) scale(' + s.toFixed(3) + ')';
+    el.style.opacity = (1 - PROF_ARC_DIM * Math.abs(u)).toFixed(3);
+  });
+}
+
+/* Their own words about the centred record, if there are any.
+   ⚠ Read from `profReviewLog(P)` — the SAME log the review history further
+   down the page is built from — so the two can never quote the same person
+   differently. ⚠ Cached per handle on the section: the log walks the archive to
+   build itself, and this runs on every scroll frame. */
+function profFavReview(sec, album) {
+  const P = window.PROFILE || {};
+  const key = String(P.handle || P.name || 'you');
+  if (sec._rvKey !== key) {
+    sec._rvKey = key;
+    sec._rvMap = new Map();
+    const log = (typeof profReviewLog === 'function') ? profReviewLog(P) : [];
+    log.forEach(e => { if (e && e.album && e.text) sec._rvMap.set(e.album.album, e); });
+  }
+  return sec._rvMap.get(album) || null;
+}
+
+/* Which disc is under the middle of the rail.
+   ⚠ Measured against the rail's own scroll box, so `.prof-fav-rail` must stay
+   `position: relative` — that is what makes it each button's `offsetParent` and
+   keeps `offsetLeft` in the same space as `scrollLeft`. */
+function profFavMid(rail, items) {
   const mid = rail.scrollLeft + rail.clientWidth / 2;
   let best = 0, bd = Infinity;
   items.forEach((el, i) => {
     const d = Math.abs(el.offsetLeft + el.offsetWidth / 2 - mid);
     if (d < bd) { bd = d; best = i; }
   });
+  return best;
+}
+
+function profFavPaint(rail) {
+  const sec = rail && rail.closest('.prof-favs');
+  if (!sec) return;
+  const items = [].slice.call(rail.querySelectorAll('.prof-fav'));
+  if (!items.length || !rail.clientWidth) return;
+  /* ⚠ The emergency wrap, and it re-reads the centre afterwards rather than
+     recursing: the jump moves `scrollLeft` by a whole set, so an index found
+     before it is measured against a position that no longer exists. */
+  const first = profFavMid(rail, items);
+  const best  = profFavLoop(rail, items, first, true) ? profFavMid(rail, items) : first;
   items.forEach((el, i) => el.classList.toggle('is-mid', i === best));
+  profFavArc(rail, items);
 
   const set  = (sel, v) => { const el = sec.querySelector(sel); if (el) el.textContent = v; };
   const setH = (sel, v) => { const el = sec.querySelector(sel); if (el) el.innerHTML = v; };
+  /* The review line HIDES rather than emptying: an empty box still holds its
+     line-height, and the panel would twitch a row taller every time you scrolled
+     onto a record they never wrote about. */
+  const setRv = e => {
+    const el = sec.querySelector('.prof-fav-rv');
+    if (!el) return;
+    el.textContent = e ? e.text : '';
+    el.hidden = !e;
+  };
   const name = items[best].dataset.alb;
   const a = name && (window.ARCHIVE || []).find(x => x.album === name);
   if (!a) {
@@ -7413,8 +7607,10 @@ function profFavPaint(rail) {
     set('.prof-fav-artist', 'Tap to add a favourite');
     setH('.prof-fav-stars', '');
     set('.prof-fav-meta', '');
+    setRv(null);
     return;
   }
+  setRv(profFavReview(sec, a.album));
   /* The whole reason the rail exists: a cover alone does not tell you what an
      album is. ⚠ The YEAR sits with the title — it is part of naming a record,
      not a statistic about it — and the genre is gone. It said little at this
