@@ -7817,14 +7817,22 @@
   /* ⚠ NO horizontal padding, ever. Percentage `flex-basis` resolves against the
      flex container's CONTENT box, so side padding of 19% made each disc 62% of
      the remaining 62% — 38.4% of the rail — and NOTHING could line up: the
-     centring arithmetic below is written in percentages of the rail, and padding
-     silently redefines what a percentage means here. The end spacers do the same
-     job as elements, in the same units as the discs. */
-  /* ⚠ The bottom padding is the ARC's headroom. The rail is
-     `overflow-y: hidden`, so it is the only thing standing between a
-     swung-down neighbour and being sliced in half — it must stay >= FAV_ARC_Y
-     (app.js) plus the disc's own shadow. */
-  padding: 4px 0 34px;
+     centring arithmetic is written in percentages of the rail, and padding
+     silently redefines what a percentage means in here. */
+  /* ⚠ The bottom padding is THE ROOM THE ARC FALLS INTO, not spacing. The rail
+     is `overflow-y: hidden` (it has to be — `overflow-x: auto` forces the other
+     axis to clip), so a disc swung down by `profFavArc` is cut off at the
+     padding edge. A percentage of the rail's WIDTH, because that is what the
+     drop is — R(1−cos θ) as a share of the disc spacing, and the spacing is 65%
+     of the rail — so the two scale together and this never needs a second number
+     when the frame width changes.
+     ⚠⚠ IT IS PAIRED WITH `PROF_ARC_DEG`. At 12° this was 8%; at 24° the drop
+     nearly quadrupled (1−cos θ, not θ) and 8% clipped the bottom off both side
+     discs. Move one, measure, move the other — the clearance at 24°/16% is
+     5.3px.
+     ⚠ Vertical padding only. Horizontal padding here is still forbidden for
+     the reason above it. */
+  padding: 4px 0 16%;
   /* ⚠ FULL BLEED — cancels `.prof2-scroll`'s 12px side padding so the rail runs
      edge to edge while its heading and info panel stay inset with everything
      else. A carousel that stops short of the screen reads as a boxed-in list;
@@ -7836,27 +7844,30 @@
   margin-inline: -12px;
 }
 .prof-fav-rail::-webkit-scrollbar { display: none; }
-/* ⚠ `.prof-fav-pad` is GONE, with the ends it padded. The rail loops (three
-   copies of the same five discs, see FAV_REPS / profFavPeriod), so every disc
-   already has a copy of the whole set either side of it — better runway than a
-   spacer, and no arithmetic to keep in step with the disc width. Centring is
-   scroll-snap's job now.
-   ⚠ The discs are 46% wide, down from 62%: three big circles in a row left no
-   room to read the arc they sit on. */
+/* ⚠ `.prof-fav-pad` is GONE, along with the ends it padded. The spacers existed
+   so the FIRST and LAST disc could reach the centre — a looping rail has
+   neither, and a spacer sitting at one of the seams would open a hole in the
+   middle of the wheel. See `profFavLoop` in app.js. */
 .prof-fav {
   position: relative;            /* the centre hole is absolute inside it */
-  flex: 0 0 46%; aspect-ratio: 1;
+  flex: 0 0 62%; aspect-ratio: 1;
   scroll-snap-align: center;
   padding: 0; border: none; background: none; border-radius: 50%;
   cursor: pointer;
-  will-change: transform;
-  /* ⚠ NO transition, and this pose is only the pre-JS fallback: `profFavPaint`
-     writes transform and opacity inline on every scroll frame, so a transition
-     here would chase a value it is already being given. The arc's shape lives
-     in FAV_ARC_Y / FAV_ARC_DEG / FAV_ARC_SHRINK (app.js), not here. */
-  transform: scale(.8) translateY(20px); opacity: .5;
+  /* The two neighbours are present but clearly not the subject — smaller and
+     dimmed, so the rail reads as one album with context either side of it.
+     ⚠ This pair is the NO-JS BASE only; `profFavArc` writes transform and
+     opacity inline every scroll frame and `.is-arc` drops the transition. */
+  transform: scale(.82); opacity: .5;
+  transition: transform .28s cubic-bezier(.22,1,.36,1), opacity .28s;
 }
-.prof-fav.is-mid { transform: none; opacity: 1; }
+.prof-fav.is-mid { transform: scale(1); opacity: 1; }
+/* ⚠ Once `profFavArc` has run, the transform is written inline every scroll
+   frame and the transition above has to go — .28s of easing on a value that is
+   already being recomputed from `scrollLeft` 60 times a second is just smear.
+   The two rules above stay as the no-JS base, which is why this is a class the
+   arc adds rather than a `transition: none` on `.prof-fav` outright. */
+.prof-fav-rail.is-arc .prof-fav { transition: none; }
 .prof-fav-img {
   display: block; width: 100%; height: 100%; border-radius: 50%;
   background-size: cover; background-position: center; background-color: #0c0b0a;
@@ -7875,19 +7886,6 @@
 }
 .prof-fav-img.prof-fav--spin { animation: v3spin 3.2s linear infinite; }
 
-/* ⚠ The owner's own line, under the album's numbers — and the one thing in this
-   panel set in DM Sans (--font-main). Everything above it is furniture: a
-   title, an artist, a star row, a count. This is a person talking, and it reads
-   as one because the typeface changes. Clamped to two lines: the panel sits
-   between the rail and the next section and cannot be allowed to reflow the
-   page as you swipe. */
-.prof-fav-review {
-  margin-top: 7px;
-  font-family: var(--font-main); font-size: 11.5px; font-weight: 400;
-  line-height: 1.45; color: var(--pf-fg2);
-  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
-  overflow: hidden;
-}
 .prof-fav--empty {
   display: flex; align-items: center; justify-content: center;
   background: #0c0b0a; box-shadow: inset 3px 4px 10px var(--pf-well-dk);
@@ -7897,11 +7895,21 @@
 /* The panel under the rail. Written by `profFavPaint` from whichever disc is
    centred — the markup carries no album at all, so it cannot go stale against
    the rail's scroll position. */
-/* ⚠ NEGATIVE margin, on purpose. The rail's 34px of bottom padding is headroom
-   for the swung-down neighbours, but the gap you SEE is measured from the
-   CENTRED disc, which never uses it — left alone the panel sat a third of a
-   disc too low. This claws back most of the headroom and leaves ~16px. */
-.prof-fav-info { text-align: center; margin-top: -18px; padding: 0 8px; min-height: 92px; }
+/* ⚠ The NEGATIVE margin is deliberate and it is the arc's fault. The rail now
+   carries ~58px of bottom padding so the swung-down discs are not clipped, but
+   that room is only USED at the two edges, where the side discs fall into it —
+   under the middle it is a hole, and the album title was left floating a long
+   way from the record it names. Pulling the panel back up reclaims it. The text
+   is centred and the side discs are slivers at the extreme left and right, so
+   the two live in the same band without ever meeting; the panel is after the
+   rail in the DOM, so on a very long title it wins the overlap anyway.
+   ⚠ `min-height` covers the panel WITH a two-line review in it, so the block
+   does not grow and shrink as you scroll between a record they wrote about and
+   one they didn't. The line hides, the box does not move. */
+.prof-fav-info {
+  text-align: center; position: relative;
+  margin-top: -30px; padding: 0 8px; min-height: 96px;
+}
 /* Title and year on one line. The year is set quieter and lighter so it reads as
    part of naming the record rather than as a second fact competing with it. */
 .prof-fav-alb {
@@ -7927,6 +7935,26 @@
   font-size: 9.5px; letter-spacing: .04em; color: var(--pf-fg2);
   font-family: var(--font-mono);
 }
+/* ── What they wrote about it ─────────────────────────────────
+   The serif italic is the app's REVIEW VOICE — the same Crimson Text the review
+   composer and `.ntf-quote` are set in — so a line of someone's writing looks
+   like writing wherever it turns up, rather than like another field of the
+   record's metadata. It is the one thing in this panel that is theirs and not
+   the album's, which is exactly why it must not be set in the same face as the
+   title and the counts above it.
+   ⚠ Two lines, then ellipsis. The full text lives in the review history below;
+   under a disc this is a taste, and an unclamped paragraph would push the rail
+   and the next section around as you scroll. */
+.prof-fav-rv {
+  margin: 7px auto 0; max-width: 30ch;
+  font-family: 'Crimson Text', Georgia, serif; font-style: italic;
+  font-size: 13px; line-height: 1.35; color: var(--pf-fg2);
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+/* `hidden` on a flex/box display value needs saying twice — `display` in the
+   rule above would otherwise win over the attribute's UA `display: none`. */
+.prof-fav-rv[hidden] { display: none; }
 /* ⚠ One menu per slot, all centred over the rail rather than hung off their own
    disc: only the CENTRED album is actionable, so that is the only place a popup
    ever needs to appear. They also sit outside the rail — it is
@@ -8703,7 +8731,14 @@
 /* ── SHOP SCREEN — bento sheets ───────────────────────────────
    The system in one line: a section is a SHEET, a sheet is TILES that butt
    together over a 3px seam of screen bg. Density inside a sheet, air between
-   sheets. Three sheet types only — `--bento`, `--shelf`, `--row`.
+   sheets. Four sheet types only — `--bento`, `--shelf`, `--row`, `--list`.
+
+   ⚠️ `--list` was the fourth, and it took an argument to earn its place: the
+   other three are trays of SWATCHES, things you judge at a glance, and an event
+   is not one. It is four facts read in order — who, what, where-and-when, how
+   much — which is a ROW, not a square. Anything that can be judged by looking
+   at it belongs in one of the first three; only reach for a fifth type when
+   something genuinely cannot be read in any of the four.
 
    ⚠️ Colour comes from the TILE, not the sheet. Frames and badges pass a
    `--tint` (an "r,g,b" triple) and the field fills with a soft wash of it; the
@@ -8711,16 +8746,94 @@
    to a product. Gold stays reserved for what you can act on. */
 .shop-scroll { padding: 4px 12px 75px; }
 
-/* ⚠️ 34px, not Settings' 26px. This is the Apple-Store half of the brief
-   showing up in the type: a store opens with its name set big and tight, and
-   the shop is the one screen here that is not a list of your own stuff. */
-.shop-title {
-  margin: 6px 0 1px; font-size: 34px; font-weight: 800;
-  letter-spacing: -1.2px; line-height: 1; color: var(--sd-ink);
+/* ── The store's name, DRAWN and not set ──────────────────────
+   ⚠️ It used to be DM Sans 800 at 34px — the Apple-Store half of the brief
+   showing up in the type. It is now spelled in the dot language instead (see
+   SHOP_WORD in screens.js), for a reason worth keeping: there is no wordmark
+   FONT in this project. The SPINDECK lockup is a drawn PNG, so the only way for
+   a heading to sound like the brand is to be built from the brand's own module
+   — the same rounded square, the same 14% corner, the same currentColor tint as
+   the bag in the nav scoop.
+   ⚠️ Sized by HEIGHT, never width. The mark is a 19×5 grid in a viewBox, so
+   one number sets the cap height and the width follows; `width: auto` is what
+   stops a flex or grid parent from stretching the dots off their own pitch.
+   ⚠️ The lede under it is gone on purpose. "Make Spindeck yours" told you
+   nothing the shelves below don't say better, and the aisle bar needs the room
+   more — a store's tagline is the one line a shopper never reads. */
+.shop-title { margin: 8px 0 2px; }
+.shop-title-mark {
+  display: block;
+  height: 34px; width: auto;
+  color: var(--sd-ink);
 }
-.shop-lede {
-  margin-bottom: 16px;
-  font-family: var(--font-mono); font-size: 9.5px; color: var(--sd-ink3);
+/* The word itself, for screen readers and for find-in-page. SD_DOTS ships its
+   svg `aria-hidden`, so without this the shop screen has no name at all. */
+.shop-sr {
+  position: absolute; width: 1px; height: 1px;
+  margin: -1px; padding: 0; border: 0;
+  overflow: hidden; white-space: nowrap; clip-path: inset(50%);
+}
+
+/* ── The aisle bar ────────────────────────────────────────────
+   Four categories, and the only STICKY thing on the screen: the name of the
+   store is a greeting you read once and let scroll away, but the aisle you are
+   standing in is where you ARE, and you need it to leave.
+
+   ⚠️ It needs an opaque background of its own. `.shop-scroll` paints nothing,
+   so a transparent bar would have event art and theme swatches sliding through
+   it — and it has to be `--sd-bg`, NOT `--bg`. `--bg` is a global that stays
+   dark on both shells (`.s-home-v3` hard-codes `#111116` and the light shell
+   never redefines it), so a bar painted with it dropped a black band across
+   Float·Light and swallowed three of the four tabs. `--sd-bg` is the token that
+   actually tracks the shell, which is the whole reason it exists.
+   ⚠️ Bled to the frame edges and padded back, the `.shop-sheet--shelf` idiom —
+   a sticky bar that stopped 12px short of each edge would leave two columns of
+   screen for the tiles to show through as they pass under it. */
+.shop-cats {
+  position: sticky; top: 0; z-index: 4;
+  display: flex; gap: 4px;
+  margin: 0 -12px 2px; padding: 7px 12px 9px;
+  background: var(--sd-bg);
+  overflow-x: auto; scrollbar-width: none;
+}
+.shop-cats::-webkit-scrollbar { display: none; }
+.shop-cat {
+  flex: 0 0 auto;
+  padding: 6px 12px; border-radius: 999px;
+  border: 1px solid rgba(232,226,214,.14); background: none;
+  font-family: var(--font-mono); font-size: 9.5px; font-weight: 700;
+  letter-spacing: .09em; text-transform: uppercase;
+  color: var(--sd-ink3); cursor: pointer; white-space: nowrap;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.s-home-v3--light .shop-cat { border-color: rgba(26,18,8,.14); }
+.shop-cat:hover { color: var(--sd-ink); }
+/* Gold is reserved for what you can act on, and the aisle you are in is the one
+   thing on this bar that is not an offer — so the ON state takes the fill and
+   the other three stay outlines. */
+.shop-cat.is-on {
+  background: var(--star, #e8a83c); border-color: var(--star, #e8a83c); color: #1a1208;
+}
+.shop-cat:focus-visible { outline: 2px solid var(--star, #e8a83c); outline-offset: 2px; }
+
+/* ── The filter ───────────────────────────────────────────────
+   One attribute on the screen, one on everything that belongs to an aisle, and
+   nothing in JS but the write. A thing can be in TWO aisles
+   (`data-cat="general events"`), which is how General shows a couple of events
+   without a second copy of the tile to keep in step — and anything with NO
+   `data-cat` (the back pill, the title, the bar itself, the footnote) is never
+   filtered at all.
+
+   ⚠️ The tabs carry `data-go`, not `data-cat`. They live inside `.shop-scroll`
+   and a tab that could filter itself away would be a one-way door.
+   ⚠️ Four rules rather than one: CSS cannot compare an ancestor's attribute
+   value against a descendant's, so each aisle has to name itself. Add a fifth
+   category and add a fifth line here. */
+.s-shop[data-cat="general"] .shop-scroll [data-cat]:not([data-cat~="general"]),
+.s-shop[data-cat="events"]  .shop-scroll [data-cat]:not([data-cat~="events"]),
+.s-shop[data-cat="themes"]  .shop-scroll [data-cat]:not([data-cat~="themes"]),
+.s-shop[data-cat="badges"]  .shop-scroll [data-cat]:not([data-cat~="badges"]) {
+  display: none;
 }
 
 .shop-sec-hd {
@@ -8985,6 +9098,72 @@
 }
 .shop-tile--sm .shop-field { width: 42px; height: 42px; }
 
+/* ── sheet: --list ──
+   Full-width rows, same 3px seam. Nothing else in the shop stacks vertically,
+   because nothing else in the shop is a sentence. */
+.shop-sheet--list { display: flex; flex-direction: column; gap: 3px; }
+
+/* An EVENT. Art, then the three lines, then the price — left to right in the
+   order you ask the questions.
+   ⚠️ The art is a `background-image` on a fixed box, not an <img>: it is a
+   crop of a record sleeve at 46px, so cover-and-clip is the whole job and an
+   <img> would only add a second thing to size. */
+.shop-tile--event {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 11px 9px 9px;
+  background: var(--sd-card); box-shadow: var(--sd-card-hi);
+}
+.shop-ev-art {
+  position: relative; flex: 0 0 46px; width: 46px; height: 46px;
+  border-radius: 12px; overflow: hidden;
+  background: rgba(232,226,214,.06) center / cover no-repeat;
+  transition: filter .2s, opacity .2s;
+}
+/* The Pro flag sits ON the art rather than beside the price, so the row reads
+   as locked before you have got as far as the money. */
+.shop-ev-pro {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  padding: 2px 0; text-align: center;
+  font-family: var(--font-mono); font-size: 7px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase;
+  background: var(--star, #e8a83c); color: #1a1208;
+}
+/* `min-width: 0` is what lets the three lines ellipsis instead of shoving the
+   price off the row — a flex item's default min-width is its CONTENT. */
+.shop-ev-line { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; }
+.shop-ev-who, .shop-ev-what, .shop-ev-where {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.shop-ev-who   { font-size: 13px; font-weight: 800; letter-spacing: -.2px; color: var(--sd-ink); }
+.shop-ev-what  { font-size: 10.5px; color: var(--sd-ink2); }
+.shop-ev-where { font-family: var(--font-mono); font-size: 8.5px; color: var(--sd-ink3); }
+
+/* ── What Pro actually buys you here ──
+   ⚠️ BOTH states ship in the markup and CSS picks one, gated on `body.sd-pro`
+   like every other plan gate. The alternative — rendering only the state you
+   are entitled to — would need a re-render on every plan change, and the plan
+   change is exactly the moment this screen is being demonstrated: the toolbar's
+   Free/Pro switch unlocks the whole list in front of you, with the art coming
+   up out of its wash, and nothing rebuilds. That IS the pitch.
+   ⚠️ `.shop-owned` is gated with the button. Buy a ticket as Pro, drop back to
+   Free, and a bare "Going" pill would otherwise be left sitting on a row you
+   are no longer allowed into. */
+.shop-lock {
+  flex-shrink: 0; white-space: nowrap;
+  padding: 5px 11px; border-radius: 999px;
+  border: 1px dashed rgba(232,226,214,.22);
+  font-family: var(--font-mono); font-size: 9.5px; font-weight: 700;
+  letter-spacing: .04em; color: var(--sd-ink3);
+}
+.s-home-v3--light .shop-lock { border-color: rgba(26,18,8,.22); }
+.shop-tile--event.is-pro .shop-buy,
+.shop-tile--event.is-pro .shop-owned { display: none; }
+.shop-tile--event.is-pro .shop-ev-art { filter: saturate(.25); opacity: .62; }
+body.sd-pro .shop-tile--event.is-pro .shop-buy,
+body.sd-pro .shop-tile--event.is-pro .shop-owned { display: inline-block; }
+body.sd-pro .shop-tile--event.is-pro .shop-lock { display: none; }
+body.sd-pro .shop-tile--event.is-pro .shop-ev-art { filter: none; opacity: 1; }
+
 /* The field — where the product sits. Themes fill it with their own palette
    (inline), everything else washes it with the tile's `--tint`. */
 .shop-field {
@@ -9060,5 +9239,5 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .shop-owned, .shop-buy, .shop-pro-btn { transition: none; }
+  .shop-owned, .shop-buy, .shop-pro-btn, .shop-cat, .shop-ev-art { transition: none; }
 }

@@ -58,7 +58,7 @@ not a state at all any more — see *Fullscreen is the album page*.
 | `playlist` | Playlist Page (detail) | Float·Dark, Float·Light |
 | `notifications` | Notifications (activity inbox) | Float·Dark, Float·Light |
 | `settings` | Settings | Float·Dark, Float·Light |
-| `shop` | Shop (in-app goods; opens with a live Pro bento) | Float·Dark, Float·Light |
+| `shop` | Shop — four aisles: General, Events, Themes, Badges | Float·Dark, Float·Light |
 
 `auth`/`onboarding`/`song` use the older `.app-screen` component CSS re-skinned to
 the current palette via the **`sd-theme-dark` / `sd-theme-light`** scope classes
@@ -775,6 +775,26 @@ Each album object:
 Wall, Feed (Albums), and Album Page use `get html()` so content is evaluated fresh each render.
 
 Home screen data is injected post-render by `populateHomeData(el)` in `app.js` (called inside `requestAnimationFrame` after every `renderViewer()`).
+
+### ⚠️ NEVER put a bare backtick inside a screen's template literal
+
+Every screen in `screens.js` is one big `` ` ``-quoted template, and the comments
+**inside** the markup are inside that template too. A backtick in one of them —
+the `` `.shop-model` `` style this file uses everywhere else — **closes the
+template early**. What follows parses as property access and arithmetic on the
+string, so the file still loads clean and nothing looks wrong until the screen is
+actually rendered:
+
+```
+product — see `.shop-model` in app.css. -->      →  ReferenceError: model is not defined
+                                                    ("…").shop - model
+```
+
+The throw happens inside `navigate()` → `renderViewer()`, so **the whole render
+dies and the tap looks like a dead button.** This shipped once and cost the shop
+screen entirely. Escape it (`` \` ``) or, better, write the comment without
+backticks. Backticks are fine in ordinary `/* */` code comments — only the ones
+sitting inside a template literal bite.
 
 ---
 
@@ -1538,6 +1558,64 @@ the pill `sdBuy` creates carries.
   the first reaction pushes onto `_sceneQ` and starts `sceneFlush`'s 400ms
   interval, which then has no pet to flush to and ticks forever.
 
+#### The four aisles (`SHOP_CATS` · `shopCat` · `data-cat`)
+
+**General is not a category, it is the FRONT of the store** — a little of each of
+the other three. Events, Themes and Badges are the full shelf.
+
+| Tab | Shows |
+|-----|-------|
+| General | Pro showcase · Pro pitch · 2 featured events · 4 themes · 4 badges |
+| Events | the Pro pitch + all 6 events |
+| Themes | all 6 themes + the 4 frames |
+| Badges | all 8 badges |
+
+- **A thing can be in two aisles at once** — `data-cat="general events"`. That's
+  how the storefront shows the *same tile* the Events tab does, instead of a
+  second copy that drifts. **No `data-cat` at all = never filtered** (the back
+  pill, the title, the bar, the footnote).
+- ⚠️ **The filter is CSS, not a re-render.** `shopCat` writes one attribute on
+  every `.s-shop` and the `.s-shop[data-cat=…]` block does the hiding. A rebuild
+  would tear down the Pro showcase — a **live bento with the shelf wheel bound
+  to it** — four times a browse, and reset every tile you'd already bought.
+- ⚠️ **Every shell, not just the one you clicked.** Float·Dark and Float·Light
+  are the same screen in two themes; a filter that moved on one would read as
+  two different storefronts side by side. Same reason the plan writes to `body`.
+- ⚠️ **The tabs carry `data-go`, not `data-cat`** — they live inside
+  `.shop-scroll`, and a tab that could filter itself away is a one-way door.
+- ⚠️ **`window.SHOP_CAT`, not a local.** Buying Pro calls `renderViewer()`; a
+  tab that snapped back to General every purchase would be its own bug.
+- ⚠️ **The bar is `--sd-bg`, never `--bg`.** `--bg` stays dark on both shells
+  (`.s-home-v3` hard-codes `#111116`), so it painted a black band across
+  Float·Light and swallowed three of the four tabs. `--sd-bg` tracks the shell.
+- ⚠️ **Adding a fifth category means a fifth line in that CSS block** — CSS
+  can't compare an ancestor's attribute against a descendant's, so each aisle
+  has to name itself.
+- **Frames live under Themes**, not an aisle of their own: four categories was
+  the brief, and a ring around your favourites is the look of your page the same
+  way a theme is.
+
+#### Events — tickets, and what Pro actually unlocks (`SHOP_EVENTS`)
+
+The one thing in the shop that **is not a cosmetic**. Everything else dresses up
+your page; a ticket gets you into a room — which is why it gets `--list`.
+
+- **`pro: true` renders BOTH states** — the locked `.shop-lock` pill *and* the
+  real price button — and **`body.sd-pro` picks one** in CSS. ⚠️ This is the
+  point: flipping the toolbar's Free/Pro switch unlocks the whole list in front
+  of you, art coming up out of its wash, with **nothing rebuilt**. Gating in JS
+  would need a re-render, and a re-render loses the shelf wheel.
+- ⚠️ **`.shop-owned` is gated with the button.** Buy as Pro, drop to Free, and
+  an ungated "Going" pill would sit on a row you're no longer allowed into.
+- **`feat: true` is what General shows — two of them, one of each kind.** The
+  storefront gets two rows to say both *there are tickets here* and *some are
+  Pro's*, so it can't spend them on two of the same thing.
+- **The art is album art already in `images/`** — artists whose records are in
+  the archive, so the storefront never bills a record the app has never heard of.
+- The Pro pitch row rides along to the Events tab (`data-cat="general events"`):
+  that's the one tab where half the list is locked, so it's where the offer
+  answers a question the user is already asking.
+
 #### The sheet system — the bento crossed with an app store
 
 The brief was "our bento mixed with the Apple Store". Those pull opposite ways:
@@ -1551,7 +1629,14 @@ together over a **3px seam of screen bg**, one outer radius, `overflow: hidden`.
 |-------|-------|-------|
 | `--shelf` | horizontal rail, bleeds and peeks | Themes |
 | `--row` | N equal tiles across | Frames, Badges |
+| `--list` | full-width rows, stacked | Events |
 | `--pro` | a single row | the Pro pitch + price |
+
+- ⚠️ **`--list` is the only sheet that is not a tray of swatches, and that is
+  the bar a fifth type has to clear.** The other three hold things you judge at
+  a glance; an event is four facts read **in order** — who, what,
+  where-and-when, how much — which is a row, not a square. If a new product can
+  be understood by looking at it, it belongs in one of the existing three.
 
 - **`--shelf` is `.v3-aa-row` unchanged** — `margin: 0 -12px` + `padding: 0 12px`
   + `scroll-padding-left: 12px` so a snap doesn't scroll the padding away. The
@@ -1948,9 +2033,19 @@ flow below knows they are there. The CTA row landed on top of them.
 - **Gold is reserved for what you can act on** — buy buttons, prices, and the
   armed state of the Pro picker. It is not used as decoration anywhere on this
   screen.
-- ⚠️ **`.shop-title` is 34px, not Settings' 26px.** That's the store half of the
-  brief showing up in the type: the shop is the one screen that isn't a list of
-  your own stuff, so it opens with its name set big and tight (-1.2px).
+- ⚠️ **The title is DRAWN, not set** (`SHOP_WORD` in `screens.js`,
+  `.shop-title-mark` in `app.css`). It used to be DM Sans 800 at 34px. There is
+  **no wordmark font in this project** — the SPINDECK lockup is
+  `images/spindeck-wordmark.png`, a drawn mark with no typeface behind it — so
+  the only way for a heading to sound like the brand is to be *built from the
+  brand's module*. `SD_DOTS.svg` spells `SHOP` on a 19×5 grid in the same
+  rounded square, same 14% corner, same `currentColor` tint as the bag in the
+  nav scoop. Size it by **height**; the width follows the viewBox.
+  ⚠️ `SD_DOTS` ships its `<svg>` `aria-hidden`, so the word rides beside it in
+  a `.shop-sr` span. **Change the pattern, change that text.**
+- ⚠️ **There is no lede.** "Make Spindeck yours." is gone and should not come
+  back — it told you nothing the shelves say better, and the aisle bar needs the
+  room. A store's tagline is the one line a shopper never reads.
 - **The price is the button** (`.shop-buy`) — there's no second word to read,
   and no cart to put anything in. `sdBuy` swaps it for an **"Owned" pill of the
   same footprint** so the row doesn't reflow. Nothing is charged or persisted.
@@ -1965,6 +2060,11 @@ flow below knows they are there. The CTA row landed on top of them.
   selling. Each row is the chip itself: there is nothing to picture beyond the
   thing you would wear. Only priced tags are listed; the free ones are already
   yours, which the section's sub-line says.
+  and no cart to put anything in. `sdBuy` swaps it for a pill of the **same
+  footprint** so the row doesn't reflow. The word on that pill is the tile's to
+  choose via **`data-owned`**: cosmetics become `Owned`, a ticket becomes
+  `Going`, because a night out is not a thing you own. Nothing is charged or
+  persisted.
 - Everything is placeholder: invented names and prices, art is CSS. Themes reuse
   the `Funky 01` name the Settings row already shows.
 
@@ -2973,7 +3073,7 @@ the texture does more of that work than the label can.
   profile the mockup deals — personas, a random visitor, a friend's page —
   arrives without the field, and a row empty on every page but your own reads as
   broken rather than unused. Seeded off the handle through `profMix(dzSeed(…))`,
-  same as `profFavLine`; ⚠️ the mix step is not optional (see `profReviewLog`).
+  same as `profFavReview`; ⚠️ the mix step is not optional (see `profReviewLog`).
 - `SD_TAG_MAX` = **3** worn at once. ⚠️ **`profTagsHtml` renders INSIDE
   `.prof-canvas`**, in the 96-unit compartment the card grew for it — a strip
   floating *under* the card read as a caption about it rather than as part of
@@ -3013,109 +3113,28 @@ follow control is expected.
   and the dots plus "FOLLOW" want ~58. 17% gives ~61px and still starts at 81.5%,
   clear of the name banner, which ends at 67.8% (measured clearance: 43.7px).
 
-#### Favourite albums — a rail on an ARC (`profFavsHtml` · `profFavPaint`)
+#### Favourite albums — an endless wheel (`profFavsHtml` · `profFavPaint`)
 
-Five small wells traced into the bottom of the card became **discs on a curve,
-one centred and two swung down either side**, swipeable, with a panel
-underneath. At the old size **the cover was all you got** — no title, no artist,
-no year — and a cover is not enough to know an album by. The panel says album,
-artist, stars, and year · genre · review count.
-
-⚠️ **The arc is drawn in JS, from the live scroll offset** — `profFavPaint`
-writes `transform` (translateY · rotate · scale) and `opacity` inline on every
-scroll frame. `t` is how many SLOTS a disc is from the middle of the rail,
-**fractional**, which is what makes the rail read as *rotating* under your thumb
-instead of two discs cross-fading between fixed poses; a class can only ever say
-"centre or not", and that is the difference between an arc and a line. Drop is
-`t²`, so the fall-off is a circle rather than a wedge. Shape lives in three
-constants above `profFavPaint`: `FAV_ARC_Y` (30px per slot), `FAV_ARC_DEG` (13°)
-and `FAV_ARC_SHRINK` (0.2).
-
-- ⚠️ **`.prof-fav` therefore has NO `transition`** on transform or opacity — one
-  would chase a value it is already being handed every frame, and the rail would
-  feel like syrup. Its static rule is only the pre-JS fallback pose.
-- ⚠️ **`FAV_ARC_Y` is paid for in `.prof-fav-rail`'s `padding-bottom` (34px).**
-  The rail is `overflow-y: hidden`; a disc swung further down than that padding
-  is simply sliced off. Change one, change the other.
-- ⚠️ **`.prof-fav-info` takes a NEGATIVE `margin-top` (-18px)** to claw that
-  headroom back. The gap you *see* is measured from the CENTRED disc, which
-  never uses the padding, so without it the panel sits a third of a disc low.
-- **The discs are 46% wide, not 62%** — three big circles in a row left no room
-  to read the curve they sit on. ⚠️ The disc width, the `gap` and
-  `.prof-fav-pad` are ONE piece of arithmetic: `pad + gap + half a disc = 50%`.
-  Redo it whenever the width changes.
-- The heading is **centred** (`.prof-favs .prof-sec-hd`): the rail centres on one
-  disc and the panel under it is centred text, so a left-aligned heading was the
-  only thing on the block off the axis.
-
-##### The rail LOOPS — no end in either direction
-
-`profFavsHtml` emits the same five discs **`FAV_REPS` = 3 times**, and
-`profFavPaint` keeps the scroll offset inside the middle copy by adding or
-subtracting exactly **one period**. A jump of one period lands on the identical
-disc at the identical sub-pixel offset, so nothing moves on screen — the rail
-simply never runs out. Five records have no natural end to stop at, so it hasn't
-got one.
-
-- ⚠️ **Three copies is the minimum.** The middle one is what you ride and the
-  outer two are the runway the teleport moves between; with two, the seam is
-  inside the viewport.
-- ⚠️ **The period is MEASURED (`profFavPeriod`), not computed.** The disc width
-  is a percentage of the rail and the `gap` is not, so only the DOM knows what a
-  copy comes to. `data-fav-n` on the rail is the count of distinct slots.
-- ⚠️ **The wrap thresholds sit half a copy inside the outer copies** (`< 0.5×`
-  and `> 2.5×` the period), not at the seam. Wrapping the instant you cross a
-  boundary means wrapping under a finger resting on it, and the rail flickers.
-- ⚠️ **The wrap runs BEFORE `mid` is read.** Everything else in the paint is
-  measured off `scrollLeft`, and reading it either side of a teleport gives two
-  different answers.
-- ⚠️ **Assigning `scrollLeft` fires another scroll event**, which re-enters
-  through `profFavSync`. Harmless: that is rAF-throttled and the new offset is
-  already in range, so the second pass wraps nothing.
-- ⚠️ **`.prof-fav-pad` is gone**, with the ends it padded. A looping rail has a
-  copy of itself either side of every disc — better runway than a spacer, and no
-  arithmetic to keep in step with the disc width. `profFavStart` opens on
-  **disc 2 of copy 2** (`items[n + 1]`), so the page still opens on the album it
-  always did.
-- Every copy is identical markup: `data-i` is still the slot, so a tap on copy 3
-  edits the same favourite as a tap on copy 1.
-
-##### The panel says what THEY said (`profFavLine`)
-
-Under the stars and the review count sits the owner's own line about that record,
-and it is the one thing in the panel set in **DM Sans** (`--font-main`) —
-everything above it is furniture (a title, an artist, a star row, a count) and
-this is a person talking, so the typeface changes.
-
-- ⚠️ **Seeded off handle + album**, and drawn from the same `PROF_RV_LINES` the
-  review history uses: two places quoting the same person must not sound like two
-  different people, and the disc has to say the same thing every time you swipe
-  back to it.
-- ⚠️ **`profMix` before the modulo** — `dzSeed` is a rolling hash and is linear
-  under a small remainder. Same trap as `profReviewLog`; see the note there.
-- ⚠️ Read from `window.PROFILE`, which is whichever profile is on screen — a
-  friend's page swaps that object, so the quote follows the page rather than the
-  signed-in user.
-- Clamped to two lines: the panel sits between the rail and the next section and
-  must not reflow the page as you swipe. `.prof-fav-info`'s `min-height` grew to
-  92px to hold it.
+Five small wells traced into the bottom of the card became **three big discs on
+an arc, one centred and two swung down either side**, on a rail that loops with
+no end in either direction, with a panel underneath. At the old size **the cover
+was all you got** — no title, no artist, no year — and a cover is not enough to
+know an album by. The panel says album, artist, stars, review count, and the
+line they wrote about it.
 
 - ⚠️ **CSS scroll-snap, not a hand-rolled gesture.** This has to feel native
   under a thumb, and the browser's own momentum, rubber-band and snap beat
   anything written here. The swipe engines elsewhere in this app exist because
   they animate a bento cell; this does not.
-- ⚠️⚠️ **The end spacers are ELEMENTS (`.prof-fav-pad`), and the rail must never
-  get horizontal padding.** They let the FIRST and LAST discs reach the centre —
-  without something there, `scroll-snap-align: center` cannot centre either end.
-  It was `padding-inline: 19%` and **nothing lined up**: percentage `flex-basis`
-  resolves against the flex container's **content box**, so side padding of 19%
-  made each disc 62% of the *remaining* 62% — 38.4% of the rail — while the
-  centring arithmetic is written in percentages *of the rail*. Padding silently
-  redefines what a percentage means in here. As elements, the spacers are in the
-  same units as the discs. The `- 12px` in their basis is the `gap` that lands
-  between spacer and first disc; without it every disc sits one gap right of
-  centre. Verified: disc 1 centres at `scrollLeft` 0 and disc 5 at exactly the
-  maximum.
+- ⚠️⚠️ **The rail must never get horizontal padding.** It was `padding-inline:
+  19%` once and **nothing lined up**: percentage `flex-basis` resolves against
+  the flex container's **content box**, so side padding of 19% made each disc
+  62% of the *remaining* 62% — 38.4% of the rail — while the centring arithmetic
+  is written in percentages *of the rail*. Padding silently redefines what a
+  percentage means in here.
+- **The end spacers (`.prof-fav-pad`) are gone**, along with the ends. They
+  existed so the first and last disc could reach the centre; a looping rail has
+  neither, and a spacer sitting at a seam would open a hole in the wheel.
 - ⚠️ **`.prof-fav-rail` must stay `position: relative`.** That makes it each
   button's `offsetParent`, which is what puts `offsetLeft` in the same
   coordinate space as `scrollLeft` for `profFavPaint`.
@@ -3126,20 +3145,112 @@ this is a person talking, so the typeface changes.
 - ⚠️ **A tap on a disc that isn't centred scrolls it to the middle** instead of
   acting on it (`profFavTap`). Opening a menu for an album that is half off the
   screen is the only other option, and it isn't one.
-- ⚠️ **The rail opens on the SECOND disc** (`profFavStart`). At `scrollLeft: 0`
-  the first disc is centred against an empty spacer — nothing left of it, one
-  neighbour right — which reads as the start of a list rather than as a carousel
-  that works both ways. One step in and it is three discs from the moment the
-  page lands.
+- ⚠️ **The rail opens on the second disc OF THE MIDDLE COPY** (`profFavStart` →
+  `profFavHome`). There has to be runway on both sides from the first frame, or
+  the first flick left runs straight off the end before the loop can wrap.
+
+##### It LOOPS — there is no end to reach (`profFavLoop` · `profFavSettle`)
+
+`profFavsHtml` emits the five discs **`PROF_FAV_LOOPS` = 5 times over** (25
+buttons, `data-n="5"` on the rail), and the scroll is teleported back to the
+middle copy by **exactly one set width**. The jump cannot be seen: either side
+of a seam is the same five records in the same order, so the pixels are
+identical and the disc under your thumb does not move.
+
+- ⚠️⚠️ **The wrap runs when the scroll SETTLES, not the moment you leave the
+  middle copy.** Writing `scrollLeft` during a fling **cancels the momentum** in
+  Chrome — wrapping eagerly would stop the rail dead in your hand every few
+  discs. `profFavSettle` uses `scrollend` where it exists and a 180ms timer
+  where it doesn't (the timer also covers a fling that decays without an event).
+- ⚠️ **The emergency wrap in `profFavPaint` is a backstop, not the mechanism.**
+  If the centred disc has reached the *outermost* copy it jumps immediately — a
+  stalled fling beats running out of rail. With five copies it should never fire.
+- ⚠️ **Five copies, and the number is set by fling distance.** From the middle
+  copy that is ten discs of runway each way, ~2500px. Three copies leaves five,
+  and a hard flick would hit the emergency wrap and stop dead. Verified by
+  walking 14 discs in each direction: never ran out, wrapped three times going
+  forward.
+- ⚠️ **`scroll-snap-type` does not fight it** — the jump is a whole number of
+  disc pitches, so it lands on an equivalent snap position with nothing to
+  correct.
+- ⚠️ **`data-i` is the real slot** and repeats across copies (`0123401234…`), so
+  `profFavTap` and the edit-mode picker address the right one of five whichever
+  copy you tapped.
 - ⚠️ **`profFavBoot` retries instead of assuming one frame is enough.** Both
   steps need a laid-out rail, and `profFavStart` sets its once-only flag when it
   runs — so an attempt against a zero-width rail must NOT count as having run,
   or the next paint (triggered by the user's own scroll) yanks the rail back to
   disc 2 under their finger.
 - The info panel carries **album + year on one line**, then artist, then stars
-  and the review count. ⚠️ Genre was dropped: it said little at this size, and
-  the archive's genre strings are inconsistent enough ("Hip-hop" /
-  "Experimental hip-hop" / "Korean hip-hop") that it read as noise.
+  and the review count, then **what they wrote about it**. ⚠️ Genre was dropped:
+  it said little at this size, and the archive's genre strings are inconsistent
+  enough ("Hip-hop" / "Experimental hip-hop" / "Korean hip-hop") that it read as
+  noise.
+
+##### The discs sit on a WHEEL, not a line (`profFavArc`)
+
+The hub is a long way **below** the screen, so a disc leaving the centre swings
+**down and away** instead of sliding flat — the side discs end up lower than the
+middle one and tilted by however far round they have gone.
+
+- **The radius is derived, not chosen.** `PROF_ARC_DEG` (**24°**) says how far
+  a disc has turned by the time it reaches its *neighbour's* slot; `R = spacing
+  / θ` falls out of that, re-measured every paint. There is no magic px to go
+  stale when the frame width changes.
+- ⚠️ **It was 12° and that was too polite** — arithmetically real, visually
+  deniable. Halving the radius doubles the tilt but **near-quadruples the drop**
+  (26px → 52px), because the fall goes with `1−cos θ`, not with `θ`. That second
+  number is the one with a cost, and it is why the padding below moved with it.
+- ⚠️ **X is left alone.** A true wheel would also pull the discs horizontally
+  in (`x = R·sinθ`, not `R·θ`), but x belongs to scroll-snap, and fighting the
+  scroller for it is how a carousel starts feeling slippery under a thumb. At
+  12° the two differ by well under a pixel.
+- ⚠️ **`u` is clamped to one neighbour.** Past that the drop grows fast and it
+  buys nothing: a disc two slots out is entirely outside the rail (near edge at
+  383px in a 192px half-width). The clamp is also what bounds the rail's bottom
+  padding.
+- ⚠️⚠️ **`.prof-fav-rail`'s `padding-bottom: 16%` is the room the arc falls
+  into, not spacing.** The rail is `overflow-y: hidden` — it has to be, because
+  `overflow-x: auto` forces the other axis to clip — so a dropped disc is cut
+  off at the padding edge. It is a **percentage of width** because the drop is:
+  `R(1−cos θ)` as a share of the disc spacing, and the spacing is 65% of the
+  rail, so the two scale together. **It is PAIRED with `PROF_ARC_DEG` — move
+  one, measure, move the other.** Going 12°→24° at the old 8% clipped the bottom
+  off both side discs. Measured clearance at 24°/16%: 5.3px.
+- ⚠️ **`.prof-fav-info` carries a `-30px` margin, and the arc is why.** That
+  ~58px of rail padding is only *used* at the two edges where the side discs
+  fall into it; under the middle it is a hole, and it left the album title
+  floating a long way from the record it names. The text is centred and the side
+  discs are slivers at the extreme left and right, so the two share the band
+  without meeting — and the panel is after the rail in the DOM, so it wins the
+  overlap on a very long title anyway.
+- ⚠️ **`.prof-fav-rail.is-arc .prof-fav { transition: none }`.** The transform
+  is written inline every scroll frame; .28s of easing on a value recomputed
+  from `scrollLeft` 60×/sec is just smear. The discrete `.prof-fav` /
+  `.is-mid` pair stays as the no-JS base, which is why this is a class the arc
+  *adds* rather than a blanket `transition: none`.
+
+##### Their own review, under the album (`.prof-fav-rv` · `profFavReview`)
+
+If they wrote something about the centred record, it sits under the stars in the
+app's **review voice** — Crimson Text italic, the same face as the composer and
+`.ntf-quote` — so a line of someone's writing looks like writing rather than
+like one more field of the record's metadata. It is the only thing in that panel
+that is theirs and not the album's.
+
+- ⚠️ **Read from `profReviewLog(P)`, the same log the review history below is
+  built from.** One source of truth, so the line under the disc and the row
+  further down the page can never quote the same person differently.
+- ⚠️ **Cached per handle on the section** (`sec._rvKey` / `_rvMap`) — the log
+  walks the archive to build itself and this runs on every scroll frame.
+- ⚠️ **The line `hidden`s, it does not empty.** An empty box still holds its
+  line-height. Paired with `.prof-fav-info`'s `min-height: 96px` (a panel *with*
+  a two-line review in it), the block does not grow and shrink as you scroll
+  between a record they wrote about and one they didn't. Verified: 84px across
+  all five discs.
+- **Two lines then ellipsis.** The full text is in the review history; under a
+  disc this is a taste, and an unclamped paragraph would shove the rail and the
+  next section around as you scroll.
 - ⚠️ **`.prof-fav-hole` is 13%, where the small wells were 21%.** A spindle hole
   is a fixed size on a real record — it does not grow with the disc — so a
   percentage that read correctly at 60px is a doughnut at 200px.
@@ -3166,6 +3277,16 @@ profile that renders one its own way is a second component that will drift from
 the first. The only thing that changes is the subject: every row here has the
 same author, so the avatar is theirs and the name is the profile's.
 
+- ⚠️ **The pool is `recent` → `favs` (seeded coin flip) → topped up from the
+  archive.** The favourites were added because you are far more likely to have
+  written about the five records you pinned to your own profile than a random
+  one off the shelf — and because the favourites rail reads this same log for
+  the line under each disc. Without them the panel had almost nothing to show:
+  measured across the five personas it was **1, 2, 0, 1, 1** of five, so one
+  persona could never demonstrate the feature at all. It is now 4, 2, 3, 2, 4.
+  ⚠️ **A coin flip, not all five** — "no review yet" has to stay a state you
+  actually meet while scrolling, or the conditional under the disc is a branch
+  that never runs.
 - `--sd-*` reaches these rows because the profile screen is itself an
   `.s-home-v3`, which is where those tokens are scoped.
 - `upvoteHtml` (a window global) and `CMT_SVG` (a top-level `const`, so global
