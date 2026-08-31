@@ -7379,7 +7379,10 @@
 /* Scroll area inside v3-body — matches the homepage bento's ~10px side margins */
 /* ⚠ The 12px side padding is cancelled by `.prof-fav-rail`'s `margin-inline`
    so the favourites carousel can run edge to edge. Change this and change that. */
-.prof2-scroll { padding: 6px 12px 75px; }
+/* ⚠ 14px at the top, not 6. The card is the first thing under the app header
+   and at 6 it was tucked against it — this page opens on a large object and
+   needs to look placed rather than jammed. */
+.prof2-scroll { padding: 14px 12px 75px; }
 
 
 /* ── Profile card — traced from ProfileTheme_Regular4 (1).svg ────────────
@@ -7397,7 +7400,16 @@
    65.7→328) and the picture pane much WIDER (0→374.5 where it stopped at
    262.3). The right pane pays for it — 45.6% of the width where it had 61.8% —
    which is why the stats are a 2×2 grid rather than one row of four. */
-.prof-canvas { position: relative; width: 100%; margin: 2px auto 0; aspect-ratio: 690 / 460; }
+/* ⚠⚠ 690 / 556, and this number IS the SVG's viewBox height — see the warning
+   in the Profile block of CLAUDE.md. preserveAspectRatio=meet scales the drawing
+   to the SHORTER axis, so a 556-tall viewBox in a 460-tall box would render the
+   whole card at 82.7% and centre it while every percentage-positioned element on
+   top stayed where it was: nothing looks broken on its own and the card is
+   completely wrong.
+   ⚠ It was 690/460. The extra 96 units are the tag compartment, and EVERY
+   vertical percentage below was rescaled by 460/556 = 0.82734 to keep the thing
+   it points at in the same physical place. */
+.prof-canvas { position: relative; width: 100%; margin: 4px auto 0; aspect-ratio: 690 / 556; }
 .prof-base {
   position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1;
   pointer-events: none; overflow: visible;
@@ -7414,16 +7426,18 @@
 /* White username pill nested in the banner. Left/top/height fixed; width is set
    by sizeProfName() so it grows with the banner. Inset shadow seats it in. */
 .prof-name-pill {
-  /* 16/690, 13.5/460, 47.5/460 — the pill is an explicit path in the new file
-     (x 16→360, y 13.5→61) rather than something eyeballed into the banner. */
-  position: absolute; z-index: 2; left: 2.32%; top: 2.93%; height: 10.33%;
+  /* 16/690, 13.5/556, 47.5/556 — the pill is an explicit path in the new file
+     (x 16→360, y 13.5→61) rather than something eyeballed into the banner.
+     ⚠ The DENOMINATOR is 556 now, not 460: the y numbers are the same units in
+     the same trace, they are just a smaller fraction of a taller box. */
+  position: absolute; z-index: 2; left: 2.32%; top: 2.43%; height: 8.54%;
   border-radius: 999px; background: var(--pf-slot); pointer-events: none;
   box-shadow: inset 0 2px 4px var(--pf-well-dk), inset 0 -1px 2px var(--pf-well-lt);
 }
 
 /* Username seated in the pill — unbold; white on dark, black on light */
 .prof-name-tab-lbl {
-  position: absolute; z-index: 4; left: 6%; top: 2.9%; height: 10.3%;
+  position: absolute; z-index: 4; left: 6%; top: 2.4%; height: 8.52%;
   display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; pointer-events: none;
 }
 .prof-name-nick { font-size: 13px; font-weight: 500; color: var(--pf-slot-ink); letter-spacing: -0.2px; font-family: var(--font-head); }
@@ -7431,13 +7445,14 @@
 
 /* Profile image — fills the SVG's left pane, below the banner (flush left, no gaps).
    Bottom-left corner rounded to the card; other corners square (banner / divide).
-   ⚠ The pane is x 0.5→374.5, y 74.5→449.5 — 54.28% of the width, and against a
-   canvas that now stops at the card it is 81.5% of the height. Nearly half the
-   card where it used to be 37.9% × 56.3%; this is the whole reason for the
-   retrace: "the profile pic is a lot larger in this version". */
+   ⚠ The pane is x 0.5→374.5, y 74.5→449.5 — unchanged in TRACE UNITS. The card
+   grew underneath it and the photo did not, so against a 556-tall canvas the
+   same pane is 13.65% → 67.18% instead of 16.5% → 81.2%.
+   ⚠ Its bottom-left corner is SQUARE now (was `5%`): that arc belonged to the
+   card's own corner, which is 96 units lower since the tag compartment. */
 .prof-pic {
-  position: absolute; z-index: 2; left: 0.4%; top: 16.5%; width: 53.88%; height: 81.2%;
-  border-radius: 0 10px 0 5%; background-size: cover; background-position: center;
+  position: absolute; z-index: 2; left: 0.4%; top: 13.65%; width: 53.88%; height: 67.18%;
+  border-radius: 0 10px 0 0; background-size: cover; background-position: center;
   background-color: #0c0b0a;
   box-shadow: inset 0 2px 6px var(--pf-well-dk), inset 0 -1px 4px var(--pf-well-lt);
 }
@@ -7451,25 +7466,47 @@
    The bottom stops short of the pane: the action button owns that corner. */
 .prof-right {
   position: absolute; z-index: 3;
-  /* The pane runs 16.2% → 97.6% (the card's own top and bottom edges). The
-     column now holds ONLY the stats, so it takes nearly all of that and centres
-     them in it — there is no longer a stack whose order could go wrong, just one
-     block that should sit in the middle of the space it has.
-     ⚠ The action button no longer lives at the bottom of this pane, so nothing
-     has to be left clear down there. */
-  left: 56.4%; width: 41.4%; top: 18%; bottom: 6%;
-  display: flex; flex-direction: column; justify-content: center;
+  /* The pane runs 18% → 77.8% of the canvas — the card's top edge down to the
+     tag compartment's seam. It holds the bio, and the location at its foot — a stack of two whose order cannot
+     go wrong, because `.prof-meta`'s `margin-top: auto` puts all the slack
+     between them rather than anywhere else.
+     ⚠ `justify-content` is FLEX-START, not center: an auto margin eats the free
+     space before justify-content ever sees it, so `center` here would be a rule
+     that reads as if it does something and doesn't.
+     ⚠ The padding is the bio's MARGIN, and `box-sizing` is set locally because
+     this sheet has no global reset — without it the padding would grow the pane
+     past the card's right edge instead of insetting the text.
+     ⚠ The stats moved OUT of this pane, into `.prof-statbar` under the card, and
+     the action button was never at the bottom of it, so nothing has to be left
+     clear down there.
+     ⚠ TOP MARGIN: 18% of 556 is 100 trace units, which sits ~25 below the
+     card's top edge (74.7) where it used to sit ~8 below it. The bio had its
+     head against the banner; it has room above it now, and still five clear
+     lines under a taller pane.
+     ⚠ BOTTOM is 22.2%, not 6%: the pane has to stop at the tag
+     compartment's seam (y 449.5), not at the card's new bottom edge. */
+  box-sizing: border-box;
+  left: 56.4%; width: 41.4%; top: 18%; bottom: 22.2%;
+  padding: 2px 9px 0 7px;
+  display: flex; flex-direction: column; justify-content: flex-start;
   min-height: 0;
 }
 /* ⚠ `position: relative` because these are flow children now. The `.pfe-slot`
    badge and outline are absolutely positioned INSIDE their slot, and they used
    to get their containing block for free from the slot being absolute itself. */
 .prof-info { position: relative; z-index: 3; min-width: 0; }
-/* ⚠ Four lines, not two. The pane gained ~40% of its height in this trace and
-   the bio is the only thing in it that can use the room. */
+/* ⚠ 12.5px at weight 600, not 11px at 400. The bio has the pane to itself now
+   that the stats are out of the card, and it is the only text on this page
+   written to be READ rather than scanned — at a caption's size and weight it
+   read as a footnote about the person instead of as the person. The colour goes
+   with it: `--pf-ink` at 0.82 rather than `--pf-ink2`, so it holds the pane.
+   ⚠ Still clamped, and to FIVE lines now, because bigger text plus the location
+   at the foot leaves less room. The card is a fixed-aspect SVG trace: text that
+   overflows it does not grow the card, it escapes it. */
 .prof-desc {
-  font-size: 10px; color: var(--pf-ink2); line-height: 1.4;
-  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+  font-size: 12.5px; font-weight: 600; line-height: 1.5;
+  color: color-mix(in srgb, var(--pf-ink) 82%, transparent);
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 5; overflow: hidden;
 }
 /* Last in the column; `margin-top: auto` pins it to the bottom of the stack so
    a short bio leaves the gap above the location rather than below it. */
@@ -7488,42 +7525,225 @@
 }
 .prof-meta-item svg { width: 12px; height: 12px; opacity: 1; }
 
-/* ⚠ STACKED, not a row. Three figures side by side in a 149px column meant
-   every one of them was capped by the width of its own label — "Following" at
-   7px was already 40px of the ~45px each column had — so the numbers could
-   never be bigger than a caption no matter how much vertical space the pane had.
-   Down the column each figure gets the full width and they are only limited by
-   height, of which there is plenty: three blocks at ~43px in a ~183px box.
-   ⚠ No emboss. Each figure briefly sat in its own inset well; stacked, three
-   wells read as a list of controls rather than as a readout. */
-.prof-stats {
-  flex: 0 0 auto;
-  display: flex; flex-direction: column; justify-content: space-evenly;
-  align-items: flex-end; gap: 4px; height: 100%;
+/* ── TAGS — the compartment at the FOOT OF THE CARD (`profTagsHtml`) ─────
+   ⚠ These live INSIDE `.prof-canvas` now, which is why the silhouette grew 96
+   trace units at the bottom — a strip floating under the card read as a caption
+   about it rather than as part of who you are. Being in the canvas means being
+   positioned in percentages of the trace: the compartment runs y 449.5 → 545,
+   and these numbers are that, inset, over 556.
+   ⚠ It SCROLLS sideways instead of wrapping. The compartment is one row tall by
+   construction, and three long collectibles wrapping to a second line inside a
+   fixed-aspect box would fall straight out of the card. */
+.prof-canvas .prof-tags {
+  position: absolute; z-index: 3;
+  left: 3.2%; right: 3.2%; top: 82.7%; height: 13.5%;
+  margin: 0;
+  display: flex; flex-wrap: nowrap; align-items: center; gap: 6px;
+  overflow-x: auto; overflow-y: hidden;
+  scrollbar-width: none; -webkit-overflow-scrolling: touch;
 }
-/* ⚠ Right-aligned, and it has to be set on BOTH boxes: `align-items` on the
-   column ranges the blocks against the pane's right edge, and the same on each
-   block ranges its label under its own number. Either one alone leaves a ragged
-   edge — the numbers vary in width ("214" against "1.9k") and so do the labels
-   ("Following" against "Review score"). The pane's right edge is the card's, so
-   this is the one edge in the block that lines up with something. */
-.prof-stat { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; min-width: 0; }
-/* ⚠ 30px, and the stack is what pays for it. Side by side these were capped at
-   17 by the WIDTH three columns left each other; down the column the only limit
-   is the pane's width, and the widest value ("41.8k", five glyphs) is ~87px of
-   the ~149 available. The label can go back to a real word for the same reason:
-   "Review score" at 9px is ~67px, where the row could only afford "Score".
-   Measured at 34: each block is ~47px and three of them plus the gaps come to
-   ~141px in a 161px column, and the widest value ("41.8k") is ~99px of the
-   ~131px the pane gives. Height is what binds now, not width. */
-.prof-stat-n {
-  font-size: 34px; font-weight: 800; color: var(--pf-ink);
-  font-family: var(--font-head); letter-spacing: -1px; line-height: 1;
+.prof-canvas .prof-tags::-webkit-scrollbar { display: none; }
+.prof-canvas .prof-tag { flex: 0 0 auto; }
+
+/* ══ SD TEXTURES — the surface a tag is made of (`.sd-tex--*`) ═════════════
+   A tag is a thing you COLLECT, and a flat coloured pill does not read as one.
+   A metal head's should look like brushed steel; a festival's like the field it
+   was handed out in. That surface is most of what makes a rare tag worth
+   wearing at a glance, at a size where a label alone cannot do it.
+
+   ⚠ GRADIENTS, NOT IMAGE FILES, on purpose:
+   - a chip is ~26px tall, where a photographic texture is mush;
+   - the good free tiling sets (Transparent Textures, Subtle Patterns) are
+     CC-BY, which is a real attribution obligation on a shipped app;
+   - zero requests, and every one of these re-tints itself from the tag's own
+     `--tint` because the fill underneath shows through.
+
+   ⚠ FILLER by intent. Swapping one for a real image is a single `--tex` value
+   (`url(images/tex-metal.png)`) plus its `--tex-size`; nothing else in the
+   system knows the difference.
+
+   ⚠ Every texture must carry BOTH a white and a black layer. The chips sit on a
+   dark card in one theme and a beige one in the other, and a white-only overlay
+   is invisible on light while a black-only one is invisible on dark.
+
+   ⚠ The consumer sets `background-image: var(--tex)` — these classes only
+   declare the variables, so the SAME class works on `.prof-tag` (profile, form,
+   shop) and on `.pp-tag` (the picker sheet). One texture, four hosts. */
+
+/* Brushed steel — fine vertical strands under one diagonal sheen. */
+.sd-tex--metal {
+  --tex:
+    linear-gradient(102deg, rgba(255,255,255,.30) 0%, rgba(255,255,255,0) 26%,
+                            rgba(0,0,0,.20) 54%, rgba(255,255,255,.24) 76%, rgba(255,255,255,0) 100%),
+    repeating-linear-gradient(90deg, rgba(255,255,255,.16) 0 1px, rgba(0,0,0,.13) 1px 2px,
+                                     rgba(255,255,255,.06) 2px 3px, rgba(0,0,0,.05) 3px 4px);
+  --tex-size: auto, auto;
+}
+
+/* Daisies — a yellow eye in a white flower, on two offset grids so it scatters
+   rather than marches. */
+.sd-tex--flower {
+  --tex:
+    radial-gradient(circle, rgba(255,214,102,.95) 0 1.1px, rgba(255,255,255,.88) 1.1px 3.1px, rgba(255,255,255,0) 3.4px),
+    radial-gradient(circle, rgba(255,214,102,.75) 0 .8px, rgba(255,255,255,.62) .8px 2.3px, rgba(255,255,255,0) 2.6px),
+    linear-gradient(0deg, rgba(0,0,0,.10), rgba(0,0,0,.10));
+  --tex-size: 15px 15px, 10px 10px, auto;
+  --tex-pos: 0 0, 7px 6px, 0 0;
+}
+
+/* Record grooves — concentric rings running off the bottom of the chip. */
+.sd-tex--groove {
+  --tex:
+    repeating-radial-gradient(circle at 50% 150%, rgba(255,255,255,.15) 0 1px,
+                              rgba(0,0,0,.14) 1px 3px);
+  --tex-size: auto;
+}
+
+/* Night sky — two scattered star grids, one bright, one faint. */
+.sd-tex--stars {
+  --tex:
+    radial-gradient(circle, rgba(255,255,255,.95) 0 .8px, rgba(255,255,255,0) 1.2px),
+    radial-gradient(circle, rgba(255,255,255,.55) 0 .6px, rgba(255,255,255,0) 1px),
+    linear-gradient(0deg, rgba(0,0,0,.16), rgba(0,0,0,.16));
+  --tex-size: 12px 9px, 19px 14px, auto;
+  --tex-pos: 2px 1px, 9px 6px, 0 0;
+}
+
+/* Shoegaze bloom — a soft smear of light across the pill, no edges anywhere. */
+.sd-tex--haze {
+  --tex:
+    linear-gradient(118deg, rgba(255,255,255,.38) 0%, rgba(255,255,255,.04) 38%,
+                            rgba(0,0,0,.16) 62%, rgba(255,255,255,.26) 84%, rgba(255,255,255,0) 100%),
+    radial-gradient(120% 220% at 22% 0%, rgba(255,255,255,.28), rgba(255,255,255,0) 60%);
+  --tex-size: auto, auto;
+}
+
+/* Clean diagonal ribbing — the tidy one, for the tag about not skipping. */
+.sd-tex--stripe {
+  --tex:
+    repeating-linear-gradient(45deg, rgba(255,255,255,.17) 0 3px, rgba(0,0,0,.08) 3px 4px,
+                                     rgba(255,255,255,0) 4px 8px);
+  --tex-size: auto;
+}
+
+/* Rain on a car window — steep streaks, uneven spacing. */
+.sd-tex--rain {
+  --tex:
+    repeating-linear-gradient(74deg, rgba(255,255,255,.26) 0 1px, rgba(255,255,255,0) 1px 5px,
+                                     rgba(0,0,0,.10) 5px 6px, rgba(255,255,255,0) 6px 11px);
+  --tex-size: auto;
+}
+
+/* Sleeve card — a fine cross-weave, the way a first pressing's board looks. */
+.sd-tex--paper {
+  --tex:
+    repeating-linear-gradient(0deg,  rgba(0,0,0,.07) 0 1px, rgba(255,255,255,.08) 1px 2px),
+    repeating-linear-gradient(90deg, rgba(0,0,0,.05) 0 1px, rgba(255,255,255,.06) 1px 3px);
+  --tex-size: auto, auto;
+}
+
+/* Newsprint halftone — the Blue Note sleeve, basically. */
+.sd-tex--halftone {
+  --tex:
+    radial-gradient(circle, rgba(0,0,0,.34) 0 1.5px, rgba(0,0,0,0) 1.8px),
+    radial-gradient(circle, rgba(255,255,255,.20) 0 1.1px, rgba(255,255,255,0) 1.4px);
+  --tex-size: 5px 5px, 5px 5px;
+  --tex-pos: 0 0, 2.5px 2.5px;
+}
+
+/* Poured concrete — a mottled wedge pattern with no readable direction. */
+.sd-tex--concrete {
+  --tex:
+    repeating-conic-gradient(from 14deg at 32% 44%, rgba(0,0,0,.13) 0 7deg, rgba(255,255,255,.10) 7deg 14deg),
+    repeating-conic-gradient(from 51deg at 71% 63%, rgba(255,255,255,.08) 0 9deg, rgba(0,0,0,.07) 9deg 18deg);
+  --tex-size: 11px 11px, 8px 8px;
+}
+
+/* Magnetic tape — tight vertical banding with a shine down the middle. */
+.sd-tex--tape {
+  --tex:
+    linear-gradient(180deg, rgba(255,255,255,.22) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,.20) 100%),
+    repeating-linear-gradient(90deg, rgba(0,0,0,.18) 0 2px, rgba(255,255,255,.13) 2px 4px);
+  --tex-size: auto, auto;
+}
+
+/* Fur — short soft strokes lying one way, like a cat you just stroked. */
+.sd-tex--fur {
+  --tex:
+    repeating-linear-gradient(64deg, rgba(255,255,255,.17) 0 1px, rgba(255,255,255,0) 1px 3px,
+                                     rgba(0,0,0,.09) 3px 4px, rgba(255,255,255,0) 4px 6px);
+  --tex-size: auto;
+}
+
+/* ── TAGS — the chips themselves ─────────────────────────────────────────
+   ⚠ Each chip carries its own `--tint` as an "R,G,B" triple, the shop's
+   convention, so the same markup is a profile chip here and a product shot on
+   a storefront row. The FREE ones are outlined and the collectible ones are
+   filled: the difference has to be visible at a glance, because the whole point
+   of "DaisyChainsFestival2026" is that not everyone is wearing it. */
+.prof-tags {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin: 12px 0 2px;
+}
+/* ⚠ `background-image` over `background-color`, never shorthand `background`:
+   the colour is the tag's own tint and the image is its texture, and the
+   shorthand would wipe whichever one is set second. The `--tex*` variables come
+   from an `.sd-tex--*` class and default to nothing, so an untextured tag is
+   still a perfectly good flat chip. */
+.prof-tag {
+  display: inline-flex; align-items: center;
+  padding: 5px 10px; border-radius: 999px;
+  font-family: var(--font-mono); font-size: 9.5px; font-weight: 700;
+  letter-spacing: .03em; white-space: nowrap;
+  color: rgb(var(--tint));
+  background-color: rgba(var(--tint), .12);
+  background-image: var(--tex, none);
+  background-size: var(--tex-size, auto);
+  background-position: var(--tex-pos, 0 0);
+  border: 1px solid rgba(var(--tint), .34);
+}
+/* Collectible: filled, ringed, and the texture reads at full strength on it —
+   which is the point. On the outlined free chips the same texture sits over a
+   12%-alpha wash and stays a hint. */
+.prof-tag--rare {
+  color: #16130d;
+  background-color: rgb(var(--tint));
+  border-color: rgb(var(--tint));
+  box-shadow: 0 0 0 2px rgba(var(--tint), .22);
+  /* ⚠ The label rides ON the texture now, so it needs its own contrast. A
+     1px light halo, not a dark shadow: the fill is a saturated tint and the
+     ink is near-black. */
+  text-shadow: 0 1px 0 rgba(255,255,255,.28);
+}
+
+/* ── The three figures — a ROW under the card (`profStatsHtml`) ──────────
+   ⚠ These used to be stacked down the card's right pane, where the pane's
+   width was the ceiling on how big a number could be set. Out here the row has
+   the whole page, so the three read at once instead of being scanned down a
+   column — which is how a follower count is actually read. The bio took the
+   pane, where line length is worth something.
+   The hairlines between the cells are borders on the cells, not separate
+   elements, so the row can never end on a stray divider. */
+.prof-statbar {
+  display: flex; align-items: stretch;
+  margin: 14px 0 4px; padding: 12px 0;
+  border-top: 1px solid var(--pf-border);
+  border-bottom: 1px solid var(--pf-border);
+}
+.prof-statb {
+  flex: 1 1 0; min-width: 0;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  border-left: 1px solid var(--pf-border);
+}
+.prof-statb:first-child { border-left: none; }
+.prof-statb-n {
+  font-family: var(--font-head); font-size: 23px; font-weight: 800;
+  letter-spacing: -.5px; line-height: 1; color: var(--pf-fg);
   white-space: nowrap;
 }
-.prof-stat-l {
-  font-size: 9px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
-  color: var(--pf-ink2); font-family: var(--font-mono);
+.prof-statb-l {
+  font-family: var(--font-mono); font-size: 8.5px; font-weight: 700;
+  letter-spacing: .08em; text-transform: uppercase; color: var(--pf-fg2);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
 }
 
@@ -7542,8 +7762,10 @@
    the dots plus "FOLLOW" want ~58. 17% gives ~61px and still starts at 81.5%,
    clear of the name banner, which ends at 67.8%. */
 .prof-act {
-  position: absolute; z-index: 4; left: auto; right: 1.5%; top: 0.2%;
-  width: 17%; height: 11.7%;
+  /* ⚠ top/height rescaled against the 556-tall canvas (was 0.2% / 11.7% of 460);
+     the button has not moved a pixel on screen. */
+  position: absolute; z-index: 4; left: auto; right: 1.5%; top: 0.17%;
+  width: 17%; height: 9.68%;
   display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 6px;
   padding: 0 9px; border: none; cursor: pointer; background: var(--pf-base);
   border-radius: 999px; box-shadow: -2px -2px 5px var(--pf-lt), 3px 3px 7px var(--pf-dk);
@@ -7579,6 +7801,9 @@
    written here; the swipe engines elsewhere exist because they animate a bento
    cell, which this does not. */
 .prof-favs { position: relative; }
+/* The rail is centred on one disc, the panel under it is centred text — a
+   left-aligned heading over that is the only thing on the block off the axis. */
+.prof-favs .prof-sec-hd { text-align: center; }
 .prof-fav-rail {
   /* ⚠ `position: relative` is load-bearing, not decoration: it makes the rail
      each button's `offsetParent`, which is what puts `offsetLeft` in the same
@@ -7595,7 +7820,11 @@
      centring arithmetic below is written in percentages of the rail, and padding
      silently redefines what a percentage means here. The end spacers do the same
      job as elements, in the same units as the discs. */
-  padding: 4px 0 2px;
+  /* ⚠ The bottom padding is the ARC's headroom. The rail is
+     `overflow-y: hidden`, so it is the only thing standing between a
+     swung-down neighbour and being sliced in half — it must stay >= FAV_ARC_Y
+     (app.js) plus the disc's own shadow. */
+  padding: 4px 0 34px;
   /* ⚠ FULL BLEED — cancels `.prof2-scroll`'s 12px side padding so the rail runs
      edge to edge while its heading and info panel stay inset with everything
      else. A carousel that stops short of the screen reads as a boxed-in list;
@@ -7607,22 +7836,27 @@
   margin-inline: -12px;
 }
 .prof-fav-rail::-webkit-scrollbar { display: none; }
-/* ⚠ The `- 12px` is the `gap` that lands between the spacer and the first disc.
-   Without it every disc sits one gap right of centre. Centre of disc 1 =
-   (19% - 12px) + 12px + 31% = 50%. */
-.prof-fav-pad { flex: 0 0 calc(19% - 12px); }
+/* ⚠ `.prof-fav-pad` is GONE, with the ends it padded. The rail loops (three
+   copies of the same five discs, see FAV_REPS / profFavPeriod), so every disc
+   already has a copy of the whole set either side of it — better runway than a
+   spacer, and no arithmetic to keep in step with the disc width. Centring is
+   scroll-snap's job now.
+   ⚠ The discs are 46% wide, down from 62%: three big circles in a row left no
+   room to read the arc they sit on. */
 .prof-fav {
   position: relative;            /* the centre hole is absolute inside it */
-  flex: 0 0 62%; aspect-ratio: 1;
+  flex: 0 0 46%; aspect-ratio: 1;
   scroll-snap-align: center;
   padding: 0; border: none; background: none; border-radius: 50%;
   cursor: pointer;
-  /* The two neighbours are present but clearly not the subject — smaller and
-     dimmed, so the rail reads as one album with context either side of it. */
-  transform: scale(.82); opacity: .5;
-  transition: transform .28s cubic-bezier(.22,1,.36,1), opacity .28s;
+  will-change: transform;
+  /* ⚠ NO transition, and this pose is only the pre-JS fallback: `profFavPaint`
+     writes transform and opacity inline on every scroll frame, so a transition
+     here would chase a value it is already being given. The arc's shape lives
+     in FAV_ARC_Y / FAV_ARC_DEG / FAV_ARC_SHRINK (app.js), not here. */
+  transform: scale(.8) translateY(20px); opacity: .5;
 }
-.prof-fav.is-mid { transform: scale(1); opacity: 1; }
+.prof-fav.is-mid { transform: none; opacity: 1; }
 .prof-fav-img {
   display: block; width: 100%; height: 100%; border-radius: 50%;
   background-size: cover; background-position: center; background-color: #0c0b0a;
@@ -7640,6 +7874,20 @@
   box-shadow: inset 0 1px 3px rgba(0,0,0,.6), 0 0 0 2px rgba(0,0,0,.28);
 }
 .prof-fav-img.prof-fav--spin { animation: v3spin 3.2s linear infinite; }
+
+/* ⚠ The owner's own line, under the album's numbers — and the one thing in this
+   panel set in DM Sans (--font-main). Everything above it is furniture: a
+   title, an artist, a star row, a count. This is a person talking, and it reads
+   as one because the typeface changes. Clamped to two lines: the panel sits
+   between the rail and the next section and cannot be allowed to reflow the
+   page as you swipe. */
+.prof-fav-review {
+  margin-top: 7px;
+  font-family: var(--font-main); font-size: 11.5px; font-weight: 400;
+  line-height: 1.45; color: var(--pf-fg2);
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+  overflow: hidden;
+}
 .prof-fav--empty {
   display: flex; align-items: center; justify-content: center;
   background: #0c0b0a; box-shadow: inset 3px 4px 10px var(--pf-well-dk);
@@ -7649,7 +7897,11 @@
 /* The panel under the rail. Written by `profFavPaint` from whichever disc is
    centred — the markup carries no album at all, so it cannot go stale against
    the rail's scroll position. */
-.prof-fav-info { text-align: center; margin-top: 12px; padding: 0 8px; min-height: 62px; }
+/* ⚠ NEGATIVE margin, on purpose. The rail's 34px of bottom padding is headroom
+   for the swung-down neighbours, but the gap you SEE is measured from the
+   CENTRED disc, which never uses it — left alone the panel sat a third of a
+   disc too low. This claws back most of the headroom and leaves ~16px. */
+.prof-fav-info { text-align: center; margin-top: -18px; padding: 0 8px; min-height: 92px; }
 /* Title and year on one line. The year is set quieter and lighter so it reads as
    part of naming the record rather than as a second fact competing with it. */
 .prof-fav-alb {
@@ -7796,44 +8048,133 @@
 .pp-empty { grid-column: 1 / -1; text-align: center; color: var(--pf-fg2); font-size: 13px; padding: 30px 0; }
 
 /* ============================================================
-   EDIT PROFILE (.s-pfedit) — direct manipulation, no form.
-   The page is the profile itself; every editable region carries
-   .pfe-slot (tap to swap) or, when empty, a .pfe-add "+" tile.
-   Both open the category-aware popup (#prof-picker).
+   EDIT PROFILE (.s-pfedit) — a FORM.
+   ⚠ This block used to style the profile CARD in edit mode: every
+   region of the traced SVG carried .pfe-slot and a "+" badge tucked
+   inside it, because the page WAS the card. It is a plain form now —
+   photo, then one labelled row per field — so the per-region badge
+   placements are gone with the markup that needed them. What is left
+   of .pfe-slot styles the three things you still CHOOSE rather than
+   type: the favourite discs, the playlist tiles and the song rows.
    ============================================================ */
 .pfe-scroll { padding-bottom: 75px; }
 
-/* top bar — back pill on the left, Save on the right */
-.pfe-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.pfe-top .plp-back-pill { margin-bottom: 10px; }
-.pfe-top-right { display: flex; align-items: center; gap: 9px; margin-bottom: 10px; }
+/* top bar — back pill · title · Save.
+   ⚠ 1fr auto 1fr, not space-between: the title has to sit on the page's centre
+   line, and space-between centres it between two buttons of DIFFERENT widths,
+   which is a different (and visibly off) place. The outer columns are equal, so
+   whatever the buttons measure the middle one stays put.
+   ⚠ The pill's own 10px margin-bottom moves to the bar, or the three items
+   don't share a baseline. */
+.pfe-top {
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+  gap: 10px; margin-bottom: 10px;
+}
+.pfe-top .plp-back-pill { margin-bottom: 0; justify-self: start; }
 .pfe-editing {
   font-family: var(--font-mono); font-size: 9.5px; font-weight: 700;
   letter-spacing: .1em; text-transform: uppercase; color: var(--pf-fg2);
-  white-space: nowrap;
+  white-space: nowrap; text-align: center;
 }
+/* Sized off .plp-back-pill (72×34) so the two ends of the bar match. */
 .pfe-save {
-  margin-bottom: 10px; padding: 9px 16px; border-radius: 999px; border: none;
+  justify-self: end;
+  height: 34px; padding: 0 15px; border-radius: 999px; border: none;
   background: var(--star); color: #16130d;
-  font-family: var(--font-main); font-size: 12px; font-weight: 800;
-  cursor: pointer; transition: filter .15s;
+  font-family: var(--font-main); font-size: 11.5px; font-weight: 800;
+  white-space: nowrap; cursor: pointer; transition: filter .15s;
 }
 .pfe-save:hover { filter: brightness(1.07); }
 
-.pfe-hint {
-  margin: 8px 0 16px; text-align: center;
-  font-family: var(--font-mono); font-size: 9.5px; letter-spacing: .04em;
+/* ── the picture — the only field you change by looking ── */
+.pfe-photo {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  margin: 6px 0 18px;
+}
+.pfe-avatar {
+  position: relative; width: 132px; height: 132px; border-radius: 50%;
+  border: none; padding: 0; cursor: pointer;
+  background-color: var(--pf-face); background-size: cover; background-position: center;
+  box-shadow: 0 6px 18px rgba(0,0,0,.35), inset 0 0 0 1px var(--pf-border);
+  transition: transform .15s;
+}
+.pfe-avatar:hover { transform: scale(1.03); }
+.pfe-avatar-badge {
+  position: absolute; right: 3px; bottom: 3px;
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--star); color: #16130d;
+  font-family: var(--font-main); font-size: 27px; font-weight: 700;
+  line-height: 34px; text-align: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,.5);
+}
+.pfe-photo-btn {
+  background: none; border: none; cursor: pointer; padding: 2px 6px;
+  color: var(--star);
+  font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+  letter-spacing: .08em; text-transform: uppercase;
+}
+.pfe-photo-btn:hover { text-decoration: underline; }
+
+/* ── the form — a label column and a field column, hairline between rows ──
+   ⚠ The row's own bottom border IS the focus ring: :focus-within recolours it
+   to --star. The inputs are transparent and border-less on purpose, so a row
+   reads as a line of the profile rather than as a box to fill in. */
+.pfe-form { margin-bottom: 22px; }
+.pfe-row {
+  display: grid; grid-template-columns: 82px 1fr; align-items: center;
+  gap: 12px; padding: 11px 2px;
+  border-bottom: 1px solid var(--pf-border);
+  transition: border-color .15s;
+}
+.pfe-row:focus-within { border-bottom-color: var(--star); }
+.pfe-row--tall { align-items: start; }
+.pfe-lbl {
+  font-family: var(--font-mono); font-size: 9.5px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--pf-fg2);
+  cursor: pointer;
+}
+.pfe-row--tall .pfe-lbl { padding-top: 4px; }
+.pfe-field { display: flex; align-items: center; gap: 5px; min-width: 0; }
+.pfe-row--tall .pfe-field { flex-direction: column; align-items: stretch; gap: 3px; }
+.pfe-pre { font-family: var(--font-mono); font-size: 13px; color: var(--pf-fg2); }
+.pfe-in {
+  width: 100%; min-width: 0; padding: 2px 0;
+  background: none; border: none; outline: none;
+  color: var(--pf-fg);
+  font-family: var(--font-main); font-size: 13.5px; font-weight: 600;
+}
+.pfe-in::placeholder { color: var(--pf-fg2); font-weight: 400; }
+.pfe-area { resize: none; min-height: 58px; line-height: 1.45; font-weight: 400; }
+.pfe-count {
+  align-self: flex-end;
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: .04em;
   color: var(--pf-fg2);
 }
 
-/* ── a filled slot: outline it on hover ──
-   NOTE: no blanket `position: relative` here. The card's regions (.prof-pic,
-   .prof-info, .prof-meta, .prof-name-tab-lbl) are all absolutely
-   positioned from the traced SVG coordinates, and relative would drop them back
-   into normal flow and wreck the layout. They already establish a containing
-   block for ::after; only the flow-level rows below need it added. */
-.pfe-slot { cursor: pointer; }
-.prof-pl.pfe-slot, .prof-song.pfe-slot, .prof-fav.pfe-slot { position: relative; }
+/* ── favourite albums — five discs, straight in a row ──
+   Not the profile's swipeable rail: the only question here is which record
+   goes in which slot, and a carousel that has to be scrolled to reach slot 5
+   makes that harder, not prettier. The disc face reuses .prof-fav-img /
+   .prof-fav-hole so the two pages can't drift on what a CD looks like. */
+.pfe-discs { display: flex; gap: 9px; }
+.pfe-disc {
+  position: relative; flex: 1 1 0; min-width: 0; aspect-ratio: 1;
+  padding: 0; border: none; background: none; border-radius: 50%;
+  cursor: pointer; transition: transform .15s;
+}
+.pfe-disc:hover { transform: scale(1.05); }
+.pfe-disc--empty {
+  display: flex; align-items: center; justify-content: center;
+  border: 1px dashed var(--pf-border); color: var(--pf-fg2);
+  transition: border-color .15s, color .15s, transform .15s;
+}
+.pfe-disc--empty:hover { border-color: var(--star); color: var(--star); }
+.pfe-disc--empty .pfe-add-plus { font-size: 30px; }
+
+/* ── a filled slot: the "+" badge and the hover outline ──
+   NOTE: these are flow-level elements now (discs, tiles, rows), so unlike the
+   card's absolutely-positioned regions they can all take position: relative. */
+.pfe-slot { cursor: pointer; position: relative; }
 .pfe-slot::after {
   content: ''; position: absolute; inset: -4px;
   border: 1px dashed transparent; border-radius: 8px;
@@ -7841,36 +8182,124 @@
 }
 .pfe-slot:hover::after { border-color: var(--star); background: rgba(232,168,60,0.07); }
 /* the round album discs get a round outline instead of a rounded rect */
-.prof-fav.pfe-slot::after { inset: -3px; border-radius: 50%; }
+.pfe-disc.pfe-slot::after { inset: -3px; border-radius: 50%; }
 
-/* ── the "+" badge — sits on EVERY slot, filled or not, so it's obvious the
-   content is swappable without having to hover to find out ── */
+/* the badge sits on EVERY filled slot, so it's obvious the content is
+   swappable without having to hover to find out */
 .pfe-slot::before {
   content: '+';
-  position: absolute; z-index: 6; top: -6px; right: -6px;
-  width: 17px; height: 17px; border-radius: 50%;
+  position: absolute; z-index: 6; top: -8px; right: -8px;
+  width: 24px; height: 24px; border-radius: 50%;
   background: var(--star); color: #16130d;
-  font-family: var(--font-main); font-size: 14px; font-weight: 700;
-  line-height: 16px; text-align: center;
+  font-family: var(--font-main); font-size: 19px; font-weight: 700;
+  line-height: 23px; text-align: center;
   pointer-events: none;
   box-shadow: 0 1px 4px rgba(0,0,0,0.5);
   transition: transform .15s;
 }
 .pfe-slot:hover::before { transform: scale(1.15); }
-/* per-slot placement: the card regions are absolutely positioned and butt right
-   up against each other, so the badge is tucked INSIDE them rather than hung off
-   a corner where it would land on a neighbour */
-.prof-pic.pfe-slot::before          { top: 7px;  right: 7px; }
-.prof-info.pfe-slot::before         { top: 0;    right: 0; }
-.prof-meta.pfe-slot::before         { top: 50%;  right: -21px; margin-top: -8px; }
-.prof-name-tab-lbl.pfe-slot::before { top: 50%;  right: -21px; margin-top: -8px; }
-.prof-fav.pfe-slot::before          { top: auto; bottom: 4px;  right: 4px; }
-.prof-pl.pfe-slot::before           { top: -5px; right: -5px; }
-/* song rows already carry a play glyph on the right — put the badge on the art */
-.prof-song.pfe-slot::before         { top: 4px;  right: auto; left: 30px; }
+.pfe-disc.pfe-slot::before  { top: auto; bottom: -2px; right: -2px; width: 22px; height: 22px; font-size: 17px; line-height: 21px; }
+.prof-pl.pfe-slot::before   { top: -7px; right: -7px; }
+/* ⚠ NOT on the song rows. They end in their own full-size "+" (.pfe-song-plus,
+   where the play triangle used to be), and a second little badge on the artwork
+   was two plus signs arguing about which one you were meant to press. */
+.prof-song.pfe-slot::before { content: none; }
+.pfe-song-plus {
+  flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--pf-fg2); font-family: var(--font-main); font-size: 26px;
+  font-weight: 400; line-height: 1;
+  transition: color .15s, background .15s;
+}
+.prof-song:hover .pfe-song-plus { color: var(--star); background: rgba(232,168,60,0.1); }
 
-/* empty-state placeholders inside the card */
-.prof-desc--add, .prof-meta-item--add { opacity: .55; font-style: italic; }
+/* ── the form's Tags row — a button, not a field ──
+   The one row on the form you cannot type into: you wear what you own. It is
+   laid out like a field so the column still reads as a list of your details,
+   and the "+" on the right is the same one every other slot on this page uses. */
+.pfe-tags {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
+  width: 100%; padding: 3px 0; background: none; border: none;
+  cursor: pointer; text-align: left; font-family: inherit;
+}
+.pfe-tags .pfe-add-plus { margin-left: auto; color: var(--pf-fg2); transition: color .15s; }
+.pfe-tags:hover .pfe-add-plus { color: var(--star); }
+.pfe-tags-ph {
+  font-family: var(--font-main); font-size: 13.5px; color: var(--pf-fg2);
+}
+
+/* ── the tag sheet (#prof-picker, kind `tag`) ──
+   A wrapping list of chips, not the square grid the album/photo kinds use — a
+   tag is a word of a length it chooses, and forcing them into equal cells makes
+   the short ones look padded and truncates the long ones, which are exactly the
+   collectible ones worth showing off. */
+.pp-grid--tag { display: flex; flex-wrap: wrap; gap: 8px; }
+.pp-tag-hint {
+  width: 100%; margin-bottom: 2px;
+  font-family: var(--font-mono); font-size: 9px; line-height: 1.5;
+  color: var(--pf-fg2);
+}
+/* ⚠ Same split as `.prof-tag`: colour on `background-color`, texture on
+   `background-image`. A tag that is brushed steel on your profile and flat grey
+   in the sheet you picked it from is two different objects. */
+.pp-tag {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 7px 12px; border-radius: 999px; cursor: pointer;
+  font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+  letter-spacing: .03em; white-space: nowrap;
+  color: rgb(var(--tint));
+  background-color: rgba(var(--tint), .1);
+  background-image: var(--tex, none);
+  background-size: var(--tex-size, auto);
+  background-position: var(--tex-pos, 0 0);
+  border: 1px solid rgba(var(--tint), .3);
+  transition: background-color .15s, border-color .15s, opacity .15s, transform .12s;
+}
+.pp-tag:hover { border-color: rgb(var(--tint)); }
+.pp-tag:active { transform: scale(.97); }
+/* Worn: the same fill the profile gives a collectible, so "selected" here looks
+   like what you are about to see there. */
+.pp-tag--on {
+  color: #16130d; background-color: rgb(var(--tint)); border-color: rgb(var(--tint));
+  text-shadow: 0 1px 0 rgba(255,255,255,.28);
+}
+/* Three already worn and this is not one of them: it simply doesn't light up. */
+.pp-tag--full { opacity: .4; }
+/* Locked: dashed, with the price where the tick would be. Not disabled — it is
+   a link to the shop, because a tag you can't wear yet IS the advertisement. */
+/* Locked: dashed, and the texture is dialled right back — you can see what it
+   is made of without it looking like something you already have. */
+.pp-tag--locked { border-style: dashed; background-color: transparent; opacity: .78; }
+.pp-tag-p {
+  padding: 2px 7px; border-radius: 999px;
+  background: rgba(var(--tint), .18); font-size: 9px;
+}
+
+/* ── the Pro upsell that stands in for the Favourite songs slots ──
+   Gold-edged rather than dashed: a dashed box on this page means "empty, tap to
+   fill", and this is the one block on the form that tapping does NOT fill. */
+.pfe-pro {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  padding: 14px 13px; border-radius: 12px; cursor: pointer; text-align: left;
+  color: var(--pf-fg);
+  background: rgba(232,168,60,0.07);
+  border: 1px solid color-mix(in srgb, var(--star) 42%, transparent);
+  transition: background .15s, border-color .15s;
+}
+.pfe-pro:hover { background: rgba(232,168,60,0.13); border-color: var(--star); }
+.pfe-pro-ico { flex-shrink: 0; width: 24px; height: 24px; color: var(--star); }
+.pfe-pro-ico svg { width: 100%; height: 100%; }
+.pfe-pro-txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.pfe-pro-t { font-family: var(--font-main); font-size: 12.5px; font-weight: 700; }
+.pfe-pro-s {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: .04em;
+  color: var(--pf-fg2);
+}
+.pfe-pro-go {
+  flex-shrink: 0; padding: 7px 12px; border-radius: 999px;
+  background: var(--star); color: #16130d;
+  font-family: var(--font-main); font-size: 11px; font-weight: 800;
+}
 
 /* ── an empty slot: a dashed "+" tile (grid) or row (list) ── */
 .pfe-add {
@@ -7881,44 +8310,17 @@
   transition: border-color .15s, color .15s, background .15s;
 }
 .pfe-add:hover { border-color: var(--star); color: var(--star); background: rgba(232,168,60,0.06); }
-.pfe-add-plus { font-size: 17px; line-height: 1; font-weight: 400; }
-.pfe-add--tile { flex-direction: column; aspect-ratio: 1; gap: 4px; padding: 8px; text-align: center; }
-.pfe-add--row  { width: 100%; padding: 13px; justify-content: flex-start; }
+.pfe-add-plus { font-size: 28px; line-height: 1; font-weight: 300; }
+.pfe-add--tile { flex-direction: column; aspect-ratio: 1; gap: 2px; padding: 8px; text-align: center; }
+.pfe-add--row  { width: 100%; padding: 14px 13px; gap: 11px; justify-content: flex-start; }
 
 /* ============================================================
    CONTENT EDITOR POPUP (#prof-picker) — one sheet, many kinds.
    The grid/searchbar chrome is shared with the original album
-   picker; these add the photo grid, the upload tile and the
-   text-form kinds (name / bio / location / occupation).
+   picker; these add the photo grid and its upload tile.
+   ⚠ The text-form kinds (name / bio / location / occupation) were
+   removed with their rules — Edit Profile types those inline.
    ============================================================ */
-.pp-sheet--form { max-height: none; }
-.pp-form { display: flex; flex-direction: column; padding: 2px 2px 6px; }
-.pp-flabel {
-  font-family: var(--font-mono); font-size: 9px; font-weight: 700;
-  letter-spacing: .12em; text-transform: uppercase; color: var(--pf-fg2);
-  margin: 10px 0 5px;
-}
-.pp-flabel:first-child { margin-top: 0; }
-.pp-text {
-  width: 100%; padding: 10px 12px; border-radius: 10px;
-  background: rgba(255,255,255,0.06); border: 1px solid transparent;
-  color: var(--pf-fg);
-  font-family: var(--font-main); font-size: 13px;
-  outline: none; transition: border-color .15s;
-}
-.pp-text::placeholder { color: rgba(232,226,214,0.3); }
-.pp-text:focus { border-color: var(--star); }
-.pp-textarea { resize: vertical; min-height: 92px; line-height: 1.45; }
-.pp-handle { display: flex; align-items: center; gap: 6px; }
-.pp-handle > span { font-family: var(--font-mono); font-size: 13px; color: var(--pf-fg2); }
-.pp-done {
-  margin-top: 16px; padding: 12px; border-radius: 11px; border: none;
-  background: var(--star); color: #16130d;
-  font-family: var(--font-main); font-size: 13px; font-weight: 800;
-  cursor: pointer; transition: filter .15s;
-}
-.pp-done:hover { filter: brightness(1.07); }
-
 /* photo kind — square grid + an upload tile above it */
 .pp-upload {
   display: flex; align-items: center; justify-content: center;
@@ -7932,9 +8334,6 @@
 .pp-grid--photo { grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .pp-grid--photo .pp-img { aspect-ratio: 1; border-radius: 8px; }
 
-/* light theme */
-.s-home-v3--light .pp-text { background: rgba(26,18,8,0.06); color: #1a1208; }
-.s-home-v3--light .pp-text::placeholder { color: rgba(26,18,8,0.32); }
 
 /* ============================================================
    NOTIFICATIONS (.s-ntf) + SETTINGS (.s-set)
@@ -8606,6 +9005,23 @@
 .shop-tile-name {
   font-size: 12.5px; font-weight: 800; letter-spacing: -.2px; color: var(--sd-ink);
   text-align: center;
+}
+
+/* ── Tags — a LIST, not the 4-up grid the frames and badges use.
+   A tag's label is a word of a length it chose (that is half of what you are
+   buying: "DaisyChainsFestival2026" is long BECAUSE it is specific), and equal
+   cells would truncate exactly the ones worth selling. Each row is the chip
+   itself — there is nothing to picture beyond the thing you would wear. */
+.shop-sheet--tags { display: flex; flex-direction: column; gap: 3px; }
+.shop-tagrow {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px;
+  background: var(--sd-card); box-shadow: var(--sd-card-hi);
+}
+.shop-tagrow-l { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; flex: 1; }
+.shop-tagrow-s {
+  font-family: var(--font-mono); font-size: 8.5px; color: var(--sd-ink2);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%;
 }
 .shop-tile--theme .shop-tile-name { font-size: 14px; text-align: left; }
 .shop-tile-sub { font-family: var(--font-mono); font-size: 8.5px; color: var(--sd-ink2); }

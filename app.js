@@ -91,6 +91,7 @@ function init() {
   /* Before the first render: the plan decides what some screens are made of
      (see PLAN above), so `body.sd-pro` has to be on before anything paints. */
   initPlan();
+  initTags();          // before the first render: the picker and shop read it
 
   if (isMobile) { initMobile(); } else { initViewer(); }
   initFillets();
@@ -3067,8 +3068,35 @@ function closePlCustomize() {
 /* Shop — placeholder purchase. There is no cart, no price total and no
    payment: the button becomes the state it would have bought. Enough to show
    what owning something looks like without pretending to charge for it. */
+/* Tags you own, for THIS SESSION only.
+   ⚠ Deliberately not persisted. The storefront's own note says nothing is
+   charged and nothing is kept, and a prototype that quietly remembers purchases
+   across reloads is lying about that. The free tags are not listed here — they
+   are owned by definition (anything in SD_TAGS without a `price`). */
+window.SD_TAG_OWNED = [];
+window.sdOwnsTag = function (id) {
+  const t = (window.SD_TAGS || []).find(x => x.id === id);
+  return !!t && (!t.price || SD_TAG_OWNED.indexOf(id) >= 0);
+};
+/* ⚠ Seeded from what the signed-in profile is already WEARING — you cannot own
+   less than you have on, and without this the shop would offer to sell you a tag
+   that is visible on your own page. Runs from `init()` before the first render,
+   same slot as `initPlan`. */
+function initTags() {
+  ((window.PROFILE && window.PROFILE.tags) || []).forEach(id => {
+    if (SD_TAG_OWNED.indexOf(id) < 0) SD_TAG_OWNED.push(id);
+  });
+}
+
 window.sdBuy = function (btn) {
   if (!btn || btn.disabled) return;
+  /* ⚠ A tag is the one purchase here that has to be RECORDED, not just
+     acknowledged: it turns up in the picker on the edit page afterwards. The
+     label swap below still runs — the storefront behaves the same, it just
+     means something now. */
+  if (btn.dataset && btn.dataset.tag && SD_TAG_OWNED.indexOf(btn.dataset.tag) < 0) {
+    SD_TAG_OWNED.push(btn.dataset.tag);
+  }
   /* ⚠ Pro is not a purchase, it is the PLAN. Everything else in here changes
      one button; Pro changes what the whole app renders as, so it routes through
      `setPlan` — which re-renders the screen, and brings this row back already
@@ -6269,7 +6297,13 @@ window.PROFILE = {
   handle: 'ericd',
   bio:    'Shoegaze apologist and lifelong crate-digger. I review mostly ambient, dream-pop and hip-hop, but I\'ll give anything one honest listen. Half my week is spent building playlists like mixtapes for people I haven\'t met yet.',
   location:   'South Korea',
+  /* ⚠ `occupation` is DATA ONLY now — the tags below replaced it in the UI and
+     nothing renders it. The personas still carry the field. */
   occupation: 'Motion Designer',
+  /* Worn tags, and the reason one of them is an event: the collectibles are the
+     point of the system, and a mockup where the default profile has none never
+     shows it. `initTags` reads this and treats what you are wearing as owned. */
+  tags:   ['daisychains2026', 'shoegazer', 'nightowl'],
   pic:    'images/playlist-statue-night.jpg',
   favs:   ['Punisher', 'Loveless', 'Blonde', 'Currents', 'To Pimp a Butterfly'],
   socials:{ instagram: 'ericd', x: 'ericd', soundcloud: 'ericd' },
@@ -6983,27 +7017,30 @@ function initPersonas() {
 }
 
 /* ── The category-aware content editor ────────────────────────
-   ONE bottom sheet behind every "+" / slot on the profile. What it searches is
+   ONE bottom sheet behind every media slot on the profile. What it searches is
    decided by the KIND it's opened with, so filling an album disc, a playlist
-   row, a favourite song, the photo or a text field all use the same popup:
+   row, a favourite song or the photo all use the same popup:
 
      album | song | playlist | photo   → a searchable grid
-     name  | text                      → a small form (the only non-search kinds)
+
+   ⚠ It used to carry two more kinds, `name` and `text`, which drew a little
+   form for the display name, handle, bio, location and occupation. Those are
+   gone: Edit Profile is a form now (`profileEditHtml` in screens.js) and types
+   those fields inline, so a popup for them would be a second way to do the same
+   thing — and the worse one, since it hid the field you were filling behind a
+   sheet. Every kind left here is a CHOICE from a list, which is what the sheet
+   is actually good at.
 
    Everything writes through profFavTarget(), which is the Edit Profile DRAFT
    when that page is open and PROFILE otherwise — so an unsaved change on the
    edit page can still be thrown away by Cancel.
    ───────────────────────────────────────────────────────────── */
-const PFE_TEXT = {
-  bio:        { label: 'Bio',        ph: 'Tell people what you are into.', max: 240, multi: true },
-  location:   { label: 'Location',   ph: 'Country or city', max: 30 },
-  occupation: { label: 'Occupation', ph: 'What you do',     max: 30 },
-};
 const PFE_KIND = {
   album:    { title: 'Choose an album',   ph: 'Search albums' },
   song:     { title: 'Choose a song',     ph: 'Search songs, albums, artists' },
   playlist: { title: 'Choose a playlist', ph: 'Search your playlists' },
   photo:    { title: 'Choose a photo',    ph: '' },
+  tag:      { title: 'Your tags',        ph: '' },
 };
 let _profSlot = 0;
 let _profKind = 'album';
@@ -7019,7 +7056,7 @@ window.openProfEditor = function (kind, slot) {
   profPickerBuild();
   requestAnimationFrame(() => {
     ov.classList.add('open');
-    const f = ov.querySelector('.pp-input, .pp-text');
+    const f = ov.querySelector('.pp-input');
     setTimeout(() => f && f.focus(), 80);
   });
 };
@@ -7036,59 +7073,36 @@ function ensureProfPicker() {
   return ov;
 }
 
-// Build the sheet for the current kind — search kinds get a searchbar + grid,
-// the text kinds get a small form — then fill it.
+// Build the sheet for the current kind — a searchbar over a grid, except for
+// `photo`, whose grid is the built-in set plus a real upload tile — then fill it.
 function profPickerBuild() {
   const ov = document.getElementById('prof-picker'); if (!ov) return;
-  const T = profFavTarget();
-  const isText = _profKind === 'name' || _profKind === 'text';
-  let body;
-  if (_profKind === 'name') {
-    body = `
-      <div class="pp-form">
-        <label class="pp-flabel">Display name</label>
-        <input class="pp-text" type="text" maxlength="24" value="${obEsc(T.name || '')}" placeholder="Your name" spellcheck="false">
-        <label class="pp-flabel">Handle</label>
-        <div class="pp-handle"><span>@</span><input class="pp-text pp-text2" type="text" maxlength="20" value="${obEsc(T.handle || '')}" placeholder="handle" spellcheck="false"></div>
-        <button class="pp-done" onclick="profTextDone()">Done</button>
-      </div>`;
-  } else if (_profKind === 'text') {
-    const cfg = PFE_TEXT[_profSlot] || { label: _profSlot, ph: '', max: 120 };
-    body = `
-      <div class="pp-form">
-        <label class="pp-flabel">${cfg.label}</label>
-        ${cfg.multi
-          ? `<textarea class="pp-text pp-textarea" rows="5" maxlength="${cfg.max}" placeholder="${cfg.ph}" spellcheck="false">${obEsc(T[_profSlot] || '')}</textarea>`
-          : `<input class="pp-text" type="text" maxlength="${cfg.max}" value="${obEsc(T[_profSlot] || '')}" placeholder="${cfg.ph}" spellcheck="false">`}
-        <button class="pp-done" onclick="profTextDone()">Done</button>
-      </div>`;
-  } else {
-    const k = PFE_KIND[_profKind] || PFE_KIND.album;
-    body = `
+  const k = PFE_KIND[_profKind] || PFE_KIND.album;
+  /* Neither of these searches. The photo grid is a dozen pictures you look at,
+     and the tag list is short and read as a whole — a searchbar over either is
+     a control with nothing to do. */
+  const noSearch = _profKind === 'photo' || _profKind === 'tag';
+  const body = `
       ${_profKind === 'photo' ? `
       <label class="pp-upload">
         <input type="file" accept="image/*" onchange="profPhotoUpload(this)">
         Upload your own
-      </label>` : `
+      </label>` : noSearch ? '' : `
       <div class="pp-searchbar">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
         <input class="pp-input" type="text" placeholder="${k.ph}" autocomplete="off" spellcheck="false" oninput="profPickerRender(this.value)">
       </div>`}
       <div class="pp-grid"></div>`;
-  }
-  const title = isText
-    ? (_profKind === 'name' ? 'Name & handle' : ((PFE_TEXT[_profSlot] || {}).label || 'Edit'))
-    : (PFE_KIND[_profKind] || PFE_KIND.album).title;
   ov.innerHTML = `
-    <div class="pp-sheet${isText ? ' pp-sheet--form' : ''}">
+    <div class="pp-sheet">
       <div class="pp-handle-bar"></div>
       <div class="pp-top">
-        <div class="pp-title">${title}</div>
+        <div class="pp-title">${k.title}</div>
         <button class="pp-close" onclick="closeProfPicker()" aria-label="Close">×</button>
       </div>
       ${body}
     </div>`;
-  if (!isText) profPickerRender('');
+  profPickerRender('');
 }
 
 // The searchable kinds, normalised to one row shape.
@@ -7122,9 +7136,62 @@ function profPickerItems(q) {
   return PROFILE_PHOTOS.map(src => ({ img: src, t: '', s: '', on: src === T.pic, pick: `profPickPhoto('${src}')` }));
 }
 
+/* The tag sheet.
+   ⚠ MULTI-SELECT, and it does NOT close on a pick: you are assembling a set of
+   three, not answering one question. That is also why it repaints itself and
+   the row behind it by hand rather than going through `profAfterPick` — that
+   calls renderViewer(), which would tear the open sheet out of the DOM.
+   ⚠ A LOCKED tag is not disabled, it is a link to the shop. A tag you can't
+   wear yet is the whole advertisement for the ones that are for sale; greying
+   it out would say "not for you" where the truth is "not yet". */
+function profTagGrid(grid) {
+  const T = profFavTarget();
+  const worn = T.tags || [];
+  const rows = (window.SD_TAGS || []).map(t => {
+    const on = worn.indexOf(t.id) >= 0;
+    if (!sdOwnsTag(t.id)) {
+      return `<button class="pp-tag pp-tag--locked${sdTagTex(t)}" style="--tint:${t.tint}"
+              onclick="closeProfPicker(); navigate('shop')" title="Get it in the shop">
+        <span class="pp-tag-l">${obEsc(t.label)}</span><span class="pp-tag-p">${t.price}</span>
+      </button>`;
+    }
+    // Full and not one of yours → dimmed, and it says so by not lighting up.
+    const full = !on && worn.length >= SD_TAG_MAX;
+    return `<button class="pp-tag${on ? ' pp-tag--on' : ''}${full ? ' pp-tag--full' : ''}${sdTagTex(t)}"
+            style="--tint:${t.tint}" onclick="profPickTag('${t.id}')">
+      <span class="pp-tag-l">${obEsc(t.label)}</span>
+    </button>`;
+  }).join('');
+  grid.className = 'pp-grid pp-grid--tag';
+  grid.innerHTML = `<div class="pp-tag-hint">Wear up to ${SD_TAG_MAX}. The plain ones are yours; the rest are in the shop.</div>${rows}`;
+}
+
+window.profPickTag = function (id) {
+  const T = profFavTarget();
+  if (!T.tags) T.tags = [];
+  const i = T.tags.indexOf(id);
+  if (i >= 0) T.tags.splice(i, 1);
+  else if (T.tags.length < SD_TAG_MAX) T.tags.push(id);
+  else return;                    // full: the row is already dimmed, say nothing
+  const ov = document.getElementById('prof-picker');
+  const grid = ov && ov.querySelector('.pp-grid');
+  if (grid) profTagGrid(grid);
+  profTagSync();
+};
+
+/* Repaint the form's Tags row under the open sheet. ⚠ By hand, not
+   renderViewer() — see above. Same move `pfeditField` makes for the bio
+   counter, and for the same reason. */
+function profTagSync() {
+  if (!window.pfeTagChips) return;
+  const T = profFavTarget();
+  document.querySelectorAll('.s-pfedit .pfe-tags').forEach(el => { el.innerHTML = pfeTagChips(T); });
+}
+
 function profPickerRender(q) {
   const ov = document.getElementById('prof-picker'); if (!ov) return;
   const grid = ov.querySelector('.pp-grid'); if (!grid) return;
+  if (_profKind === 'tag') { profTagGrid(grid); return; }
   const items = profPickerItems(q);
   grid.className = 'pp-grid' + (_profKind === 'photo' ? ' pp-grid--photo' : '');
   grid.innerHTML = items.map(it => `
@@ -7175,31 +7242,21 @@ window.profPhotoUpload = function (input) {
   fr.onload = () => { T.pic = fr.result; profAfterPick(); };
   fr.readAsDataURL(f);
 };
-window.profTextDone = function () {
-  const ov = document.getElementById('prof-picker'); if (!ov) return;
-  const T = profFavTarget();
-  if (_profKind === 'name') {
-    const [a, b] = ov.querySelectorAll('.pp-text');
-    if (a) T.name = a.value.trim() || T.name;
-    if (b) T.handle = b.value.trim().replace(/^@/, '') || T.handle;
-  } else {
-    const el = ov.querySelector('.pp-text');
-    if (el) T[_profSlot] = el.value;
-  }
-  profAfterPick();
-};
-
 /* ============================================================
    EDIT PROFILE — the customising page behind the card's pencil
    ------------------------------------------------------------
    PFEDIT is a DRAFT copied from PROFILE when the page opens, so Cancel can
    genuinely throw the changes away and Save is the only thing that commits.
 
-   There is deliberately NO form on the page and no sync layer: every edit goes
-   through the content editor popup (openProfEditor), which writes into the draft
-   and then re-renders. Nothing is being typed into on the page itself, so a full
-   re-render can't steal a caret — the only inputs live inside the popup, which
-   survives because it's rebuilt only when it opens.
+   The page IS a form now (`profileEditHtml` in screens.js): the text fields are
+   typed into directly and the media slots — photo, albums, playlists, songs —
+   still go through the content editor popup (openProfEditor).
+
+   ⚠ Those two halves have to disagree about re-rendering. A pick from the popup
+   re-renders the whole screen; a keystroke MUST NOT, or the caret is dropped
+   mid-word. So `pfeditField` writes to the draft and returns, and the re-render
+   a pick does is harmless because it rebuilds the inputs FROM the draft, which
+   already holds everything typed so far.
    ============================================================ */
 window.PFEDIT = null;
 
@@ -7208,9 +7265,35 @@ window.PFEDIT = null;
 window.pfeditDraft = function () {
   if (!window.PFEDIT) {
     const P = window.PROFILE || {};
-    window.PFEDIT = { ...P, socials: { ...(P.socials || {}) }, favs: (P.favs || []).slice() };
+    window.PFEDIT = { ...P, socials: { ...(P.socials || {}) }, favs: (P.favs || []).slice(),
+      /* ⚠ Seeded THROUGH profTags, not copied. A profile with no `tags` still
+         shows two (seeded off the handle), so a form that opened blank would
+         look like the edit page had lost them. */
+      tags: (window.profTags ? profTags(P) : []).map(t => t.id) };
   }
   return window.PFEDIT;
+};
+
+/* A keystroke in the form. Writes the draft and stops there — see the ⚠ above.
+   ⚠ The viewer draws the Dark and Light shells SIDE BY SIDE, so the same field
+   exists twice in the DOM. Without mirroring, the copy you aren't typing in sits
+   on a stale value until something else re-renders, and switching variant then
+   looks like the edit was lost. `data-k` is what pairs them up. */
+window.pfeditField = function (key, el) {
+  if (!el) return;
+  // A handle is a handle: no spaces, no '@', nothing the profile can't print.
+  if (key === 'handle') {
+    const clean = el.value.replace(/[^A-Za-z0-9._]/g, '');
+    if (clean !== el.value) el.value = clean;
+  }
+  pfeditDraft()[key] = el.value;
+  document.querySelectorAll('.s-pfedit [data-k="' + key + '"]').forEach(o => {
+    if (o !== el && o.value !== el.value) o.value = el.value;
+  });
+  if (key === 'bio') {
+    document.querySelectorAll('.s-pfedit .pfe-count')
+      .forEach(c => { c.textContent = el.value.length + '/240'; });
+  }
 };
 
 window.openProfileEdit = function () {
@@ -7234,7 +7317,10 @@ window.pfeditSave = function () {
     handle: (D.handle || '').trim().replace(/^@/, '') || window.PROFILE.handle,
     bio: D.bio,
     location: (D.location || '').trim(),
-    occupation: (D.occupation || '').trim(),
+    /* ⚠ `occupation` is NOT here any more — the form dropped that row for tags.
+       Leaving it in the whitelist would only copy PROFILE's own value back over
+       itself. The personas still carry the field; nothing shows it. */
+    tags: (D.tags || []).slice(),
     pic: D.pic,
     favs: (D.favs || []).slice(),
     socials: { ...(D.socials || {}) },
@@ -7375,11 +7461,28 @@ function profFavBoot(rail) {
   rail._favRO.observe(rail);
 }
 
+/* ⚠ Opens on the MIDDLE copy. The rail holds FAV_REPS copies of the same five
+   discs and the wrap-around below only works with a full copy of runway on each
+   side, so starting on the first copy would teleport on the user's first flick
+   left. `n` is the slot count; `n + 1` is disc 2 of copy 2, which keeps the
+   album the page opens on the same one it always opened on. */
 function profFavStart(rail) {
   if (!rail || !rail.clientWidth) return;
   const items = rail.querySelectorAll('.prof-fav');
-  const el = items[1] || items[0];
+  const n = Number(rail.dataset.favN) || 0;
+  const el = items[n + 1] || items[1] || items[0];
   if (el) rail.scrollLeft = el.offsetLeft - (rail.clientWidth - el.offsetWidth) / 2;
+}
+
+/* One copy of the discs, in px. MEASURED, not computed: the disc width is a
+   percentage of the rail and the gap is not, so only the DOM knows what a copy
+   comes to. Returns 0 when the rail isn't laid out yet, which the caller reads
+   as "don't wrap". */
+function profFavPeriod(rail) {
+  const n = Number(rail.dataset.favN) || 0;
+  const items = rail.querySelectorAll('.prof-fav');
+  if (!n || items.length <= n) return 0;
+  return items[n].offsetLeft - items[0].offsetLeft;
 }
 
 window.profFavSync = function (rail) {
@@ -7387,11 +7490,39 @@ window.profFavSync = function (rail) {
   rail._favRaf = requestAnimationFrame(() => { rail._favRaf = 0; profFavPaint(rail); });
 };
 
+/* How far off the arc a neighbour sits. ⚠ FAV_ARC_Y is paid for in
+   `.prof-fav-rail`'s padding-bottom — the rail is `overflow-y: hidden`, so a
+   disc pushed further down than that padding is simply cut off. Change one and
+   change the other. */
+const FAV_ARC_Y = 30;        // px a disc falls per slot away from centre (× t²)
+const FAV_ARC_DEG = 13;      // degrees it tilts per slot — the tangent of the arc
+const FAV_ARC_SHRINK = 0.2;  // how much of the disc is given up per slot
+
 function profFavPaint(rail) {
   const sec = rail && rail.closest('.prof-favs');
   if (!sec) return;
   const items = [].slice.call(rail.querySelectorAll('.prof-fav'));
   if (!items.length || !rail.clientWidth) return;
+
+  /* ── The loop ─────────────────────────────────────────────────────────────
+     The rail is FAV_REPS identical copies of the five discs, and this keeps the
+     scroll offset roughly inside the middle one. A jump of exactly ONE period
+     lands on the identical disc at the identical sub-pixel offset, so nothing
+     moves on screen — the rail simply never runs out in either direction.
+     ⚠ The thresholds are half a copy INSIDE the outer copies, not at the seam.
+     Wrapping the instant you cross a boundary means wrapping under a finger
+     that is sitting on it, and the rail would flicker between the two.
+     ⚠ Done BEFORE `mid` is read: everything below is measured off scrollLeft,
+     and reading it either side of a teleport gives two different answers.
+     ⚠ Assigning scrollLeft fires another scroll event, which re-enters through
+     profFavSync — harmless because that is rAF-throttled and the new offset is
+     already in range, so the second pass wraps nothing. */
+  const period = profFavPeriod(rail);
+  if (period > 0) {
+    if (rail.scrollLeft < period * 0.5) rail.scrollLeft += period;
+    else if (rail.scrollLeft > period * 2.5) rail.scrollLeft -= period;
+  }
+
   /* Measured against the rail's own scroll box, so `.prof-fav-rail` must stay
      `position: relative` — that is what makes it each button's `offsetParent`
      and keeps `offsetLeft` in the same space as `scrollLeft`. */
@@ -7403,6 +7534,29 @@ function profFavPaint(rail) {
   });
   items.forEach((el, i) => el.classList.toggle('is-mid', i === best));
 
+  /* ── The arc ──────────────────────────────────────────────────────────────
+     The discs sit on a circle, not on a line: the centred one rides the top of
+     the arc and its neighbours swing DOWN and tilt with the curve.
+     ⚠ Driven from the live scroll offset, not from `.is-mid`. `t` is how many
+     SLOTS a disc is from the middle of the rail, fractional — so the pose moves
+     continuously under your thumb and the swap reads as the rail ROTATING, not
+     as two discs cross-fading between fixed poses. A class can only ever say
+     "centre or not", which is the difference between an arc and a line.
+     ⚠ Drop is t², so the fall-off matches a circle rather than a wedge.
+     ⚠ These write inline transforms every frame, which is why `.prof-fav` has
+     no `transition` on transform/opacity any more: a transition would chase the
+     value it is already being handed and the rail would feel like syrup. */
+  const step = (items[1] ? Math.abs(items[1].offsetLeft - items[0].offsetLeft) : 0)
+            || rail.clientWidth || 1;
+  items.forEach(el => {
+    const t = Math.max(-3, Math.min(3, (el.offsetLeft + el.offsetWidth / 2 - mid) / step));
+    const a = Math.abs(t);
+    el.style.transform = 'translateY(' + (FAV_ARC_Y * t * t).toFixed(2) + 'px)'
+                       + ' rotate(' + (FAV_ARC_DEG * t).toFixed(2) + 'deg)'
+                       + ' scale(' + (1 - FAV_ARC_SHRINK * Math.min(a, 1.5)).toFixed(3) + ')';
+    el.style.opacity = Math.max(0.26, 1 - 0.44 * a).toFixed(3);
+  });
+
   const set  = (sel, v) => { const el = sec.querySelector(sel); if (el) el.textContent = v; };
   const setH = (sel, v) => { const el = sec.querySelector(sel); if (el) el.innerHTML = v; };
   const name = items[best].dataset.alb;
@@ -7413,6 +7567,7 @@ function profFavPaint(rail) {
     set('.prof-fav-artist', 'Tap to add a favourite');
     setH('.prof-fav-stars', '');
     set('.prof-fav-meta', '');
+    set('.prof-fav-review', '');
     return;
   }
   /* The whole reason the rail exists: a cover alone does not tell you what an
@@ -7426,6 +7581,11 @@ function profFavPaint(rail) {
   setH('.prof-fav-stars', (typeof halfStars === 'function') ? halfStars(a.rating || 0, 11) : '');
   const rc = window.fmtRc ? fmtRc(a.reviewCount || 0) : (a.reviewCount || 0);
   set('.prof-fav-meta', rc + ' reviews');
+  /* ⚠ Their line, under everyone else's numbers. Read from `window.PROFILE`,
+     which is whichever profile is on screen — a friend's page swaps that object
+     (`openFriendProfile`), so the quote follows the page rather than the
+     signed-in user. */
+  set('.prof-fav-review', window.profFavLine ? profFavLine(window.PROFILE || {}, a.album) : '');
 }
 
 window.toggleProfCd = function (btn, e, slot) {

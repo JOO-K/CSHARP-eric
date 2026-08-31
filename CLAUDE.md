@@ -1390,7 +1390,14 @@ app's reserved-for-paid accent, so the viewer chrome agrees with the storefront.
 | Where | Free | Pro |
 |-------|------|-----|
 | Home bento cover | tap opens the album | tap opens the album, **hold opens the shelf wheel** |
+| Profile — Favourite songs | section absent | section shown |
+| Edit Profile — Favourite songs | a "Get Pro" row → the shop | the five slots |
 | Shop — Pro row | `$3/mo` button | `Active` pill |
+
+⚠️ **Favourite songs is hidden on a Free profile, not locked.** A padlocked,
+greyed-out shelf on someone's profile advertises to every visitor what its owner
+didn't buy. The upsell goes on **Edit Profile**, the one screen only the owner
+sees, where the offer is addressed to the person who can act on it.
 
 #### The shelf wheel has two hosts now (`proWheelInit`)
 
@@ -1947,6 +1954,17 @@ flow below knows they are there. The CTA row landed on top of them.
 - **The price is the button** (`.shop-buy`) — there's no second word to read,
   and no cart to put anything in. `sdBuy` swaps it for an **"Owned" pill of the
   same footprint** so the row doesn't reflow. Nothing is charged or persisted.
+- ⚠️ **Tags are the one purchase that is RECORDED, not just acknowledged.** The
+  buy button carries `data-tag`, and `sdBuy` pushes the id into `SD_TAG_OWNED`
+  before doing its usual label swap — a tag you bought has to turn up in the
+  picker on Edit Profile, or the purchase did nothing. (Still session-only; see
+  *Tags* under the profile.)
+- **The Tags section is a LIST, not the 4-up grid** frames and badges use. A
+  tag's label is a word of a length it chose — `DaisyChainsFestival2026` is long
+  *because* it is specific — and equal cells would truncate the ones worth
+  selling. Each row is the chip itself: there is nothing to picture beyond the
+  thing you would wear. Only priced tags are listed; the free ones are already
+  yours, which the section's sub-line says.
 - Everything is placeholder: invented names and prices, art is CSS. Themes reuse
   the `Funky 01` name the Settings row already shows.
 
@@ -2776,26 +2794,44 @@ drift from the real thing).
 
 ### ⚠️⚠️ The `viewBox` height and the canvas `aspect-ratio` are ONE number
 
-`.prof-base` is `viewBox="0 0 690 460"` and `.prof-canvas` is
-`aspect-ratio: 690 / 460`. **Change one without the other and the card breaks in
+`.prof-base` is `viewBox="0 0 690 556"` and `.prof-canvas` is
+`aspect-ratio: 690 / 556`. **Change one without the other and the card breaks in
 a way that is very hard to read.** `preserveAspectRatio="xMidYMid meet"` scales
-the drawing to fit the *shorter* axis, so a 608-tall viewBox inside a 460-tall
-box renders the whole card at **75.7%** and centres it — while every
+the drawing to fit the *shorter* axis, so a 556-tall viewBox inside a 460-tall
+box renders the whole card at **82.7%** and centres it — while every
 percentage-positioned element on top stays exactly where it was. Nothing looks
-broken on its own; the card is simply wrong everywhere at once. This is exactly
-what happened when the favourites moved out.
+broken on its own; the card is simply wrong everywhere at once.
 
-### The canvas is 690×460, not the file's 690×608
+### The canvas is 690×556 — the card GREW a bottom compartment
 
-The artwork's bottom ~150 units are the five favourite-album circles, and those
-are no longer in the card — they are a swipeable rail in their own section. The
-canvas stops where the *card* stops, at y=449, plus a little air.
+⚠️ **It was 690×460 and the card floor was y=449.** The tag strip moved *into*
+the card (see *Tags* below), so the silhouette was extended by **96 trace units**:
+the floor is now **y=545** and the viewBox 556, keeping the same 11 units of air
+under the card. Nothing above y=94.7 moved, which is why the banner and the
+username pill are untouched in the path data.
 
-Every percentage in app.css's `.prof-*` block resolves against **690×460**:
-horizontals are `x / 690`, verticals are `y / 460`. **A value copied from an
+- The **picture pane still stops at y=449.5.** The card grew underneath it; the
+  photo did not. ⚠️ Its bottom-left arc went with the move — that was the
+  *card's* corner, and the card's corner is 96 units lower now, so both the
+  `.prof-divide` path and `.prof-pic`'s `border-radius` are square there.
+- A second `.prof-divide` path draws `M374.5 449.5 L688.9 449.5`. Together with
+  the pane's bottom edge that is **one hairline across the whole card**, which is
+  what makes the strip read as a compartment rather than as empty card.
+
+⚠️ **EVERY vertical percentage in app.css's `.prof-*` block was rescaled by
+460/556 = 0.82734** so that what it points at stayed in the same physical place:
+`.prof-name-pill` (2.93→2.43 / 10.33→8.54), `.prof-name-tab-lbl` (2.9→2.4 /
+10.3→8.52), `.prof-pic` (16.5→13.65 / 81.2→67.18), `.prof-act` (0.2→0.17 /
+11.7→9.68). `.prof-right` is the exception and did **not** simply rescale: its
+`bottom` went 6% → **22.2%** because the pane has to stop at the compartment's
+seam, and its `top` was left at **18%**, which against the taller box is now 100
+trace units — the deliberate extra head-room the bio was asking for.
+
+Every percentage in app.css's `.prof-*` block resolves against **690×556**:
+horizontals are `x / 690`, verticals are `y / 556`. **A value copied from an
 older revision lands in the wrong place without looking obviously wrong**, which
-is the trap every time this changes — it has been 466, then 608, now 460. What
-the artwork revision itself changed:
+is the trap every time this changes — it has been 466, then 608, then 460, now
+556. What the artwork revision itself changed:
 
 | | old (690×466) | new (690×608) |
 |---|---|---|
@@ -2821,8 +2857,7 @@ the artwork revision itself changed:
   action button stays absolute: it is anchored to the card's corner, not to the
   end of this stack.
 - ⚠️ `.prof-info` / `.prof-meta` need `position: relative` now — they are flow
-  children, and the `.pfe-slot` badge used to get its containing block for free
-  from the slot being absolutely positioned itself.
+  children, where before they were absolutely positioned from the SVG trace.
 
 #### ⚠️ ONE action button, not two (`.prof-act`)
 
@@ -2832,29 +2867,139 @@ with `PROFILE_GUEST` deciding what it says. They were separate elements once, so
 one in the DOM hide the other, and **the pencil vanished**. A page offers one
 action here, so there is one element.
 
-#### The stats: three figures, STACKED
+#### ⚠️ NO BACKTICKS in an HTML comment inside a template literal
 
-**Following · Followers · Review score**, down the right pane, and nothing else
-in it. Playlists went first (the section below already shows them, with covers),
-then the review **count** — it is baked into the score, which is points per
-review plus points per like.
+A backtick in the *plain text* of a template literal **ends the template**. This
+bit `shopHtml`: a comment reading ``see `.shop-model` in app.css`` parsed as
+`"…see " . shop - model`, which threw *"model is not defined"* and took the whole
+**Shop screen** down with it — while `node --check` passed, because the wreckage
+is valid syntax. Every file here is one big template literal per screen, so the
+rule is absolute: **quote a class or function name in a rendered comment with
+quotes, or not at all.** Found and fixed 2026-08-31.
 
-- ⚠️ **Stacked, not a row, and that is what buys the size.** Side by side, each
-  figure was capped by the width of its own *label* — "Following" at 7px already
-  took 40px of the ~45px each column had — so the numbers could not exceed 17px
-  however much vertical space the pane had. Down the column each gets the full
-  width: measured, the widest text is **62.7px of 131.5**, and height is what
-  binds instead (three ~42px blocks in a 161px column, ~14px slack).
-- Numbers are **34px** against 9px labels. The label can be a real word again for
-  the same reason — the row could only afford "Score".
-- ⚠️ **No emboss.** Each figure briefly sat in its own inset well; stacked, three
-  wells read as a list of controls rather than as a readout.
-- ⚠️ **The bio and the location are OUT of the card, temporarily.** The pane was
-  a stat row, a two-line paragraph and a pin all competing in a ~131px column and
-  none of them had room to be read. `metaHtml` / `pinIco` in `screens.js` and the
-  `.prof-desc` / `.prof-meta*` rules in app.css are deliberately kept so putting
-  them back is a few lines. ⚠️ **While they are out, bio and location have no
-  edit affordance** — their `pfe-slot`s went with them.
+#### Top margins
+`.prof2-scroll` opens with **14px** of top padding, not 6, and `.prof-canvas`
+takes 4px of its own. The card is the first thing under the app header and at 6
+it was tucked against it — this page opens on one large object and it has to look
+placed rather than jammed. The bio's own head-room is `.prof-right`'s `top: 18%`
+against the taller canvas; see the viewBox note above.
+
+#### The right pane is the BIO; the stats are a row UNDER the card
+
+⚠️ **They swapped.** The pane held **Following · Followers · Review score**
+stacked down its right edge, and the bio was out of the card entirely. Now the
+pane holds only `.prof-desc` (the bio, 11px, clamped to six lines) and the three
+figures are a flat row below the card (`profStatsHtml` → `.prof-statbar`).
+
+- **Why the figures left.** A number is a number wherever it sits, and inside the
+  pane its size was capped by the pane's width — that is the whole reason they
+  had to be stacked in the first place. Out in a full-width row all three read at
+  once instead of being scanned down a column, which is how a follower count is
+  actually read and how every other profile prints it.
+- **Why the bio took the pane.** It is the only text on the page written to be
+  *read* rather than scanned, and reading wants line length. A pane to itself is
+  the one place on this screen that can give it.
+- **Set at 12.5px / weight 600**, `--pf-ink` at 82%, clamped to five lines. At a
+  caption's size and weight (11px / 400) it read as a footnote *about* the
+  person instead of as the person. ⚠️ `.prof-right` carries the inset as
+  `padding` plus a local `box-sizing: border-box` — this sheet has no global
+  reset, so without it the padding grows the pane past the card's right edge
+  instead of insetting the text.
+- ⚠️ **The location is BACK, at the foot of the pane** (`.prof-meta`,
+  `margin-top: auto`). Country or city and no finer: the line has ~116px, never
+  wraps, and a street is not a thing a profile should print. `.prof-right` is
+  `justify-content: flex-start`, not `center` — an auto margin eats the free
+  space before `justify-content` ever sees it, so `center` there would be a rule
+  that reads as if it does something and doesn't.
+- ⚠️ **`.prof-statbar` is a SIBLING of `.prof-canvas`, never a child.** The
+  canvas is a traced SVG whose every child is positioned in percentages of the
+  trace; anything inside it has to be drawn to fit the artwork.
+- The hairlines are `border-left` on the cells, so the row can never end on a
+  stray divider. Numbers **23px** against 8.5px mono labels.
+- ⚠️ **The dead in-card rules are GONE** — `.prof-stats` / `.prof-stat` /
+  `.prof-stat-n` / `.prof-stat-l` in app.css, and `profCanvasHtml`'s `stat()`
+  and `nf()` helpers. Don't resurrect them to put figures back in the pane; the
+  bio is in there.
+#### Tags — the compartment at the FOOT OF THE CARD (`SD_TAGS` · `profTags` · `profTagsHtml`)
+
+⚠️ **These replaced `occupation`**, a free-text line saying what you do for
+money. A tag says what you are *about*, it is **chosen from a set** rather than
+typed, and — the point — it is **a thing you collect**. The plain ones
+(`cat lover`, `metal head`, `no skips`) are free and everyone has them; the
+specific ones are bought in the shop or handed out at something you actually
+went to. `DaisyChainsFestival2026` is only worth wearing because not everyone
+can.
+
+- **`SD_TAGS` (screens.js) is the catalogue.** Anything with a `price` has to be
+  earned; everything else is owned by definition. `note` is the storefront's
+  sub-line and only collectibles carry one.
+- ⚠️ **`tint` is an `"r,g,b"` TRIPLE, not a hex colour** — that is the shop's own
+  convention (`.shop-field--tint`), and a tag has to be the same object on a
+  profile and on a storefront row. One `tagChip(t)` builds the chip for the
+  profile row, the edit form and the shop, so it cannot look like three things.
+- **Free = outlined, collectible = filled with a ring** (`.prof-tag--rare`). The
+  difference has to read at a glance or the collectible ones are worth nothing.
+
+##### Textures (`tex:` on a tag → `.sd-tex--*` in app.css)
+Every tag names a **surface**: brushed steel for `metal head`, daisies for
+`DaisyChainsFestival2026`, grooves for `vinyl only`, halftone for `BlueNote85`.
+A flat coloured pill does not read as something you *collected*, and at ~26px
+the texture does more of that work than the label can.
+
+- ⚠️ **CSS gradients, not image files.** A chip is ~26px tall, where a
+  photographic texture is mush; the good free tiling sets (Transparent Textures,
+  Subtle Patterns) are **CC-BY** and carry a real attribution obligation on a
+  shipped app; and gradients cost zero requests and re-tint themselves from the
+  tag's own `--tint`, because the fill underneath shows through.
+- **FILLER by intent.** Swapping one for a real image is a single `--tex` value
+  (`url(images/tex-metal.png)`) plus its `--tex-size`. Nothing else in the system
+  knows the difference.
+- ⚠️ **Every texture carries a white AND a black layer.** The chips sit on a dark
+  card in one theme and a beige one in the other; a white-only overlay is
+  invisible on light, a black-only one invisible on dark.
+- ⚠️ **`background-color` and `background-image`, never the `background`
+  shorthand.** The colour is the tag's tint and the image is its texture — the
+  shorthand wipes whichever is set second. This is why `.pp-tag--on` and
+  `.pp-tag--locked` set `background-color` specifically.
+- ⚠️ **The classes only declare the `--tex*` variables; the consumer paints
+  them.** That is what lets one class serve `.prof-tag` (profile, form, shop)
+  *and* the picker's `.pp-tag`. `sdTagTex(t)` is the single helper that stamps
+  it, so a tag cannot be brushed steel on your profile and flat grey in the
+  sheet you picked it from.
+- `.prof-tag--rare` and `.pp-tag--on` add a 1px **light** text halo: the label
+  now rides on the texture, and the fill is a saturated tint under near-black
+  ink.
+- ⚠️ **`profTags(P)` falls back to a seeded pair when `P.tags` is unset.** Every
+  profile the mockup deals — personas, a random visitor, a friend's page —
+  arrives without the field, and a row empty on every page but your own reads as
+  broken rather than unused. Seeded off the handle through `profMix(dzSeed(…))`,
+  same as `profFavLine`; ⚠️ the mix step is not optional (see `profReviewLog`).
+- `SD_TAG_MAX` = **3** worn at once. ⚠️ **`profTagsHtml` renders INSIDE
+  `.prof-canvas`**, in the 96-unit compartment the card grew for it — a strip
+  floating *under* the card read as a caption about it rather than as part of
+  who you are. Being in the canvas means being positioned in percentages of the
+  trace: `.prof-canvas .prof-tags` is the compartment (y 449.5→545), inset, over
+  556.
+- ⚠️ **The strip SCROLLS sideways; it does not wrap.** The compartment is one row
+  tall by construction, and three long collectibles wrapping to a second line
+  inside a fixed-aspect box would fall straight out of the card.
+- ⚠️ **Collectibles LEAD** (`profTags` sorts priced-first, stably). An event tag
+  is the one thing in the row nobody else can say; third behind two "cat lover"s
+  it may as well not be there.
+- ⚠️ **Roughly one profile in three wears an event** — the seeded fallback rolls
+  `profMix(dzSeed(seed,'ev')) % 3`. Not everyone, because a tag everyone has is
+  the opposite of a collectible; not nobody, because a feature you never see in
+  the mockup isn't in the mockup. The signed-in `PROFILE` carries an explicit
+  `tags: ['daisychains2026', …]` so the default view always shows one.
+- ⚠️ **`initTags()` (app.js, called from `init()` beside `initPlan`) seeds
+  `SD_TAG_OWNED` from what the signed-in profile is WEARING.** You cannot own
+  less than you have on — without it the shop would offer to sell you a tag
+  that is visible on your own page.
+- ⚠️ **Ownership (`SD_TAG_OWNED`, app.js) lasts ONE SESSION and is not
+  persisted.** The storefront's own note says nothing is charged and nothing is
+  kept; a prototype that quietly remembers purchases across reloads is lying
+  about that. Free tags are not listed in it — they have no `price`, so
+  `sdOwnsTag` returns true without asking.
 
 #### ⚠️ The action button is UPPER RIGHT
 
@@ -2868,13 +3013,92 @@ follow control is expected.
   and the dots plus "FOLLOW" want ~58. 17% gives ~61px and still starts at 81.5%,
   clear of the name banner, which ends at 67.8% (measured clearance: 43.7px).
 
-#### Favourite albums — a rail of three (`profFavsHtml` · `profFavPaint`)
+#### Favourite albums — a rail on an ARC (`profFavsHtml` · `profFavPaint`)
 
-Five small wells traced into the bottom of the card became **three big discs,
-one centred and two peeking**, swipeable, with a panel underneath. At the old
-size **the cover was all you got** — no title, no artist, no year — and a cover
-is not enough to know an album by. The panel says album, artist, stars, and
-year · genre · review count.
+Five small wells traced into the bottom of the card became **discs on a curve,
+one centred and two swung down either side**, swipeable, with a panel
+underneath. At the old size **the cover was all you got** — no title, no artist,
+no year — and a cover is not enough to know an album by. The panel says album,
+artist, stars, and year · genre · review count.
+
+⚠️ **The arc is drawn in JS, from the live scroll offset** — `profFavPaint`
+writes `transform` (translateY · rotate · scale) and `opacity` inline on every
+scroll frame. `t` is how many SLOTS a disc is from the middle of the rail,
+**fractional**, which is what makes the rail read as *rotating* under your thumb
+instead of two discs cross-fading between fixed poses; a class can only ever say
+"centre or not", and that is the difference between an arc and a line. Drop is
+`t²`, so the fall-off is a circle rather than a wedge. Shape lives in three
+constants above `profFavPaint`: `FAV_ARC_Y` (30px per slot), `FAV_ARC_DEG` (13°)
+and `FAV_ARC_SHRINK` (0.2).
+
+- ⚠️ **`.prof-fav` therefore has NO `transition`** on transform or opacity — one
+  would chase a value it is already being handed every frame, and the rail would
+  feel like syrup. Its static rule is only the pre-JS fallback pose.
+- ⚠️ **`FAV_ARC_Y` is paid for in `.prof-fav-rail`'s `padding-bottom` (34px).**
+  The rail is `overflow-y: hidden`; a disc swung further down than that padding
+  is simply sliced off. Change one, change the other.
+- ⚠️ **`.prof-fav-info` takes a NEGATIVE `margin-top` (-18px)** to claw that
+  headroom back. The gap you *see* is measured from the CENTRED disc, which
+  never uses the padding, so without it the panel sits a third of a disc low.
+- **The discs are 46% wide, not 62%** — three big circles in a row left no room
+  to read the curve they sit on. ⚠️ The disc width, the `gap` and
+  `.prof-fav-pad` are ONE piece of arithmetic: `pad + gap + half a disc = 50%`.
+  Redo it whenever the width changes.
+- The heading is **centred** (`.prof-favs .prof-sec-hd`): the rail centres on one
+  disc and the panel under it is centred text, so a left-aligned heading was the
+  only thing on the block off the axis.
+
+##### The rail LOOPS — no end in either direction
+
+`profFavsHtml` emits the same five discs **`FAV_REPS` = 3 times**, and
+`profFavPaint` keeps the scroll offset inside the middle copy by adding or
+subtracting exactly **one period**. A jump of one period lands on the identical
+disc at the identical sub-pixel offset, so nothing moves on screen — the rail
+simply never runs out. Five records have no natural end to stop at, so it hasn't
+got one.
+
+- ⚠️ **Three copies is the minimum.** The middle one is what you ride and the
+  outer two are the runway the teleport moves between; with two, the seam is
+  inside the viewport.
+- ⚠️ **The period is MEASURED (`profFavPeriod`), not computed.** The disc width
+  is a percentage of the rail and the `gap` is not, so only the DOM knows what a
+  copy comes to. `data-fav-n` on the rail is the count of distinct slots.
+- ⚠️ **The wrap thresholds sit half a copy inside the outer copies** (`< 0.5×`
+  and `> 2.5×` the period), not at the seam. Wrapping the instant you cross a
+  boundary means wrapping under a finger resting on it, and the rail flickers.
+- ⚠️ **The wrap runs BEFORE `mid` is read.** Everything else in the paint is
+  measured off `scrollLeft`, and reading it either side of a teleport gives two
+  different answers.
+- ⚠️ **Assigning `scrollLeft` fires another scroll event**, which re-enters
+  through `profFavSync`. Harmless: that is rAF-throttled and the new offset is
+  already in range, so the second pass wraps nothing.
+- ⚠️ **`.prof-fav-pad` is gone**, with the ends it padded. A looping rail has a
+  copy of itself either side of every disc — better runway than a spacer, and no
+  arithmetic to keep in step with the disc width. `profFavStart` opens on
+  **disc 2 of copy 2** (`items[n + 1]`), so the page still opens on the album it
+  always did.
+- Every copy is identical markup: `data-i` is still the slot, so a tap on copy 3
+  edits the same favourite as a tap on copy 1.
+
+##### The panel says what THEY said (`profFavLine`)
+
+Under the stars and the review count sits the owner's own line about that record,
+and it is the one thing in the panel set in **DM Sans** (`--font-main`) —
+everything above it is furniture (a title, an artist, a star row, a count) and
+this is a person talking, so the typeface changes.
+
+- ⚠️ **Seeded off handle + album**, and drawn from the same `PROF_RV_LINES` the
+  review history uses: two places quoting the same person must not sound like two
+  different people, and the disc has to say the same thing every time you swipe
+  back to it.
+- ⚠️ **`profMix` before the modulo** — `dzSeed` is a rolling hash and is linear
+  under a small remainder. Same trap as `profReviewLog`; see the note there.
+- ⚠️ Read from `window.PROFILE`, which is whichever profile is on screen — a
+  friend's page swaps that object, so the quote follows the page rather than the
+  signed-in user.
+- Clamped to two lines: the panel sits between the rail and the next section and
+  must not reflow the page as you swipe. `.prof-fav-info`'s `min-height` grew to
+  92px to hold it.
 
 - ⚠️ **CSS scroll-snap, not a hand-rolled gesture.** This has to feel native
   under a thumb, and the browser's own momentum, rubber-band and snap beat
@@ -3004,59 +3228,130 @@ the white pill's width by the **same** `dx` so they grow as one shape.
 
 ## Edit Profile (`profileEditHtml` + `PFEDIT` in `app.js`)
 
-The customising page behind the profile card's action button (`.prof-act`, previously a
-dead `event.stopPropagation()` stub). `openProfileEdit()` seeds the draft, pushes
-the back stack and navigates to `profile-edit`.
+The customising page behind the profile card's action button (`.prof-act`).
+`openProfileEdit()` seeds the draft, pushes the back stack and navigates to
+`profile-edit`.
 
-**There is no form.** The page *is* the profile — the same card plus the same
-Playlists and Favourite-songs sections — drawn from the draft, with every
-editable region turned into a **slot**:
+**It is a form** — an Instagram-style one: your picture at the top, then one
+labelled row per field, typed into directly.
 
-- a **filled** slot carries `.pfe-slot`: a persistent gold **"+" badge**
-  (`::before`) so it reads as swappable without having to hover, plus a dashed
-  outline (`::after`) on hover. Tapping swaps its content;
-- an **empty** one renders a `.pfe-add` "+" tile instead of collapsing;
-- both open the same popup, so nothing extra is added to the page.
+```
+back pill · "Editing profile" · Save changes
+        ( photo )  ·  Change photo
+Name        [ ................. ]
+Username  @ [ ................. ]
+Bio         [ ................. ]  n/240
+Location    [ ................. ]
+Occupation  [ ................. ]
+Favourite albums   ○ ○ ○ ○ ○
+Playlists          [tile][tile][tile]
+Favourite songs    [row] …
+```
 
-The top bar reads **back pill · "Editing profile" · Save changes**, so the mode is
-labelled rather than implied.
+⚠ **It used to be the profile card itself.** Every editable region of the traced
+SVG carried a `.pfe-slot` class, a gold "+" badge and an `openProfEditor()`
+handler, and there was deliberately no form at all. That was replaced because:
 
-Badge placement is per-slot (`.prof-pic`, `.prof-info`, `.prof-meta`,
-`.prof-name-tab-lbl`, `.prof-fav`, `.prof-pl`, `.prof-song` each get their own
-offsets) because the card's regions butt right up against each other — a badge
-hung off a generic corner lands on a neighbour or covers its own text. Note the
-discs get `pfe-slot` from `profCanvasHtml`'s slot branch, **not** from the `ed()`
-helper the other card regions use; they're built separately.
+- filling in your details meant hunting for the card region that owned each
+  field, and the hit targets were whatever the SVG trace happened to leave;
+- the popup it opened for text **hid the field you were filling** behind a sheet;
+- **bio and location had no entry point at all** once the card dropped
+  `.prof-info` / `.prof-meta` — the fields existed, saved fine, and were
+  unreachable.
+
+The things that are *chosen* rather than typed stay slots, because a list is the
+right control for them: the photo, the five favourite albums, the three
+playlists, the five favourite songs. They all still open the same popup.
+
+Every one of those slots is marked with a **gold "+"**, sized as a target rather
+than a glyph (24px badge, 28-30px on the empty tiles, a 132px avatar with a 36px
+badge). ⚠ **A song row is the exception: it carries ONE "+", on the right, where
+the play triangle used to be** (`.pfe-song-plus`) — nothing plays on this page,
+and the row previously had both a play glyph *and* a badge on its artwork, which
+is two plus signs arguing about which one you press. `.prof-song.pfe-slot::before`
+is explicitly `content: none` for that reason.
+
+The top bar is a `1fr auto 1fr` grid, not `space-between`: the title has to sit
+on the page's centre line, and space-between centres it between two buttons of
+different widths, which is a visibly different place. Save changes is sized off
+`.plp-back-pill` (34px tall) so the two ends of the bar match.
+
+### The text fields (`pfeditField` in app.js)
+⚠ **A keystroke writes the draft and re-renders NOTHING.** Rebuilding the screen
+mid-word drops the caret. A *pick* from the popup does still re-render, and that
+stays safe because the inputs are rebuilt **from the draft**, which already holds
+every keystroke typed so far — the two halves of the page disagree about
+re-rendering on purpose.
+
+⚠ **The viewer draws Dark and Light side by side, so every field exists twice.**
+`pfeditField` mirrors the keystroke into the twin through `data-k`; without that
+the shell you aren't typing in sits on a stale value until something else
+re-renders, and switching variant then looks like the edit was lost. The `id`s
+carry a `-d` / `-l` suffix for the same reason (a `<label for>` has to point at
+one input, not two).
+
+The handle input strips anything that isn't `A-Za-z0-9._` as you type — a handle
+is printed straight onto the profile card's pill.
+
+### Tags, where Occupation was (`openProfEditor('tag')`)
+The Occupation row is gone; in its place is a **Tags** row that is a button, not
+a field — you wear what you own. It opens the picker's `tag` kind: a wrapping
+list of chips rather than the square grid the album/photo kinds use, because a
+tag is a word of a length it chose and equal cells would truncate exactly the
+collectible ones worth showing.
+
+- ⚠️ **The tag sheet is MULTI-SELECT and does NOT close on a pick** — you are
+  assembling a set of three, not answering one question. It therefore repaints
+  itself *and* the row behind it by hand (`profTagGrid` + `profTagSync`) instead
+  of going through `profAfterPick`, which calls `renderViewer()` and would tear
+  the open sheet out of the DOM mid-selection. Same move `pfeditField` makes for
+  the bio counter.
+- ⚠️ **A locked tag is a link to the shop, not a disabled control.** A tag you
+  can't wear yet *is* the advertisement for the ones for sale; greying it out
+  would say "not for you" where the truth is "not yet".
+- ⚠️ **`pfeditDraft` seeds `tags` THROUGH `profTags`**, not by copying `P.tags`.
+  A profile with no tags still *shows* two, so a form that opened blank would
+  look like the edit page had lost them.
+- ⚠️ `occupation` left `pfeditSave`'s whitelist with the row. The personas still
+  carry the field and nothing displays it.
+
+### Favourite songs is Pro (`isPro()`)
+The five song slots are replaced by a gold **"Get Pro" row** (`.pfe-pro` →
+`navigate('shop')`) on a Free account. ⚠️ It is styled gold-edged rather than
+dashed on purpose: a dashed box everywhere else on this page means "empty, tap
+to fill", and this is the one block tapping does NOT fill. The profile itself
+**hides** the section instead of locking it — see *Plan — Free vs Pro*.
 
 ### The content editor (`openProfEditor(kind, slot)`)
 One bottom sheet, reskinned by the **kind** it's opened with — that's what makes
-"search depending on the category" work:
+"search depending on the category" work. Every kind is now a **choice from a
+list**, which is what a sheet is actually good at:
 
 | kind | opened from | popup |
 |------|-------------|-------|
-| `album` | the five CDs on the card | searches `ARCHIVE` |
+| `album` | the five discs | searches `ARCHIVE` |
 | `song` | Favourite songs rows | searches `plnewPool()` (every archive track) |
 | `playlist` | Playlists tiles | searches `plLists()` |
-| `photo` | the card's picture | grid of `PROFILE_PHOTOS` + a real upload tile |
-| `name` | the name banner | small form (display name + handle) |
-| `text` | bio / location | small form; config in `PFE_TEXT` |
+| `photo` | the avatar / "Change photo" | grid of `PROFILE_PHOTOS` + a real upload tile |
+
+⚠ The `name` and `text` kinds (and `PFE_TEXT`, `profTextDone`, and the
+`.pp-form` / `.pp-text` / `.pp-done` CSS) **were removed** — the form types those
+inline now, and keeping the sheet would have been a second, worse way to do the
+same thing.
 
 `openProfPicker(slot)` is kept as a thin wrapper (`→ openProfEditor('album')`)
-because the *non-edit* profile card's discs still call it.
+because the *non-edit* profile's **empty** favourite discs still fill themselves
+through `profFavTap(..., 1)`.
 
 ### State
 `PFEDIT` is a **draft** copied from `PROFILE` on open, so **Cancel genuinely
-discards** and Save is the only thing that commits. Every pick writes through
-`profFavTarget()` — the draft when the edit page is open, `PROFILE` otherwise.
-`pfeditDraft()` seeds it lazily so the screen also works opened straight from the
-viewer's left rail.
+discards** and Save is the only thing that commits. Every edit — typed or picked
+— writes through `profFavTarget()` / `pfeditDraft()`: the draft when the edit
+page is open, `PROFILE` otherwise. `pfeditDraft()` seeds it lazily so the screen
+also works opened straight from the viewer's left rail.
 
-No sync layer and no post-render hook: each pick re-renders, and since nothing on
-the page itself is typed into (the only inputs live inside the popup) a full
-re-render can't steal a caret.
-
-### Two traps
-⚠️ **`pfeditSave` must NOT call `goBack()`.** `captureScreenSnap()` stores
+### Three traps
+⚠ **`pfeditSave` must NOT call `goBack()`.** `captureScreenSnap()` stores
 `{...window.PROFILE}` for the `profile` screen and `goBack` does
 `Object.assign(window.PROFILE, snap.profile)` — going back after a save would
 restore the pre-edit copy and **silently revert it**. Save drops that snapshot
@@ -3064,30 +3359,25 @@ restore the pre-edit copy and **silently revert it**. Save drops that snapshot
 is also what stops `navigate` re-rolling the random persona (`randomizeProfile`).
 Cancel *does* use `goBack`, where restoring the snapshot is exactly right.
 
-⚠️ **`pfeditSave`'s `Object.assign` is a whitelist** — a field the page edits but
+⚠ **`pfeditSave`'s `Object.assign` is a whitelist** — a field the page edits but
 the list omits is silently dropped on save even though the UI looked like it
 worked. It currently covers name/handle/bio/location/occupation/pic/favs/socials
 **plus `favSongs`, `playlistNames`, `playlistCovers`**. Add to it when you add a
-slot.
+field.
 
-### CSS gotcha
-`.pfe-slot` must **not** set `position: relative`. The card's regions
-(`.prof-pic`, `.prof-info`, `.prof-meta`, `.prof-name-tab-lbl`) are
-absolutely positioned from the traced SVG coordinates, and relative drops them
-back into normal flow and wrecks the card. They already establish a containing
-block for `::after`; only the flow-level rows (`.prof-pl`, `.prof-song`) get
-`position: relative` added.
+⚠ **Don't make `pfeditField` re-render** — see above. If a field ever needs the
+rest of the page to react to it, patch that one element by hand the way the bio
+counter does.
 
 ### Shared card
-**`profCanvasHtml(P, opts)`** (screens.js) is the profile CARD, extracted so the
-profile screen and the edit page can't drift apart. `opts.edit` drops the Follow
-button and the pencil (it's your own page), turns each region into a slot, and
-sends every album disc straight to the picker instead of the listen/platforms
-menu. It takes the record to draw, so the edit page passes the **draft**.
+**`profCanvasHtml(P)`** (screens.js) is the profile CARD. It takes the record to
+draw and does nothing else — ⚠ its `opts.edit` mode is **gone** along with
+`profFavsHtml`'s, since the edit page no longer draws the card. Nothing in there
+should learn to edit itself a second time.
 
-**Not editable here:** the stats (generated persona data), Recently-rated (that's
-activity, not customisation), and socials — the profile card doesn't render them,
-so per the "no extra UI" rule they get no slot. **Not built:** a theme picker;
+**Not editable here:** the stats (generated persona data), the review history
+(that's activity, not customisation), and socials (`PROFILE.socials` is carried
+through Save but nothing on the page writes it). **Not built:** a theme picker;
 "theme 02 (angular)" doesn't exist yet and a control for it would just be another
 dead affordance.
 

@@ -1164,11 +1164,125 @@ function songHtml(light) {
 //   opts.edit    true on the edit screen: no Follow button (it's your own page),
 //                the pencil is dropped, and a CD goes straight to the album
 //                picker instead of the listen/platforms menu.
-function profCanvasHtml(P, opts) {
-  const o = opts || {};
+/* ══ TAGS — the labels under your name ══════════════════════════════════
+   ⚠ These REPLACED "occupation", which was a free-text line saying what you do
+   for money. A tag says what you are about, it is CHOSEN from a set rather than
+   typed, and — the point — it is a thing you COLLECT. The plain ones are free
+   and everyone has them; the specific ones are bought in the shop or handed out
+   at something you actually went to. "DaisyChainsFestival2026" is only worth
+   wearing because not everyone can.
+
+   ⚠ `tint` is an "R,G,B" TRIPLE, not a hex colour — that is the shop's own
+   convention (`.shop-field--tint` does `rgba(var(--tint), .13)`), and a tag has
+   to look like the same object on a profile and on a storefront tile.
+   ⚠ Anything with a `price` has to be earned; everything else is owned by
+   definition. Ownership itself lives in `SD_TAG_OWNED` (app.js) and lasts one
+   session, deliberately — see the note there. */
+window.SD_TAG_MAX = 3;               // how many you can wear at once
+
+/* ⚠ `tex` names a TEXTURE, one of the `.sd-tex--*` classes in app.css. A tag is
+   a thing you collect, and a flat coloured pill does not read as one — a metal
+   head's tag should look like brushed steel and a festival's should look like
+   the field it was handed out in. That is most of what makes a rare one worth
+   wearing at a glance.
+
+   ⚠ The textures are CSS GRADIENTS, not image files, and that is deliberate for
+   three reasons: a chip is ~26px tall, where a photographic texture is mush; the
+   good free tiling sets (Transparent Textures, Subtle Patterns) are CC-BY and
+   carry a real attribution obligation on a shipped app; and gradients cost zero
+   requests and re-tint themselves per tag from `--tint`.
+   ⚠ They are FILLER by intent. Swapping one for a real image later is a single
+   `--tex` value per texture (`url(images/tex-metal.png)` + a `--tex-size`) with
+   nothing else in the system to change. */
+window.SD_TAGS = [
+  // ── free: the basics, and they are meant to be a bit funny ──
+  { id: 'catlover',   label: 'cat lover',        tint: '224,97,111', tex: 'fur' },
+  { id: 'metalhead',  label: 'metal head',       tint: '184,188,198', tex: 'metal' },
+  { id: 'vinylonly',  label: 'vinyl only',       tint: '232,168,60',  tex: 'groove' },
+  { id: 'nightowl',   label: 'night owl',        tint: '91,124,196',  tex: 'stars' },
+  { id: 'shoegazer',  label: 'shoegazer',        tint: '168,124,196', tex: 'haze' },
+  { id: 'noskips',    label: 'no skips',         tint: '79,168,160',  tex: 'stripe' },
+  { id: 'carcrier',   label: 'cries in the car', tint: '124,168,120', tex: 'rain' },
+  { id: 'firstpress', label: 'first press',      tint: '200,73,47',   tex: 'paper' },
+  // ── collectible: a place, a night, a year. The whole value is specificity ──
+  { id: 'daisychains2026', label: 'DaisyChainsFestival2026', tint: '232,168,60', tex: 'flower',
+    note: 'Daisy Chains · Bristol, Jun 2026', price: '$2' },
+  { id: 'bluenote85',      label: 'BlueNote85',              tint: '91,124,196', tex: 'halftone',
+    note: 'Blue Note, 85th anniversary press',  price: '$2' },
+  { id: 'slowdive24',      label: 'SlowdiveTour24',          tint: '168,124,196', tex: 'haze',
+    note: 'Slowdive, the 2024 run',             price: '$3' },
+  { id: 'basementshow',    label: 'BasementShow',            tint: '200,73,47',  tex: 'concrete',
+    note: 'You were at the small one',          price: '$1' },
+  { id: 'rsd2026',         label: 'RecordStoreDay2026',      tint: '79,168,160', tex: 'tape',
+    note: 'Queued in the rain, apparently',     price: '$2' },
+];
+
+/* The texture class for a tag, or ''. ⚠ One helper, used by the profile chip,
+   the form chip, the storefront row AND the picker's own `.pp-tag` — a tag that
+   is brushed steel on your profile and flat grey in the sheet you picked it from
+   is two different objects. */
+window.sdTagTex = t => (t && t.tex) ? ' sd-tex--' + t.tex : '';
+
+/* The tags a profile is WEARING, as objects.
+   ⚠ Falls back to a seeded pair when `P.tags` is unset. Every profile the
+   mockup deals — the personas, a random visitor, a friend's page — arrives
+   without the field, and a row that is empty on every page but your own says
+   the feature is broken rather than unused. Seeded off the handle so a friend's
+   page says the same thing twice running, same as `profFavLine`.
+   ⚠ profMix before the modulo: dzSeed is linear under a small remainder. */
+window.profTags = function (P) {
+  const all = window.SD_TAGS || [];
+  /* ⚠ COLLECTIBLES LEAD. An event tag is the one thing in the row that nobody
+     else can say; sitting third behind two "cat lover"s it may as well not be
+     there. Array.sort is stable, so everything else keeps the order it had. */
+  const lead = list => list.slice().sort((a, b) => (b.price ? 1 : 0) - (a.price ? 1 : 0));
+  const ids = P && P.tags;
+  if (ids) return lead(ids.map(id => all.find(t => t.id === id)).filter(Boolean)).slice(0, SD_TAG_MAX);
+
+  const free = all.filter(t => !t.price);
+  const paid = all.filter(t => t.price);
+  if (!free.length) return [];
+  const raw = (typeof dzSeed === 'function') ? dzSeed : ((...a) => a.join('').length);
+  const seed = String((P && (P.handle || P.name)) || 'you');
+  const out = [];
+  /* ⚠ ROUGHLY ONE PROFILE IN THREE wears an event. Not everyone, because a tag
+     everyone has is the opposite of a collectible — the row has to be mostly
+     plain for the specific ones to mean anything when you scroll past one. Not
+     nobody, because a feature you never see in the mockup isn't in the mockup. */
+  if (paid.length && profMix(raw(seed, 'ev')) % 3 === 0) {
+    out.push(paid[profMix(raw(seed, 'ev2')) % paid.length]);
+  }
+  for (let i = 0; out.length < 2 && i < free.length * 3; i++) {
+    const t = free[profMix(raw(seed, 'tg', i)) % free.length];
+    if (out.indexOf(t) < 0) out.push(t);
+  }
+  return lead(out).slice(0, SD_TAG_MAX);
+};
+
+// One chip. Shared by the profile row, the edit form and the storefront, so a
+// tag cannot look like three different objects in three places.
+window.tagChip = t =>
+  `<span class="prof-tag${t.price ? ' prof-tag--rare' : ''}${sdTagTex(t)}" style="--tint:${t.tint}">${t.label}</span>`;
+
+/* The tag strip, INSIDE the card.
+   ⚠ It was a row under the card and it moved in, which is why the silhouette
+   grew 96 units at the bottom — the tags are part of who you are, and a strip
+   floating under the card read as a caption about it. Being in the canvas means
+   being positioned in PERCENTAGES OF THE TRACE like everything else in there:
+   see `.prof-canvas .prof-tags` in app.css, whose numbers are the compartment
+   (y 449.5 → 545) written as a fraction of 556.
+   ⚠ It scrolls sideways rather than wrapping. The compartment is one row tall
+   by construction; three long collectibles would otherwise silently grow a
+   second line inside a fixed-aspect box and fall out of the card. */
+function profTagsHtml(P) {
+  const tags = profTags(P);
+  if (!tags.length) return '';
+  return `
+              <div class="prof-tags">${tags.map(tagChip).join('')}</div>`;
+}
+
+function profCanvasHtml(P) {
   const findAlb = name => (window.ARCHIVE || []).find(a => a.album === name);
-  const nf   = n => (window.fmtRc ? window.fmtRc(n) : String(n));
-  const stat = (n, l) => `<div class="prof-stat"><span class="prof-stat-n">${n}</span><span class="prof-stat-l">${l}</span></div>`;
   const esc  = s => String(s).replace(/'/g, '\\\'');
 
   const penIco   = `<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>`;
@@ -1181,17 +1295,17 @@ function profCanvasHtml(P, opts) {
      that size is all anyone got — no title, no artist, no year. The canvas
      therefore stops at the card: 690×460, not 690×608. */
 
-  // In edit mode every editable region of the card becomes a slot you tap: it
-  // carries .pfe-slot (which paints the + / pencil badge in CSS) and opens the
-  // category-aware editor. Empty regions show a "+ Add …" placeholder rather
-  // than collapsing, so there's always something to aim at.
-  const ed  = (kind, slot) => o.edit ? ` pfe-slot" onclick="event.stopPropagation(); openProfEditor('${kind}'${slot != null ? `, '${slot}'` : ''})` : '';
-  /* Kept, unused, alongside `pinIco`: the location block is out of the card for
-     now, not gone for good. Both this and the `.prof-meta*` rules in app.css are
-     what it costs to put it back — a few lines, against re-deriving the markup. */
+  /* ⚠ THE CARD HAS NO EDIT MODE. It used to grow one — every region got a
+     `.pfe-slot` class and an openProfEditor() handler when called with
+     { edit: true } — because Edit Profile WAS this card. It is a form now
+     (`profileEditHtml`), so the card has exactly one job again: draw the record
+     it is handed. Nothing here should learn to edit itself a second time. */
+  /* Location, at the bottom of the right pane. ⚠ Country or city and no finer:
+     the line has ~116px and never wraps (see `.prof-meta-item`), and a street
+     is not something a profile should be printing anyway. */
   const metaHtml = P.location
     ? `<span class="prof-meta-item">${pinIco}${P.location}</span>`
-    : (o.edit ? `<span class="prof-meta-item prof-meta-item--add">${pinIco}Add location</span>` : '');
+    : '';
 
   return `
             <div class="prof-canvas">
@@ -1210,9 +1324,22 @@ function profCanvasHtml(P, opts) {
                    The source file is 608 tall; we crop to 460 because its bottom
                    150 units are the favourite-album circles, and those are their
                    own section now. -->
-              <svg class="prof-base" viewBox="0 0 690 460" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-                <path class="prof-base-main" d="M668.874 74.6963L0.608337 74.6963L0.608383 429C0.608382 440.045 9.56267 449 20.6084 449L668.875 449C679.92 449 688.875 440.045 688.875 429L688.875 308.987L688.874 94.6963C688.874 83.6506 679.92 74.6963 668.874 74.6963Z"/>
-                <path class="prof-divide" d="M374.498 449.5L374.498 94.4995C374.498 83.4538 365.544 74.4995 354.498 74.4995L0.497955 74.4995L0.49794 429.5C0.497939 440.545 9.45225 449.5 20.4979 449.5L58.33 449.5L323.418 449.5L374.498 449.5Z"/>
+              <svg class="prof-base" viewBox="0 0 690 556" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+                <!-- ⚠ The card's bottom edge moved 449 → 545 and the viewBox 460
+                     → 556 with it (the 11 units of slack under the card are
+                     unchanged). Those 96 units ARE the tag compartment. Every
+                     number below is the old one + 96; nothing above y=94.7 moved,
+                     which is why the banner and the pill are untouched. -->
+                <path class="prof-base-main" d="M668.874 74.6963L0.608337 74.6963L0.608383 525C0.608382 536.045 9.56267 545 20.6084 545L668.875 545C679.92 545 688.875 536.045 688.875 525L688.875 404.987L688.874 94.6963C688.874 83.6506 679.92 74.6963 668.874 74.6963Z"/>
+                <!-- The picture pane STOPS at 449.5, where it always did — the
+                     card grew underneath it, the photo did not. ⚠ Its bottom-left
+                     corner lost its 20-unit arc: it was the CARD's corner, and
+                     the card's corner is 96 units lower now. -->
+                <path class="prof-divide" d="M374.498 449.5L374.498 94.4995C374.498 83.4538 365.544 74.4995 354.498 74.4995L0.497955 74.4995L0.49794 449.5L374.498 449.5Z"/>
+                <!-- The other half of that seam. Together they draw one hairline
+                     across the whole card, which is what makes the strip below
+                     read as a compartment rather than as empty card. -->
+                <path class="prof-divide" d="M374.498 449.5L688.875 449.5"/>
                 <!-- Name banner — right edge is resized to the username by sizeProfName().
                      Bottom edge runs a few units into the card so the fill hides the seam. -->
                 <path class="prof-name-tab" d="M0.500139 74.9079H467.5H437.414C420.568 74.9079 404.855 66.4255 395.612 52.3422L373.436 18.5525C366.042 7.28593 353.471 0.5 339.995 0.5H35.5001C16.1702 0.5 0.500139 16.17 0.500139 35.5V74.9079Z"/>
@@ -1222,30 +1349,39 @@ function profCanvasHtml(P, opts) {
               <div class="prof-name-pill" style="width:49.86%"></div>
 
               <!-- Username, seated inside the white pill (black text) -->
-              <div class="prof-name-tab-lbl${ed('name')}">
+              <div class="prof-name-tab-lbl">
                 <span class="prof-name-nick">${P.name || 'Your name'}</span>
                 <span class="prof-name-at">@${P.handle || 'handle'}</span>
               </div>
 
               <!-- Profile image fills the left pane entirely -->
-              <div class="prof-pic${ed('photo')}" style="background-image:url('${P.pic || ''}')"></div>
-              <!-- The right pane: THREE NUMBERS, stacked, and nothing else.
-                   The bio and the location were pulled out (temporarily) -- the
-                   pane was a stat row, a two-line paragraph and a pin all
-                   competing in a 149px column, and none of them had the room to
-                   be read properly. With the column to themselves the figures
-                   can be set at a size that actually reads as a headline.
-                   WARNING: dropping .prof-info / .prof-meta also drops their
-                   pfe-slot edit affordances, so bio and location currently have
-                   no entry point on the edit screen. Put the blocks back (the
+              <div class="prof-pic" style="background-image:url('${P.pic || ''}')"></div>
+              <!-- The right pane: THE BIO, with the location at its foot.
+                   ⚠ It held the three stats. They are out of the card now, in a
+                   row underneath it (profStatsHtml), because a figure is a
+                   figure wherever it sits, while the bio is the only thing on
+                   this page that has to be READ -- and reading wants width and
+                   line length, which is exactly what a pane to yourself is.
+                   The pane was once a stat row, a paragraph and a location pin
+                   all competing in a 149px column, and none of them had room.
+                   The bio and the location are still EDITABLE — the form on
+                   the Edit Profile page owns them now, so dropping the blocks
+                   from the card no longer costs them their entry point the way
+                   it did when the card was the editor. Put the blocks back (the
                    CSS for both is still in app.css) when they return. -->
               <div class="prof-right">
-                <div class="prof-stats">
-                  ${stat(nf(P.following || 0), 'Following')}
-                  ${stat(nf(P.followers || 0), 'Followers')}
-                  ${stat(profScore(P), 'Review score')}
+                <div class="prof-info">
+                  <div class="prof-desc">${P.bio || ''}</div>
                 </div>
+                <!-- Location, pinned to the FOOT of the pane by prof-meta's
+                     margin-top:auto. It is the one fact on the card that is not
+                     about music, so it sits under everything that is, and it is
+                     written no finer than a country or a city. -->
+                <div class="prof-meta">${metaHtml}</div>
               </div>
+
+              <!-- The bottom compartment: the tags, in the card. -->
+              ${profTagsHtml(P)}
 
               <!-- ONE action button: Edit on your own page, Follow on someone
                    else's. It sits in the UPPER RIGHT, in the pill the trace puts
@@ -1253,7 +1389,7 @@ function profCanvasHtml(P, opts) {
                    banner. It was in the lower right, which put it inside the
                    card's own bottom corner where it read as part of the stats
                    block rather than as the page's one action. -->
-              ${o.edit ? '' : (window.PROFILE_GUEST
+              ${(window.PROFILE_GUEST
                 ? `<button class="prof-act prof-act--follow" onclick="toggleProfFollow(this)" aria-pressed="false" title="Follow">
                 <span class="v3-ring v3-ring--smile prof-act-ring"><span class="v3-ring-spin"><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i></span></span>
                 <span class="prof-act-lbl">Follow</span>
@@ -1397,27 +1533,39 @@ function profScore(P) {
    ⚠ Tapping a disc raises the NAV CONSOLE, not a popup — see `profFavTap`. The
    rail is `overflow-x: auto` and would clip a popup anyway, which is half of why
    the console is the better home for it. */
-function profFavsHtml(P, o) {
+/* How many times the five discs are repeated into the rail. ⚠ THREE is the
+   minimum that works: the middle copy is the one you ride, and the outer two are
+   what the wrap-around in `profFavPaint` teleports between, so there is always a
+   full copy of runway on both sides of the finger. Two copies would put the seam
+   inside the viewport. */
+const FAV_REPS = 3;
+
+function profFavsHtml(P) {
   const findAlb = name => (window.ARCHIVE || []).find(a => a.album === name);
   const esc = s2 => String(s2).replace(/'/g, '\'');
   const favs = [0, 1, 2, 3, 4];
 
   const cds = favs.map(i => {
     const a = findAlb((P.favs || [])[i]);
-    if (!a || o.edit) {
-      /* A filled disc in edit mode is a SLOT (outline + "+" badge). An empty
-         one already shows its own big "+", so it doesn't take the badge too. */
-      const cls = a ? 'prof-fav pfe-slot' : 'prof-fav prof-fav--empty';
-      const inner = a
-        ? `<span class="prof-fav-img" style="background-image:url('${a.image}')"></span><span class="prof-fav-hole"></span>`
-        : `<span class="prof-fav-add">+</span>`;
-      return `<button class="${cls}" data-i="${i}" data-alb="${a ? esc(a.album) : ''}" onclick="profFavTap(this, event, ${i}, 1)" title="${a ? 'Replace ' + esc(a.album) : 'Add favourite ' + (i + 1)}">${inner}</button>`;
+    if (!a) {
+      /* An empty disc fills itself — the last `1` sends the tap to the album
+         picker instead of the console. Swapping a FILLED one is Edit Profile's
+         job now, so a full disc never takes that route. */
+      return `<button class="prof-fav prof-fav--empty" data-i="${i}" data-alb="" onclick="profFavTap(this, event, ${i}, 1)" title="Add favourite ${i + 1}"><span class="prof-fav-add">+</span></button>`;
     }
     return `<button class="prof-fav" data-i="${i}" data-alb="${esc(a.album)}" onclick="profFavTap(this, event, ${i}, 0)" title="${esc(a.album)}">
         <span class="prof-fav-img" style="background-image:url('${a.image}')"></span>
         <span class="prof-fav-hole"></span>
       </button>`;
   }).join('');
+
+  /* ⚠ The SAME five discs, three times over — this is the whole loop. Every copy
+     is identical markup (`data-i` is still the slot, so a tap on copy 3 edits
+     the same favourite as a tap on copy 1); `profFavPaint` keeps the scroll
+     offset inside the middle copy by adding or subtracting exactly one period,
+     which lands on the identical disc and is therefore invisible. A carousel
+     with five records has no natural end to stop at, so it doesn't have one. */
+  const rail = new Array(FAV_REPS).fill(cds).join('');
 
   /* ⚠ There are no per-disc popups here any more. Tapping a favourite raises the
      NAV CONSOLE (`profFavTap` → `openConsole`), so the menu that used to carry
@@ -1433,14 +1581,16 @@ function profFavsHtml(P, o) {
   return `
             <div class="prof-sec prof-favs">
               <div class="prof-sec-hd">Favourite albums</div>
-              <!-- WARNING: the end spacers are what let the FIRST and LAST discs
-                   reach the middle, and they are ELEMENTS rather than padding on
-                   the rail for a reason. Percentage flex-basis resolves against
-                   the flex container's CONTENT box, so 19% of side padding made
-                   every disc 62% of the remaining 62% -- 38.4% of the rail -- and
-                   nothing could ever centre. With no padding the content box IS
-                   the rail, and both percentages finally mean the same thing. -->
-              <div class="prof-fav-rail" onscroll="profFavSync(this)"><span class="prof-fav-pad"></span>${cds}<span class="prof-fav-pad"></span></div>
+              <!-- WARNING: NO horizontal padding on the rail, ever. Percentage
+                   flex-basis resolves against the flex container's CONTENT box,
+                   so side padding of 19% made every disc 62% of the remaining
+                   62% -- 38.4% of the rail -- and nothing could ever centre.
+                   The end spacers that used to sit here are gone with the ends:
+                   a looping rail has a copy of itself on either side, which is
+                   better runway than a spacer ever was.
+                   ⚠ data-fav-n is the number of DISTINCT slots, which is what
+                   profFavPeriod measures one copy against. -->
+              <div class="prof-fav-rail" data-fav-n="${favs.length}" onscroll="profFavSync(this)">${rail}</div>
               <div class="prof-fav-info">
                 <!-- The year rides with the title, where it belongs: it is part of
                      naming a record, not a statistic about it. Genre is gone from
@@ -1452,7 +1602,64 @@ function profFavsHtml(P, o) {
                   <span class="prof-fav-stars"></span>
                   <span class="prof-fav-meta"></span>
                 </div>
+                <!-- What THEY said about it, under what everyone else scored it.
+                     Set in DM Sans (--font-main) rather than the mono the rest
+                     of the panel's furniture uses: the figures above are data,
+                     this is a person talking. -->
+                <div class="prof-fav-review"></div>
               </div>
+            </div>`;
+}
+
+/* The owner's own line about one record, for the favourites panel.
+   ⚠ Seeded off handle + album, and drawn from the SAME `PROF_RV_LINES` the
+   review history uses — two places quoting the same person must not sound like
+   two different people, and the disc must say the same thing every time you
+   swipe back to it.
+   ⚠ `profMix` before the modulo. `dzSeed` is a rolling hash and is linear under
+   a small remainder; without the avalanche step every profile draws the same
+   lines in the same cyclic order. Same trap as `profReviewLog`. */
+/* The chips inside the form's Tags row.
+   ⚠ Exported because `profTagSync` (app.js) calls it on its own to repaint that
+   row WITHOUT a re-render. The tag sheet is multi-select and stays open while
+   you assemble a set, and a re-render would tear it out of the DOM mid-pick. */
+window.pfeTagChips = function (P) {
+  const all = window.SD_TAGS || [];
+  const worn = ((P && P.tags) || []).map(id => all.find(t => t.id === id)).filter(Boolean);
+  const plus = `<span class="pfe-add-plus">+</span>`;
+  return (worn.length
+    ? worn.map(tagChip).join('')
+    : `<span class="pfe-tags-ph">Choose up to ${SD_TAG_MAX}</span>`) + plus;
+};
+
+window.profFavLine = function (P, albumName) {
+  if (!albumName) return '';
+  const raw = (typeof dzSeed === 'function') ? dzSeed : ((...a) => a.join('').length);
+  const seed = String((P && (P.handle || P.name)) || 'you');
+  return PROF_RV_LINES[profMix(raw(seed, 'fv', albumName)) % PROF_RV_LINES.length];
+};
+
+/* The three figures, OUT of the card and in a clean row under it.
+   ⚠ They were stacked down the card's right pane, where the pane's width capped
+   how big a number could be set. Out here the row is the full page width, so all
+   three can be read at once instead of scanned down a column -- which is how a
+   follower count is actually read, and how every other profile on earth prints
+   it. The bio took the pane, where line length is worth something.
+   ⚠ It is a SIBLING of `.prof-canvas`, not part of it: the canvas is a traced
+   SVG whose every child is positioned in percentages of the trace, and anything
+   in there has to be drawn to fit the artwork. */
+function profStatsHtml(P) {
+  const nf = n => (window.fmtRc ? window.fmtRc(n) : String(n));
+  const cell = (n, l) => `
+                <div class="prof-statb">
+                  <span class="prof-statb-n">${n}</span>
+                  <span class="prof-statb-l">${l}</span>
+                </div>`;
+  return `
+            <div class="prof-statbar">
+              ${cell(nf(P.following || 0), 'Following')}
+              ${cell(nf(P.followers || 0), 'Followers')}
+              ${cell(profScore(P), 'Review score')}
             </div>`;
 }
 
@@ -1508,7 +1715,12 @@ function profileHtml(light) {
   }).join('');
 
 
-  // Favourite songs (5) — artwork borrowed from the song's album cover.
+  /* Favourite songs (5) — artwork borrowed from the song's album cover.
+     ⚠ PRO ONLY, and hidden rather than locked on a Free account. A profile is
+     someone's page: a greyed-out shelf with a padlock on it advertises to
+     everyone who visits that the owner didn't pay, which is not a thing to put
+     on a person's profile. The upsell lives on the Edit page instead, where it
+     is addressed to the one person it is for. */
   const playIco = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
   const favSongsHtml = (P.favSongs || []).slice(0, 5).map(s => {
     const a = findAlb(s.album);
@@ -1545,7 +1757,9 @@ function profileHtml(light) {
 
             ${profCanvasHtml(P)}
 
-            ${profFavsHtml(P, {})}
+            ${profStatsHtml(P)}
+
+            ${profFavsHtml(P)}
 
             <!-- Top playlists -->
             <div class="prof-sec">
@@ -1553,11 +1767,13 @@ function profileHtml(light) {
               <div class="prof-pls">${plsHtml}</div>
             </div>
 
-            <!-- Favourite songs -->
+            <!-- Favourite songs — Pro only, and absent (not locked) without
+                 it; see the note where favSongsHtml is built. -->
+            ${(typeof isPro === 'function' && isPro() && favSongsHtml) ? `
             <div class="prof-sec">
               <div class="prof-sec-hd">Favourite songs</div>
               <div class="prof-songs">${favSongsHtml}</div>
-            </div>
+            </div>` : ''}
 
             <!-- Review history — last section on the page, deliberately: it is
                  the longest and the one you scroll INTO, not past. -->
@@ -1573,33 +1789,71 @@ function profileHtml(light) {
       </div>`;
 }
 
-// Edit Profile — the customising page behind the profile card's pencil.
+// Edit Profile — a FORM, not the profile.
 //
-// There is NO separate form. The page IS the profile (the shared profCanvasHtml
-// card plus the Playlists and Favourite-songs sections), drawn from the draft,
-// with every editable region turned into a SLOT: filled slots swap their content
-// on tap, empty ones show a "+" tile. Every slot opens the same category-aware
-// popup (openProfEditor in app.js), which searches albums / songs / playlists —
-// or shows a small text form — depending on what's being filled.
+// ⚠ This page used to BE the profile card, with every editable region turned
+// into a tappable slot. It isn't any more. Filling in your details by poking at
+// a stylised card meant hunting for the region that owned each field, the hit
+// targets were whatever the traced SVG happened to leave, and two fields (bio,
+// location) had no entry point at all once the card dropped those blocks. The
+// page is now an Instagram-style form: your picture, then one labelled row per
+// field, typed into directly. The things that aren't text — photo, favourite
+// albums, playlists, songs — stay as tap-to-choose slots underneath, because
+// there is nothing to type into for those.
+//
+// ⚠ TEXT IS TYPED STRAIGHT INTO THE DRAFT (`pfeditField`, app.js) on every
+// keystroke, and that handler deliberately does NOT re-render — rebuilding the
+// screen mid-word would drop the caret. The media slots still go through the
+// popup (openProfEditor), which DOES re-render after a pick; that stays safe
+// because the inputs are rebuilt from the draft, which already holds every
+// keystroke typed so far.
 //
 // State is window.PFEDIT (app.js), a draft copied from PROFILE on open; Save
-// commits it, Cancel throws it away. Each pick re-renders, and since nothing on
-// the page itself is typed into, a full re-render costs nothing.
+// commits it, Cancel throws it away.
 function profileEditHtml(light) {
   const D = (typeof window.pfeditDraft === 'function') ? window.pfeditDraft() : (window.PROFILE || {});
   const dots = '<i class="v3-ring-dot"></i>'.repeat(6);
   const findAlb = name => (window.ARCHIVE || []).find(a => a.album === name);
-  const esc = s => String(s == null ? '' : s).replace(/'/g, '\'');
-  const playIco = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
+  // Attribute-safe. A value="" is one stray quote away from a broken input.
+  const at = s => String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const sfx = light ? 'l' : 'd';
+  const lockIco = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10.5" width="16" height="10.5" rx="2.5"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg>`;   // the viewer draws both shells at once — ids must differ
 
-  // A slot: filled shows the content and swaps it on tap; empty shows a + tile.
-  // Both open the same category-aware editor (openProfEditor in app.js), which
-  // searches albums / songs / playlists depending on what's being filled.
+  /* One labelled text row. `pre` is the fixed prefix the username row needs.
+     ⚠ data-k is not decoration — pfeditField mirrors the keystroke into the
+     other shell's copy of the same field through it. */
+  const field = (k, label, val, ph, max, pre) => `
+              <div class="pfe-row">
+                <label class="pfe-lbl" for="pfe-${k}-${sfx}">${label}</label>
+                <div class="pfe-field">
+                  ${pre ? `<span class="pfe-pre">${pre}</span>` : ''}
+                  <input class="pfe-in" id="pfe-${k}-${sfx}" data-k="${k}" type="text"
+                         maxlength="${max}" value="${at(val)}" placeholder="${at(ph)}"
+                         spellcheck="false" autocomplete="off" oninput="pfeditField('${k}', this)">
+                </div>
+              </div>`;
+
+  const bio = String(D.bio == null ? '' : D.bio);
+
+  // An empty media slot: a dashed "+" tile (grid) or row (list).
   const addTile = (kind, slot, label, shape) => `
               <button class="pfe-add pfe-add--${shape}" onclick="openProfEditor('${kind}', '${slot}')">
                 <span class="pfe-add-plus">+</span>
                 <span class="pfe-add-lbl">${label}</span>
               </button>`;
+
+  /* Favourite albums — 5 discs. On the profile these live in a swipeable rail
+     with an info panel under it; here they are five targets in a row, since the
+     only question this page asks about them is "which record goes here". */
+  const discsHtml = [0, 1, 2, 3, 4].map(i => {
+    const a = findAlb((D.favs || [])[i]);
+    if (!a) return `<button class="pfe-disc pfe-disc--empty" onclick="openProfEditor('album', '${i}')" title="Add favourite ${i + 1}"><span class="pfe-add-plus">+</span></button>`;
+    return `<button class="pfe-disc pfe-slot" onclick="openProfEditor('album', '${i}')" title="Replace ${at(a.album)}">
+                <span class="prof-fav-img" style="background-image:url('${a.image}')"></span>
+                <span class="prof-fav-hole"></span>
+              </button>`;
+  }).join('');
 
   // Playlists — 3 slots
   const allPls = plLists();
@@ -1616,7 +1870,12 @@ function profileEditHtml(light) {
     </button>`;
   }).join('');
 
-  // Favourite songs — 5 slots
+  /* Favourite songs — 5 slots, PRO ONLY.
+     ⚠ This is where the lock belongs. The profile hides the section outright on
+     a Free account (a padlock on someone's page tells every visitor what they
+     didn't buy); the edit page is the one screen only its owner sees, so it is
+     the only place the offer is addressed to the person who can take it. */
+  const pro = typeof isPro === 'function' && isPro();
   const favSongs = D.favSongs || [];
   const songsHtml = [0, 1, 2, 3, 4].map(i => {
     const s = favSongs[i];
@@ -1628,7 +1887,7 @@ function profileEditHtml(light) {
         <span class="prof-song-title">${s.title}</span>
         <span class="prof-song-sub">${s.album} · ${s.artist}</span>
       </span>
-      <span class="prof-song-play">${playIco}</span>
+      <span class="pfe-song-plus">+</span>
     </button>`;
   }).join('');
 
@@ -1642,21 +1901,52 @@ function profileEditHtml(light) {
               <button class="plp-back-pill" onclick="pfeditCancel()" title="Discard and go back">
                 <span class="v3-ring plp-ring"><span class="v3-ring-spin">${dots}</span></span>
               </button>
-              <div class="pfe-top-right">
-                <span class="pfe-editing">Editing profile</span>
-                <button class="pfe-save" data-pfe="save" onclick="pfeditSave()">Save changes</button>
+              <span class="pfe-editing">Editing profile</span>
+              <button class="pfe-save" data-pfe="save" onclick="pfeditSave()">Save changes</button>
+            </div>
+
+            <!-- The picture, on its own above the form — the one field you
+                 change by looking rather than by reading a label. -->
+            <div class="pfe-photo">
+              <button class="pfe-avatar" onclick="openProfEditor('photo')" title="Change photo"
+                      style="background-image:url('${D.pic || ''}')">
+                <span class="pfe-avatar-badge">+</span>
+              </button>
+              <button class="pfe-photo-btn" onclick="openProfEditor('photo')">Change photo</button>
+            </div>
+
+            <div class="pfe-form">
+              ${field('name', 'Name', D.name, 'Your name', 24)}
+              ${field('handle', 'Username', D.handle, 'handle', 20, '@')}
+
+              <div class="pfe-row pfe-row--tall">
+                <label class="pfe-lbl" for="pfe-bio-${sfx}">Bio</label>
+                <div class="pfe-field">
+                  <textarea class="pfe-in pfe-area" id="pfe-bio-${sfx}" data-k="bio"
+                            rows="3" maxlength="240" placeholder="Tell people what you are into."
+                            spellcheck="false" oninput="pfeditField('bio', this)">${at(bio)}</textarea>
+                  <span class="pfe-count">${bio.length}/240</span>
+                </div>
+              </div>
+
+              ${field('location', 'Location', D.location, 'Country or city', 30)}
+
+              <!-- Tags, where Occupation used to be. Not typed: you wear what
+                   you own, so the row is a button onto the tag sheet. -->
+              <div class="pfe-row">
+                <span class="pfe-lbl">Tags</span>
+                <div class="pfe-field">
+                  <button class="pfe-tags" onclick="openProfEditor('tag')" title="Choose your tags">${pfeTagChips(D)}</button>
+                </div>
               </div>
             </div>
 
-            <!-- The real card, drawn from the draft. Every editable region is a
-                 slot: tap it to fill or replace it. -->
-            ${profCanvasHtml(D, { edit: true })}
-
-            <div class="pfe-hint">Tap anything to change it.</div>
-
-            <!-- The favourites moved out of the card, so the editor needs them
-                 here or there is no way to change them any more. -->
-            ${profFavsHtml(D, { edit: true })}
+            <!-- Everything below is chosen, not typed: each slot opens the same
+                 category-aware popup (openProfEditor in app.js). -->
+            <div class="prof-sec">
+              <div class="prof-sec-hd">Favourite albums</div>
+              <div class="pfe-discs">${discsHtml}</div>
+            </div>
 
             <div class="prof-sec">
               <div class="prof-sec-hd">Playlists</div>
@@ -1665,7 +1955,15 @@ function profileEditHtml(light) {
 
             <div class="prof-sec">
               <div class="prof-sec-hd">Favourite songs</div>
-              <div class="prof-songs">${songsHtml}</div>
+              ${pro ? `<div class="prof-songs">${songsHtml}</div>` : `
+              <button class="pfe-pro" onclick="navigate('shop')">
+                <span class="pfe-pro-ico">${lockIco}</span>
+                <span class="pfe-pro-txt">
+                  <span class="pfe-pro-t">Pin five songs to your profile</span>
+                  <span class="pfe-pro-s">Favourite songs is part of Spindeck Pro</span>
+                </span>
+                <span class="pfe-pro-go">Get Pro</span>
+              </button>`}
             </div>
 
           </div>
@@ -2515,9 +2813,13 @@ function shopHtml(light) {
   const dots = '<i class="v3-ring-dot"></i>'.repeat(6);
   const pro  = typeof isPro === 'function' && isPro();
 
-  const buy = (price, owned) => owned
+  /* ⚠ `tag` stamps data-tag on the button. sdBuy reads it to record REAL
+     ownership (SD_TAG_OWNED) before doing its usual label swap — everything
+     else in this shop only swaps a label, but a tag you bought has to turn up
+     in the picker on the edit page or the purchase did nothing. */
+  const buy = (price, owned, tag) => owned
     ? `<span class="shop-owned">Owned</span>`
-    : `<button class="shop-buy" onclick="event.stopPropagation(); sdBuy(this)">${price}</button>`;
+    : `<button class="shop-buy"${tag ? ` data-tag="${tag}"` : ''} onclick="event.stopPropagation(); sdBuy(this)">${price}</button>`;
 
   const sec = (title, sub) => `
               <div class="shop-sec-hd">${title}${sub ? `<span>${sub}</span>` : ''}</div>`;
@@ -2550,6 +2852,17 @@ function shopHtml(light) {
                   </div>`;
 
 
+  /* A tag row: the chip itself is the product shot — there is nothing to
+     picture beyond the thing you would be wearing. */
+  const tagRow = t => `
+                  <div class="shop-tagrow">
+                    <div class="shop-tagrow-l">
+                      ${tagChip(t)}
+                      <span class="shop-tagrow-s">${t.note || ''}</span>
+                    </div>
+                    ${buy(t.price, typeof sdOwnsTag === 'function' && sdOwnsTag(t.id), t.id)}
+                  </div>`;
+
   return `
       <div class="app-screen s-home-v3 s-shop${light ? ' s-home-v3--light' : ''}">
         ${appHeader()}
@@ -2572,7 +2885,13 @@ function shopHtml(light) {
               <span class="shop-pro-tag">Pro</span>
               <!-- The model's own box. The scale lives HERE and not on the
                    bento, so the showcase still styles the case and never the
-                   product — see `.shop-model` in app.css. -->
+                   product — see the .shop-model rule in app.css.
+                   ⚠ NO BACKTICKS IN HERE. This is plain text inside a template
+                   literal, so a backtick ENDS the template: this line used to
+                   quote the class name and the parse ran on as
+                   "...product - see " . shop - model, which threw
+                   "model is not defined" and took the whole Shop screen with
+                   it. Quote a name with quotes, or not at all. -->
               <div class="shop-model">${bentoHtml()}</div>
             </div>
             <!-- The pitch row is also the STATUS row. Read from the plan
@@ -2613,6 +2932,11 @@ function shopHtml(light) {
               ${badge(SD_ICONS.ear,    'Deep Cuts', '91,124,196', '$1')}
               ${badge(SD_ICONS.clock,  'Day One',   '232,168,60', '$2')}
               ${badge(SD_ICONS.pencil, 'Critic',    '124,168,120','$2')}
+            </div>
+
+            ${sec('Tags', 'the plain ones are already yours')}
+            <div class="shop-sheet shop-sheet--tags">
+              ${(window.SD_TAGS || []).filter(t => t.price).map(tagRow).join('')}
             </div>
 
             <p class="shop-note">Prototype storefront — nothing is charged and nothing is kept.</p>
