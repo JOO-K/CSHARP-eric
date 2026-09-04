@@ -177,11 +177,12 @@ SD_ICONS.logbox = sdBoxIcon();
    is a static template literal evaluated while this file parses, and it calls
    sdScene() inline. Declared below the SCREENS array, the `const` would still be
    in its temporal dead zone at that moment. */
-/* ⚠️ PARKED — the scoop is the SHOP button now (see sdShopBtn below). Flip this
-   to true to put the pet back; the whole engine (paintScene / sceneTick /
+/* ⚠️ PARKED, and now HOMELESS: the nav is the floating bubble again
+   (2026-09-03) and has no scoop, so `sdScene()` is not emitted by anything —
+   `bottomNav()` stopped calling it. The whole engine (paintScene / sceneTick /
    sceneReact / SCENE_REACTIONS, all the .sd-face CSS, the ☺ Pet box) is intact
-   and untouched behind it. Only the two can't share the notch: it is 63×30 and
-   the face was already sized against its worst formation. */
+   behind this flag; putting the pet back means giving it a place on the bubble
+   first, then calling sdScene() from bottomNav() again. */
 const SD_PET_ENABLED = false;
 
 function sdScene(active) {
@@ -190,11 +191,10 @@ function sdScene(active) {
     '<i class="sd-face-dot"></i>'.repeat(6)}</span></div>`;
 }
 
-/* The shop button, cradled in the nav's scoop where the pet used to sit.
-   Same 63×30 box and the same 49.1% centre (see `.sd-shop-btn` in app.css) —
-   but `pointer-events: auto`, because unlike the pet this one is pressable.
-   The glyph is the dot-language bag, so the one interactive thing in the notch
-   is still made of the same rounded-square dot as every other brand asset. */
+/* The scoop's shop button — ⚠️ NOT EMITTED any more. The floating bubble has
+   no scoop; the shop is the middle of its five nav items (see bottomNav), with
+   the same dot-language bag. Kept with sdScene() so the docked layout can be
+   rebuilt from these two if it is ever wanted back. */
 function sdShopBtn(active) {
   return `<button class="sd-shop-btn${active === 'shop' ? ' active' : ''}" onclick="navigate('shop')" title="Shop" aria-label="Shop">
             ${SD_ICONS.bag}
@@ -301,6 +301,11 @@ function bentoHtml() {
               <!-- Producer / engineering credits, filled by populateCredits() from
                    MusicBrainz. Hidden until something comes back. -->
               <div class="v3-blue-credits" hidden></div>
+              <!-- Artist page only: label / members / description, filled by
+                   populateArtistPage(). Its own node rather than a repaint of
+                   the credits box, so nothing has to be put back on the way
+                   out — the state class shows one and hides the other. -->
+              <div class="v3-artist-info"></div>
             </div>
 
             <!-- ForYou: single panel, cycles through trending albums on click -->
@@ -337,6 +342,11 @@ function bentoHtml() {
               <span class="v3-live-content"><span class="v3-ring v3-arrow"><span class="v3-ring-spin"><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i></span></span></span>
               <span class="v3-back-content"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Back</span>
             </button>
+            <!-- Artist page only: Favorite as the Back pill's twin in the other
+                 top corner (mirrors with hand mode). It carries .v3-rev-q and
+                 data-k so toggleRevAction / syncQuickLog treat it as the same
+                 favourite toggle the album page's quick-log square is. -->
+            <button class="v3-search-pill v3-artist-fav v3-rev-q" data-k="fav" title="Favorite" onclick="toggleRevAction(this, event)">${SD_ICONS.heart}</button>
 
           </div>`;
 }
@@ -927,13 +937,13 @@ function appHeader(subtitle) {
           </div>`;
 }
 
-/* The nav's plateau holds TWO things, one at a time: the friends ticker, and —
+/* The nav's hump holds TWO things, one at a time: the friends ticker, and —
    once you tap a CD — the console. `.s-home-v3--console` on the shell swaps them
-   and grows the plateau to fit (see app.css).
+   and grows the hump to fit (see app.css).
    ⚠ The console itself is NOT here — it is inside `bottomNav()`, as a child of
-   the nav. It has to be placed as a % of the nav's own box to stay in the
-   plateau at every frame size, and only a child can do that. This ticker stays
-   a sibling because its px offsets ride the viewer's zoom, as they always did. */
+   the nav. It has to be placed as a % of the nav's own box to stay in the hump
+   at every frame size, and only a child can do that. This ticker stays a
+   sibling because its px offsets ride the viewer's zoom, as they always did. */
 function nowBar() {
   return `
           <div class="v3-nowbar">
@@ -987,41 +997,302 @@ function obServiceBtn(id, name, brand) {
   </button>`;
 }
 
-/* The genre vocabulary, one list, two readers: onboarding's chips (below) and
-   Pro's **mix dial** (`mixDialBuild` in app.js). Plain strings — the `&` is a
-   real ampersand and gets escaped at render, not stored pre-escaped.
-   ⚠ The ORDER is the dial's hole order, clockwise from 12 o'clock, so it is
-   editorial: related genres sitting next to each other means a related pick is
-   a short turn of the dial. The chips just read it top to bottom. */
+/* The ORIGINAL flat genre list. ⚠ NOTHING READS IT ANY MORE: it was the dial's
+   twenty holes until the dial grew two levels (`SD_GENRE_TREE`, below), and it
+   was onboarding's chips until step 3 went over to the tree as well
+   (2026-09-03). Kept as the editorial order it was — related genres adjacent —
+   in case a flat picker ever needs one again. Plain strings — the `&` is a
+   real ampersand and gets escaped at render, not stored pre-escaped. */
 const SD_GENRES = ['Electronic','Ambient','Trip-hop','Dream Pop','Shoegaze','Indie',
   'Alternative','Punk','Metal','Rock','Pop','Latin','Country','Folk','Blues','Jazz',
   'Funk','Soul','R&B','Hip-Hop'];
 
+/* ══════════════════════════════════════════════════════════════════════════
+   SD_GENRE_TREE — the mix dial's two levels
+   ══════════════════════════════════════════════════════════════════════════
+   Sixteen main genres in the first ring; tapping one takes you into a ring of
+   its subgenres, where the picking happens. ⚠ It has TWO readers: Pro's dial in
+   the bento, and onboarding's step 3 — the same dial (via the `OB_MIX` context
+   in app.js) plus a list view of this same tree (`obRenderGenreList`).
+
+   ⚠ EVERY LABEL HERE EARNS ITS PLACE AGAINST THE REAL ARCHIVE. `shelfPool`
+   matches a pick by lowercased CONTAINMENT against an album's primary genre, so
+   a label nothing contains is a hole in the dial that silently returns zero —
+   which is exactly what the flat dial shipped with (ten of its twenty genres
+   matched nothing). Checked before writing this: all 40 subs below match at
+   least one album, and the mains land at Pop 69 · Hip-Hop 62 · Electronic 52 ·
+   Alternative 40 · Rock 38 · R&B 14 · Indie 6 · Jazz 1.
+   ⚠ Re-run that count if you edit this list. A sub that matches nothing looks
+   identical to one that does until someone picks it.
+
+   ⚠ Subs may belong to more than one main on purpose — Indie rock is under both
+   Rock and Indie, Trip-hop under Electronic and Hip-Hop. Picking is a FILTER,
+   not a partition, so overlap costs nothing and matches how people actually
+   look for music.
+   ⚠ Jazz is thin on its own (1). It works because "All Jazz" expands to the
+   main PLUS every sub under it (see `mixShelf`), so it reaches Classical, Folk
+   and Soundtrack too. Any main can be thin for the same reason.
+
+   ⚠ A LABEL MUST STAY A SUBSTRING OF THE GENRE IT MEANS. Matching is
+   containment, so a name can be shortened to fit the dial only along that rule:
+   "Experimental hip-hop" → "Experimental" works, "Psychedelic rock" →
+   "Psych rock" matches nothing at all. Three are shortened here because they
+   overflowed their slice even fully condensed — and they read fine, because
+   inside the Hip-Hop ring "Korean" does not need to say hip-hop again. ⚠ The
+   one cost: "Psychedelic" under Rock also catches Psychedelic pop.
+   ══════════════════════════════════════════════════════════════════════════ */
+const SD_GENRE_TREE = {
+  'Electronic':  ['Ambient', 'Techno', 'House', 'Trance', 'Drum & Bass', 'Dubstep', 'IDM', 'Downtempo',
+                  'Trip-hop', 'UK Garage', 'Breakbeat', 'Synthpop', 'Electro', 'Hyperpop', 'Jungle'],
+  'Rock':        ['Alternative rock', 'Art rock', 'Psychedelic', 'Noise rock', 'Indie rock', 'J-rock',
+                  'Prog rock', 'Garage rock', 'Grunge', 'Hard rock', 'Surf rock', 'Post-rock',
+                  'Blues rock', 'Glam rock', 'Stoner rock'],
+  'Alternative': ['Alternative rock', 'Art rock', 'Art pop', 'Shoegaze', 'Dream pop', 'Noise rock',
+                  'Post-rock', 'Emo', 'Slowcore', 'Math rock', 'Post-punk', 'Grunge', 'Sadcore',
+                  'Noise pop', 'Post-hardcore'],
+  'Indie':       ['Indie rock', 'Indie pop', 'Indie Folk', 'Dream pop', 'Shoegaze', 'Bedroom pop',
+                  'Jangle pop', 'Lo-fi', 'Slowcore', 'Twee', 'Chamber pop', 'Anti-folk',
+                  'Indie electro', 'Baroque pop', 'Sunshine pop'],
+  'Pop':         ['K-Pop', 'J-pop', 'Art pop', 'Indie pop', 'Psychedelic pop', 'Hyperpop', 'Synthpop',
+                  'Dance pop', 'Bedroom pop', 'Chamber pop', 'Power pop', 'City pop', 'Electropop',
+                  'Teen pop', 'Bubblegum'],
+  'Hip-Hop':     ['Experimental', 'Korean', 'Grime', 'Trip-hop', 'Boom bap', 'Trap', 'Drill',
+                  'Conscious', 'Jazz rap', 'Cloud rap', 'Abstract', 'Gangsta', 'G-funk', 'Horrorcore',
+                  'Lo-fi hip-hop'],
+  'R&B':         ['Neo-soul', 'Electronic soul', 'Soul', 'Funk', 'Contemporary', 'Quiet storm',
+                  'Motown', 'Disco', 'Gospel', 'Doo-wop', 'New jack swing', 'Alternative',
+                  'Southern soul', 'Psychedelic soul', 'Boogie'],
+  'Jazz':        ['Jazz', 'Bebop', 'Fusion', 'Free jazz', 'Spiritual jazz', 'Nu jazz', 'Lounge',
+                  'Swing', 'Cool jazz', 'Hard bop', 'Modal', 'Big band', 'Ragtime', 'Smooth jazz',
+                  'Jazz funk'],
+  'Metal':       ['Heavy metal', 'Death metal', 'Black metal', 'Doom', 'Sludge', 'Thrash', 'Metalcore',
+                  'Post-metal', 'Nu metal', 'Prog metal', 'Power metal', 'Folk metal', 'Grindcore',
+                  'Speed metal', 'Symphonic'],
+  'Punk':        ['Punk', 'Post-punk', 'Hardcore', 'Pop punk', 'Art punk', 'Proto-punk', 'Skate punk',
+                  'Anarcho', 'Oi', 'Egg punk', 'Crust', 'Riot grrrl', 'Garage punk', 'No wave'],
+  'Folk':        ['Folk', 'Indie Folk', 'Freak folk', 'Americana', 'Songwriter', 'Bluegrass',
+                  'Chamber folk', 'Folk rock', 'Traditional', 'Sea shanty', 'Celtic', 'Appalachian',
+                  'Psych folk', 'Nordic folk'],
+  'Country':     ['Country', 'Alt-country', 'Americana', 'Bluegrass', 'Outlaw', 'Honky tonk',
+                  'Nashville', 'Country rock', 'Bakersfield', 'Western swing', 'Cowpunk',
+                  'Country pop', 'Red dirt'],
+  'World':       ['Asian Music', 'Afrobeat', 'Latin', 'Reggae', 'Dub', 'Highlife', 'Bossa nova',
+                  'Cumbia', 'Ska', 'Soca', 'Samba', 'Flamenco', 'Fado', 'Rai', 'Qawwali'],
+  'Classical':   ['Classical', 'Minimalism', 'Opera', 'Chamber', 'Baroque', 'Romantic', 'Choral',
+                  'Symphony', 'Concerto', 'Sonata', 'Renaissance', 'Impressionist', 'Serialism',
+                  'Neoclassical', 'Requiem'],
+  'Soundtrack':  ['Soundtrack', 'Film score', 'Video game', 'Anime', 'Musical', 'TV score', 'Trailer',
+                  'Library', 'Orchestral', 'Synth score', 'Jazz score', 'Horror score',
+                  'Western score', 'Documentary', 'Ambient score'],
+  'Experimental':['Experimental', 'Noise', 'Drone', 'Avant-garde', 'Improvisation', 'Field recording',
+                  'Musique concrete', 'Lowercase', 'Plunderphonics', 'Glitch', 'Onkyo', 'Sound art',
+                  'Electroacoustic', 'Tape music', 'Harsh noise'],
+};
+
+
+
+/* ── sdPlate() — a machined plate ──────────────────────────────────────────
+   A polygon whose every vertex is a CIRCLE, joined by straight runs: give it
+   `[{x, y, r}, …]` clockwise (screen y-down) and it returns the outline `d`.
+   Because the runs lie on the polygon's own edges, two vertices sharing an x
+   or a y give an exactly vertical / horizontal edge NO MATTER what radii they
+   carry — which is the whole point. The corner radius only cuts the corner, it
+   never tilts the run, so the shape stays on the grid while the circles vary.
+   Concave vertices need no special casing: the sweep flag just flips.        */
+function sdPlate(pts) {
+  const n = pts.length, f = v => (Math.round(v * 100) / 100);
+  const c = pts.map((P, i) => {
+    const A = pts[(i - 1 + n) % n], B = pts[(i + 1) % n];
+    const h = (a, b) => { const x = a.x - b.x, y = a.y - b.y, l = Math.hypot(x, y); return { x: x / l, y: y / l }; };
+    const u1 = h(A, P), u2 = h(B, P);                      // toward the neighbours
+    const dot = Math.max(-1, Math.min(1, u1.x * u2.x + u1.y * u2.y));
+    const t = P.r / Math.tan(Math.acos(dot) / 2);          // tangent setback
+    return {
+      in:  { x: P.x + u1.x * t, y: P.y + u1.y * t },
+      out: { x: P.x + u2.x * t, y: P.y + u2.y * t },
+      // cross < 0 ⇒ the outline turns clockwise through this corner
+      sweep: (u1.x * u2.y - u1.y * u2.x) < 0 ? 1 : 0,
+    };
+  });
+  return c.map((k, i) =>
+    `${i ? 'L' : 'M'} ${f(k.in.x)} ${f(k.in.y)} A ${pts[i].r} ${pts[i].r} 0 0 ${k.sweep} ${f(k.out.x)} ${f(k.out.y)}`
+  ).join(' ') + ' Z';
+}
+
+/* The arc CENTRE of every corner, so the construction circles drawn on the
+   blueprint are the real ones the outline was cut from — not eyeballed copies.
+   Also returns the outward direction, which is what the offset ghosts ride. */
+function sdPlateHubs(pts) {
+  const n = pts.length;
+  return pts.map((P, i) => {
+    const A = pts[(i - 1 + n) % n], B = pts[(i + 1) % n];
+    const h = (a, b) => { const x = a.x - b.x, y = a.y - b.y, l = Math.hypot(x, y); return { x: x / l, y: y / l }; };
+    const u1 = h(A, P), u2 = h(B, P);
+    const dot = Math.max(-1, Math.min(1, u1.x * u2.x + u1.y * u2.y));
+    let bx = u1.x + u2.x, by = u1.y + u2.y; const bl = Math.hypot(bx, by);
+    const d = P.r / Math.sin(Math.acos(dot) / 2);            // hub sits down the bisector
+    const cx = P.x + (bx / bl) * d, cy = P.y + (by / bl) * d;
+    const ox = P.x - cx, oy = P.y - cy, ol = Math.hypot(ox, oy);
+    // ⚠ At a CONCAVE corner the hub sits outside the material — the fillet is
+    // cut from the void. Anything solid (a bolt) has to skip those.
+    const convex = (u1.x * u2.y - u1.y * u2.x) < 0;
+    return { x: cx, y: cy, r: P.r, ox: ox / ol, oy: oy / ol, convex };
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THE PLATE — onboarding's layout is construction geometry, not decoration
+   ══════════════════════════════════════════════════════════════════════════
+   Every number the step-0 screen uses lives here, in a 369×424 viewBox that
+   renders 1:1 (369 = the 385px screen less an 8px margin each side). Change a
+   vertex and the outline, the construction circles, the bolt holes and the
+   ghosts all move together — they are all derived from this one list.
+
+   ⚠ The runs stay orthogonal because consecutive vertices SHARE an x or a y.
+   The radii are free to vary; a corner radius cuts the corner, it never tilts
+   the run. The single exception is D→E, a deliberate 45° — the diagonal of the
+   grid square, so it is still on the grid.                                   */
+const OB_PLATE = [
+  { x:   0, y:   0, r: 44 },   // A  top-left
+  { x: 369, y:   0, r: 44 },   // B  top-right
+  { x: 369, y: 336, r: 28 },   // C  where the full-width body ends
+  { x: 272, y: 336, r: 20 },   // D  notch shoulder — the one CONCAVE corner
+  { x: 144, y: 464, r: 28 },   // E  bottom bolt, on the 45° run from D
+  { x:   0, y: 464, r: 44 },   // F  bottom-left
+];
+/* The rig, one level down — drawn in belt-lab.html and saved as
+   `Onboarding_Name`, in the PANEL frame, so these already ARE plate
+   coordinates. Two equal r26 decks on the x=44 / x=325 rules the top corner
+   hubs set (each sits directly under a corner circle — that alignment is the
+   whole payoff, so if you move the corner radii move these with them), and a
+   big r50 wheel centred on the plate (369/2 ≈ 184) for the belt to hang from.
+   Clearance 9 puts the top run at y=213 and the bottom of the loop at y=383.
+
+   ⚠ THE BELT PATH IS SOLVED, NOT PASTED. `belt.js` loads before this file, so
+   `obPlateSvg` asks SD_BELT for the shape the same way the lab does — the
+   onboarding belt and the lab cannot drift apart, and moving a wheel here is
+   one number, not a number and a hand-copied `d`. */
+const OB_RIG = {
+  gap: 9,
+  wheels: [
+    { x:  44, y: 248, r: 26, side: 1, pin: true },   // deck
+    { x: 325, y: 248, r: 26, side: 1, pin: true },   // idler — its bolt lights when the handle is good
+    { x: 184, y: 324, r: 50, side: 1, pin: true },   // the wheel the label hangs inside
+  ],
+};
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ⚠ NOTHING CALLS obPlateSvg ANY MORE — step 0 is plain flow now.
+   ══════════════════════════════════════════════════════════════════════════
+   The plate, the construction circles and the belt rig are all still here and
+   all still correct; the panel simply stopped drawing them. Put
+   `${obPlateSvg()}` back inside a `.ob-plate` wrapper in step 0 to bring the
+   machine back — and see the plate-on/plate-off table in CLAUDE.md, because the
+   overlay positions are absolute percentages of the 369×464 box and have to go
+   back with it.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ⚠ ONE construction circle per corner, and no second pass.
+   There WAS an offset "ghost" layer — every circle drawn again 8px outward —
+   and it is what made the screen look busy: it doubled every line, and the
+   ghosts collided with the neighbours their originals cleared. With one layer
+   the composition is provably clean: no two circles here overlap. If you ever
+   move a vertex, that is the property to re-check. */
+function obPlateSvg() {
+  const hubs = sdPlateHubs(OB_PLATE);
+  const R = OB_RIG, n = v => Math.round(v * 100) / 100;
+  // The groove is a PROPORTION (19/26), so the big wheel gets the same face as
+  // the small ones rather than a hard-coded radius that only suits one size.
+  const wheel = (w, hub) => `
+        <circle class="obp-wheel"  cx="${w.x}" cy="${w.y}" r="${w.r}"/>
+        <circle class="obp-groove" cx="${w.x}" cy="${w.y}" r="${n(w.r * 0.7308)}"/>` +
+        (hub ? `
+        <circle class="obp-hub" cx="${w.x}" cy="${w.y}" r="4.5"/>` : '');
+  /* ⚠ THE PLATE BEHIND THE RIG IS OFF. It was the machined outline, the two
+     x rules and the six construction circles — the thing that made this panel a
+     drawing rather than a form. It reads as background noise behind the rig, so
+     it is switched off rather than deleted: `OB_PLATE`, `sdPlate` and
+     `sdPlateHubs` are all still here and still correct, and this one word
+     brings the whole thing back. Nothing else needs to change to do it — the
+     layout below is derived from the RIG, not the plate. */
+  const OB_PLATE_ON = false;
+  const plate = !OB_PLATE_ON ? '' : `
+        <!-- The grid the circles guide: the two verticals through the top
+             corner hubs. x=44 is the text column AND the deck pulley's axis. -->
+        <g class="obp-rule">
+          <line x1="44" y1="0" x2="44" y2="464"/>
+          <line x1="325" y1="0" x2="325" y2="464"/>
+        </g>
+        <!-- The construction circles, whole — not just the arcs they lent. -->
+        <g class="obp-cons">${hubs.map(h =>
+          `<circle cx="${n(h.x)}" cy="${n(h.y)}" r="${h.r}"/>`).join('')}</g>
+
+        <path class="obp-edge" d="${sdPlate(OB_PLATE)}"/>
+
+        <g class="obp-bolt">${hubs.filter(h => h.convex).map(h =>
+          `<circle cx="${n(h.x)}" cy="${n(h.y)}" r="4.5"/>`).join('')}</g>`;
+  return `
+      <svg class="obp" viewBox="0 0 369 464" aria-hidden="true">${plate}
+        <!-- The rig. The idler carries the bolt that lights when the handle is
+             good; the label hangs in the clear band between the top run (213)
+             and the big wheel (265). -->
+        <path class="obp-belt" d="${SD_BELT.taut(R.wheels, R.gap).d}"/>
+        ${wheel(R.wheels[0], false)}
+        ${wheel(R.wheels[1], true)}
+        ${wheel(R.wheels[2], false)}
+      </svg>`;
+}
+
+
 function onboardingHtml(light) {
   return `
       <div class="app-screen s-onboarding ${sdTheme(light)}">
+        <!-- The progress BELT. 23px off the top, 8px off left and right, 12px thick,
+             stadium caps — the same object as the handle rig below it, at a
+             different scale. White as it fills, grey where it hasn't. -->
         <div class="ob-top">
+          <div class="ob-progress"><div class="ob-prog-bar"></div></div>
+        </div>
+        <div class="ob-rail">
           <button class="ob-back" onclick="obBack()" aria-label="Back">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
           </button>
-          <div class="ob-progress"><div class="ob-prog-bar"></div></div>
-          <div class="ob-stepcount"><span class="ob-step-n">1</span>/<span class="ob-step-t">8</span></div>
+          <div class="ob-stepcount"><span class="ob-step-n">01</span><i>/</i><span class="ob-step-t">08</span></div>
         </div>
 
         <div class="ob-stage">
 
-          <!-- 0 · USERNAME -->
-          <section class="ob-panel" data-step="0">
+          <!-- 0 · USERNAME — the whole panel is one machined plate.
+               Geometry: OB_PLATE / OB_RIG above; outline from sdPlate,
+               circles from sdPlateHubs, so the drawing and the shape cannot
+               drift apart. Text and field are HTML laid over it in the SVG's
+               own percentages, on the x=44 rule the corner hubs set. -->
+          <section class="ob-panel ob-panel--user" data-step="0">
             <div class="ob-h">
+              <div class="ob-eyebrow">01 · Handle</div>
               <div class="ob-title">Claim your handle</div>
               <div class="ob-sub">This is how friends find you on Spindeck.</div>
             </div>
-            <div class="ob-userwrap">
+
+            <!-- ⚠ A <label>, so the whole slot focuses the field natively. It
+                 used to be a div with the input stretched over it and
+                 pointer-events juggling to stop the @ eating clicks; the
+                 element that means "this labels that control" does it for
+                 free. -->
+            <label class="ob-user-well">
               <span class="ob-at">@</span>
-              <input class="ob-user-input" type="text" placeholder="username" maxlength="20"
+              <input class="ob-user-input" type="text" placeholder="username" maxlength="18"
                      autocomplete="off" spellcheck="false" oninput="obSetUsername(this.value)">
+            </label>
+
+            <!-- Budget, rule, reassurance — centred, straight under the field.
+                 The note answers the rule directly above it: that line is what
+                 makes anyone think but I want a real name. -->
+            <div class="ob-user-read">
+              <div class="ob-user-meter"><i></i><i></i><i></i><i class="ob-gate"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+              <div class="ob-user-hint">4–18 chars · a–z 0–9 _</div>
+              <div class="ob-user-note">Don't worry — you'll be able to pick a nickname too.</div>
             </div>
-            <div class="ob-user-hint">3–20 characters · letters, numbers, underscores</div>
           </section>
 
           <!-- 1 · CONNECT -->
@@ -1057,19 +1328,40 @@ function onboardingHtml(light) {
             </div>
           </section>
 
-          <!-- 3 · GENRES — plain chips, and deliberately so. The rotary dial
-               that briefly lived here is a PRO feature now (mixDialBuild):
-               onboarding is somebody's first thirty seconds in the app and is
-               not the place to teach a gesture. -->
-          <section class="ob-panel" data-step="3">
+          <!-- 3 · GENRES — Pro's mix dial, and a list of the same tree.
+               ⚠ The dial was here once, left for Pro because a first-timer's
+               first thirty seconds is no place to teach a gesture, and is BACK
+               by decision (2026-09-03) — with the list one switch away as the
+               instantly-legible route through. Same SD_GENRE_TREE, same
+               OB.genres, whichever view you pick from. The dial itself is
+               built by obMixBuild (app.js) into .ob-mix, the way
+               mixInlineBuild builds it into the bento; the list is rendered by
+               obRenderGenreList into .ob-glist. One row above the views: the
+               DIAL's back (left — one ring up, shown only inside a main; it is
+               the wheel's own back, NOT the rail's, which is the step's) and
+               the Wheel | List switch (right), level with each other. The
+               chip row is the .ob-picks-dock between the stage and the footer,
+               so it sits against Continue and never moves the wheel. -->
+          <section class="ob-panel ob-panel--genres" data-step="3">
             <div class="ob-h">
               <div class="ob-title">What do you listen to?</div>
               <div class="ob-sub">Pick a few — we'll personalise your feed.</div>
             </div>
-            <div class="ob-body">
-              <div class="genre-chips">
-                ${SD_GENRES.map(g => `<button class="chip" onclick="obToggleGenre(this,'${obOc(g)}')">${obEsc(g)}</button>`).join('')}
+            <div class="ob-view-row">
+              <button class="ob-mix-back" type="button" onclick="obMixBack()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                All genres
+              </button>
+              <div class="ob-view" role="tablist" aria-label="Genre picker view">
+                <button class="ob-view-btn" type="button" data-view="wheel" onclick="obSetGenreView('wheel')">Wheel</button>
+                <button class="ob-view-btn" type="button" data-view="list"  onclick="obSetGenreView('list')">List</button>
               </div>
+            </div>
+            <div class="ob-genres" data-genres="wheel">
+              <div class="ob-mix"></div>
+            </div>
+            <div class="ob-genres" data-genres="list">
+              <div class="ob-glist"></div>
             </div>
           </section>
 
@@ -1083,7 +1375,6 @@ function onboardingHtml(light) {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
               <input type="text" placeholder="Search artists" autocomplete="off" spellcheck="false" oninput="obSearch('artists', this.value)">
             </div>
-            <div class="ob-pinned" data-pinned="artists"></div>
             <div class="ob-wall" data-wall="artists"></div>
           </section>
 
@@ -1097,7 +1388,6 @@ function onboardingHtml(light) {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
               <input type="text" placeholder="Search albums" autocomplete="off" spellcheck="false" oninput="obSearch('albums', this.value)">
             </div>
-            <div class="ob-pinned" data-pinned="albums"></div>
             <div class="ob-wall ob-wall--albums" data-wall="albums"></div>
           </section>
 
@@ -1117,9 +1407,22 @@ function onboardingHtml(light) {
 
         </div>
 
-        <div class="ob-footer">
-          <button class="ob-skip" onclick="obNext(true)">Skip</button>
-          <button class="ob-next btn-primary" onclick="obNext()">Continue</button>
+        <!-- THE DOCK — what you have picked on this step, against Continue:
+             genres (3), artists (4), albums (5), people (6). Outside the
+             scrolling stage, so it is always in reach and never pushes the
+             wheel or the walls. Two rows, then a fade (is-over, measured in
+             obSyncDock). The walls' .ob-pinned rows moved here. -->
+        <!-- .ob-foot: dock + footer as ONE block. On the scrolling steps it is
+             an OVERLAY on the stage (.ob-stage-fade), and the stage's mask fades
+             the wall out across exactly its height — so cards run under the
+             picks and the buttons and reach obscurity at the bottom edge,
+             instead of stopping at a line a quarter of the way up the phone. -->
+        <div class="ob-foot">
+          <div class="ob-picks-dock is-empty"></div>
+          <div class="ob-footer">
+            <button class="ob-skip" onclick="obNext(true)">Skip</button>
+            <button class="ob-next btn-primary" onclick="obNext()">Continue</button>
+          </div>
         </div>
       </div>`;
 }
@@ -1782,7 +2085,8 @@ function profileHtml(light) {
   }).join('');
 
   return `
-      <div class="app-screen s-home-v3 s-prof2${light ? ' s-home-v3--light' : ''}">
+      <div class="app-screen s-home-v3 s-prof2${light ? ' s-home-v3--light' : ''}"
+           style="${window.profSkinCss ? profSkinCss(P) : ''}">
         ${appHeader()}
         <div class="v3-body">
           <div class="prof2-scroll">
@@ -1868,6 +2172,31 @@ function profileEditHtml(light) {
 
   const bio = String(D.bio == null ? '' : D.bio);
 
+  /* One colour row: swatch · RGB picker · lightness · reset.
+     ⚠ Both inputs write through `profSkinSet`, which patches the CSS variables
+     by hand and does NOT re-render. A colour input dragged through its gradient
+     fires `input` every frame, and re-rendering per frame would stutter AND
+     hand the user a brand-new element halfway through the drag. Reset is a
+     click, not a drag, so that one may re-render.
+     ⚠ `value` falls back to the theme's own colour so the picker opens on what
+     you are actually looking at rather than on black. */
+  const skinRow = (k, label, fallback) => {
+    const sk = D.skin || {};
+    return `
+              <div class="pfe-row pfe-skin">
+                <span class="pfe-lbl">${label}</span>
+                <div class="pfe-field pfe-skin-f">
+                  <input class="pfe-color" type="color" value="${at(sk[k] || fallback)}"
+                         title="${label}" oninput="profSkinSet('${k}', this.value)">
+                  <input class="pfe-range" type="range" min="-45" max="45" step="1"
+                         value="${Number(sk[k + 'L']) || 0}" title="Lightness"
+                         oninput="profSkinSet('${k}L', this.value)">
+                  <button class="pfe-skin-x" title="Back to the theme colour"
+                          onclick="profSkinClear('${k}')">&times;</button>
+                </div>
+              </div>`;
+  };
+
   // An empty media slot: a dashed "+" tile (grid) or row (list).
   const addTile = (kind, slot, label, shape) => `
               <button class="pfe-add pfe-add--${shape}" onclick="openProfEditor('${kind}', '${slot}')">
@@ -1924,7 +2253,8 @@ function profileEditHtml(light) {
   }).join('');
 
   return `
-      <div class="app-screen s-home-v3 s-prof2 s-pfedit${light ? ' s-home-v3--light' : ''}">
+      <div class="app-screen s-home-v3 s-prof2 s-pfedit${light ? ' s-home-v3--light' : ''}"
+           style="${window.profSkinCss ? profSkinCss(D) : ''}">
         ${appHeader()}
         <div class="v3-body">
           <div class="prof2-scroll pfe-scroll">
@@ -1962,6 +2292,32 @@ function profileEditHtml(light) {
               </div>
 
               ${field('location', 'Location', D.location, 'Country or city', 30)}
+
+              <!-- Colour. Two pickers, and each is TWO controls: the RGB value
+                   and a lightness. Separate on purpose -- "what colour" and
+                   "how dark" are different decisions, and one combined picker
+                   throws the depth away every time you move the hue.
+                   ⚠ The BACKGROUND you are picking is the page you are standing
+                   on: profSkinApply writes --sd-bg onto this very screen, so it
+                   changes under your thumb as you drag. The card is not on this
+                   page (this is a form), which is what the swatch is for. -->
+              <!-- ⚠ THE PREVIEW IS DRIVEN BY NOTHING. It paints itself from
+                   var(--sd-bg) and var(--pf-base), which profSkinCss has
+                   already written inline on this very screen, so it follows the
+                   sliders with no JS behind it and cannot disagree with the
+                   card it previews. It shows the DERIVED tokens too (the inner
+                   pane is --pf-face, the text ticks are --pf-ink), so a colour
+                   that makes your own bio unreadable says so here rather than
+                   on your profile. -->
+              <div class="pfe-row">
+                <span class="pfe-lbl">Preview</span>
+                <div class="pfe-field">
+                  <div class="pfe-prev"><span class="pfe-prev-card"><span class="pfe-prev-pane"></span></span></div>
+                </div>
+              </div>
+
+              ${skinRow('card', 'Card colour', '#3a3b45')}
+              ${skinRow('bg', 'Background', '#111116')}
 
               <!-- Tags, where Occupation used to be. Not typed: you wear what
                    you own, so the row is a button onto the tag sheet. -->
@@ -2491,14 +2847,28 @@ function playlistPageHtml(light) {
                 </button>
               </div>
             </div>
-            <div class="plp-songs">
+            <!-- Songs — laid out like the album page's tracklist (.v3-song-*):
+                 a SONG / LENGTH / RATING header, then number · title · length ·
+                 rating rows on the same 12px gutter, hairlines and column widths.
+                 Only the title cell differs: the album and artist follow the
+                 song name, since a playlist's rows come from many records.
+                 The --album modifier scopes the restyle; the New Playlist page shares
+                 these row classes and keeps its own look. -->
+            <div class="plp-songs plp-songs--album">
               ${songs.length ? '' : '<div class="plp-empty">No songs yet — this playlist is empty.</div>'}
+              ${songs.length ? `
+              <div class="plp-song-head">
+                <span class="plp-song-num"></span>
+                <span class="plp-song-line">Song</span>
+                <span class="plp-song-dur">Length</span>
+                <span class="plp-song-rate">Rating</span>
+              </div>` : ''}
               ${songs.map((row, i) => `
               <div class="plp-song" onclick="event.stopPropagation(); plSongTap(this)" data-image="${row.album.image}" data-title="${row.s.title}" data-sub="${row.album.album}">
                 <div class="plp-song-num">${i + 1}</div>
                 <div class="plp-song-line"><span class="plp-song-title">${row.s.title}</span><span class="plp-song-album">${row.album.album}</span> · <span class="plp-song-artist">${row.album.artist}</span></div>
-                <div class="plp-song-rate">${row.rating}</div>
                 <div class="plp-song-dur">${row.s.dur}</div>
+                <div class="plp-song-rate">${row.rating}</div>
               </div>`).join('')}
             </div>
           </div>
@@ -3121,40 +3491,46 @@ function shopHtml(light) {
 
 function bottomNav(active = 'home') {
   const on = id => active === id ? ' active' : '';
-  // ⚠️ The fade and the nest are SIBLINGS of the nav, not children: both fill
-  // with `background-color: inherit`, which only resolves to the screen colour
-  // when the parent is the shell itself. Inside the nav they'd inherit its
-  // transparent background instead.
+  /* THE FLOATING GLASS CONSOLE — back, by decision (2026-09-03). A wide rounded
+     bar with a raised centre hump (the now-playing ticker sits in it) and FIVE
+     buttons in the lower bar: Home · Trending · SHOP · Playlists · Profile.
+     Floats centred, 14px off the bottom, over the content.
+     ⚠️ It was DOCKED from 2026-08-20 to 2026-09-03: full-bleed, with a scoop cut
+     from its bottom edge that cradled the pet and then the shop button, and a
+     plateau that GREW into a CD console. Eric brought the bubble back, asked
+     for the shop as a plain nav icon, and for the console to go. So: no
+     siblings (the fade, the blur, the nest, the emboss, the scene), no gap, no
+     scoop. `sdScene` / `sdShopBtn` are no longer emitted by anything; the pet
+     engine behind SD_PET_ENABLED is untouched.
+     ⚠️ THE CD CONSOLE STAYS — it is the same principle on this bar: the hump is
+     a plateau too, and a CD tap grows it (`.s-home-v3--console`) into the
+     album + services panel. Two contours, as before: the short one and a tall
+     one with the hump's walls extended 110 units, swapped by state.
+     ⚠️ The shop's glyph is the dot-language bag (SD_ICONS.bag), filled with
+     currentColor like the other four, so it lights and dims with them. */
   return `
-          <div class="v3-bottom-fade" aria-hidden="true"></div>
-          <!-- Backdrop blur for the WHOLE nav box, scoop included. The glass's
-               own blur is masked to the bar shape, so it stops at the scoop —
-               anything showing there came through sharp. -->
-          <div class="v3-nav-blur" aria-hidden="true"></div>
-          <div class="v3-nav-nest" aria-hidden="true"></div>
           <nav class="v3-bottom-nav">
             <div class="v3-nav-glass" aria-hidden="true"></div>
-            <!-- OUTLINE ONLY — the bar's top contour, as an OPEN path (no Z).
-                 ⚠️ Deliberately does NOT include the scoop: the scoop is a hole in
-                 the FILL (see the .v3-nav-glass mask in app.css, which does carry
-                 it) but is left unstroked, so the cradle reads as an opening
-                 rather than an outlined cut-out. Sides and outer bottom run
-                 outside the viewBox so their stroke clips away. -->
-            <svg class="v3-nav-shape" viewBox="0 0 576 93" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><path d="M-8 101V34.1217H64.8923C73.1451 34.1217 79.8353 27.4315 79.8353 19.1787C79.8353 8.86277 88.198 0.5 98.514 0.5L480.656 0.5C490.972 0.5 499.335 8.86277 499.335 19.1788C499.335 27.4316 506.025 34.1218 514.278 34.1218H584V101"/></svg>
-            <!-- The same contour with the plateau raised 88 units, for the console
-                 state. WARNING: a SECOND svg rather than a class on the first,
-                 because the viewBox changes with it and viewBox cannot be set
-                 from CSS. Both are preserveAspectRatio=none and the nav's
-                 aspect-ratio switches with the state, so whichever is showing
-                 always matches its own box and nothing stretches. The plateau's
-                 two fillets are untouched; a straight wall is inserted between
-                 them, where the tangent is already vertical. Change one contour
-                 and change the other, plus the three masks in app.css. -->
-            <svg class="v3-nav-shape v3-nav-shape--tall" viewBox="0 0 576 181" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><path d="M-8 189V122.122H64.8923C73.1451 122.122 79.8353 115.431 79.8353 107.179L79.8353 19.1787C79.8353 8.86277 88.198 0.5 98.514 0.5L480.656 0.5C490.972 0.5 499.335 8.86277 499.335 19.1788L499.335 107.179C499.335 115.432 506.025 122.122 514.278 122.122H584V189"/></svg>
+            <svg class="v3-nav-shape" viewBox="0 0 553 126" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><path d="M517.5 125H35.5C16.17 125 0.5 109.33 0.5 90V79.7942C0.5 60.4642 16.17 44.7942 35.5 44.7942L47.3137 44.7942C58.1862 44.7942 67 35.9803 67 25.1079C67 11.5173 78.0173 0.5 91.6079 0.5L460.892 0.500022C474.483 0.500023 485.5 11.5174 485.5 25.1079C485.5 35.9804 494.314 44.7942 505.186 44.7942H517.5C536.83 44.7942 552.5 60.4642 552.5 79.7942V90C552.5 109.33 536.83 125 517.5 125Z"/></svg>
+            <!-- The same contour with the hump grown 110 units, for the console
+                 state. A SECOND svg rather than a class on the first, because
+                 the viewBox changes with it and viewBox cannot be set from CSS.
+                 Both are preserveAspectRatio=none and the nav's aspect-ratio
+                 switches with the state, so whichever is showing always matches
+                 its own box. The hump's fillets are untouched; straight walls
+                 are inserted at x=67 and x=485.5, where the tangent is already
+                 vertical. Change one contour and change the other, plus the two
+                 masks in app.css. -->
+            <svg class="v3-nav-shape v3-nav-shape--tall" viewBox="0 0 553 236" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><path d="M517.5 235H35.5C16.17 235 0.5 219.33 0.5 200V189.7942C0.5 170.4642 16.17 154.7942 35.5 154.7942L47.3137 154.7942C58.1862 154.7942 67 145.9803 67 135.1079L67 25.1079C67 11.5173 78.0173 0.5 91.6079 0.5L460.892 0.5C474.483 0.5 485.5 11.5174 485.5 25.1079L485.5 135.1079C485.5 145.9804 494.314 154.7942 505.186 154.7942H517.5C536.83 154.7942 552.5 170.4642 552.5 189.7942V200C552.5 219.33 536.83 235 517.5 235Z"/></svg>
+            <!-- And a THIRD contour, the hump grown 700 units, for the friends
+                 panel (.s-home-v3--friends): same construction as the tall
+                 one, walls only, fillets untouched. At the 393 frame that is
+                 ~423px of nav, i.e. half the screen. Its mask is in app.css. -->
+            <svg class="v3-nav-shape v3-nav-shape--friends" viewBox="0 0 553 826" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><path d="M517.5 825H35.5C16.17 825 0.5 809.33 0.5 790V779.7942C0.5 760.4642 16.17 744.7942 35.5 744.7942L47.3137 744.7942C58.1862 744.7942 67 735.9803 67 725.1079L67 25.1079C67 11.5173 78.0173 0.5 91.6079 0.5L460.892 0.5C474.483 0.5 485.5 11.5174 485.5 25.1079L485.5 725.1079C485.5 735.9804 494.314 744.7942 505.186 744.7942H517.5C536.83 744.7942 552.5 760.4642 552.5 779.7942V790C552.5 809.33 536.83 825 517.5 825Z"/></svg>
             <div class="v3-nav-items">
               <button class="v3-nav-item${on('home')}" onclick="navigate('home')" title="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/></svg></button>
               <button class="v3-nav-item${on('wall')}" onclick="navigate('wall')" title="Trending"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="2.5" y="2.5" width="5" height="5" rx="1.2"/><rect x="9.5" y="2.5" width="5" height="5" rx="1.2"/><rect x="16.5" y="2.5" width="5" height="5" rx="1.2"/><rect x="2.5" y="9.5" width="5" height="5" rx="1.2"/><rect x="9.5" y="9.5" width="5" height="5" rx="1.2"/><rect x="16.5" y="9.5" width="5" height="5" rx="1.2"/><rect x="2.5" y="16.5" width="5" height="5" rx="1.2"/><rect x="9.5" y="16.5" width="5" height="5" rx="1.2"/><rect x="16.5" y="16.5" width="5" height="5" rx="1.2"/></svg></button>
-              <span class="v3-nav-gap" aria-hidden="true"></span>
+              <button class="v3-nav-item v3-nav-item--shop${on('shop')}" onclick="navigate('shop')" title="Shop" aria-label="Shop">${SD_ICONS.bag}</button>
               <button class="v3-nav-item${on('playlists')}" onclick="navigate('playlists')" title="Playlists"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></button>
               <button class="v3-nav-item${on('profile')}" onclick="navigate('profile')" title="Profile"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></button>
             </div>
@@ -3185,12 +3561,17 @@ function bottomNav(active = 'home') {
                   ${svcMarkHtml(sv, 'v3-nc-ico')}
                 </button>`).join('')}</div>
             </div>
-          </nav>
-          <!-- Scoop EMBOSS. The 0-height wrapper paints nothing itself, but
-               background-color:inherit on it resolves the screen colour for the
-               fill inside, and its filter applies to that fill AFTER masking —
-               the only way to get a drop-shadow that follows a mask.
-               The scene moved out of the nav so it can sit ABOVE this. -->
-          <div class="v3-nav-emboss" aria-hidden="true"><i></i></div>
-          ${sdScene(active)}`;
+            <!-- FRIENDS LISTENING NOW — what a tap on the ticker opens (it used
+                 to jump straight to whoever was on the bar). Same principle as
+                 the console: the hump grows, this time to half the screen, and
+                 the list stands in it. A row opens that friend's profile. The
+                 chevron at the top puts it away; so does a scroll, or a touch
+                 anywhere outside it (openFriends / closeFriends in app.js). -->
+            <div class="v3-friends" aria-hidden="true">
+              <button class="v3-fr-close" type="button" title="Close" aria-label="Close"
+                      onclick="event.stopPropagation(); closeFriends(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+              <div class="v3-fr-hd">Friends listening now</div>
+              <div class="v3-fr-list"></div>
+            </div>
+          </nav>`;
 }

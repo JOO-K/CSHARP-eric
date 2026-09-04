@@ -26,12 +26,14 @@
 | `images/` | Album art (~146 albums, `album-artistslug-albumslug.ext`), playlist covers (`playlist-*.jpg`), and `profile-skin-01.png` (profile theme 01 skin) |
 | `share.js` | **Quick share** — renders your rating + review as a 1080×1350 Instagram card on a canvas, and the sheet that offers it. Loads AFTER app.js |
 | `dots.js` | **SD_DOTS** — the brand dot-matrix asset generator. Loads FIRST (before `screens.js`) |
+| `belt.js` | **SD_BELT** — belt geometry over a set of pulleys. The ONE solver; `beltPath` in app.js is now `SD_BELT.hull` with the dial's clearance |
+| `belt-lab.html` | Design tool for belt rigs — drop pulleys, the belt wraps them. Toolbar → **⌾ Belt**. Not part of the mockup |
 | `dot-lab.html` | Design tool for dot assets — paint grid, gooey links, sliders, save library, copy SVG/call. Toolbar → **◌ Dots**; leave via the back link or **Esc**. Not part of the mockup |
-| `images/BOTTOM_NAV_FULL_INDENT.svg` | Source silhouette for the docked bottom nav, **as drawn**. Reference only — the code inlines a bled variant of it in `bottomNav()` and in the `.v3-nav-glass` mask |
+| `images/BOTTOM_NAV_FULL_INDENT.svg` | Silhouette of the **docked** bottom nav (2026-08-20 → 09-03), as drawn. Reference only — nothing reads it now that the nav is the floating bubble again (its 553×126 path is inlined in `bottomNav()` and the `.v3-nav-glass` mask) |
 | `images/topbox.png` | Fillet PNG — black arc at bottom-left, white bg. Used for `v3-fillet-bl` |
 | `images/bottombox.png` | Fillet PNG — black arc at top-left, white bg. Used for `v3-fillet-tl` |
 
-**Script load order (important):** `dots.js` → `data.js` → `personas.js` → `screens.js` → `app.js`
+**Script load order (important):** `belt.js` → `dots.js` → `data.js` → `personas.js` → `screens.js` → `app.js`
 ⚠️ `dots.js` must be first: the home screen's static markup calls `sdScene()` as `screens.js` parses.
 
 ---
@@ -1241,7 +1243,7 @@ Historic geometry, still true of the review state:
     width: 54px; height: 54px;
   }
   ```
-- CD click → `togglePreview()`: play/pause the 30s music preview (see **Music Preview System**). The speaker button (`.v3-preview-btn`) is the master arm/disarm.
+- CD click → `onCdTap()`: opens the nav console (the hump grows to show the album + services — see **The nav console**); tapping again closes it. The speaker button (`.v3-preview-btn`) is the master arm/disarm for previews.
 - Scroll area gets `padding-top: 30px` to give clearance for the CD which overflows below the bento
 
 ### Fillet System
@@ -1308,49 +1310,39 @@ The two **"you may know" rails** (`renderKnowRails`, `.v3-rail` / `.v3-kcard`, m
 
 **Feed row taps** (rows carry an index into `_FEED`, no attribute escaping — the same idiom the old cards used): tapping the **row** → `feedOpen(n)`, which routes by kind (review/rating → the pinned-review flow, playlist → `openPlaylistPage`, follow → `openArtistPageFor`, release/trending → the album). Tapping the **trailing thumb** → `feedOpenArt(n)` → whatever it's a picture *of*: the album, or the artist on a follow row, where the thumb is their photo and rendered round. The pinned-review flow is unchanged: `openFriendReview(i)` → `openAlbumPage(album, pinnedReview)`, the album page opens, `.v3-body` smooth-scrolls to the review list (rect math divided by the phone-wrap scale), and the tapped review renders **pinned first** in `populateReviewList` (`.v3-rev-card--pinned`, star-outlined with a "from your feed" chip; survives filter switches, cleared whenever an album page opens without a pin).
 
-### Bottom Nav — glass shelf, docked to the bottom edge
-`bottomNav(active)` in screens.js. Full-bleed and flush against the bottom, with
-TWO shaped features: a raised **centre plateau** on the top edge — the bump —
-holding the now-playing ticker, and a **scoop** cut out of the bottom edge that
-cradles the pet. Silhouette is `images/BOTTOM_NAV_FULL_INDENT.svg` (viewBox
-**576×93**, ~62px tall at the 385px mockup). Structure:
+### Bottom Nav — the floating glass console (`bottomNav(active)` in screens.js)
 
-- **`.v3-nav-glass`** — the frosted fill, masked to the silhouette via a data-URI.
-- **`.v3-nav-emboss`** — makes the scoop read as a **raised pad**: the
-  `.plp-back-pill` neumorphic idea applied to the scoop SHAPE, but with an
-  **even halo** (zero offset) rather than a directional light, so the shading
-  wraps the whole cradle instead of pooling top-left. ⚠️ The two themes use
-  opposite colours for it — a light rim on dark, a *shadow* on light, because a
-  white halo is invisible against cream. Two nested elements, both load-bearing:
-  - ⚠️ **`filter` is applied BEFORE `mask`**, so a drop-shadow on a masked
-    element is clipped away by that same mask (verified in-page). The shadow has
-    to come from a **parent** of the masked element.
-  - ⚠️ **The wrapper is 0-height on purpose.** It needs `background-color:
-    inherit` so the fill can inherit the screen colour *through* it — same trick
-    as `.v3-nav-nest`, same reason both must be direct children of `.s-home-v3`.
-    A zero-height box resolves that colour but paints nothing itself.
-  - ⚠️ **z-6, above the nav**, because the highlight falls outside the scoop
-    onto the bar and must draw over the glass. That is why **`.sd-scene` moved
-    out of `<nav>`** and sits at z-7 — inside, it would be buried by this.
-  - An earlier attempt embossed the outline instead: two offset strokes of the
-    scoop path, later blurred. It reads as a doubled/glowing line, not a raised
-    area — an emboss needs the SHAPE shaded, not its edge.
-- **`.v3-nav-shape`** — the hairline outline, as an **OPEN path** (no `Z`).
-  ⚠️ **It is NOT the same path as the mask.** It traces the bar's top contour
-  only and **deliberately omits the scoop**, so the cradle reads as an opening
-  rather than an outlined cut-out. The scoop still exists as a hole in the
-  *fill* — that lives in the `.v3-nav-glass` mask, which does carry it.
-  So there are now THREE related paths, and a change to the silhouette has to be
-  reflected in each: the outline (screens.js), the glass mask and the plug mask
-  (both app.css).
-- **`.v3-nav-items`** — 4 buttons (Home · Trending → `wall` · Playlists ·
-  Profile) in the lower band, which starts at the shoulder, `top: 36.7%`
-  (y=34.12 of 93). `padding-bottom` keeps them off the screen edge.
-- **`.v3-nav-gap`** — a `flex: 0 0 32%` spacer sitting between Trending and
-  Playlists. It reserves the scoop's opening (x 33.1%→65.1%) so the four icons
-  are pushed onto the solid bar either side, landing their centres at
-  8.5 / 25.5 / 74.5 / 91.5%. ⚠️ Resize the scoop in the SVG and this has to
-  follow, or the middle two icons hang over the hole.
+**The floating bubble is back (2026-09-03).** A wide rounded bar with a raised
+centre **hump** holding the now-playing ticker and **five** buttons in the lower
+bar: Home · Trending → `wall` · **Shop** · Playlists · Profile. `position:
+absolute`, 72% wide, centred, **24px off the bottom**, `aspect-ratio: 553/126`
+(~63px tall at the 385px mockup), frosted glass (`.v3-nav-glass`, masked to the
+silhouette) under a hairline outline (`.v3-nav-shape`).
+
+- **The Shop is a nav item** (`.v3-nav-item--shop`), glyph `SD_ICONS.bag` — the
+  dot-language bag — in the same 21px box as the stroked icons, filled with
+  `currentColor` so it lights and dims with them.
+- **`.v3-nowbar` rides the hump**: `left/right: 23%`, `bottom: 65px`,
+  `height: 22px`. Derived, not tuned — the hump's interior is x 67→485 of 553
+  on a bar that is 72% of the screen from 14%, and its floor (the shoulder,
+  y=44.79/126) sits ~64.6px up. Change the bar's width and these move with it.
+- Scroll areas clear the bar with **96px** of bottom padding (`.v3-body`'s
+  callers, `.prof2-scroll`, `.set-scroll`, `.shop-scroll`, `.pfe-scroll`): the
+  bar's top stands 87px up (63 + the 24px gap).
+- Pinned to the bottom because `.s-home-v3` is `height: 100%; overflow: hidden`
+  (constrains the flex column).
+
+⚠️ **It was DOCKED from 2026-08-20 to 2026-09-03**, and everything that came
+with docking left with it: full-bleed silhouette `images/BOTTOM_NAV_FULL_INDENT.svg`
+(still on disk, reference only), the **scoop** cut from the bottom edge that
+cradled the pet and then the shop button (`sdScene` / `sdShopBtn` are no longer
+emitted by anything; the pet engine behind `SD_PET_ENABLED` is intact but
+homeless), `.v3-nav-gap` and the nth-child nudges, the `.v3-nav-emboss` /
+`.v3-nav-nest` / `.v3-nav-blur` / `.v3-bottom-fade` helper boxes and the
+`--nav-mask-neg` / `--nav-mask-scoop` masks they shared. **The CD console
+STAYED** — the bubble has a hump, so it grows the same way (see *The nav
+console*). Eric asked for the bubble and the shop as a plain icon; don't
+reintroduce a docked bar's furniture onto it.
 
 ### Someone else's profile (`openFriendProfile()` · `restoreOwnProfile()`, `app.js`)
 
@@ -1454,7 +1446,24 @@ genres under them.
 | For You | the unfiltered catalogue |
 | Friends | albums a friend logged — via `friendRecFor`, the same lookup the feed and the cover's friend tag use, so they cannot disagree |
 | Popular USA | top 20 by `reviewCount`, already in the catalogue — no new data |
-| *genre* | primary genre only (before the `/`), read from `ARCHIVE`, first 8 |
+| **Genre** | not a shelf — the door to the mix dial (`kind: 'mix-open'`), real home only |
+
+⚠️ **THE FLAT GENRE ROWS ARE GONE FROM THE WHEEL.** It listed the archive's
+first eight genres, which was the only way to pick one before the mix dial
+existed. With the dial there, a second flat list meant two controls for one job
+that could not agree — the wheel offered eight bare labels read off the
+catalogue, the dial offers sixteen families and 236 subgenres and can combine
+them. The one that cannot express a mix is the one that went. ⚠️ `shelfPool`'s
+`genre` branch (the `default:` case) is deliberately left in place: the shop's
+cosmetic commit still resolves shelves by label, and it is the fallback for any
+kind with no branch of its own.
+
+⚠️ **The row is called "Genre", not "Custom mix".** It is now the only genre
+control there is, so it is named for what it gives you rather than for the
+shape of the thing behind it — "Custom mix" described the dial, which you have
+not seen at the moment you are reading the row. ⚠️ The shop's showcase wheel
+has no such row (`realShelf`) and is therefore three rows now; that is still
+enough to demonstrate the hold, the lens and the drag, which is its whole job.
 
 ⚠ Any shelf that cannot field **two** albums is dropped when the wheel is
 built, not caught at commit — so an unusable shelf never appears rather than
@@ -1540,10 +1549,12 @@ Hairline, Devotee) rendered blank, because they come straight from `shopHtml`
 with no JS to light them. The fade is opt-in via `.shop-owned--new`, which only
 the pill `sdBuy` creates carries.
 
-### Shop — the nav scoop's button + the `shop` screen (`sdShopBtn()` · `shopHtml()`)
+### Shop — the nav's Shop item + the `shop` screen (`shopHtml()`)
 
-**The scoop is a shop button now.** `sdScene()` returns `sdShopBtn()` unless
-`SD_PET_ENABLED` (top of `screens.js`) is flipped back to `true`.
+**The shop is the middle item of the floating nav** (`.v3-nav-item--shop`,
+`SD_ICONS.bag`) since 2026-09-03. Before that it was the docked bar's scoop
+button (`sdShopBtn()`, still defined, no longer emitted); the notes below on
+`.sd-shop-btn` describe that retired placement.
 
 - **The button** — `.sd-shop-btn` copies `.sd-scene`'s geometry exactly: 63×30,
   `left: 49.1%`, `bottom: 2px`, `z-index: 7`. ⚠️ **Keep the two in step** — if
@@ -1655,7 +1666,7 @@ wheel, belt. Pick six and it's a machine you built.
 
 **Where it sits — IN THE BENTO, not in a window.** Pro's cover-hold opens the
 shelf wheel: a vertical scroll over the album art that picks **one** shelf. Its
-last row is **Custom mix**, which opens the dial instead of committing. The dial
+last row is **Genre**, which opens the dial instead of committing. The dial
 takes the **same square** (`.v3-album`) and its commit sits in **`.v3-blue`**
 directly beneath it, so choosing a mix happens on the object it changes.
 Confirming calls `commitShelf({kind:'mix', genres:[…]})`.
@@ -1675,16 +1686,485 @@ Confirming calls `commitShelf({kind:'mix', genres:[…]})`.
   *against*) and the ring's `transform-origin` / spring transition.
 - ⚠️ **The belt is untouched by any of that.** It was never the gesture — it is
   the picture of what you built — and it still redraws on every toggle.
-- ⚠️ **This was briefly onboarding step 3, and must not go back.** A new user's
-  first thirty seconds is the worst place to teach a gesture, and a wall of
-  chips is instantly legible where a dial is not. Here the audience is someone
-  who already knows to hold the cover — the dial is the reward for knowing the
-  app, not the toll to enter it.
+- ⚠️ **It is ALSO onboarding's step 3 — again, by decision (2026-09-03).** It
+  left once because a new user's first thirty seconds is a bad place to teach
+  a gesture and a wall of chips is instantly legible where a dial is not. It
+  came back with that objection *answered*, not overruled: step 3 offers the
+  wheel **and a list of the same tree**, one switch apart, so nobody has to
+  learn the dial to get through the door. Same code, through a **dial
+  context** — see *Dial contexts* below and *Step 3* under the Onboarding
+  Wizard. Don't fork the dial to put it somewhere; give it a context.
 - ⚠️ **Only on the real home** (`opts.realShelf`). The shop's showcase commits
   cosmetically to one bento; the demo must not reach out of its case.
 - `MIX` lives outside the DOM, so closing and reopening returns you to the mix
   you were building.
 
+#### Dial contexts (`MIX` · `OB_MIX` · the `d` argument)
+
+The dial has **two hosts** — the bento and onboarding's step 3 — and one set of
+code. Every function that draws or reads a dial takes a **context** as its last
+argument, `d`, defaulting to `MIX` so the home's call sites read as they always
+did. A context is:
+
+| field | what |
+|---|---|
+| `genres` / `at` / `from` | the state, as above |
+| `ring` | the ring as drawn — `items`, and `seat[hole] = item index` |
+| `wraps()` | every `.mix-inline` this dial is drawn in **right now** |
+| `onSync()` | what to repaint besides the dial: the home's info box, onboarding's chips + list + footer |
+
+- `MIX.wraps()` is the one wrap on `mixHost`; `OB_MIX.wraps()` is one per
+  rendered `.s-onboarding` — the viewer shows dark and light side by side, and
+  `mixDialRender` / `mixHubSync` / `mixDialSync` walk **all** of them, so a step
+  into a main happens on every instance at once.
+- ⚠️ **`OB_MIX.genres` IS `OB.genres`** — the same Set by reference, never
+  reassigned — so the wheel, the list, the chip row and Continue's count cannot
+  disagree, and `obStart`'s `.clear()` empties the dial with the rest.
+- `mixWrapSync(wrap, d)` paints state onto one wrap (lit holes, belt, record);
+  `mixDialSync(d)` does every wrap then `d.onSync()`. `mixHomeReadout` is the
+  home's `onSync`, and is where the info-box count / chips / New deck live.
+- ⚠️ Don't add a third global. If the dial is ever wanted somewhere else, it is
+  one more context object and a wrap built the way `obMixBuild` builds one.
+
+#### ⚠️ TWO LEVELS: mains, then subgenres (`SD_GENRE_TREE` · `mixRing`)
+
+The dial used to be one ring of twenty flat genres. It is now **eight main
+genres**; tapping one takes you **into** a ring of its subgenres, which is where
+picking happens. `SD_GENRES` in screens.js is no longer the dial's list — it is
+only the onboarding chips.
+
+| you tap | what happens |
+|---|---|
+| a **main** (top ring) | you go *into* it. It does not toggle — a main is a door. |
+| **the main itself**, lit, in the hole it had on the ring above | picks the whole main |
+| a **subgenre** | picks just that |
+| **Back** (the corner pill) | up one level; from the top ring, out of the dial |
+
+- **Multi-select, and across mains.** Picks accumulate in `MIX.genres` no matter
+  which ring they came from: Ambient + Techno + K-Pop is a normal mix. One pick
+  is also a mix — there is still no minimum.
+- ⚠️ **Back steps ONE level.** From inside a main it returns to the mains; only
+  from the top does it close the dial. Closing from two levels deep would throw
+  away the step you took as well as the one you meant to undo, and there is no
+  other way back up — the mains are not on screen while you are inside one.
+- ⚠️ **A lit MAIN means "something in here is picked", not "this is picked"**,
+  so it draws as a *ring* (`.ob-hole--main.is-on`) where a real pick draws as a
+  solid fill. A door and a switch must not look alike. The belt still wraps the
+  lit mains, so the top ring shows you where your mix is even though the picks
+  are a level down.
+- ⚠️ **`at` resets on every open, `genres` never does.** The ring you happened to
+  be standing in is not work; the picks are.
+
+##### ⚠️ 16 holes a ring, and that cap is what buys the big dots
+
+**16 mains × up to 15 subs**, on rings of **13-16 holes**. ⚠️ Seven sub rings
+are short of 16 because a main that names itself among its subs has that sub
+dropped — see *The main you chose is IN the ring it opens*. Nothing is ever
+OVER 16, which is the number that matters here. The cap is not arbitrary and it is not editorial:
+
+| ring / holeOn | at | apart | clear | label budget (axis / corner) |
+|---|---|---|---|---|
+| 80 / 12 | 20 holes | 25.0 | 1.0 | 61 / 127 |
+| 62 / 9 | 20 holes | 19.4 | 1.4 | 82 / 148 |
+| **59 / 10.5** | **16 holes** | 23.0 | **2.0** | **84 / 150** |
+
+Neighbours sit `2·ring·sin(π/n)` apart and that must clear `2·holeOn`, so
+**bigger dots and a tighter ring are only compatible with fewer holes.** At
+twenty the dots have to shrink to stay apart — the opposite of what was wanted.
+Sixteen buys larger pulleys, a ring closer to the record, more daylight between
+neighbours *and* a slightly better label budget, all at once.
+
+⚠️ **Add a 17th sub to any main and the picked holes start touching.** If a main
+needs more than fifteen, split it into two mains rather than growing its ring.
+
+Measured at this geometry across all 17 rings / 272 holes: **0 labels overflow,
+0 trimmed, 0 size-reduced** — every name fits at full width and full size, so
+the three-step fit is pure safety net again.
+
+##### Opening: the dial spins into place (`.is-opening` / `mixSpinIn`)
+
+The ring and the record turn up out of the middle of the cover together, .5s,
+anticlockwise into place with a long decelerating tail.
+
+⚠️ **It is the ONE time the two move as a single object.** Stepping between
+rings deliberately holds the record still — it is the fixed thing the rings are
+read against — but on arrival there is nothing to be fixed against yet, so the
+whole dial is free to move, and a record is a thing that spins.
+
+⚠️ **A KEYFRAME, not a transition.** Both svgs are fresh elements at this point
+and a transition needs a previous value to run from, so it would never fire —
+the same trap `.ob-hub-t` documents.
+
+⚠️ **The class goes on the WRAP, not the dial.** `mixDialRender` replaces the ring
+on every step, so a class on it would be lost — and the record is a sibling
+that has to spin with it. It is removed and re-added around a reflow so a
+reopen actually replays it; an animation does not restart just because its
+element was re-marked.
+
+⚠️ **Keep the turn under one full rotation.** Past that the labels smear into an
+unreadable band and it stops reading as a dial arriving and starts reading as a
+loading spinner.
+
+##### The main you chose is IN the ring it opens, in the same hole
+
+Step into Electronic and "Electronic" is on the sub ring too — lit, and **in
+the hole it already occupied**. The one thing that does not move between the
+two rings is the name you pressed, which is the whole of how you know what you
+opened and where it went.
+
+⚠️ **GOING IN PICKS IT.** Tapping a main is a statement that you want that
+genre — the ring of subgenres is there to REFINE it, not to make you say it
+twice — so the main lands in `MIX.genres` on the way through and the hole you
+arrive on is already **filled** rather than merely outlined. One tap on that
+same hole (or on its chip) takes it back out. This is most of what makes a
+single tap enough to build a deck. ⚠️ It is re-added on every entry, including
+after you removed it and stepped out and back in; that is the price of "the
+genre you opened is in your mix" holding without exception.
+
+- **`MIX.from`** records `{hole, n}` on the way through, read off the context's `ring` —
+  the ring as actually drawn, seating included.
+- **`dialSeating(labels, pin)`** nails that one item to that one hole and seats
+  everything else around it. ⚠️ Without a pin it is byte-for-byte the old
+  function — same sort keys, same tie-break on the original index — so an
+  unpinned ring is seated exactly as it was.
+- **`mixHerePin`** is where the two rings disagree in size. Both are normally 16
+  (16 mains; 15 subs plus the main itself), so it is the same index at the same
+  angle. When they differ it matches the **angle**, not the index, because
+  `dialAngleOf` folds in a per-count rotation (`dialOffset`) and the index alone
+  would point somewhere else entirely.
+
+⚠️ **AN OUTLINE, NOT A FILL, because it is not necessarily picked.** The ring
+means "this is where you are"; the solid fill means "this is in your mix".
+Tapping it does pick the whole main, and `.ob-hole.is-on` is (0,3,0) against
+`.ob-hole--all`'s (0,2,0), so the fill lands on top and the two states read as
+one control. ⚠️ Do **not** reuse `.ob-hole--main.is-on`'s ring for it: that ring
+already means "something in here is picked" on the ring above, and the same
+mark cannot mean two things one step apart.
+
+⚠️ **THE HEAD HOLE IS NO LONGER LABELLED "All X".** It is the genre you tapped,
+so it is spelled the way it was spelled on the ring you tapped it from — a hole
+that "did not move" but changed its name has not really stayed put. Its
+**value** is untouched, so `MIX.genres`, `mixHoleOn` and `mixShelf` all speak
+exactly what they spoke before. The **chip** in the info box still says "All
+Electronic", deliberately: in a row that mixes families with subgenres it is
+the only thing marking which is which.
+
+⚠️⚠️ **A MAIN THAT LISTS ITS OWN NAME AMONG ITS SUBS IS DROPPED FROM THE SUBS,**
+and that only became a bug when the head stopped saying "All X". **Seven of the
+sixteen do it** — Jazz, Punk, Folk, Country, Classical, Soundtrack,
+Experimental — because straight-ahead jazz is a genre as well as a family. With
+the head reading "All Jazz" the pair was merely redundant; reading "Jazz" they
+are the same word twice on one ring **and the same value**, so `mixHoleOn` lights
+both and either one toggles the same pick. Verified across all 16 mains: **0
+duplicate labels**.
+
+⚠️ **Those seven rings are therefore 13-15 holes, not 16**, and their main lands
+at the nearest angle rather than the identical one — measured, 9 of 16 keep
+their exact hole and the other 7 shift by a hole's worth or less (Country, at
+13 holes, moves furthest). That is what the angle fallback is for, and it is
+the price of not printing a genre twice.
+
+⚠️ **THERE WAS A FLIGHT HERE AND IT IS GONE.** The chosen hole was held lit for
+190ms and its label then travelled into the middle of the disc to become the
+record's label (`MIX_PICK_MS`, `MIX_FLY_MS`, `mixFlying`, `mixPicking`,
+`mixPickIn`, `mixFlyLabel`, `.ob-fly-*`, `.is-handoff`). It answered the same
+question and was rejected for how it read — a name crawling out of the ring and
+into the centre is unsettling to watch — and it charged **490ms on every step**
+for an answer that costs nothing when it simply waits for you at the other end.
+⚠️ The step is instant again. Don't put a beat back in front of it.
+
+##### Stepping between rings: IN, THEN OUT. Never both.
+
+The genres shrink into the record and vanish; only once they are gone do the new
+ones come back out of it. **One ring on screen at a time, always.**
+
+| | transform | opacity | delay |
+|---|---|---|---|
+| leaving | `scale(.18)`, .2s accelerating in | 1 -> 0 over .1s | 0, fade held to **.1s** |
+| arriving | from `scale(.18)`, .26s decelerating out | 0 -> 1 over .12s | **.22s** |
+
+The old ring is fully transparent at .16s and the new one does not begin until
+.22s, so there is a real gap with nothing on the dial but the record.
+
+**FIVE versions, and the first four all failed the same way.**
+
+1. **Outward zoom** — flickered; the rings line up.
+2. **One tick of rotation** — a ring of identical dots turning one notch is
+   ambiguous.
+3. **Collapse into the record, grow back out**, .2s head start — the head start
+   was not a gap.
+4. **The NYOOM** — `scale(2.8) rotate(-26deg)` leaving, `scale(.25)
+   rotate(34deg)` arriving, .14s handover, split easing. Xbox-dashboard depth,
+   and the most elaborate of the four.
+5. **This.**
+
+⚠️ **THE OVERLAP WAS THE WHOLE PROBLEM, and version 4's note claimed it was
+fine.** It argued the outgoing ring is "enormous and nearly transparent by the
+time the incoming one is legible, so they never compete as text". They compete
+the entire time. Sixteen names over another sixteen reads as a **stacking bug**,
+not as motion, however they are eased — and that is what every version above was
+reported as. **There is no timing that makes two rings of text legible at once.**
+If a future version overlaps them again, it is this bug again.
+
+⚠️ **ONE state for all four cases** (`--leave-in` / `--enter-in` / `--leave-out`
+/ `--enter-out` share a declaration). In and out are the same movement because
+the record is the same place either way; directional variants — opposite spins,
+opposite Z — only ever read as inconsistency. `.18` is about the hub's own
+radius, so the ring disappears at the size of the record.
+
+⚠️ **No perspective, no `translateZ`, no rotation.** Depth is scale, and the
+record is a fixed anchor the eye is already on, which is what makes plain scale
+legible here where it failed in version 1 — there the rings dissolved into each
+other with nothing to shrink *towards*.
+
+⚠️ **THE FADE IS HELD, THEN QUICK — do not fade across the whole shrink.** The
+first cut ran opacity .16s against a .2s move, so the ring was half transparent
+before it had visibly gone anywhere and the trip into the record was invisible:
+it read as a plain dissolve, and was reported as the animation simply not
+happening. The exit stays solid for its first half and winks out at the small
+end; the arrival fades in over the first .12s of its growth.
+
+⚠️⚠️ **THE START STATE MUST NOT TRANSITION, and it must be SCOPED to beat the
+rule it overrides.** `mixDialRender` sets the small state, forces a reflow, then
+clears it. Once the arrival took a .22s delay that stopped working: adding the
+class starts a transition that is still inside its own delay when the class
+comes off, and the reversal resolves to a **zero-duration** transform — so the
+new ring simply appeared at full size. The fix is `transition: none` on the two
+enter states, and the first attempt at it did nothing at all, because
+`.ob-dial--enter-in` is (0,1,0) against `.mix-inline .ob-dial` at (0,2,0) and
+lost the cascade outright. It is written `.mix-inline .ob-dial--enter-in`.
+
+⚠️ **Diagnose this with `getAnimations()`, not by watching it.** It lists the live
+CSSTransition objects synchronously, so it reports real durations and delays in
+a backgrounded tab where nothing paints and every timer is clamped to a second.
+Both failures above were invisible to a computed-style read — the property said
+.26s throughout — and obvious the moment the transitions were listed:
+"transform 0ms +220ms". ⚠️ A ghost reading "NONE" in a throttled tab is usually
+not a bug: the previous move had not finished, so the element was already near
+scale(.18) and marking it a ghost changed nothing. Settle the ring, then step.
+
+⚠️ **`mixDialRender` deletes any ghost still in flight before starting a new
+one.** ⚠️ That sweep runs BEFORE the live ring is picked — a ghost sits ahead of
+its replacement in the DOM, so querySelector hands back the ghost and the sweep
+then detaches the very node about to be inserted next to. `MIX_ANIM_MS` (**240**, matched to .22 + .26 minus the fade) removes the
+outgoing dial on a timer, and tapping faster than that timer left two, three,
+four rings stacked in the box — the *other* half of the reported bug, and one no
+easing could have fixed. Both dials share the box for the length of the exit, so
+the outgoing one is out of flow.
+
+##### The record is its own layer, and it lights up (`mixHubSvg`)
+
+⚠️ **The hub had to come OUT of the dial's svg.** The transition flies the whole
+ring, and the one thing that must not move is the record it flies out of and
+back into — anything sharing the animated element goes with it. It is a second
+svg on the same viewBox, so hub and ring stay in one coordinate system and
+`DIAL` still describes both.
+
+- **It lights when the mix is non-empty** (`.is-lit`) — accent stroke on the
+  groove plus a soft glow. The record is the only part of the dial that is
+  always on screen and never scrolls past, so it is where "you have something"
+  belongs. Album accent, like the rest of the dial.
+- **It carries the genre you are inside.** Nothing else on a sub ring names the
+  main; you had to remember what you tapped. The spindle hole steps aside while
+  a name is there.
+- ⚠️ The label fades in via a **keyframe, not a transition**. `mixHubSync`
+  rebuilds the record on every step, so the label is a brand-new element each
+  time with no previous value to transition *from* — a transition simply never
+  fires.
+
+⚠️ **Measuring any of this from a detached node will lie to you.** The viewer
+re-renders the shells on its own (the rec deal), and `getComputedStyle` on a
+node that has been swapped out returns empty strings or stale values — which
+looked exactly like "the lit rule is not applying" for several rounds. Re-query
+`mixHost` and assert `document.contains(el)` in the same call as the read.
+##### ⚠️ Three steps, and nothing leaves the box
+
+The `wdth` axis alone buys about 5%, so condensing cannot save a genuinely long
+name in a tight slice — and a label running off the crop is the one failure that
+reads as a broken app rather than a full one. `mixDialFitLabels` now:
+
+1. **binary-searches `wdth`** down to `DIAL_WDTH_MIN`;
+2. gives up **size** (`--lsize`, floor 82% — the ring reads as one row of type,
+   so this is the last thing worth spending);
+3. gives up **characters**, trimming to an ellipsis.
+
+⚠️ **Every pass resets from `data-full` first.** The fit mutates `textContent`,
+and it runs a second time when the webfont lands — measuring an already-trimmed
+label against the same budget would trim it again, and again.
+
+Verified across all 17 rings / 272 holes: **0 overflow, 0 needed trimming.**
+Steps 2 and 3 are the guarantee, not the routine.
+
+##### ⚠️ Every hole is the same colour. Don't fade the empty ones.
+
+Tried and removed: mains with no albums anywhere under them were drawn faded, so
+you could see there was nothing behind Metal or Punk before walking in. It reads
+as inconsistent — a ring of identical dots with some of them greyed looks like a
+rendering fault, not like information — and it is the wrong trade for a number
+the info box already gives you the instant you pick.
+
+⚠️ **The blank-genre problem this note used to describe is FIXED** — see
+*Genres are real now* below. Every album in the archive carries a genre, so a
+hole being empty is now a fact about the LIBRARY rather than about the data
+layer, and fading those holes would be fading nine of sixteen mains on a
+catalogue that simply leans electronic.
+
+
+##### Genres are real now — `genre_id` -> a name (`DZ_GID` / `dzGenreOf`)
+
+⚠️ **`dzRecord` used to set `genre: ''` on every album the rec deal dealt —
+two thirds of the live archive** (measured: 67 of 100). The other third carried
+eight labels between them, so most of the mix dial matched nothing and a single
+pick almost never filled a deck. **Measured after: 0 blank.**
+
+⚠️ **IT COSTS NO EXTRA REQUESTS.** `genre_id` is already in the payload
+`artist/<id>/albums` returns — the same response the deal is reading for the
+title and the cover — so this is a lookup, not a fetch. That is why it belongs
+in `dzRecord` and not in `dzHydrate`, which needs a call per album and only runs
+when one is opened.
+
+⚠️ **`genre_id` 0 is "All", which means Deezer does not know.** It must stay
+blank rather than becoming a label, or a chunk of the archive joins one bogus
+shelf. Same for any id not in the table.
+
+⚠️ **The 28 ids are written out, not pulled from `/genre` at boot.** They are
+stable, it is one fewer request, and one fewer thing that can fail and leave
+the whole archive genre-less again. `DZ_GEN` then translates Deezer's vocabulary
+to ours, and **the eight regional genres all fold into World** — the dial has
+one hole for them and eight separate labels would each match nothing.
+
+⚠️ **This does not make every genre work, and it should not.** Measured on the
+default persona afterwards: eight labels across 72 albums, led by Electronic
+20 / Alternative 16 / Hip-Hop 14. **Nine of the sixteen mains still field
+nothing** — Indie, Jazz, Metal, Punk, Folk, Country, World, Classical,
+Experimental — because this library genuinely has none of them. That is real
+coverage, not a bug, and the button says `None yet` rather than pretending.
+
+##### ⚠️ One pick must be able to make a deck — so a thin one WIDENS
+
+A subgenre whose own pool cannot fill a deck falls back to the family it
+belongs to (`mixShelf` / `mixParentsOf`). Picking one genre has never had a
+minimum, but "enough" was being decided by the archive rather than by the
+design: **233 of the 236 subgenres matched fewer than two albums**, so almost
+every single pick left New deck disabled and the dial read as broken.
+
+| | |
+|---|---|
+| exact pool >= `MIX_MIN` (2) | that pool, untouched |
+| under it, family can fill | the family, and the readout says **"· related"** |
+| under it, family cannot either | the exact pool, and the button says `None yet` |
+
+⚠️ **EXACT FIRST, ALWAYS.** A subgenre that can stand on its own is never
+quietly broadened, and with real genre data behind it this branch stops running
+altogether — it is a graceful degradation, not the normal path.
+
+⚠️ **It is not silent.** A shelf that is not what you asked for has to say so,
+which is what `· related` on the count is for. Don't remove it to tidy the line.
+
+⚠️ **Only SUBGENRES widen.** A main already reaches its whole family through the
+expansion below, so a main with nothing under it genuinely has nothing to show.
+
+⚠️ **ONE shelf, read twice.** `mixHomeReadout` (the home's `onSync`) builds the
+shelf once and reads both the count and the button state off it. Letting the button build its own is
+exactly how the number in the box and the deck you get come to disagree —
+and with the widening in play they would disagree often.
+
+Measured after both changes: a single "Ambient" pick gives **28 albums ·
+related**, commits, and deals a 28-album queue that is all Electronic.
+
+##### ⚠️ "All X" EXPANDS at commit — containment alone is not enough
+
+`mixShelf` turns a picked main into `[main, ...subs]`. Containment on the main's
+name only catches labels that contain it, so "Electronic" would reach Electronic
+and Electronic soul but **not** Ambient, Techno or UK Garage — "All Electronic"
+would quietly be *narrower* than the subs offered under it. Expanding here keeps
+`shelfPool` a dumb matcher and puts the meaning of "all" in one place. It is
+also what lets a thin main work: `Jazz` matches 1 album on its own and reaches
+Classical, Folk and Soundtrack through its subs.
+
+##### ⚠️ Every label is checked against the real archive
+
+`shelfPool` matches by lowercased **containment** against an album's primary
+genre, so a label nothing contains is a hole that silently returns zero — which
+is what the flat dial shipped with (ten of its twenty genres matched nothing).
+Counted before being written down. Across personas.js + data.js only a minority
+of the 236 subs match an album, and Metal, Punk and Country match none at all — the
+taxonomy is a real one and the mock archive cannot fill it. That is survivable
+because the dial no longer hides it (see the fading and the data note below),
+but **re-run the count if you edit the tree**: a dead label looks identical to a
+live one until someone picks it.
+
+⚠️ **A label must stay a SUBSTRING of the genre it means.** That is the only
+rule for shortening one to fit the dial: `Experimental hip-hop` → `Experimental`
+works, `Psychedelic rock` → `Psych rock` matches nothing at all. Three are
+shortened for exactly this reason, and they read fine because inside the Hip-Hop
+ring "Korean" does not need to say hip-hop again. The one cost: `Psychedelic`
+under Rock also catches Psychedelic pop.
+
+⚠️ Subs deliberately belong to more than one main — Indie rock is under Rock and
+Indie, Trip-hop under Electronic and Hip-Hop. Picking is a **filter, not a
+partition**, so overlap costs nothing and matches how people look for music.
+
+#### The info box lists the mix (`.v3-blue-mix-picks`) and commits it
+
+⚠️ **The empty-state hint is MONO, not the serif italic.** It borrowed the shelf
+wheel's annotation voice, and that voice is for a COUNT sitting beside the
+thing it describes. This line is a direction telling you what to do next, and
+in italic serif it read as a caption on the dial rather than as the dial
+talking to you — the chips that replace it are mono, so the row no longer
+changes typeface the moment you pick something. The line above it opens on
+**"Build your genre mix"** rather than "Build a mix": it is the first thing the
+box says and it is the only place the dial names what it is for.
+
+The second line was a count ("3 genres") and is now **the picks themselves**, as
+chips, and **each chip removes its own pick** — the thing you can see is the
+thing you can undo. With picks gathered across several rings this row is the
+only place the whole mix is visible; the ring in front of you can only ever show
+one main's worth. The button says **New deck**.
+
+- ⚠️ The row **scrolls sideways and never wraps**: `.v3-blue` is a fixed strip
+  and a second line of chips pushes the button out of the box.
+- ⚠️ `obEsc` on the label *and* the `data-g` attribute — "R&B" is a genre, and a
+  bare `&` in either place is malformed markup.
+
+#### ⚠️ The ring size is a parameter now, and three things depended on it
+
+`dialAngleOf` / `dialReach` / `dialSeating` all read `SD_GENRES.length` — twenty,
+for ever. The dial now draws 8 mains or 4–7 subs, so they take the count, and
+`DIAL_SEAT` / `DIAL_HOLE` stopped being module constants: the seating is
+recomputed per ring into the context's `ring` (`d.ring`; it was a module-global
+`MIX_RING` until the dial gained a second host), which `dialWheels` and
+`mixWrapSync` read.
+
+Two things that were invisible at twenty holes and broke immediately at seven:
+
+1. ⚠️ **Seat by `dialRoom`, not `dialReach`.** `dialReach` is the wedge's
+   narrowest *edge*; the label is drawn along its *centre line*. At ±9° those
+   nearly agree. At ±26° they diverge hard — straight up, `dialReach` reports
+   175.6 because the wedge's edges point at the corners, while a label going
+   straight up only has 160. That put "Psychedelic pop" in the tightest slot on
+   the dial believing it was the roomiest, and it drew off the top of the
+   viewBox. The wedge still uses `dialReach` for its own geometry.
+2. ⚠️ **Each ring is ROTATED to its roomiest orientation** (`dialOffset`, cached
+   by count). A corner has 41% more room than an axis, and a ring of **four**
+   lands every hole exactly on an axis — the four tightest directions on the
+   dial. R&B's "Electronic soul" needed 92 units in the 61 it was given. The
+   offset that maximises the worst budget is found by a degree-by-degree sweep
+   over one step: for n=4 that is 45°, which takes the tightest budget from 61
+   to 127.
+
+#### ⚠️ The label fit is a BINARY SEARCH, not a proportional walk
+
+`mixDialFitLabels` guessed `wdth × budget / measured` and iterated three times,
+which assumes width responds roughly in proportion to the axis. It does not:
+measured on Roboto Flex, "Psychedelic pop" is 106.8 units at `wdth` 100 and
+101.4 at `wdth` 60 — **the whole axis buys 5%**. So the guess moved the axis
+about two points a pass, the loop ran out of passes still overflowing, and the
+label read as clipped with the safety net looking broken. Five halvings find the
+widest axis that fits whatever the response curve is.
+
+Verified across all nine rings: one label (Indie's "Dream pop") sits 2 units over
+its budget, which already carries a 2-unit safety margin.
 #### The geometry is sized to the album cell (`DIAL`)
 
 `.v3-album` is ~**291×289** at the 393px frame, so the 320-unit viewBox renders
@@ -1725,6 +2205,11 @@ nearer an axis, and take the label with it. Labels start at `ring + holeOn + 5` 
 | the other 12 | 160 | **63** |
 
 ##### ⚠️ Seating: the longest names get the roomiest slots (`dialSeating`)
+
+⚠️ **Read the two-level section above first** — the seating is computed per
+ring now, is sorted by `dialRoom` rather than `dialReach`, and the ring itself
+is rotated by `dialOffset`. The reasoning below still holds; the numbers in it
+are the old twenty-hole ring.
 
 The dial walks **holes**, not genres — `DIAL_SEAT[hole] = genreIndex` decides
 which name sits where, longest into the roomiest. Verified: all eight of the
@@ -1822,7 +2307,7 @@ The hub used to carry the count; a 52-unit record has no room for it, and the
 box below already exists to say what you are looking at. So the box that
 normally tells you what this **album** is tells you what the **mix** is — album
 count in DM Sans, genre count in the same Crimson italic the shelf wheel uses
-for its counts, and `Play this mix` on the right.
+for its counts, and `New deck` on the right.
 
 - ⚠️ **It covers `.v3-blue` completely and stops the bubble**, which is also
   what takes that box's tap-to-open-album off the table while you are choosing.
@@ -1887,8 +2372,8 @@ switch on the home bento and **Back** in review. The dial borrows it rather than
 inventing a second exit.
 
 - `openMixDial` puts `s-home-v3--mixing` on its host and `closeMixDial` takes it
-  off; `mixHost` is both "which screen" and "is it open at all", and every
-  lookup in `mixDialSync` is scoped to it. Reopening from the other home variant
+  off; `mixHost` is both "which screen" and "is it open at all", and
+  `MIX.wraps()` / `mixHomeReadout` resolve through it. Reopening from the other home variant
   clears the old host first — a screen left marked keeps a dial over its cover
   and a pill saying Back with nothing to go back from.
 - `onLivePill` checks `--mixing` **before** `--review`: while the dial is up,
@@ -1900,33 +2385,326 @@ inventing a second exit.
   `.v3-album` — `z-index: 1`, `overflow: hidden` — so it cannot reach the pill
   at 6, let alone cover it.
 
-#### `beltPath()` — the convex hull of a set of CIRCLES
+#### `beltPath()` → `SD_BELT.hull` (belt.js)
 
-Not the hull of their centres. The wheels have different radii (the hub is three
-times a pulley), so an outline offset from a centre-hull cuts through the hub and
-floats off the small ones. The real thing is what a belt physically is: an
-external tangent between each consecutive pair, joined by the arc each wheel
-actually wraps. Gift-wrapping, one wheel at a time — standing on a wheel with the
-outward normal at `ang`, the next is whichever needs the least clockwise turn.
+**The solver moved out of app.js.** `beltPath(circles)` is now one line —
+`SD_BELT.hull(circles, DIAL.gap)` — so the dial and **belt-lab.html** run the
+same code. Verified identical over 252 dial configurations (every pick count,
+twelve rotations each) before the swap; if you touch `hull`, re-run that check.
 
-- The shared normal of an external tangent satisfies `(c2−c1)·n = r1−r2`, i.e.
-  **`φ = atan2(dy,dx) − acos((r1−r2)/d)`**.
-- ⚠️ **MINUS, not plus.** The two solutions are the two external tangents, one
-  down each side, and only one belongs to a clockwise walk with an outward
-  normal. Taking the other still closes the loop **for two wheels** — so the logo
-  case passes while everything else is wrong — but from three wheels up the
-  least-turn choice skips wheels and the belt runs straight through the hub.
-  Sanity check on two equal circles side by side: the top run's normal points
-  **up**, i.e. `base − acos`.
-- ⚠️ **The iteration cap is not decoration.** A degenerate set (two wheels
-  sharing a centre) would wrap forever and hang the tab instead of drawing
-  nothing.
-- Radii arrive already grown by `DIAL.gap`, so the belt is drawn where a belt
-  sits — off the wheels, with the clearance the logo has.
-- Verified against nine configurations (none / one / adjacent / opposite /
-  spread / cluster / all twenty): every straight run clears every wheel, every
-  arc belongs to a real wheel, the path closes, and every wheel ends up wrapped
-  or interior.
+`SD_BELT.hull` is **the convex hull of a set of CIRCLES**, which is what a belt
+physically is. Gift-wrapping, one wheel to the next, always the least left turn.
+⚠️ Not an outline offset from the hull of the CENTRES — a belt drive is circles
+of very different radii (a hub is three times a pulley), so a centre-hull offset
+cuts through the hub and floats off the small ones.
+
+`SD_BELT.taut(wheels, gap)` is the third solver and the one the **belt lab**
+runs on: **a rubber band**. It encircles the wheels marked `side: 1` and treats
+every wheel as something it cannot pass through, so a wheel marked `side: -1`
+just *leans* on it. It works out the loop order, which way round each wheel the
+belt goes, and who it is touching at all — see *Belt lab* below.
+
+`SD_BELT.route(wheels, gap)` is the ordered primitive, and **nothing uses it any
+more**. Each wheel carries a side and is joined by whatever tangent that side
+implies; for an outside wheel that is the **crossed** tangent, which is a belt
+with a real **twist** in it. A crossed V-belt is a real machine, so the function
+stays — but a backside idler is *not* one, and the note on it says so. It can
+also be asked for the impossible and returns `{ d: '', bad: [runIndex, …] }`.
+
+- Radii arrive already grown by `gap`, so the belt is drawn where a belt sits.
+- ⚠️ **Screen coordinates: y is DOWN, so "clockwise" means the atan2 angle
+  INCREASES.** Every sign in `route` depends on it. The one piece of maths is
+  `a = phi - asin(delta / d)` where `delta = s_b·r_b - s_a·r_a`; same-side
+  wheels give a small delta (an external tangent), opposite sides give
+  `±(ra + rb)` — the crossed tangent, and the reason `|delta| > d` is a real
+  failure rather than a rounding issue.
+
+### Belt lab (`belt-lab.html`)
+
+Toolbar → **⌾ Belt**. Click to drop a pulley, drag its middle to move; **four
+ways to size one** — drag the rim, scroll over it, the Radius slider, or `[` /
+`]`. The belt re-wraps live. **Hull** works out the order for you and always
+closes; **Route** follows the list and lets any wheel become an idler. Exports
+Copy SVG / Copy call / Copy path d; named rigs save to `localStorage`, WIP
+autosaves.
+
+#### ⚠️ The stage is 1:1 with the phone
+
+One stage unit is one CSS pixel in the mockup, so **what you draw is the size
+you type into screens.js** — that is the whole reason the tool is worth having
+over sketching. The **Context** switch draws the real device around your work:
+
+| | |
+|---|---|
+| `Phone` | the 393×852 device, its 4px bezel, the 59px status bar, and the 8px margin the progress belt sits on |
+
+⚠️ **The phone is no longer black behind the app.** `.phone-screen` used to be
+`#000`, so the status bar and the home indicator — transparent strips above and
+below `.screen-content` — read as two black bars, which a real iPhone does not
+show. `paintPhoneChrome` (app.js, run from `paintAfterRender` and the mobile
+preview's paint) sets `--pscreen-bg` on every `.phone-screen` from the computed
+background of the screen it holds, so the time, the island and the indicator
+float on the app's own colour. ⚠️ The icons follow that **colour**, not
+`statusTheme`: the flag is per screen but a screen has a dark and a light
+variant, and white icons on the light variant's cream vanish — so
+`paintPhoneChrome` toggles `dark-icons` on the status bar *and* the indicator
+from the background's luminance. Black is only the fallback.
+| `Panel` | all of that plus step 0's plate box (369×464, in place) and its x=44 / x=325 rules |
+
+The constants (`PHONE` / `SCREEN` / `APP_Y` / `PANEL`) are traced from
+`style.css`'s `--pw`/`--ph`/`--pr`/`--sr` and the onboarding chrome heights.
+⚠️ **Resize the stage and they must move with it**, or the guide quietly lies.
+
+- **The grid, the snap and the coordinate readout all run off the frame's
+  origin**, so an 8 you count in the lab is an 8 the app counts. With a frame
+  on, **Copy call** emits frame-relative coordinates with the origin in a
+  comment — paste-ready.
+- The **`field` preset is the real handle bubble**: two r26 pulleys on the
+  plate's x=44 / x=325 rules at y=248. It is the actual thing shipping in step
+  0, so it is the honest place to start pushing.
+
+- **Every setting is on one screen** — two balanced columns, the body doesn't
+  scroll, and every number is a slider **and** a typeable field driven through
+  one `bindNum` so the two can't disagree.
+
+##### ⚠️ Typing in a number field: two rules, and both were broken
+
+1. ⚠️ **`draw` is the STAGE and only the stage.** `tick` calls it on every frame
+   the belt is turning (default speed 70, so always), and the panel rebuild used
+   to be on the end of it — so `renderSelected` wrote `radN.value` **sixty times
+   a second, straight over whatever was being typed**, throwing the caret to the
+   end after every keystroke. Anything that changes state calls **`paint`**
+   (= `draw` + `renderList` + `renderSelected`); the animation calls `draw`.
+   This also stops the wheel list being rebuilt 60×/sec for nothing.
+2. ⚠️ **`put(el, v)` never writes to the focused element**, and every field
+   write goes through it. A field written back on each commit cannot be typed
+   in, because assigning `.value` resets the caret — and the focused field is
+   already showing exactly what was typed, so there is nothing to say to it.
+3. ⚠️ **`input` applies only an ALREADY-LEGAL value; `change` clamps.** Clamping
+   a half-typed `1` on its way to `12` up to the minimum was the other half of
+   it: the wheel jumped to a size nobody asked for and that size was written
+   back over the `1`. Out of range now simply waits for the rest of the number,
+   and blur/Enter settles it. (A `type="number"` field reports `""` mid-decimal
+   — "1." on the way to "1.5" — which `parseFloat` makes `NaN` and the handler
+   skips, so the previous value holds instead of dropping to zero.)
+- **One dot rides the belt.** It was a dashed "teeth" hatch along the whole
+  path; a single travelling dot says the same thing about direction and speed
+  with a fraction of the noise. Its size is the Dot slider (0 turns it off).
+
+#### The belt is a rubber band (`SD_BELT.taut`)
+
+**The lab draws the belt that would actually be there**: the shortest closed
+curve that goes round the wheels marked inside, in a plane where **every** wheel
+is solid and it cannot pass through any of them. `side` still means the one
+thing position cannot tell you — `+1` the belt goes ROUND this wheel, `-1` it
+only presses against it — and everything else is derived. The Hull/Route switch
+is gone; so is any dependence on the list order.
+
+⚠️ **This replaced `route`, and the reason is the whole point.** `route` draws
+whatever tangent your side flag implies, and for an outside wheel that is the
+**crossed** tangent — a belt with a real **twist** in it. It happens to look
+right while the idler sits square across the run between its two list
+neighbours, and draws a figure-eight the moment it doesn't, because nothing in
+it knows where the belt would really go. Measured over 40k random rigs: **63%
+came out self-crossing and 41% ran the belt straight through a wheel.** A
+backside idler does not flip the belt over. It leans on it.
+
+**Method** — relaxation, which is what a band settling actually is: start from
+the hull of the wheels to be enclosed; anything standing in a straight run gets
+wrapped into the ring there, the way that pushes the belt aside; any idler the
+belt has let go of is dropped; repeat.
+
+- ⚠️ **Insert and drop are opposite tests on the same distance**, so they need
+  the `EPS` dead band between them or a wheel sitting exactly on a run is added
+  and removed for ever.
+- ⚠️ **An idler's reach is SIGNED, not a distance** (`reach(c, run, greedy)`).
+  Plain distance lets go of an idler the instant it crosses to the far side of
+  the run it was pressing — so pushing one deeper made the belt **fall off it**
+  and stop responding, and a big one grew to touch both runs and got wrapped
+  instead. Signed, the belt keeps hold and is **dragged along**, so the notch
+  just keeps deepening. That is the belt of unlimited length. Measured, r38
+  idler between runs at y=452/548: it used to die in a dead band at y=500 and
+  now presses continuously from 420 to 580, the belt following its underside
+  from y=462 down to y=582.
+  - ⚠️ Only **alongside** the run (0 ≤ t ≤ 1). Off either end there is nothing
+    to drag, and holding on there would reach across the whole rig.
+  - ⚠️ **Greedy is tried FIRST, the plain reach second.** Push an idler far
+    enough and the dragged run would cross the far side of the loop, which is
+    not a belt at any length — so the ordinary reach is the fallback, and only
+    if that fails too does a wheel get wrapped from the inside. That order is
+    what keeps the idler you asked for.
+- ⚠️ **When the belt cannot honour an OUT, the lab SAYS SO** — the Side control
+  goes red and the note names the reason (overlapping a neighbour, or wider than
+  the loop it sits in, which holds both runs apart instead of pressing on one).
+  Silently reinterpreting a side someone set by hand is worse than not managing
+  it: the first version just flipped the wheel and left the control lit gold,
+  which reads as the control being broken.
+- ⚠️ **Only IDLERS may be dropped.** The drop test asks "would the run between
+  its neighbours still touch it?", which is right for something leaning on the
+  belt and wrong for something the belt goes *round*: the shortcut across a hull
+  contact never touches it — that is what being a hull contact means. Applying
+  it to an inside wheel deleted it and the band stopped enclosing it; a plain
+  trio came out as a two-pulley belt with a wheel floating beside it. Nothing
+  else is needed, because pushing the band inward can only make it hug the
+  enclosing contacts harder.
+- ⚠️ **A wheel may appear TWICE in the ring and must not be deduped.** Three
+  near-collinear wheels make a long thin hull whose middle circle carries an arc
+  on the top edge *and* one on the bottom — the belt really does touch it twice.
+- ⚠️ **A wheel wholly inside another is INTERIOR** and cannot be a contact.
+  `wrapOrder` cannot use one either (its swallow guard skips it and the wrap
+  ping-pongs), and the seed used to fall through to "just take the first two
+  circles", which is not a hull at all. Every wheel that got cut in a 120k sweep
+  came from that one fallback.
+
+**The acceptance tests**, in the order they turned out to be needed:
+
+1. **Total turning is 2π.** A simple closed curve traversed once turns through
+   exactly 2π; a loop that has folded over does not. Local tangents can always
+   be made to look plausible one run at a time — only a global invariant catches
+   a fold.
+2. ⚠️ **Turning alone is NOT enough** — a curve can cross itself and still turn
+   through 2π (measured: 88 rigs in 40k got past the sum). So also check the
+   picture: **no run may cross another**, and **no run may pass through a
+   wheel.** Both are a handful of segments, so it costs nothing.
+3. ⚠️ **A wheel that fails is wrapped from the INSIDE, never banned.** If the
+   band cannot fold around it, the wheel is simply in the way and the belt goes
+   round it — which is what would really happen. An earlier draft banned it from
+   the solve and the belt sailed straight through it, which looks far more
+   broken than a notch that turned into a bulge. Those wheels come back in
+   `bad`, and the lab says so.
+4. **The floor**: with every wheel wrapped from the inside this is the plain
+   hull, which cannot cross itself or cut a wheel. There is always an answer.
+
+**Verified over 200,000 random rigs** (scattered · idlers placed on the runs ·
+idler-heavy · all-inside), including overlapping and swallowed wheels: **0
+self-crossings, 0 belts through a wheel, turning exactly 2π every time**, and
+one rig with no path at all (two wheels overlapping).
+
+⚠️ **`hull` was refactored onto the shared `wrapOrder` for this**, and it is
+what the mix dial draws — so it was checked byte-for-byte against the previous
+implementation over **200k configs including the dial's own 252**: 0
+differences. Re-run that check if you touch either.
+
+#### ⚠️ YOU set the side. NOTHING guesses. (`pin` → `lock`)
+
+**SIDE — `In | Out`**, a two-state segment in the Pulleys card. `o` flips the
+selection; the list's per-wheel button does the same. That control is the only
+thing that decides which side a pulley takes, and no code anywhere overrides it.
+
+⚠️ **There was a `classify` and it is gone** — about eighty lines: contact
+acquisition, stickiness in both directions, a `cameFrom` WeakMap holding which
+side of the belt each wheel last came from, and a frozen contact band to tell
+"pushing in" from "pulling out". Every piece was added to fix a real complaint
+and every piece made the tool *less* predictable, because the same drag meant
+different things depending on history you could not see. The reference for this
+lab is the **Aphex string-and-pulley logo system**
+(<https://aphex.makisoftware.com/>), whose entire instruction on the subject is
+*"It is up to you to flip between IN and OUT to resolve tangles or create
+concave contours!"* It never guesses, and it is right: **a guess that is correct
+nine times out of ten is worse than no guess, because you have to check it every
+time.**
+
+⚠️ **DO NOT BRING IT BACK.** If a rig is tedious to set up, the answer is a
+better control, not a cleverer inference. Three separate rounds of "make the
+guess smarter" each fixed the reported case and made the tool worse overall.
+
+##### ⚠️ The autosave is the whole of `S`, so a default change reaches nobody
+
+Turning the guess off in the defaults did **nothing** for anyone who had ever
+opened the lab: boot does `Object.assign(S, saved, …)`, so a session saved while
+the classifier existed restored `auto: true` and a set of unpinned wheels. The
+change was real, invisible, and cost a round of "it's still buggy". Boot now
+**migrates** — `delete S.auto`, and every wheel gets `pin: true`, keeping the
+side it was saved with. Any future change to what `S` *means* needs the same
+treatment; the WIP autosave is a save format whether or not it was designed as
+one.
+
+##### Placement
+
+- ⚠️ **Dropping a pulley hands straight over to the drag**, so one gesture
+  places *and* positions it. It used to return after creating the wheel, which
+  meant every new pulley landed where you clicked and then had to be found and
+  grabbed again — and if the mouse moved at all during the click, it stayed put
+  and you were dragging nothing.
+- ⚠️ **A new pulley is APPENDED**, not inserted beside the nearest wheel. That
+  insertion existed to seat one correctly in `route`'s ordered loop; `taut`
+  works the order out for itself, so all it did was renumber the list under you
+  every time you dropped something.
+
+##### What the solver may and may not do
+
+- **A side is BINDING** (`lock` in `taut`, set from `pin`, which every wheel now
+  carries). A locked idler is always on the belt, is never let go of, and is
+  never re-wrapped — **even when the result crosses itself.** If the relaxation
+  does not pick it up, the belt goes and gets it, seated on the run it is
+  nearest. That is the belt of unlimited length.
+- ⚠️ **A tangle is a RESULT, not an error** — returned in `tangle`, reported in
+  gold, naming the pulley and how to resolve it. `bad` is the different answer:
+  could not be honoured at all (the wheels overlap).
+- ⚠️ **The floor is the one place a lock may be overruled**, and only when no
+  belt fits the rig at all — in practice the wheels physically overlap
+  (measured: 13,674 of 13,674 such rigs). A blank stage answers nothing, so it
+  draws the hull and names the wheels. Without that escape 23% of locked rigs
+  rendered nothing.
+
+**Measured.** 160,000 rigs with the solver free to decide: **0 twists, 0 belts
+through a wheel, 0 no-path.** 60,000 rigs with every side locked: no-path 1,091,
+and of every belt that twists or clips a wheel, **none is silent** — all 19,064
+twists and all 9,168 clips are declared. An idler swept over **986 positions
+across the whole stage: the side changed 0 times.**
+#### The geometry worth knowing
+
+- ⚠️ **An idler STRADDLES the run it deflects, and which side its CENTRE falls
+  on is the whole thing.** Centre above the run → it presses down and you get a
+  dip; centre below it → set it to In and the loop bulges *up* to swallow it
+  instead. `dip = (y + r + gap) − run`, whose ceiling on the outward side is
+  `r + gap` — so **a deeper notch needs a bigger idler, not a higher one.** The
+  `serp` preset has been wrong twice for exactly this; check both sums after a
+  rescale.
+- **The tightest notch is PAST the run, not stopped at it.** Measured on two r44
+  pulleys at gap 4 (top run at y=452), an r38 idler: it bites at y=420 and the
+  geometry keeps giving to y=490 and beyond — dip 10 → 80 → 170. The centre
+  crosses the belt line at 452, which is *half way through* the useful range,
+  not the end of it.
+- ⚠️ **THE LIST ORDER DOES NOT AFFECT THE BELT**, and a pile of machinery went
+  away when that became true: `seat` (moving an idler to the list slot beside
+  the run it presses), `updateSlack`, and the stand-down fallback in `solve`.
+  `route` needed all of it because it drew whatever tangent your side flag
+  implied and had no idea where the belt would really go; `taut` works the loop
+  out for itself. **Don't reintroduce any of it.** `solve` is one call now.
+- **Order ↻** sorts the list by bearing so the numbers on the stage run round
+  the rig rather than in the order you dropped them — numbering only. It used to
+  be the way out of a tangled route; there is nothing left to untangle.
+- **Clear** empties the stage and leaves the settings alone; **Reset** puts
+  every knob back — clearance, weight, dot, speed, snap, face, rim, detail,
+  frame, the checkboxes — and reloads the `field` rig. ⚠️ It restores from a
+  `DEFAULTS` snapshot taken **before** the WIP autosave is merged in at boot, so
+  it can never inherit a bad session. Saved rigs are untouched.
+- ⚠️ **Presets load PINNED.** They used to load unpinned as a live check that
+  the classifier derived their authored sides — a good test while a classifier
+  existed, and meaningless now that one does not.
+- **Seven pulley faces** — ring, disc, record, motor, spoke, sprocket, open —
+  set globally in the picker or overridden per wheel with **Face**. Rim sets
+  their stroke, Detail how much optional furniture they carry.
+  - ⚠️ **A face is `(r, ink, det) → [nodes]` drawn about the ORIGIN**, and the
+    picker's swatches call the very same functions. That is the only reason a
+    swatch cannot drift from what it selects — don't give the thumbnails their
+    own drawing code.
+  - ⚠️ **Every face needs a mark that breaks rotational symmetry** or it looks
+    dead while it turns. `record` carries a lead-in groove for exactly this:
+    real record furniture is all concentric and would sit perfectly still.
+  - ⚠️ **Detail must not interpolate a COUNT that reads as a set.** `motor`
+    showed two of its three holes at mid-detail, which doesn't read as less
+    detail, it reads as a bug. Detail drives their size; three or none.
+- **Each wheel turns at `ω = v / r`** off one belt speed, so a small pulley
+  visibly spins faster. That ratio is the logo's own motion. It is the belt
+  radius (`r + clearance`) that sets ω, not `r`.
+- ⚠️ **An idler only bites if it actually REACHES the run it is deflecting.**
+  Park it clear of the straight run and the belt just takes the long way round
+  it — you get a loop, not a dip. The `serp` preset's comment carries the sum.
+- **Copy SVG serialises the very nodes on the stage** (with the selection
+  colour forced off and ink swapped for `currentColor`), so the export cannot
+  drift from what you are looking at.
 
 #### Pro showcase — the real compact bento (`shopProInit` in `app.js`)
 
@@ -2277,7 +3055,7 @@ surface-tension bridge) · `color` · `cls`.
 - **New icons and assets should use this language** rather than stroked paths.
 - **`.v3-nowbar`** sits in the bump, inset to the plateau (x 98.5→480.7 of 576
   = 17.1%→83.5%) — see *Now-playing ticker*. It is a **sibling** of the nav, not
-  a child, so its `bottom` is a px offset tuned to the docked bar's 62px height.
+  a child, so its `bottom` is a px offset tuned to the floating bar's hump (65px).
 
 Pinned to the bottom because `.s-home-v3` is `height: 100%; overflow: hidden`
 (constrains the flex column).
@@ -2738,152 +3516,43 @@ pill can be narrower than the circle it grew from with a small count, and that
 
 ## The nav console — where a CD tap goes (`openConsole` in `app.js`)
 
-Tapping a CD used to raise a **popup over the screen**. It doesn't any more, and
-it must not go back: a floating panel covered the record you had just tapped, and
-it was a second surface to dismiss on a screen that already has a nav. The nav's
-plateau is already the app's "what is playing" strip, so the answer to *where do
-I hear this?* belongs in it.
+**Same principle on the floating bubble as on the docked bar it was built for.**
+Tapping a CD does not raise a popup: the nav's **hump grows** (`.s-home-v3--console`
+on the shell), the friends ticker gives way to the album you tapped — art, album,
+year, artist on one line — and the room that opens up holds the four services.
+It closes on the next thing you do (a scroll, a touch on the bento, the CD
+again); `closeConsole` is idempotent. The profile's favourite discs open it too
+(`profFavTap`), with the album taken from the SLOT.
 
-**The plateau grows** (`.s-home-v3--console`), the friends ticker gives way to the
-album you tapped, and the room that opens up holds the four services.
-
-### ⚠️ The geometry lives in five CSS variables and nowhere else
-
-Four elements share the nav's box — `.v3-bottom-nav`, `.v3-nav-blur`,
-`.v3-nav-nest`, `.v3-nav-emboss > i` — and **three of them carry a mask of the
-same contour**. They all read `--nav-ar` / `--nav-mask` / `--nav-mask-neg` /
-`--nav-mask-scoop` / `--nav-shoulder`, so the console state is **one override
-block** rather than eight edits that drift apart.
-
-- ⚠️ **The outline is the one exception.** It is an inline `<svg>` whose
-  `viewBox` CSS cannot reach, so `bottomNav()` ships **both** contours and CSS
-  toggles which is visible. Change one and change the other.
-- **The tall contour is the short one with every point below the plateau pushed
-  down 88 units** and a straight wall inserted between the plateau's two fillets,
-  where the tangent is already vertical. The fillets are untouched — which is why
-  nothing distorts. `preserveAspectRatio="none"` would happily stretch them, and
-  `--nav-ar` changes in step so it never has to.
-- The shoulder is `34.1217/93` = **36.69%** normally and `(34.1217+88)/181` =
-  **67.47%** grown: the same line in absolute terms, a different fraction of a
-  taller box. `.v3-nav-items` reads it, or the icons would float.
-- Regenerating after a rise change is mechanical — see the derivation in the CSS
-  comment; every path is the short one plus the offset.
-
-### ⚠️ The console is a child of the NAV, not a sibling
-
-It was a sibling positioned in **px from the screen bottom**, and that is wrong
-here: the nav is `aspect-ratio` driven, so its height follows the frame width. The
-two drifted apart the moment the viewer scaled the phone and the panel floated
-clean out of the plateau. As a child it is placed as a **% of the nav's own box**,
-the only thing that tracks the plateau at every size.
-
-- ⚠️ The ticker stays a sibling — its px offsets ride the viewer's `zoom`, as
-  they always did.
-- The band is `top: 5%; bottom: 34%`. Measured at the 385px frame: the plateau's
-  interior is **81.6px** and the content needs **74px**. It was 72 units of rise
-  and a 57px band, which overflowed by 5px and clipped the album title.
-- ⚠️ **`.s-home-v3--console .v3-nowbar` hides with `visibility`, not `display`.**
-  `renderNowBar`'s swap timer keeps writing to the ticker while the console is up,
-  and a `display: none` element has no box to measure.
-
-### Growing, and the background around the grown indent
-
-⚠️ **What animates is `aspect-ratio`**, on all four boxes that share the nav's
-geometry. Height is not settable here — it *is* the aspect ratio — and a custom
-property cannot be transitioned, but the property that READS it can, so swapping
-`--nav-ar` drives a real interpolation.
-
-- ⚠️ **The masks and the outline swap DISCRETELY** — a data-URI mask cannot
-  tween. For the ~260ms of the growth the tall contour is squashed into a shorter
-  box, and because everything is `preserveAspectRatio="none"` that reads as the
-  plateau unfolding rather than as a glitch.
-- The **content** is not carried by that: it fades and rises on its own, a beat
-  behind, or it appears fully drawn inside a plateau that has not finished
-  opening. `prefers-reduced-motion` turns all of it off.
-- ⚠️ **`.v3-bottom-fade` HAS TO GROW WITH THE NAV** (`--nav-fade-h` /
-  `--nav-fade-solid`). It is sized in px from the screen bottom, and the console
-  makes the nav nearly twice as tall — the band tuned for the 62px bar stopped
-  **58px short** of the new top edge, so content ran sharp and unfaded straight
-  into the raised plateau. The nest still plugs everything INSIDE the nav's box;
-  this is about the content above it. Derivation: the nav is docked, so its top
-  edge is its own height above the bottom (121px at the 385 frame); the solid
-  band must reach just past that, so `121 + 2 − 39` = 84px solid of a 118px box
-  = 71%.
-
-### The line, and the marks
-
-**One line: art, album, year, artist.** ⚠️ The album is the only part that may
-shrink (`min-width: 0` + ellipsis on it alone) — let the year or the artist flex
-and a long title pushes them off the end, losing the two facts that are always
-short.
-
-- ⚠️ **No close button.** It closes on the next thing you do, so a persistent ✕
-  was a control for something that already puts itself away, and it cost the line
-  the width it needs to read as one sentence.
-
-#### Service marks: drop a real icon in and it wins (`svcMarkHtml`)
-
-Two layers per tile — the vector below, an `<img src="images/svc-<id>.png">` over
-it — and **the image wins when it is there**. The `<img>` removes itself
-`onerror`, so:
-
-- **Adding a real app icon is the whole change**: save it as
-  `images/svc-spotify.png`, `svc-apple.png`, `svc-deezer.png`, `svc-ytmusic.png`.
-  No code edit, no build step.
-- A **missing** file degrades to the drawing rather than leaving an empty tile.
-- The image is absolutely positioned over the whole tile, so a real icon covers
-  the drawing **and** the brand colour behind it. Verified both ways: with a file
-  present the `<img>` survives and matches the tile exactly; with none, all four
-  remove themselves and the vectors show.
-- ⚠️ **The vectors are approximations drawn from memory. They are the FALLBACK,
-  not the goal** — if a tile looks wrong the fix is the real file, not another
-  pass at the path data. (Apple Music's was a *star* at one point, which is not
-  their mark at all; it is a beamed double-note now. Spotify's waves are black on
-  green and YouTube Music is a red disc on white, per the real app icons.)
-- `platRowsHtml` uses the same helper, so the CD menus and the console can never
-  show different marks.
-
-### It closes on the next thing you do
-
-A scroll, a touch on the bento, the CD again, or the ✕. That is what keeps it
-from being a *mode*: you never have to put it away. `closeConsole` is idempotent
-so every path can call it blind.
-
-- ⚠️ The scroll listener goes on **`.v3-body`**, the element that actually
-  scrolls — in the desktop viewer the phone is a box on a page that never scrolls
-  itself, so a window listener would never fire.
-- ⚠️ Wired per **open** and torn down on close, not once at build: a permanent
-  `pointerdown` on the bento would run on every tap of a screen that is usually
-  not in console state at all.
-- ⚠️ `capture` on the bento, because the CD, the cover and the For You box all
-  stop propagation in their own handlers.
-- ⚠️ A tap **inside** the console must not close it — the service buttons live
-  there, and the padding between them does not stop propagation on its own.
-
-### ⚠️ The album lives on the SHELL (`_consoleAlbum`)
-
-Several `.s-home-v3` exist at once and the first is often not the visible one —
-the same trap that once played previews for the wrong track — and the console can
-be showing a **profile favourite**, which is not the shell's bento album and has
-no slot index once it is on the nav. `consoleGo` reads it from there;
-`openOnService` still goes through `menuAlbum` for the menus that remain.
-
-- `serviceGo` is the one opener both paths share, so the cache, the miss
-  behaviour and the open-the-tab-inside-the-gesture trick exist once.
-- ⚠️ **`nowBar()` had been inlined into both home variants**, so the console the
-  helper ships simply did not exist on the one screen it matters most on: the tap
-  set the state and there was nothing in the plateau to show. Both now call the
-  helper. Exactly the duplication that made `bentoHtml()` necessary.
-- **YouTube Music** joins `SD_SERVICES` (four now). Like Spotify it resolves to a
-  **search**: there is no public lookup without an API key, and a keyed call does
-  not belong in a static prototype.
-- ⚠️ **The profile's per-disc popups are gone.** Tapping a favourite raises the
-  console, so the menu that carried *Listen to preview* and the service rows had
-  nothing left to offer — previews are off (`PREVIEWS_ENABLED`) and the services
-  moved. It also carried **Replace album**, which is now reached only through
-  Edit Profile → tap a disc.
-
----
+- **Geometry lives in three variables on `.s-home-v3`, overridden by
+  `.s-home-v3--console`:** `--nav-ar` (553/126 → 553/236), `--nav-items-top`
+  (40% → 68%) and `--nav-mask` (short → tall contour). The nav's box, the
+  glass mask and the items' band all read them.
+- **Two contours, both in `bottomNav()`:** the short one and `.v3-nav-shape--tall`,
+  which is the short one with every point below the hump pushed down **110
+  units** (88 at first; raised so the panel comes out higher — it was already
+  at the hump's ceiling, so the ceiling went up) and straight walls inserted at x=67 and x=485.5 — where the hump's
+  fillets already end vertical, so nothing bends. A second `<svg>`, because
+  viewBox cannot be set from CSS. ⚠️ Change one contour and change the other,
+  plus the two masks in app.css.
+- **`.v3-console` is a CHILD of the nav**, placed as % of the nav's box
+  (`left/right: 15.5%`, `top: 5%`, `bottom: 46%`) so it stays in the hump at
+  every frame size — the nav is aspect-ratio driven and a px offset from the
+  screen bottom drifts the moment the viewer scales the phone. The row sits
+  high in the hump on purpose; centred, the service marks drifted onto the
+  shoulder.
+- **What animates is `aspect-ratio`** on `.v3-bottom-nav` (a custom property
+  can't transition, the property reading it can). The bar is anchored at
+  `bottom: 24px`, so it grows upward out of its own hump. The mask and outline
+  swap discretely; the ~260ms squash of the tall contour into the short box
+  reads as the hump unfolding. The content fades and rises one beat behind.
+- `.s-home-v3--console .v3-nowbar` is `visibility: hidden`, not `display` —
+  `renderNowBar`'s swap timer keeps writing to it and needs a box to measure.
+- ⚠️ **Not carried over from the docked version:** `.v3-nav-blur`, `.v3-nav-nest`
+  and the growing `.v3-bottom-fade`. They existed for a full-bleed bar with a
+  scoop cut out of it; the bubble is a self-contained pill with nothing to plug.
+- ⚠️ History: this was briefly removed (same day) on a misreading of "get rid
+  of that" — Eric meant the pet's scoop, not the console. The console is wanted.
 
 ## Profile — "Regular" theme card (`profCanvasHtml` in `screens.js`)
 
@@ -3122,6 +3791,14 @@ was all you got** — no title, no artist, no year — and a cover is not enough
 know an album by. The panel says album, artist, stars, review count, and the
 line they wrote about it.
 
+- ⚠️ **The discs are 46% of the rail, not 62%.** Three big circles in a row left
+  no room to read the arc they sit on, and the curve is the point. `profFavArc`
+  needs no change for it — it measures `spacing` off the DOM and derives the hub
+  from that, so the drop scales with the disc on its own. ⚠️ The one number that
+  does **not** follow automatically is `.prof-fav-rail`'s `padding-bottom`,
+  which came down 16% → **13%** with it (the drop is ~40px at 46% against ~53px
+  at 62%), and `.prof-fav-info`'s negative margin followed to **-20px**. Those
+  three are one measurement: change the width, measure the drop, move both.
 - ⚠️ **CSS scroll-snap, not a hand-rolled gesture.** This has to feel native
   under a thumb, and the browser's own momentum, rubber-band and snap beat
   anything written here. The swipe engines elsewhere in this app exist because
@@ -3414,6 +4091,58 @@ one input, not two).
 The handle input strips anything that isn't `A-Za-z0-9._` as you type — a handle
 is printed straight onto the profile card's pill.
 
+### The skin — the card's colour and the page behind it (`profSkinCss`)
+Two colour rows on the form (`skinRow`), and each is **two controls: an RGB
+picker and a lightness slider**. Separate on purpose — "what colour" and "how
+dark" are different decisions, and one combined picker throws the depth away
+every time you move the hue. The slider mixes the picked colour toward black or
+white (`sdMix`), so the hue survives both ends of it.
+
+- ⚠️ **Only two values are PICKED — `--pf-base` (the card) and `--sd-bg` (the
+  page). Everything else is DERIVED.** A colour system where the user sets ten
+  tokens by hand is one where nine end up unreadable. Ink is chosen by luminance
+  against whatever the surface turned out to be (`sdInk`, flipping around 0.56),
+  which is what lets you pick a near-white card in dark mode and still read your
+  own bio.
+- ⚠️ **`--pf-lt` / `--pf-dk` are deliberately NOT derived.** They are rgba white
+  and black, so they already work over any base — the card keeps its embossed
+  edge whatever colour it becomes.
+- ⚠️ **The username pill follows the PAGE, not the card** (`--pf-slot` = the
+  background). That is what seats it in the banner; ink included.
+- ⚠️ **`.s-home-v3`'s `background` became `var(--sd-bg, #111116)`.** `--sd-bg`
+  was already declared on that selector and already held exactly that colour in
+  both themes, so this unified two numbers that could never legally disagree.
+  The skin is written **inline on `.s-prof2` / `.s-pfedit` only**, so no other
+  screen moves.
+- ⚠️ **`profSkinSet` patches the variables by hand and does NOT re-render.** A
+  colour input dragged through its gradient fires `input` every frame; a
+  re-render per frame would stutter *and* hand the user a fresh element mid-drag.
+  Same rule as `pfeditField` and `profTagSync`. **Reset is a click, not a drag**,
+  so `profSkinClear` may re-render.
+- ⚠️ **`profSkinApply` writes to `.s-prof2`, not `.s-pfedit`.** The viewer can
+  have the profile and the edit page on stage at once (multi view, both variants
+  of each), and a skin that only reached the form left the card you were
+  colouring sitting in the old colour while you dragged.
+- ⚠️ **`profSkinApply` uses `setAttribute('style', …)`, not per-property
+  writes.** Clearing half the skin has to *remove* the variables it set, and
+  assigning `style.foo = ''` one at a time leaves whatever the new string no
+  longer mentions. The screen carries no other inline style, which is what makes
+  that safe.
+- ⚠️⚠️ **THE PREVIEW IS DRIVEN BY NOTHING.** `.pfe-prev` paints itself from
+  `var(--sd-bg)` and `var(--pf-base)` — the same variables `profSkinCss` has
+  already written inline on that very screen — so it follows the sliders with no
+  JS behind it and *cannot* disagree with the card it previews. An earlier pass
+  had a per-row swatch that JS repainted by hand; it was more code and one more
+  thing to leave stale. If you find yourself writing a `skinSwatch()` again,
+  this is the note saying don't.
+- The preview shows the **derived** tokens too — the inner pane is `--pf-face`,
+  the text ticks are `--pf-ink` — so a colour that makes your own bio unreadable
+  says so on the form rather than on your profile.
+- The background you are picking **is the page you are standing on**, so it also
+  changes under your thumb for real.
+- `skin` is copied (not referenced) into `PROFILE` on Save, and `null` when
+  cleared — which is what puts the theme's own colours back.
+
 ### Tags, where Occupation was (`openProfEditor('tag')`)
 The Occupation row is gone; in its place is a **Tags** row that is a button, not
 a field — you wear what you own. It opens the picker's `tag` kind: a wrapping
@@ -3612,8 +4341,8 @@ JS shows one at a time.
 
 **Steps:** `0` username · `1` connect service (Spotify/Apple/SoundCloud) · `2`
 allow listening-tracking (**only shown if a service was connected** —
-`obActiveSteps()` drops it otherwise) · `3` genres (plain chips, from
-`SD_GENRES`) · `4` artists · `5` albums · `6` people you may know · `7` minimal
+`obActiveSteps()` drops it otherwise) · `3` genres (**Pro's mix dial, or a
+list of the same tree** — see *Step 3* below) · `4` artists · `5` albums · `6` people you may know · `7` minimal
 profile (the payoff → `Start exploring` → `navigate('home')`).
 
 - **State** lives in the module-global `OB` object (username, service, tracking,
@@ -3626,14 +4355,272 @@ profile (the payoff → `Start exploring` → `navigate('home')`).
 - **Artists/Albums walls** (`obRenderWall`): data derived from `ARCHIVE`
   (`obArtistList()` = unique artists w/ album-art avatar; albums = the archive).
   Search filters the wall; tapping a card toggles selection — selected items get
-  a checkmark overlay **and** are pinned as chips in the `.ob-pinned` row above
-  the wall. Skippable, but 3+ is encouraged (copy only; no hard gate).
+  a checkmark overlay **and** appear as chips in **the dock** (below).
+  Skippable, but 3+ is encouraged (copy only; no hard gate).
+- **The dock** (`obSyncDock` → `.ob-picks-dock`): one strip between the stage
+  and the footer, **outside the scroll**, carrying this step's picks against
+  Continue — genre chips (3), the walls' image chips (4/5), people (6) — each
+  removing its own pick. ⚠️ It replaced the walls' `.ob-pinned` rows above the
+  wall, and it exists so nothing a user picks can push the wheel or the wall
+  around: it is capped at two rows (56px for genre chips, 70px for image
+  chips, keyed on `data-ob-step`), scrolls inside the cap, and fades only once
+  it overflows (`is-over`, measured). ⚠️ **Empty, it is `display: none`** — it
+  carried a mono hint line for a day, which cost the wall a row before the
+  first pick, exactly when the wall wants the room. Shown on steps 3-6 only
+  (`.ob-has-dock`).
+- ⚠️ **On the scrolling steps the wall runs UNDER the buttons.** `.ob-foot`
+  (dock + footer, one block) becomes an overlay at the bottom of the screen
+  (`.ob-stage-fade`, set by `obSyncDock` on 4, 5, 6 and 3-in-list-view), the
+  stage reaches the bottom edge, and its mask fades the wall across exactly
+  the foot's height (`--ob-foot`, measured per sync because the dock is 0-2
+  rows) — opaque just above the foot, gone at the bottom edge. Cards dissolve
+  into the picks and the buttons and reach obscurity at the very bottom. ⚠️ A
+  stage that *stopped* above a stacked dock and footer, with a fade above
+  that, cut the wall off a quarter of the way up the phone; that is what this
+  replaced. The panel takes `--ob-foot + 16px` of bottom padding so the last
+  row can scroll clear. The other steps keep the stacked layout (step 7's
+  note sits on the footer by `margin-top: auto`; the wheel is sized to fit).
+- **Skip and Continue wear a 5px rim of `--bg`** (a box-shadow ring), and Skip
+  is a `--surface` pill rather than bare text: with the wall running under
+  them, the ring is the page showing through around each button, so they sit
+  on the screen instead of on whatever scrolled beneath.
+- ⚠️ **The footer never leaves the frame and has no rule above it.**
+  `.s-onboarding` is `height: 100%` — it inherited `min-height` from
+  `.app-screen`, which let a tall step grow the screen and carry Continue off
+  the bottom of the phone — and its `border-top` is gone so the dock and the
+  button read as one strip. This is the rule for every step, not just 3.
 - **People you may know** (`obPeopleList`): `FRIEND_ACTIVITY` handles + a few
   extras, each with a fake mutual count and a Follow toggle.
 - **Footer** is contextual (`obSyncFooter`): Continue is disabled until a valid
   username (step 0); Skip shows only on the optional steps (1,2,4,5,6); Continue
   shows a live selection count on the pick steps.
 - Onclick args are escaped with `obOc()` (HTML-attr + JS-quote safe) / `obEsc()`.
+
+### Step 3 · the wheel and the list (`OB_MIX` · `obMixBuild` · `obRenderGenreList`)
+
+Genres are picked on **the same mix dial Pro uses in the bento** — not a copy,
+the same functions through the `OB_MIX` dial context (see *Dial contexts* under
+the mix dial) — or on a **list** of the same `SD_GENRE_TREE`, one switch apart.
+Both write `OB.genres`; the chip row above them and Continue's count read it.
+
+⚠️ **The dial was here, left, and is back by decision (2026-09-03).** It left
+because a first-timer should not have to learn a gesture to get in. The list is
+what answers that: it is the instantly-legible route through, and the wheel is
+an offer, not a toll. Don't remove either view to "simplify" the step.
+
+**Layout, top to bottom:** head · `.ob-view-row` — the **dial's own Back** on
+the left (`.ob-mix-back`, one ring up, visible only inside a main, keeps its
+space when hidden) and **`.ob-view` (Wheel | List)** on the right, level with
+each other · one `.ob-genres` at a time · then, **outside the stage**,
+`.ob-picks-dock` — the chip row — sitting directly on the footer, which lost
+its hairline so dock and Continue read as one strip.
+- ⚠️ **THE WHEEL DOES NOT MOVE, and Continue never leaves the frame.**
+  `.s-onboarding` is `height: 100%` (it inherited `min-height` from
+  `.app-screen`, which let the wheel's height grow the screen and carry the
+  footer off the bottom of the phone). The stage scrolls; the rail, the dock
+  and the footer are fixed. The chip row was once above the views inside the
+  stage, and every pick that wrapped it shoved the wheel down — docked, it
+  cannot. It is **capped at two rows** (56px, scrolls inside the cap) and
+  **fades past that** — a mask applied only once there is overflow (`is-over`,
+  measured), so a two-row mix that fits is never dimmed. Each chip removes its
+  own pick — the same row the home's info box carries. Empty, it collapses —
+  the instruction hints it once showed went with the other steps'; the head
+  says what to do.
+- ⚠️ **Two Backs, on purpose.** The rail's Back is the *step's*. The dial's is
+  its own button (`obMixBack` → `mixGoto(null, OB_MIX)`), on the switch row.
+  Folding the two into the rail's was tried and rejected: a Back that sometimes
+  means "up a ring" and sometimes "previous step" is two buttons in one coat.
+  Don't merge them again.
+- **The wheel** (`.ob-mix`, a square bled **16px past the column each side** —
+  out to the progress belt's 8px margin, 369px in the 385px frame, ~1.15px a
+  viewBox unit against the bento's ~0.91): `obMixBuild` drops a
+  `.mix-inline.mix-inline--ob` into it once per instance, on first `obSyncOne`,
+  and **spins it in on build** as well as on arrival, so a page loaded straight
+  onto this step gets the entrance. The head above it is tightened to 10px.
+  `--ob` undoes only what a cover-less host has to — in flow, always visible,
+  and **the screen's own palette** (`--bg: inherit` etc.) instead of the dark
+  tokens the bento wrap pins for sitting on album art. No blur, no tint.
+  `.ob-mix-back` is the home's corner pill, shown only inside a main
+  (`.ob-mix.is-in`); the rail's Back stays the step's.
+- **The list** (`obRenderGenreList` → `.ob-glist`) is **bubbles** — the chips
+  step 3 had before the dial, in the wheel's margins (bled 16px to the belt)
+  and the step's emboss: the sixteen mains as raised pills (`.ob-gbub`).
+  ⚠️ **Tapping a main PICKS it** and unfolds its subs in a pressed-in well
+  (`.ob-gsubs`, a full-width flex item, so it lands under its main's *row*) —
+  the dial's own rule, kept so both views mean the same thing by the same
+  tap. (An earlier cut had accordion rows that unfolded *without* picking, and
+  the views disagreed about what a tap on "Rock" was — don't go back.) Tapping
+  it again unpicks and folds; subs picked inside stay picked, and the main
+  stays **lit** (accent rim on a raised bubble — the dial's "something in
+  here" ring) where a picked one is **pressed in** (`.ob-svc--on`'s shadows).
+  Unfolded mains live in `OB.genreOpen`; `obListMain` is the tap.
+- **Two roads, one DOM.** A wheel tap goes `mixGoto`/`mixToggle` →
+  `mixDialSync(OB_MIX)` → `OB_MIX.onSync` → `obSyncGenres` + `obSyncFooter` on
+  every instance. A list/chip tap goes `obToggleGenre` → `obSync` →
+  `obSyncOne` → `mixWrapSync` + `obSyncGenres`. Both end with every wheel,
+  list, chip row and footer agreeing.
+- **Arriving** (`obMixArrive`, after `obNext`/`obBack` land on 3) resets to the
+  top ring — the picks survive, the ring you were standing in does not, the
+  rule `openMixDial` keeps — and replays the spin-in. Switching back to the
+  wheel replays it too.
+- ⚠️ **Labels can only be MEASURED while the wheel is on screen.** The panel is
+  `display: none` on other steps and the wheel hides behind the list, and
+  `getComputedTextLength` returns 0 for anything unrendered — so a dial built
+  on step 0 was never fitted. `obSyncGenres` refits whenever the wheel is
+  showing; the fit resets first, so it is idempotent. (At this width every
+  label fits unfitted anyway; the refit is the safety net.)
+- `SD_GENRES` — the flat twenty — now has **no readers**. It is kept as the
+  editorial order it was, in case a flat picker is ever wanted again.
+
+### The chrome is a belt (`.ob-top` + `.ob-rail`)
+
+The progress bar is the **drive belt at its smallest scale**: a 12px stadium
+inset **23px from the top** (8px until 2026-09-03; lowered 15px once the phone
+chrome stopped being a black strip above it) and **8px** from both sides,
+filling `--ob-fill` over an
+`--ob-track` slack. It runs the full width on its own — the back button and the
+step counter moved down into `.ob-rail` (the 24px content column) so it could.
+⚠️ It was a 4px hairline sharing a flex row with those two; don't fold them back
+in. The counter is zero-padded (`01/08`) mono — an instrument reading, not a
+sentence.
+
+- `--ob-fill` / `--ob-track` are declared on `.s-onboarding`. Fill is **white**
+  in dark. ⚠️ **`sd-theme-light` swaps the fill to ink** and keeps the same grey
+  track — white on cream reads as the *empty* half, which inverts the whole bar.
+
+### ⚠️ Step 0 is plain flow now — the drawing is gone
+
+It was a technical drawing: a machined plate, six construction circles, two x
+rules and a belt rig, with the head, the field and the readout laid over it as
+**absolute percentages of a 369×464 box**. All of that is switched off. What is
+left is an ordinary panel on the shared `.ob-h` head — which is also what lets
+it share a surface language with every other step.
+
+⚠️ **The percentages were pure cost once the drawing went.** Every change meant
+re-deriving six `top`s against a box nothing was aligned to any more. If you
+bring the drawing back, they have to come back with it — see the table below.
+
+#### The slot (`.ob-user-well`)
+
+The bento's neu-emboss (`.v3-search-pill`) **pressed IN rather than raised** —
+same offsets, same colours, sign flipped — so the field reads as a hole to put
+something in rather than a button to press. Solid `--bg`, so it is the surface
+itself deformed, which is the whole trick. It takes a 1px `--ob-fill` rim on a
+valid handle.
+
+⚠️ **It is a `<label>`.** The whole slot focuses the field for free. It was a
+`div` with the input stretched over it and `pointer-events` juggling to stop the
+`@` swallowing clicks; the element that means *this labels that control* does
+the job without any of it.
+
+#### The readout — budget, rule, reassurance
+
+⚠️ **The note sits AFTER the constraint, not with the heading.** "4–18 chars ·
+a–z 0–9 _" is the line that makes someone think *but I want a real name*, so
+"Don't worry — you'll be able to pick a nickname too." answers it in place
+rather than pre-empting a worry they have not had yet. Sans and sentence case
+against the hint's mono uppercase: it is talking to the person, not annotating a
+drawing.
+
+⚠️ **The meter keeps its 141px width and is centred with `margin: auto`**, not
+by going full-width with `justify-content: center`. Its `::before` rule is
+`inset 0`, so a full-width element draws that underline right across the panel
+instead of under the dots.
+
+#### Step 1 wears the same surface (`.ob-svc`)
+
+The service rows dropped `border: 1.5px solid` for the **same emboss, raised** —
+the shadow pair is the edge. Selecting one presses it **in**, using the slot's
+own inset shadow plus an accent ring, so the two states are one object seen from
+either side. `.ob-note` matches `.ob-user-note` exactly. That is what makes the
+two pages read as one surface language rather than "a drawing" and then "a
+form".
+
+#### ⚠️ Bringing the machine back
+
+`sdPlate`, `sdPlateHubs`, `OB_PLATE`, `OB_RIG` and `obPlateSvg` are all still
+here and still correct — **nothing calls `obPlateSvg` any more.** `OB_RIG` is
+Eric's `Onboarding_Name`, drawn in belt-lab.html and exported from the **panel**
+frame, so its numbers already are plate coordinates: two r26 decks on the x=44 /
+x=325 rules and a r50 wheel centred at (184, 324), clearance 9 → belt top run at
+y=213, bottom at y=383. Its path is **solved, not pasted** — `belt.js` loads
+before `screens.js` (index.html 240 vs 246), so `obPlateSvg` asks `SD_BELT.taut`
+for the shape exactly as the lab does and the two cannot drift.
+
+To restore it: put `${obPlateSvg()}` back inside a `.ob-plate` wrapper in step 0,
+flip `OB_PLATE_ON` if you want the plate as well as the rig, and move the
+overlays back to absolute percentages of the 369×464 box:
+
+| | now (plain flow) | rig only | rig + plate |
+|---|---|---|---|
+| head | `.ob-h`, 24/13.5 | y 45, 26/13.5 | y 88 — the top corner circles (r44 about 44,44) own y 0→88 — and 22/12.5 to fit |
+| slot | flow, 52px tall | y 142, h 48 | y 156, h 34 |
+| budget + rule + note | centred block under the slot | centred under the rig, y 396 / 420 / 440 | impossible — the bottom-left corner circle (r44 about 44,420) and the E bolt (r28 about 144,436) cross all three; they become ONE line above the rig at y 198, and the note has nowhere to go |
+
+### Step 0 · the plate (`.ob-plate`)
+
+Step 0's layout **is construction geometry**. One machined plate — a polygon
+whose every vertex is a circle — drawn hairline at 1:1 in a `369×464` viewBox
+(369 = the 385px screen less an 8px margin each side, the same margin the
+progress belt uses). The title, the field and the readout are HTML laid over it
+in the SVG's own percentages, sitting on the rules the circles set.
+
+Two primitives in `screens.js`, above `onboardingHtml`:
+
+| | |
+|---|---|
+| `sdPlate(pts)` | the outline `d` from `[{x,y,r}, …]` clockwise |
+| `sdPlateHubs(pts)` | each corner's **arc centre**, outward direction, and convexity |
+
+Everything on screen derives from the one vertex list `OB_PLATE`, so the drawing
+and the shape can't drift apart. `OB_FIELD` does the same for the input.
+
+- ⚠️ **The runs stay orthogonal because consecutive vertices SHARE an x or a y.**
+  That is the whole trick, and it's why this model beat the belt-hull one
+  (`beltPath`): in a rounded polygon the straight runs lie on the polygon's own
+  edges, so a corner radius *cuts* the corner but never *tilts* the run. Radii
+  are then free to vary — big at the outer corners, small at the bosses — while
+  the shape stays on the grid. A tangent hull ties the run angle to the radii
+  and every mismatched pair slants.
+- The single diagonal (**D→E**) is 45° on purpose: the diagonal of the grid
+  square, so it is still on the grid. It is also the one **concave** corner
+  (at D); `sdPlate` needs no special case for that, the sweep flag just flips.
+- ⚠️ **A bolt hole must not sit at a concave corner.** There the fillet is cut
+  *from the void* and the hub lands outside the material, so `.obp-bolt` filters
+  on `hub.convex`. Drawing the construction circle there is still right — that's
+  the cutter.
+- **Three layers, faintest first:** `.obp-rule` (the grid — the two verticals
+  through the top corner hubs; x=44 is the text column *and* the deck pulley's
+  axis) · `.obp-cons` (the construction circles whole, not just the arcs they
+  lent) · `.obp-edge` (the cut edge, the only line at full weight), plus
+  `.obp-bolt` for the holes. ⚠️ Stroked from `--text2`, not `--text3`: `--text3`
+  is already 22% alpha and multiplying it by another opacity renders as nothing.
+- ⚠️ **ONE circle per corner. There is no second pass, and there was.** An
+  offset "ghost" layer drew every circle again 8px outward. It is the single
+  thing that made the screen look busy — it doubled every line, and the ghosts
+  collided with the neighbours their originals cleared. With one layer **no two
+  circles on this screen overlap**; that is the property to re-check if you move
+  a vertex.
+- ⚠️ **Nothing is filled — not the plate, not the belt, not the wheels.**
+  Filling the belt made the input an opaque slab that cut the construction
+  circles and the x=325 rule in half; the drawing stopped passing behind the UI
+  and the whole thing collapsed into a rounded card sitting on a diagram.
+- ⚠️ **The field's pulleys sit on x=44 and x=325** — the same two rules the top
+  corner hubs set — so each pulley lands directly under a corner circle. That
+  vertical alignment is the payoff; move the corner radii and these move too.
+- ⚠️ **`.ob-plate` must not have `width: 100%`.** As a flex item that resolves
+  against the padded 337px column and the `margin: 0 -16px` merely overflows it;
+  auto width plus the default stretch is what actually makes the box 369.
+- **Validation is the belt tensioning:** on a good handle the belt goes to full
+  weight in `--ob-fill` and the idler's bolt seats. `obUserHint` sets
+  `.ob-plate--ok`. ⚠️ The idler was briefly a three-hole motor that spun — it
+  read as a second, louder logo inside the field and fought the plate it sits
+  on. Two matching pulleys is the calmer and more correct machine.
+- **The character budget is 18 more circles on one rule** (`.ob-user-meter`):
+  5px dots on an 8px pitch = 141px, sitting in the solid corner the notch leaves
+  free. The tick under the **4th** is the minimum `obUserValid` puts on Continue.
+- **Handles are 4–18 characters**, in three places that must agree: the regex in
+  `obUserValid`, the `.slice()` in `obSetUsername`, and the input's `maxlength`.
 
 ---
 

@@ -2333,7 +2333,13 @@
 /* ═══════════════════════════════════════════════════════════ */
 
 .s-home-v3 {
-  background: #111116;
+  /* ⚠ `var(--sd-bg)`, not the literal, and the fallback is the same colour it
+     always was. `--sd-bg` is declared further down as "screen bg — badge rings
+     punch through to it" and was ALREADY exactly this value in both themes, so
+     this unifies two numbers that could never legally disagree. It is also what
+     lets the profile skin recolour the page: `profSkinCss` writes `--sd-bg`
+     inline on `.s-prof2` / `.s-pfedit` only, so no other screen moves. */
+  background: var(--sd-bg, #111116);
   color: #e8e2d6;
   display: flex;
   flex-direction: column;
@@ -2546,10 +2552,11 @@
    from 36px to 68px up and its middle is ~52px. */
 .v3-nowbar {
   position: absolute;
-  left: 19%; right: 18.5%;
-  bottom: 39.5px;
+  /* In the floating bubble's hump: see the geometry note on BOTTOM NAV. */
+  left: 23%; right: 23%;
+  bottom: 55px;
   z-index: 6;
-  height: 20px;
+  height: 22px;
   display: flex;
   align-items: center;
   /* It opens whoever is on it — see `renderNowBar`. The press is the only
@@ -2576,49 +2583,59 @@
 
 
 /* ==========================================================================
-   THE NAV CONSOLE - the plateau grows to hold what a CD tap has to say
+   THE NAV CONSOLE - the hump grows to hold what a CD tap has to say
    ==========================================================================
    Tapping a CD used to raise a POPUP over the screen. It raises the nav's own
-   plateau instead: the bump grows, the friends ticker gives way to the album you
+   hump instead: the bump grows, the friends ticker gives way to the album you
    tapped, and the room that opens up holds the four services.
+   ⚠️ SAME PRINCIPLE ON THE FLOATING BUBBLE as on the docked bar it was built
+   for (2026-09-03): the bubble has a hump too. What did NOT come across from
+   the docked version: the unmasked `.v3-nav-blur`, the `.v3-nav-nest` plug and
+   the `.v3-bottom-fade` band — those existed for a full-bleed bar with a scoop
+   cut out of it, and this bar is a self-contained pill.
 
-   WARNING: THE GEOMETRY LIVES IN THESE FIVE VARIABLES AND NOWHERE ELSE. Four
-   elements share the nav's box (`.v3-bottom-nav`, `.v3-nav-blur`,
-   `.v3-nav-nest`, `.v3-nav-emboss > i`) and three of them carry a mask of the
-   same contour. They all read these, so the console state is ONE override block
-   rather than eight edits that drift apart. The outline is the one exception --
-   an inline <svg> whose viewBox CSS cannot reach -- so `bottomNav()` ships both
+   WARNING: THE GEOMETRY LIVES IN THESE THREE VARIABLES AND NOWHERE ELSE. The
+   nav's box, the glass mask and the items' band all read them, so the console
+   state is ONE override block. The outline is the one exception -- an inline
+   <svg> whose viewBox CSS cannot reach -- so `bottomNav()` ships both contours
    and this toggles which is visible.
-
-   WARNING: the tall contour is the short one with every point below the plateau
-   pushed down 88 units and a straight wall inserted between the plateau's two
-   fillets, where the tangent is already vertical. The fillets themselves are
-   untouched, which is why nothing distorts: `preserveAspectRatio="none"` would
-   happily stretch them, and `--nav-ar` changes in step so it never has to.
-
-   WARNING: the shoulder -- where the flat runs sit, and where `.v3-nav-items`
-   starts -- is 34.1217/93 = 36.69% normally and (34.1217+88)/181 = 67.47% when
-   grown. The same line in absolute terms; a different fraction of a taller box. */
+   WARNING: the tall contour is the short one with every point below the hump
+   pushed down 110 units and a straight wall inserted between the hump's fillet
+   and the shoulder's, where the tangent is already vertical. The fillets are
+   untouched, which is why nothing distorts under preserveAspectRatio="none":
+   `--nav-ar` changes in step so it never has to stretch.
+   WARNING: the items' band starts a little under the shoulder -- 40% of 126
+   normally, (44.79+110+5.7)/236 = 68% when grown. (It was 88 units / 214;
+   Eric wanted the panel to come out higher, and the panel was already at the
+   hump's ceiling, so the ceiling went up.) The same line in absolute
+   terms; a different fraction of a taller box. */
 .s-home-v3 {
-  --nav-ar:         576 / 93;
-  --nav-shoulder:   36.69%;
-  --nav-mask:       url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20576%2093'%20preserveAspectRatio='none'%3E%3Cpath%20d='M-8%20101V34.1217H64.8923C73.1451%2034.1217%2079.8353%2027.4315%2079.8353%2019.1787C79.8353%208.86277%2088.198%200.5%2098.514%200.5L480.656%200.5C490.972%200.5%20499.335%208.86277%20499.335%2019.1788C499.335%2027.4316%20506.025%2034.1218%20514.278%2034.1218H584V101H375.209V94.0125C373.667%2094.0125%20372.433%2092.7335%20372.488%2091.1928L372.792%2082.7034C373.566%2061.0759%20356.243%2043.1217%20334.602%2043.1217H232.378C210.707%2043.1217%20193.328%2061.0425%20193.994%2082.7034L194.232%2090.4501C194.292%2092.3996%20192.728%2094.0125%20190.777%2094.0125V101H-8Z'%20fill='%23fff'/%3E%3C/svg%3E");
-  --nav-mask-neg:   url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20576%2093'%20preserveAspectRatio='none'%3E%3Cpath%20d='M-12%20-12H588V105H-12ZM-8%20101V34.1217H64.8923C73.1451%2034.1217%2079.8353%2027.4315%2079.8353%2019.1787C79.8353%208.86277%2088.198%200.5%2098.514%200.5L480.656%200.5C490.972%200.5%20499.335%208.86277%20499.335%2019.1788C499.335%2027.4316%20506.025%2034.1218%20514.278%2034.1218H584V101H375.209V94.0125C373.667%2094.0125%20372.433%2092.7335%20372.488%2091.1928L372.792%2082.7034C373.566%2061.0759%20356.243%2043.1217%20334.602%2043.1217H232.378C210.707%2043.1217%20193.328%2061.0425%20193.994%2082.7034L194.232%2090.4501C194.292%2092.3996%20192.728%2094.0125%20190.777%2094.0125V101H-8Z'%20fill='%23fff'%20fill-rule='evenodd'%20stroke='%23fff'%20stroke-width='2'%20stroke-linejoin='round'/%3E%3C/svg%3E");
-  --nav-mask-scoop: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20576%2093'%20preserveAspectRatio='none'%3E%3Cpath%20d='M375.209%20101V94.0125C373.667%2094.0125%20372.433%2092.7335%20372.488%2091.1928L372.792%2082.7034C373.566%2061.0759%20356.243%2043.1217%20334.602%2043.1217H232.378C210.707%2043.1217%20193.328%2061.0425%20193.994%2082.7034L194.232%2090.4501C194.292%2092.3996%20192.728%2094.0125%20190.777%2094.0125V101Z'%20fill='%23fff'%20stroke='%23fff'%20stroke-width='2'%20stroke-linejoin='round'/%3E%3C/svg%3E");
+  --nav-ar:        553 / 126;
+  --nav-items-top: 40%;
+  --nav-mask:      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 553 126' preserveAspectRatio='none'%3E%3Cpath d='M517.5 125H35.5C16.17 125 0.5 109.33 0.5 90V79.7942C0.5 60.4642 16.17 44.7942 35.5 44.7942L47.3137 44.7942C58.1862 44.7942 67 35.9803 67 25.1079C67 11.5173 78.0173 0.5 91.6079 0.5L460.892 0.500022C474.483 0.500023 485.5 11.5174 485.5 25.1079C485.5 35.9804 494.314 44.7942 505.186 44.7942H517.5C536.83 44.7942 552.5 60.4642 552.5 79.7942V90C552.5 109.33 536.83 125 517.5 125Z' fill='%23fff'/%3E%3C/svg%3E");
 }
 .s-home-v3--console {
-  --nav-ar:         576 / 181;
-  --nav-shoulder:   67.47%;
-  --nav-mask:       url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20576%20181'%20preserveAspectRatio='none'%3E%3Cpath%20d='M-8%20189V122.122H64.8923C73.1451%20122.122%2079.8353%20115.431%2079.8353%20107.179L79.8353%2019.1787C79.8353%208.86277%2088.198%200.5%2098.514%200.5L480.656%200.5C490.972%200.5%20499.335%208.86277%20499.335%2019.1788L499.335%20107.179C499.335%20115.432%20506.025%20122.122%20514.278%20122.122H584V189H375.209%20189V182.012C373.667%20182.012%20372.433%20180.733%20372.488%20179.193L372.792%20170.703C373.566%20149.076%20356.243%20131.122%20334.602%20131.122H232.378C210.707%20131.122%20193.328%20149.042%20193.994%20170.703L194.232%20178.45C194.292%20180.4%20192.728%20182.012%20190.777%20182.012V189H-8Z'%20fill='%23fff'/%3E%3C/svg%3E");
-  --nav-mask-neg:   url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20576%20181'%20preserveAspectRatio='none'%3E%3Cpath%20d='M-12%20-12H588V193H-12ZM-8%20189V122.122H64.8923C73.1451%20122.122%2079.8353%20115.431%2079.8353%20107.179L79.8353%2019.1787C79.8353%208.86277%2088.198%200.5%2098.514%200.5L480.656%200.5C490.972%200.5%20499.335%208.86277%20499.335%2019.1788L499.335%20107.179C499.335%20115.432%20506.025%20122.122%20514.278%20122.122H584V189H375.209%20189V182.012C373.667%20182.012%20372.433%20180.733%20372.488%20179.193L372.792%20170.703C373.566%20149.076%20356.243%20131.122%20334.602%20131.122H232.378C210.707%20131.122%20193.328%20149.042%20193.994%20170.703L194.232%20178.45C194.292%20180.4%20192.728%20182.012%20190.777%20182.012V189H-8Z'%20fill='%23fff'%20fill-rule='evenodd'%20stroke='%23fff'%20stroke-width='2'%20stroke-linejoin='round'/%3E%3C/svg%3E");
-  --nav-mask-scoop: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20576%20181'%20preserveAspectRatio='none'%3E%3Cpath%20d='M375.209%20189V182.012C373.667%20182.012%20372.433%20180.733%20372.488%20179.193L372.792%20170.703C373.566%20149.076%20356.243%20131.122%20334.602%20131.122H232.378C210.707%20131.122%20193.328%20149.042%20193.994%20170.703L194.232%20178.45C194.292%20180.4%20192.728%20182.012%20190.777%20182.012V189Z'%20fill='%23fff'%20stroke='%23fff'%20stroke-width='2'%20stroke-linejoin='round'/%3E%3C/svg%3E");
+  --nav-ar:        553 / 236;
+  --nav-items-top: 68%;
+  --nav-mask:      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 553 236' preserveAspectRatio='none'%3E%3Cpath d='M517.5 235H35.5C16.17 235 0.5 219.33 0.5 200V189.7942C0.5 170.4642 16.17 154.7942 35.5 154.7942L47.3137 154.7942C58.1862 154.7942 67 145.9803 67 135.1079L67 25.1079C67 11.5173 78.0173 0.5 91.6079 0.5L460.892 0.5C474.483 0.5 485.5 11.5174 485.5 25.1079L485.5 135.1079C485.5 145.9804 494.314 154.7942 505.186 154.7942H517.5C536.83 154.7942 552.5 170.4642 552.5 189.7942V200C552.5 219.33 536.83 235 517.5 235Z' fill='%23fff'/%3E%3C/svg%3E");
 }
 .v3-nav-shape--tall                     { display: none; }
 .s-home-v3--console .v3-nav-shape       { display: none; }
 .s-home-v3--console .v3-nav-shape--tall { display: block; }
+/* The friends panel: the same block again with the hump grown 700 units, so
+   the nav stands ~423px tall at the 393 frame — half the screen, as asked.
+   Items band: (44.79 + 700 + 5.7) / 826 = 90.9%. Contour in bottomNav(). */
+.s-home-v3--friends {
+  --nav-ar:        553 / 826;
+  --nav-items-top: 90.9%;
+  --nav-mask:      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 553 826' preserveAspectRatio='none'%3E%3Cpath d='M517.5 825H35.5C16.17 825 0.5 809.33 0.5 790V779.7942C0.5 760.4642 16.17 744.7942 35.5 744.7942L47.3137 744.7942C58.1862 744.7942 67 735.9803 67 725.1079L67 25.1079C67 11.5173 78.0173 0.5 91.6079 0.5L460.892 0.5C474.483 0.5 485.5 11.5174 485.5 25.1079L485.5 725.1079C485.5 735.9804 494.314 744.7942 505.186 744.7942H517.5C536.83 744.7942 552.5 760.4642 552.5 779.7942V790C552.5 809.33 536.83 825 517.5 825Z' fill='%23fff'/%3E%3C/svg%3E");
+}
+.v3-nav-shape--friends                     { display: none; }
+.s-home-v3--friends .v3-nav-shape          { display: none; }
+.s-home-v3--friends .v3-nav-shape--friends { display: block; }
 
 /* -- The console panel ---------------------------------------------------
-   Sits in the plateau the state above opened up. WARNING: anchored in px from
+   Sits in the hump the state above opened up. WARNING: anchored in px from
    the BOTTOM of the screen, not as a % of the nav -- the nav's height changes
    with the state, so a percentage would move this twice. The plateau's floor
    (the shoulder) is ~40px up at the 393 frame and its ceiling is the nav's top
@@ -2627,15 +2644,16 @@
   /* All four numbers are % of the NAV, whose child this is. WARNING: they were
      px offsets from the screen bottom and that is wrong here -- the nav is
      aspect-ratio driven, so its height follows the frame width, and the panel
-     floated clean out of the plateau the moment the viewer scaled the phone.
-     Horizontally the plateau's interior is x 98.5-480.7 of 576 = 17.1%-83.5%;
-     vertically it runs from the nav top to the shoulder at 67.47%.
+     floated clean out of the hump the moment the viewer scaled the phone.
+     Horizontally the hump's interior is x 67-485.5 of 553 = 12.1%-87.8%, and
+     the panel stands a little in from that; vertically it runs from the nav
+     top to the grown shoulder at (44.79+110)/236 = 65.6%.
      WARNING: `bottom` deliberately leaves more air under the marks than over the
-     line -- the row wants to sit high in the plateau, near its ceiling, not
+     line -- the row wants to sit high in the hump, near its ceiling, not
      centred in it. Centred, the logos drifted down onto the shoulder. */
   position: absolute;
-  left: 19%; right: 18.5%;
-  top: 4.5%; bottom: 38%;
+  left: 15.5%; right: 15.5%;
+  top: 5%; bottom: 46%;
   z-index: 6;
   display: none;
   flex-direction: column; justify-content: space-between; gap: 6px;
@@ -2645,7 +2663,83 @@
    `visibility` rather than `display` on purpose -- `renderNowBar`'s swap timer
    keeps writing to the ticker while the console is open, and a `display: none`
    element has no box to measure. */
-.s-home-v3--console .v3-nowbar { visibility: hidden; pointer-events: none; }
+.s-home-v3--console .v3-nowbar,
+.s-home-v3--friends .v3-nowbar { visibility: hidden; pointer-events: none; }
+
+/* -- The friends panel ---------------------------------------------------
+   In the hump the --friends state opens: a chevron to close, a label, then a
+   list that scrolls inside itself when there are more friends than fit, fading
+   out at its bottom so the last row reads as "more below" rather than a cut.
+   Placed as a % of the NAV like the console: floor is the grown shoulder at
+   744.79/826 = 90.2%, so `bottom: 10.5%` keeps the list off it. */
+.v3-friends {
+  position: absolute;
+  left: 14%; right: 14%;
+  top: 1.5%; bottom: 10.5%;
+  z-index: 6;
+  display: none; flex-direction: column;
+  opacity: 0; transform: translateY(7px);
+  transition: opacity .18s ease .09s, transform .22s cubic-bezier(.22, 1, .36, 1) .07s;
+}
+.s-home-v3--friends .v3-friends { display: flex; opacity: 1; transform: translateY(0); }
+.v3-fr-close {
+  align-self: center; flex-shrink: 0;
+  width: 40px; height: 22px; padding: 0;
+  background: none; border: 0; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--sd-ink3);
+  transition: color .15s, transform .1s;
+}
+.v3-fr-close svg { width: 16px; height: 16px; }
+.v3-fr-close:hover  { color: var(--sd-ink); }
+.v3-fr-close:active { transform: translateY(1px); }
+.v3-fr-hd {
+  flex-shrink: 0; padding: 0 4px 7px;
+  font-family: var(--font-mono); font-size: 8.5px;
+  text-transform: uppercase; letter-spacing: 0.12em;
+  color: var(--sd-ink3);
+}
+.v3-fr-list {
+  flex: 1; min-height: 0;
+  overflow-y: auto; scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 22px;
+  -webkit-mask-image: linear-gradient(to bottom, #000 76%, transparent 100%);
+          mask-image: linear-gradient(to bottom, #000 76%, transparent 100%);
+}
+.v3-fr-list::-webkit-scrollbar { display: none; }
+.v3-fr-row {
+  display: flex; align-items: center; gap: 9px;
+  width: 100%; box-sizing: border-box;
+  padding: 8px 4px; text-align: left;
+  background: none; border: 0; cursor: pointer; color: inherit;
+  border-top: 1px solid rgba(255,255,255,0.07);
+  -webkit-tap-highlight-color: transparent;
+}
+.v3-fr-row:first-child { border-top: none; }
+.v3-fr-row:hover  { background: rgba(255,255,255,0.05); }
+.v3-fr-row:active { opacity: .7; }
+.v3-fr-av {
+  flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; color: #fff;
+}
+.v3-fr-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.v3-fr-name { font-size: 11.5px; font-weight: 700; color: var(--star); line-height: 1.1; }
+.v3-fr-line {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 10.5px; line-height: 1.2; color: var(--sd-ink2);
+}
+.v3-fr-song   { font-weight: 600; color: var(--sd-ink); }
+.v3-fr-album  { color: var(--sd-ink2); }
+.v3-fr-artist { font-weight: 600; color: var(--sd-ink); }
+.v3-fr-sep    { color: var(--sd-ink3); margin: 0 3px; }
+/* The ticker's own waveform, one per row, so a row reads as "playing now". */
+.v3-fr-wave { height: 9px; margin-left: 2px; }
+.v3-fr-wave .v3-now-bar { width: 2px; }
+.s-home-v3--light .v3-fr-name { color: #c8891f; }
+.s-home-v3--light .v3-fr-row { border-top-color: rgba(26,18,8,0.1); }
+.s-home-v3--light .v3-fr-row:hover { background: rgba(26,18,8,0.05); }
 
 /* ONE line: art, album, year, artist. WARNING: the album is the only part that
    may shrink (`min-width: 0` + ellipsis on it alone). Let the year or the artist
@@ -2691,6 +2785,39 @@
 }
 .v3-nc-ico > svg { width: 62%; height: 62%; }
 
+/* The two states `serviceGo` puts a button in: waiting on a lookup, and a
+   service that has not got the record. The same language the menu rows spoke. */
+.v3-nc-svc.is-wait { opacity: .45; }
+.v3-nc-svc.none    { opacity: .45; }
+
+/* -- Growing and shrinking -------------------------------------------------
+   WARNING: what animates is `aspect-ratio` on the nav. Height is not settable
+   here (it IS the aspect ratio), and a custom property cannot be transitioned
+   -- but the property that READS the property can, so the swap of `--nav-ar`
+   drives a real interpolation. The bar is anchored at `bottom: 14px`, so it
+   grows UPWARD out of its own hump.
+   WARNING: the mask and the outline swap DISCRETELY -- a data-URI mask cannot
+   tween. For the ~260ms of the growth the tall contour is squashed into a
+   shorter box, and because everything here is `preserveAspectRatio="none"`
+   that reads as the hump unfolding rather than as a glitch. It is the reason
+   the easing is an ease-out overshoot: the squash resolves fastest at the
+   start, where it is largest.
+   WARNING: the CONTENT is not carried by that -- it fades and rises on its own,
+   one beat behind, or it appears fully drawn inside a hump that has not
+   finished opening. */
+.v3-bottom-nav { transition: aspect-ratio .26s cubic-bezier(.22, 1, .36, 1); }
+.v3-console {
+  opacity: 0;
+  transform: translateY(7px);
+  transition: opacity .18s ease .07s, transform .22s cubic-bezier(.22, 1, .36, 1) .05s;
+}
+.s-home-v3--console .v3-console { opacity: 1; transform: translateY(0); }
+/* Anyone who would rather it just appear. */
+@media (prefers-reduced-motion: reduce) {
+  .v3-bottom-nav, .v3-console, .v3-friends { transition: none; }
+}
+
+
 /* ⚠ A real app icon, when one has been dropped in, covers the whole tile —
    drawing AND brand colour. The <img> removes itself `onerror`, so a missing
    file falls back to the vector rather than leaving an empty square, and the
@@ -2702,127 +2829,6 @@
 }
 /* The two states `serviceGo` puts a button in: waiting on a lookup, and a
    service that has not got the record. The same language the menu rows spoke. */
-.v3-nc-svc.is-wait { opacity: .45; }
-.v3-nc-svc.none    { opacity: .45; }
-
-/* -- Growing and shrinking -------------------------------------------------
-   WARNING: what animates is `aspect-ratio`, on all four boxes that share the
-   nav's geometry. Height is not settable here (it IS the aspect ratio), and a
-   custom property cannot be transitioned -- but the property that READS the
-   property can, so the swap of `--nav-ar` drives a real interpolation.
-
-   WARNING: the masks and the outline swap DISCRETELY -- a data-URI mask cannot
-   tween. For the ~260ms of the growth the tall contour is squashed into a
-   shorter box, and because everything here is `preserveAspectRatio="none"` that
-   reads as the plateau unfolding rather than as a glitch. It is the reason the
-   easing is an ease-out overshoot: the squash resolves fastest at the start,
-   where it is largest.
-
-   WARNING: the CONTENT is not carried by that -- it fades and rises on its own,
-   one beat behind, or it appears fully drawn inside a plateau that has not
-   finished opening. */
-.v3-bottom-nav, .v3-nav-blur, .v3-nav-nest, .v3-nav-emboss > i {
-  transition: aspect-ratio .26s cubic-bezier(.22, 1, .36, 1);
-}
-.v3-console {
-  opacity: 0;
-  transform: translateY(7px);
-  transition: opacity .18s ease .07s, transform .22s cubic-bezier(.22, 1, .36, 1) .05s;
-}
-.s-home-v3--console .v3-console { opacity: 1; transform: translateY(0); }
-/* Anyone who would rather it just appear. */
-@media (prefers-reduced-motion: reduce) {
-  .v3-bottom-nav, .v3-nav-blur, .v3-nav-nest, .v3-nav-emboss > i,
-  .v3-console { transition: none; }
-}
-
-/* ── Nav backdrop blur ────────────────────────────────────────
-   The glass's own `backdrop-filter` is masked to the BAR shape, so it stops
-   dead at the scoop and at the corners beside the bump — content passing behind
-   those regions was never blurred, only (meant to be) covered. This is an
-   UNMASKED blur across the nav's whole box, sitting under everything, so
-   nothing behind the bar can ever read as sharp text no matter what happens at
-   the mask seams. No colour of its own — purely a blur. */
-.v3-nav-blur {
-  position: absolute;
-  left: 0; right: 0; bottom: 0;
-  width: 100%;
-  aspect-ratio: var(--nav-ar);   /* same box as the nav */
-  z-index: 3;               /* under the plug (4), the nav (5), everything */
-  pointer-events: none;
-  -webkit-backdrop-filter: blur(22px) saturate(175%);
-          backdrop-filter: blur(22px) saturate(175%);
-}
-
-/* ── The scoop fill ("the nest") ──────────────────────────────
-   The scoop is a real hole in the bar, so feed content scrolling behind the nav
-   used to show through it sharp and unblurred, right under the pet. This plugs
-   it with the screen's own colour, masked to exactly the scoop path.
-
-   ⚠️ `background-color: inherit` is doing the work. The screen background comes
-   from SIX places — the dark base, the light variant, the review flood, the
-   artist override, and the persona skins — and mirroring all of those into a
-   variable would rot the first time a seventh appears. Inheriting from the
-   shell tracks whatever is actually painted, including the album flood's
-   transition. It only works because this is a DIRECT child of .s-home-v3. */
-.v3-nav-nest {
-  position: absolute;
-  left: 0; right: 0; bottom: 0;
-  width: 100%;
-  aspect-ratio: var(--nav-ar);      /* same box as the nav, so the mask lines up */
-  z-index: 4;                  /* over content, under the nav (5) and the pet */
-  pointer-events: none;
-  background-color: inherit;
-  /* ⚠️ The mask is the NEGATIVE of the bar — an enclosing rect MINUS the bar
-     path, via `fill-rule='evenodd'` — not just the scoop. So this plugs the
-     scoop AND the two corner gaps either side of the bump, and by construction
-     every pixel inside the nav's box is covered by either the glass or this.
-     That is the point: the artifacts were feed text leaking through sub-pixel
-     seams wherever the bar's fill ended and nothing else began. Patching the
-     scoop alone left the corners, which is why text still peeked along the
-     fillets. The path is also STROKED, dilating the plug 1 unit into the bar so
-     the two overlap rather than butting edge-to-edge. */
-  -webkit-mask: var(--nav-mask-neg) no-repeat center / 100% 100%;
-          mask: var(--nav-mask-neg) no-repeat center / 100% 100%;
-}
-
-/* ── Bottom fade ──────────────────────────────────────────────
-   Content shouldn't look chopped off by the nav — it should run out of road.
-   Same inherit trick: a solid block of the screen colour, faded in by a MASK
-   rather than a colour-stop gradient, because a gradient can't say "whatever
-   the background happens to be".
-   The corner gaps either side of the bump are plugged by `.v3-nav-nest` now (it
-   masks the whole negative of the bar), so this no longer has to. What it DOES
-   have to do is stay fully opaque up to the nav's top edge — 46% of its height
-   lands at ~63px, just past the 62px bar. Stop the opaque band short and content
-   steps from part-faded straight to the plug's flat colour, drawing a visible
-   line along the top of the bar in those corners. */
-.v3-bottom-fade {
-  position: absolute;
-  left: 0; right: 0;
-  bottom: 39px; height: var(--nav-fade-h, 52px);
-  z-index: 4;
-  pointer-events: none;
-  background-color: inherit;
-  -webkit-mask-image: linear-gradient(to top, #000 0%, #000 var(--nav-fade-solid, 46%), transparent 100%);
-          mask-image: linear-gradient(to top, #000 0%, #000 var(--nav-fade-solid, 46%), transparent 100%);
-  transition: height .26s cubic-bezier(.22, 1, .36, 1);
-}
-/* ⚠ THE FADE HAS TO GROW WITH THE NAV. It is sized in px from the screen bottom
-   and the console makes the nav nearly twice as tall, so the band tuned for the
-   62px bar stopped 58px short of the new top edge — content ran sharp and
-   unfaded straight into the raised plateau, which is what "the bg outside the
-   indent" was missing. The nest still plugs everything INSIDE the nav's box;
-   this is about the content above it.
-   Derivation, same as the short state's: the nav is docked, so its top edge is
-   its own height above the bottom — 121px at the 385 frame. The opaque band has
-   to reach just past that: 121 + 2 − 39 (this box's own offset) = 84px of solid,
-   then ~34px of fade, so 118px tall and solid to 84/118 = 71%. */
-.s-home-v3--console {
-  --nav-fade-h: 118px;
-  --nav-fade-solid: 71%;
-}
-
 /* ── The scene — the face cradled in the nav's scoop ────────────
    Positioned in the notch cut out of the bar's bottom edge (the notch exists to
    cradle it). Absolute against `.v3-bottom-nav` rather than being a flex item,
@@ -3159,42 +3165,38 @@
    time; if a row needs to change, change `.ntf-row` and let both screens move
    together. (The old `.v3-friend-card` feed this replaced is gone.) */
 
-/* BOTTOM NAV — glass shelf, docked to the bottom edge ───────────
-   Full-bleed and flush: flat bottom, flat sides, and a raised centre plateau
-   that holds the now-playing ticker. 4 buttons sit in the lower bar. The
-   frosted fill obscures whatever scrolls behind it.
+/* BOTTOM NAV — the floating glass console ─────────────────────────
+   A wide rounded bar with a raised centre hump (the now-playing ticker sits in
+   it) and FIVE buttons in the lower bar: Home · Trending · Shop · Playlists ·
+   Profile. Floats centred, 14px off the bottom, over the content; the frosted
+   fill obscures whatever scrolls behind it. Silhouette viewBox 553×126 — the
+   original BOTTOM_NAV shape — ~63px tall at 72% of the 385px mockup.
 
-   It used to float — 72% wide, centred, 24px off the bottom, with every corner
-   rounded (BOTTOM_NAV.svg, viewBox 553×126).
+   ⚠️ BACK BY DECISION (2026-09-03). It was docked from 2026-08-20: full-bleed,
+   flat-bottomed, a scoop cut from its bottom edge for the pet and then the
+   shop button, a plateau that grew into the CD console, and four helper boxes
+   sharing its geometry (`.v3-nav-blur`, `.v3-nav-nest`, `.v3-nav-emboss`,
+   `.v3-bottom-fade`). Eric brought the bubble back and asked for the shop as
+   a plain nav icon — so the scoop and its furniture went, along with
+   `.v3-nav-gap` and the nth-child nudges that kept icons off it. ⚠️ THE CD
+   CONSOLE STAYED: the bubble has a hump, so the same principle applies — see
+   THE NAV CONSOLE above.
+   `images/BOTTOM_NAV_FULL_INDENT.svg` stays on disk as the docked silhouette.
 
-   Silhouette is images/BOTTOM_NAV_FULL_INDENT.svg — viewBox 576×93, ~62px tall
-   at the 385px mockup. Two shaped features, both centred:
-     · the raised PLATEAU on the top edge (x 17.1%→83.4%) holding the ticker
-     · the SCOOP cut out of the bottom edge (x 31.2%→67.2%) cradling the pet
-   The shoulder — the level the flat runs sit at — is y=34.12 (36.7%), and the
-   scoop's flat top reaches exactly the same line.
-
-   ⚠️ The scoop is NOT centred at 50%: it spans 179.9→387.1 of 576, so its
-   centre is 49.13%. `.sd-scene` is placed on that, not on the middle of the bar.
-
-   ⚠️ The path inlined here is a BLED variant of the .svg: left, right and the
-   two outer bottom segments are pushed 8 units outside the viewBox (x -8→584,
-   bottom y 101), and the SCOOP is shifted down 2 units with them (its mouth
-   sits at y=94, past the clip). Without that shift the path has to jog up from
-   the bled bottom to the scoop's drawn mouth at y=92.01, and the last ~1 unit
-   of that jog lands inside the viewBox — which paints a 1px vertical tick at
-   each bottom corner of the scoop. It is small but very visible against the
-   plug. The <svg> and the mask both clip to the viewBox, so those
-   strokes are cut away and only the shaped contour — shoulders, plateau and
-   scoop — is outlined. Pull them back inside and a hairline reappears down both
-   screen edges. The .svg file itself is kept exactly as drawn. */
+   ⚠️ The hump's interior is x 67→485 of 553 = 12.1%→87.7% of the bar, and the
+   bar is 72% of the screen starting at 14% — so on SCREEN the hump spans
+   ~22.7%→77.2%, which is where `.v3-nowbar` (left/right 23%) comes from. Its
+   floor, the shoulder, is y=44.79 of 126 = 35.5%; at 63px tall and 14px off
+   the bottom that line sits ~54.6px up, which is the ticker's `bottom: 55px`.
+   Change the width and every one of those moves with it. */
 .v3-bottom-nav {
   position: absolute;
-  left: 0; right: 0; bottom: 0;              /* docked, not floating */
-  width: 100%;
-  /* Keeps the fillet curves undistorted — height follows the screen width
-     (~62px at the 385px mockup). Don't swap this for a fixed height: the SVG is
-     preserveAspectRatio="none" and WILL stretch. */
+  left: 50%; transform: translateX(-50%);   /* centred */
+  bottom: 14px;                              /* floating off the bottom */
+  width: 72%;                                /* the only scale lever — keeps proportions */
+  /* Keeps the fillet curves undistorted — height follows the width. Don't swap
+     this for a fixed height: the SVG is preserveAspectRatio="none" and WILL
+     stretch. `--nav-ar` so the console state can grow it (see THE NAV CONSOLE). */
   aspect-ratio: var(--nav-ar);
   z-index: 5;
 }
@@ -3205,8 +3207,7 @@
   background: rgba(26,26,32,0.42);
   -webkit-backdrop-filter: blur(22px) saturate(175%);
           backdrop-filter: blur(22px) saturate(175%);
-  /* Shadow casts UPWARD now — the bar is docked, so there's nothing below it. */
-  box-shadow: 0 -8px 28px rgba(0,0,0,0.38);
+  box-shadow: 0 10px 34px rgba(0,0,0,0.42);
   /* ⚠️ Same path as the .v3-nav-shape <svg> in bottomNav(). Change both. */
   -webkit-mask: var(--nav-mask) no-repeat center / 100% 100%;
           mask: var(--nav-mask) no-repeat center / 100% 100%;
@@ -3223,83 +3224,17 @@
   stroke-width: 1;
   vector-effect: non-scaling-stroke;
 }
-
-/* ── Scoop emboss ─────────────────────────────────────────────
-   Makes the cradle read as RAISED — the same neumorphic recipe as
-   `.plp-back-pill` (light top-left, shadow bottom-right), applied to the scoop
-   SHAPE rather than to a line.
-
-   ⚠️ Why the two-element dance: `filter` is applied BEFORE `mask`, so a
-   drop-shadow on a masked element gets clipped away by that same mask (verified
-   in-page). The shadow has to come from a PARENT of the masked element.
-   ⚠️ Why the wrapper is 0-height: it needs `background-color: inherit` so the
-   fill can inherit the screen colour through it — the same trick `.v3-nav-nest`
-   uses, and the reason both must be direct children of `.s-home-v3`. A
-   zero-height box resolves that colour but paints nothing itself.
-   ⚠️ z-6, ABOVE the nav: the highlight falls outside the scoop, onto the bar,
-   so it has to draw over the glass. That is also why `.sd-scene` moved out of
-   `<nav>` and sits at z-7 — otherwise this would cover the creature. */
-.v3-nav-emboss {
-  position: absolute; left: 0; right: 0; bottom: 0; height: 0;
-  z-index: 6;
-  pointer-events: none;
-  background-color: inherit;
-  /* Even halo, not a directional light: zero offset on both axes so the shading
-     wraps the whole scoop instead of pooling top-left. On dark that reads as a
-     soft light rim; on light it has to be a SHADOW (a white halo is invisible
-     against cream), which is why the two themes use opposite colours here. */
-  filter: drop-shadow(0 0 7px rgba(255,255,255,0.10));
-}
-.v3-nav-emboss > i {
-  position: absolute; left: 0; right: 0; bottom: 0;
-  display: block;
-  aspect-ratio: var(--nav-ar);          /* same box as the nav */
-  background-color: inherit;
-  /* ⚠️ Mask path STROKED as well as filled — same 1-unit dilation as
-     `.v3-nav-nest`. This is the TOPMOST layer over the scoop, so its edge is the
-     visible boundary; butted exactly against the bar it leaves a sub-pixel seam
-     and feed text peeks through along the outline. Overlap, don't abut. */
-  -webkit-mask: var(--nav-mask-scoop) no-repeat center / 100% 100%;
-          mask: var(--nav-mask-scoop) no-repeat center / 100% 100%;
-}
-.s-home-v3--light .v3-nav-emboss {
-  filter: drop-shadow(0 0 7px rgba(116,150,179,0.32));
-}
-/* 4 buttons — spread across the lower bar (below the centre plateau).
-   The shoulder sits at y=34.12 of 93 = 36.7%, so the lower band starts there.
-   Bottom padding keeps the icons off the screen edge now that the bar is docked
-   — with the old floating bar its own 24px gap did that job. */
+/* 5 buttons — spread across the lower bar (below the centre hump). The lower
+   band starts a touch under the shoulder (35.5%) so the icons sit centred in
+   the bar's body rather than on the shoulder line. */
 .v3-nav-items {
-  /* WARNING: `--nav-shoulder`, not a literal. The icons sit on the flat runs,
-     and how far down the nav's box that line falls changes when the plateau
-     grows. */
-  position: absolute; left: 0; right: 0; top: var(--nav-shoulder); bottom: 0;
+  /* WARNING: `--nav-items-top`, not a literal: where the band starts changes
+     when the hump grows for the console. */
+  position: absolute; left: 0; right: 0; top: var(--nav-items-top); bottom: 0;
   display: flex; align-items: center; justify-content: space-around;
-  /* Vertical nudge lives in the transform, NOT in padding-bottom. With
-     `align-items: center`, trimming Npx of bottom padding only moves the icons
-     down N/2 — which is why the earlier "3px" pass landed at 1.5px. This is the
-     one lever, and it means what it says. */
-  padding-bottom: 0;
-  transform: translateY(0.5px);
+  transform: translateY(-3px);   /* lift icons off the low edge of the shelf */
   z-index: 2;
 }
-/* Reserves the scoop so the four icons stay on the solid bar either side of it.
-   32% is the notch's opening (x 190.8→375.2 of 576); the buttons are `flex: 1`
-   and split the remaining 68%, which lands their centres at
-   8.5 / 25.5 / 74.5 / 91.5% — all clear of the notch edges at 33.1% and 65.1%.
-   Resize the notch in the SVG and this has to follow, or the middle two icons
-   hang over the hole. */
-.v3-nav-gap { flex: 0 0 32%; }
-
-/* Push the two icons flanking the scoop away from it — the cradle wants air.
-   Order is fixed by bottomNav()'s markup: item · item · GAP · item · item, so
-   nth-child 2 is Trending and 4 is Playlists.
-   ⚠️ Uses the independent `translate` property, not `transform`: `.v3-nav-item:active`
-   sets `transform: scale(.92)`, and a transform here would overwrite it and kill
-   the press animation on exactly these two buttons. `translate` composes — the
-   same reason the live-pill dots use it for their idle drift. */
-.v3-nav-items > .v3-nav-item:nth-child(2) { translate: -8px 0; }
-.v3-nav-items > .v3-nav-item:nth-child(4) { translate:  8px 0; }
 .v3-nav-item {
   flex: 1; height: 100%;
   background: none; border: none; cursor: pointer;
@@ -3309,6 +3244,10 @@
 }
 .v3-nav-item.active { color: #e8e2d6; }
 .v3-nav-item svg { width: 21px; height: 21px; transition: transform .18s; }
+/* The shop's bag is a dot icon (SD_ICONS.bag, a 5×5 sd-dot-ico) — same 21px
+   box as the stroked icons beside it, and it fills with currentColor so it
+   lights and dims with them. */
+.v3-nav-item .sd-dot-ico { width: 21px; height: 21px; }
 .v3-nav-item:hover { color: #e8e2d6; }
 .v3-nav-item:hover svg { transform: scale(1.1); }
 .v3-nav-item:active { transform: scale(0.92); }
@@ -4505,6 +4444,48 @@
 .s-home-v3--artist .v3-rev-songs,
 .s-home-v3--artist .v3-rev-media,
 .s-home-v3--artist .v3-blue-date { display: none; }
+/* No artist reviews (2026-09-04) — an artist isn't reviewed, rated or logged;
+   their ALBUMS are, and an artist review would only restate those. The whole
+   CTA row goes (Review/rate/log + Listened / Later / Favorite). FAVORITE lives
+   on as `.v3-artist-fav`, a corner pill up by the Back button — see below. */
+.s-home-v3--artist .v3-rev-cta-row { display: none; }
+/* ── Favorite pill — the Back pill's twin, in the OTHER top corner ─────────
+   Same box as `.v3-live-pill` on the album page (19.16% × 7.54%, 0.437% down,
+   nudged 4px in from the edge) so the two sit level; the side mirrors with hand
+   mode, always opposite Back. Every value is declared outright: the button
+   carries `.v3-search-pill` (which places it top-right in px) and `.v3-rev-q`
+   (a 50px square in a cascade), and either would otherwise leak through. */
+/* ⚠️ Two classes, not one. `.v3-rev-q { display: inline-flex }` and
+   `.v3-search-pill { display: flex }` both sit later in this file at (0,1,0),
+   so a bare `.v3-artist-fav` lost to them and the pill showed on every page. */
+.s-home-v3 .v3-artist-fav { display: none; }
+.s-home-v3--review.s-home-v3--album.s-home-v3--artist .v3-artist-fav {
+  display: flex; flex-direction: row; align-items: center; justify-content: center;
+  position: absolute;
+  left: 80.77%; top: 0.437%; right: auto;
+  width: 19.16%; height: 7.54%;
+  min-width: 0; margin: 0; padding: 0;
+  border: none; border-radius: 999px;
+  background: #111116;
+  box-shadow: -4px -4px 8px 0 rgba(255,255,255,0.07), 4px 4px 6px -1px rgba(0,0,0,0.5);
+  color: rgba(232,226,214,0.85);
+  transform: translate(-4px, 4px);
+  z-index: 6;
+  transition: color .15s, transform .06s;
+}
+/* Back is top-right in right-hand mode, so Favorite takes the left corner. */
+.s-home-v3--review.s-home-v3--album.s-home-v3--artist:not(.s-home-v3--left) .v3-artist-fav {
+  left: 0.07%; transform: translate(4px, 4px);
+}
+.s-home-v3--review.s-home-v3--album.s-home-v3--artist .v3-artist-fav .sd-dot-ico { width: 17px; height: 17px; }
+.s-home-v3--review.s-home-v3--album.s-home-v3--artist .v3-artist-fav:hover { filter: brightness(1.14); }
+.s-home-v3--review.s-home-v3--album.s-home-v3--artist .v3-artist-fav.on { color: #ff5c8a; }
+.s-home-v3--light.s-home-v3--review.s-home-v3--album.s-home-v3--artist .v3-artist-fav {
+  background: #f0ece3;
+  box-shadow: -4px -4px 8px 0 #d8d2c8, 4px 4px 6px -1px rgba(116,150,179,0.27);
+  color: rgba(26,18,8,0.6);
+}
+.s-home-v3--light.s-home-v3--review.s-home-v3--album.s-home-v3--artist .v3-artist-fav.on { color: #ff5c8a; }
 /* ══ Album page — the headline score above the histogram ═══════════════════
    Big, left-aligned, DM Sans. It heads the ratings section (score → discs →
    distribution → tracklist), which is why it takes the histogram's left edge
@@ -4543,10 +4524,61 @@
 .s-home-v3--artist .v3-rev-score { display: none; }
 
 /* No artist rating — an artist isn't a thing you score; their ALBUMS carry the
-   ratings, in the grid below. The review count stays as the one stat. */
+   ratings, in the grid below. The review count stays as the one stat.
+   ⚠️ `.hstars`, the WRAPPER, not just the discs. Hiding the five `.hstar`s left
+   an empty inline-flex span in the row, and the row's 7px gap on either side of
+   it is what was indenting the count off the artist name's left edge. */
 .s-home-v3--artist .v3-blue-score,
-.s-home-v3--artist .v3-blue-stars-row .hstar,
+.s-home-v3--artist .v3-blue-stars-row .hstars,
 .s-home-v3--artist .v3-rev-hist { display: none; }
+/* Bigger type — with no score, discs or genre, the name and the count were the
+   only two things on a full-width strip and read small for it. */
+.s-home-v3--artist .v3-blue-album { font-size: 26px; }
+.s-home-v3--artist .v3-blue-count { font-size: 12px; }
+/* ⚠️ Lower than the album page's 81%. The banner is `calc(100% + 20px)` wide
+   and square, so its bottom lands ~85% down the 689×862 bento (not the cover's
+   80%), and at 81% the name sat inside the fading edge of the photo. */
+.s-home-v3--review.s-home-v3--album.s-home-v3--artist .v3-blue { top: 87%; }
+/* ── Artist info: LABEL · MEMBERS · DESCRIPTION, instead of producer credits ──
+   The credits box is the bento's (producer / mix / engineer for the album that
+   was showing), and it was simply still visible under the artist name. Its own
+   node here, painted by populateArtistPage. The description wraps and is capped
+   at four lines; a row with nothing in it (a solo act's Members) drops out.
+   ⚠️ `--rev-cred-h` is the strip's overhang below the bento (see the album
+   page's rule): name + count + three rows, the last up to four lines, is
+   ~150px past the box's top at 87%, so the CTA row below clears that much. */
+.s-home-v3--artist .v3-blue-credits { display: none; }
+.v3-artist-info { display: none; }
+.s-home-v3--artist .v3-artist-info {
+  display: flex; flex-direction: column; gap: 5px;
+  width: 100%; margin-top: 12px;
+}
+.s-home-v3--review.s-home-v3--album.s-home-v3--artist { --rev-cred-h: 125px; }
+/* Without a description the block is two short rows, so most of that reserve
+   would be a hole between the strip and the Favorite button. Same `:has()`
+   device as the album page's hidden-credits rule above. */
+.s-home-v3--review.s-home-v3--album.s-home-v3--artist:has(.v3-ai-row--description.is-empty) { --rev-cred-h: 55px; }
+.v3-ai-row { display: flex; align-items: baseline; gap: 7px; min-width: 0; }
+.v3-ai-row.is-empty { display: none; }
+.v3-ai-row--description { flex-direction: column; align-items: flex-start; gap: 2px; margin-top: 3px; }
+.v3-ai-lbl {
+  flex-shrink: 0;
+  font-family: var(--font-mono); font-size: 9px;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: rgba(232,226,214,0.38);
+}
+.v3-ai-val {
+  min-width: 0;
+  font-family: var(--font-main); font-size: 12px; font-weight: 500;
+  color: rgba(232,226,214,0.7);
+}
+.v3-ai-row--description .v3-ai-val {
+  font-weight: 400; line-height: 1.4; color: rgba(232,226,214,0.6);
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden;
+}
+.s-home-v3--light.s-home-v3--artist .v3-ai-lbl { color: rgba(26,18,8,0.4); }
+.s-home-v3--light.s-home-v3--artist .v3-ai-val { color: rgba(26,18,8,0.7); }
+.s-home-v3--light.s-home-v3--artist .v3-ai-row--description .v3-ai-val { color: rgba(26,18,8,0.6); }
 /* Left-align the artist name / genre / stars */
 .s-home-v3--artist .v3-blue {
   left: 0; width: 100%;
@@ -4941,7 +4973,7 @@
    itself (the page is the scroller; a nested one hid the rest of the album). */
 .v3-rev-songs-scroll { display: flex; flex-direction: column; }
 .v3-song-row {
-  position: relative;   /* anchor for the hanging track number */
+  position: relative;
   display: flex; align-items: center; gap: 10px;
   width: 100%; box-sizing: border-box;
   /* vertical rhythm matches the playlist page's .plp-song (9px breathing) */
@@ -4952,12 +4984,15 @@
 }
 .v3-song-row:first-child { border-top: none; }
 .v3-song-row:hover { background: rgba(232,226,214,0.045); }
-/* Number hangs in the left gutter so it doesn't push the title off the album-name line */
+/* Track number — a fixed-width cell at the head of the row (2026-09-04). It
+   used to hang absolutely in the 12px padding gutter so the title stayed on the
+   album-name line, but "10" at this size is the whole gutter and touched the
+   title. A flex cell costs the title 24px of indent and reads as a numbered
+   list. The header carries an empty twin so "SONG" still sits over the titles. */
 .v3-song-num {
-  position: absolute; left: 0; top: 0; height: 100%;
-  display: flex; align-items: center; justify-content: flex-start;
-  width: 12px; pointer-events: none;
+  flex-shrink: 0; width: 14px; text-align: left;   /* flush with the 12px gutter, like the title above */
   color: rgba(232,226,214,0.4); font-size: 9.5px; font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 .v3-song-title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* The two right-hand columns are a FIXED width, shared with the header labels
@@ -4975,6 +5010,19 @@
   width: var(--song-rate-w); justify-content: flex-end;
   color: var(--star); font-size: 11.5px; font-weight: 700; font-family: var(--font-mono);
 }
+/* "View all N songs" — under the eighth row of a longer album. Text, not a
+   pill: it belongs to the list, same gutter and hairline as the rows above. */
+.v3-songs-more {
+  display: block; width: 100%; box-sizing: border-box;
+  padding: 10px 12px; text-align: left;
+  background: none; border: none; cursor: pointer;
+  border-top: 1px solid rgba(232,226,214,0.06);
+  font-family: var(--font-main); font-size: 11.5px; font-weight: 600;
+  color: var(--v3-accent, #e8a83c);
+  -webkit-tap-highlight-color: transparent;
+}
+.v3-songs-more:hover { background: rgba(232,226,214,0.045); }
+.v3-songs-more:active { opacity: 0.7; }
 /* Column labels. Same flex row as .v3-song-row, reusing its three cell classes,
    so the labels track the columns automatically — only the type is restyled. */
 .v3-song-head {
@@ -5339,7 +5387,7 @@
 
 /* ── v3 Light theme overrides (s-home-v3--light) ──────────── */
 .s-home-v3--light {
-  background: #f0ece3;
+  background: var(--sd-bg, #f0ece3);
   color: #1a1208;
   --text3: rgba(26,18,8,0.15);
 }
@@ -5772,7 +5820,7 @@
    only the scroll content below is wall-specific.
    ============================================================ */
 .wall2-scroll {
-  padding: 4px 12px 75px;   /* .v3-body is the scroller; bottom clears the nowbar/nav overlay */
+  padding: 4px 12px 96px;   /* .v3-body is the scroller; bottom clears the floating nav (63px + 24px gap) */
 }
 .wall2-hd {
   display: flex; align-items: baseline; gap: 8px;
@@ -5935,7 +5983,7 @@
    sections client-side via plTab(); all data comes from ARCHIVE.
    ============================================================ */
 .pl2-scroll {
-  padding: 4px 12px 75px;   /* .v3-body is the scroller; bottom clears the nowbar/nav overlay */
+  padding: 4px 12px 96px;   /* .v3-body is the scroller; bottom clears the floating nav (63px + 24px gap) */
 }
 /* Top bar — category pills + the "+" (new playlist) button on the right.
    No page title; the pills ARE the header. Pills scroll horizontally and
@@ -6463,6 +6511,55 @@
 .plp-song-rate { font-family: var(--font-mono); font-size: 10px; font-weight: 700; color: rgba(232,226,214,0.6); flex-shrink: 0; }
 .plp-song-dur { font-family: var(--font-mono); font-size: 9px; color: rgba(232,226,214,0.38); flex-shrink: 0; width: 24px; text-align: right; }
 
+/* ── Playlist page tracklist, in the album page's clothes ──────────────────
+   Every number here is the album tracklist's (.v3-song-row / -num / -dur /
+   -rate / -head in the ALBUM PAGE section): 9px 12px rows, 10px gap, 14px
+   left-aligned number, 42px fixed right columns sized to their header labels,
+   0.06 hairlines, the same header type. Change one and change the other.
+   The title cell keeps the playlist's own three-part line (song · album ·
+   artist) and its right-edge fade. Scoped to `--album` so the New Playlist
+   page, which reuses the row classes, is untouched. */
+.plp-songs--album { margin-top: 10px; --song-dur-w: 42px; --song-rate-w: 42px; }
+.plp-songs--album .plp-song {
+  padding: 9px 12px; gap: 10px;
+  border-bottom: none; border-top: 1px solid rgba(232,226,214,0.06);
+}
+.plp-songs--album .plp-song:first-of-type { border-top: none; }
+.plp-songs--album .plp-song:hover { background: rgba(232,226,214,0.045); }
+.plp-songs--album .plp-song-num {
+  width: 14px; text-align: left;
+  font-size: 9.5px; color: rgba(232,226,214,0.4);
+}
+.plp-songs--album .plp-song-line { font-size: 11px; }
+.plp-songs--album .plp-song-title { font-size: 12px; font-weight: 500; margin-right: 8px; }
+.plp-songs--album .plp-song-dur {
+  width: var(--song-dur-w); text-align: right;
+  font-size: 10px; color: rgba(232,226,214,0.4);
+}
+.plp-songs--album .plp-song-rate {
+  display: inline-flex; align-items: center; justify-content: flex-end;
+  width: var(--song-rate-w);
+  font-size: 11.5px; font-weight: 700; color: var(--star);
+}
+.plp-song-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 12px 7px;
+  font-family: var(--font-mono); font-size: 8.5px;
+  text-transform: uppercase; letter-spacing: 0.12em;
+  color: rgba(232,226,214,0.3);
+}
+.plp-song-head .plp-song-line,
+.plp-song-head .plp-song-dur,
+.plp-song-head .plp-song-rate {
+  font-family: inherit; font-size: inherit; font-weight: 400; color: inherit;
+  -webkit-mask-image: none; mask-image: none;
+}
+.plp-song-head .plp-song-num { width: 14px; }
+.s-home-v3--light .plp-songs--album .plp-song { border-top-color: rgba(26,18,8,0.08); }
+.s-home-v3--light .plp-songs--album .plp-song:hover { background: rgba(26,18,8,0.04); }
+.s-home-v3--light .plp-song-head { color: rgba(26,18,8,0.36); }
+.s-home-v3--light .plp-songs--album .plp-song-rate { color: var(--star); }
+
 /* Playlist page — light theme */
 .s-home-v3--light .plp-back-pill {
   background: #f0ece3;
@@ -6939,27 +7036,86 @@
 /* ============================================================
    ONBOARDING WIZARD  (multi-step, themed via sd-theme-* tokens)
    ============================================================ */
-.s-onboarding { position: relative; }
+/* Two tokens the whole wizard's mechanism reads from. The belt fills WHITE and
+   its slack is grey — but white on cream is invisible, so the light variant
+   swaps the fill for ink and keeps the same grey. */
+.s-onboarding {
+  position: relative;
+  /* ⚠ EXACTLY the frame, not min-height. `.app-screen` is `min-height: 100%`,
+     which let a tall step grow the screen and carry the footer off the bottom
+     of the phone — Continue below the fold, on the one screen where it is
+     the only way forward. Pinned, the stage (`flex: 1; min-height: 0;
+     overflow-y: auto`) does the scrolling and the footer stays put. */
+  height: 100%;
+  --ob-fill:  #ffffff;
+  --ob-track: rgba(255,255,255,0.14);
+  --ob-grid:  8px;
+}
+.s-onboarding.sd-theme-light { --ob-fill: #1a1208; --ob-track: rgba(26,18,8,0.13); }
 
-/* Top bar: back | progress | counter */
-.ob-top {
-  display: flex; align-items: center; gap: 12px;
-  padding: 16px 18px 10px; flex-shrink: 0;
+/* ── The progress BELT ──────────────────────────────────────────────────────
+   23px off the top (it was 8px — lowered 15px once the phone chrome stopped
+   being a black strip and the belt found itself hard against the status bar),
+   8px off both sides, 12px thick, stadium caps. It is the
+   same object as the handle rig on step 0 — a belt wrapped round two pulleys —
+   drawn at the smallest scale the system has, so the page reads as one machine.
+   ⚠ It used to be a 4px hairline sharing a flex row with the back button and the
+   counter. Those moved to `.ob-rail` below so the belt could run the full width
+   on the 8px margin; don't fold them back in. */
+.ob-top { padding: 23px 8px 0; flex-shrink: 0; }
+.ob-top .ob-progress {
+  height: 12px; margin: 0; border-radius: 99px;
+  background: var(--ob-track); overflow: hidden;
 }
+.ob-prog-bar {
+  height: 100%; width: 12.5%; border-radius: 99px;
+  background: var(--ob-fill);
+  transition: width .45s cubic-bezier(.4,0,.2,1);
+}
+
+/* Back + counter, on the 24px content column the panels use. */
+.ob-rail {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 24px 0; flex-shrink: 0;
+}
+
 .ob-back {
-  width: 30px; height: 30px; flex-shrink: 0;
+  width: 32px; height: 32px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
-  border: none; border-radius: 50%; cursor: pointer;
-  background: var(--surface); color: var(--text);
+  border: 1.5px solid var(--border); border-radius: 50%; cursor: pointer;
+  background: none; color: var(--text);
+  transition: border-color .15s, background .15s;
 }
-.ob-back svg { width: 17px; height: 17px; }
-.ob-top .ob-progress { flex: 1; height: 4px; background: var(--border); border-radius: 99px; margin: 0; }
-.ob-prog-bar { height: 100%; width: 12.5%; background: var(--accent); border-radius: 99px; transition: width .35s cubic-bezier(.4,0,.2,1); }
-.ob-stepcount { font-size: 11px; font-family: var(--font-mono); color: var(--text2); flex-shrink: 0; letter-spacing: .3px; }
+.ob-back:hover { border-color: var(--text2); background: var(--surface); }
+.ob-back svg { width: 16px; height: 16px; }
+.ob-stepcount {
+  font-size: 11px; font-family: var(--font-mono); color: var(--text2);
+  flex-shrink: 0; letter-spacing: 1px; font-variant-numeric: tabular-nums;
+}
+.ob-stepcount i { font-style: normal; color: var(--text3); margin: 0 2px; }
 
 /* Sliding stage + panels */
 .ob-stage { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; position: relative; }
-.ob-panel { display: none; padding: 10px 22px 20px; animation: obFade .32s ease; }
+/* ⚠ THE WALL RUNS UNDER THE BUTTONS. On the scrolling steps (`obSyncDock` sets
+   `.ob-stage-fade`) the stage reaches the bottom edge of the phone and
+   `.ob-foot` — dock + footer — floats over it; the stage's MASK fades the
+   wall across exactly the foot's height (`--ob-foot`, measured), opaque just
+   above it and gone at the bottom edge. So the cards dissolve INTO the picks
+   and the buttons and reach obscurity at the very bottom — not at a hard line
+   a quarter of the way up the phone, which is what a stage that stopped
+   above a stacked dock and footer produced. A mask on the scroller, so it is
+   the screen's own colour whatever the theme.
+   ⚠ The other steps keep the stacked layout: step 7's profile has a note that
+   sits on the footer by `margin-top: auto`, and the wheel is sized to fit. */
+.ob-foot { flex-shrink: 0; }
+.ob-stage-fade .ob-foot { position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; }
+.ob-stage-fade .ob-stage {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - var(--ob-foot, 80px) - 10px), transparent calc(100% - 12px));
+          mask-image: linear-gradient(to bottom, #000 calc(100% - var(--ob-foot, 80px) - 10px), transparent calc(100% - 12px));
+}
+/* So the LAST row can scroll up out of the fade and be read. */
+.ob-stage-fade .ob-panel { padding-bottom: calc(var(--ob-foot, 80px) + 16px); }
+.ob-panel { display: none; padding: 8px 24px 24px; animation: obFade .32s ease; }
 .ob-panel--on { display: block; }
 .ob-panel--profile { display: none; padding: 0; }
 .ob-panel--profile.ob-panel--on { display: flex; flex-direction: column; min-height: 100%; }
@@ -7091,8 +7247,10 @@
      lower it and fewer do.
      ⚠ 14 rather than 13 because the long names now sit in the CORNERS
      (`dialSeating`), where a label has ~88 units instead of ~70 — the extra
-     room went into size for everybody rather than slack for a few. */
-  font-size: 14px;
+     room went into size for everybody rather than slack for a few.
+     ⚠ `--lsize` is the LAST of the three fit steps (see mixDialFitLabels) and
+     is 1 unless a name cannot be condensed into its slice. */
+  font-size: calc(14px * var(--lsize, 1));
   font-variation-settings: 'opsz' 9, 'wdth' var(--lwdth), 'wght' var(--lwght);
   letter-spacing: .005em;
   fill: var(--text2);
@@ -7120,8 +7278,12 @@
 .v3-blue-mix {
   position: absolute; inset: 0; z-index: 3;
   display: none;
-  align-items: center; justify-content: space-between; gap: 8px;
-  padding: 9px 12px;
+  /* ⚠ BOTTOM aligned, not centred. The box is the same strip the album's own
+     one-liner uses, and floating the readout in the middle of it left the mix
+     looking unanchored — sitting on the floor of the box puts it where every
+     other line in this bento sits. */
+  align-items: flex-end; justify-content: space-between; gap: 8px;
+  padding: 9px 12px 10px;
 }
 .s-home-v3--mixing .v3-blue-mix { display: flex; }
 /* Everything the box normally says is about ONE album, and while you are
@@ -7133,13 +7295,41 @@
   font-family: var(--font-head); font-size: 15px; font-weight: 800;
   letter-spacing: -.2px; color: var(--text);
 }
-/* The serif italic is the same annotation voice the shelf wheel's counts use —
-   a different voice, so the number reads as a note on the dial rather than a
-   second label. */
-.v3-blue-mix-g {
-  font-family: 'Crimson Text', Georgia, serif; font-style: italic;
-  font-size: 11.5px; color: var(--text2);
+/* ── What you have added so far ───────────────────────────────────────────
+   ⚠ This replaced a count ("3 genres"). With picks gathered across several
+   rings, the ring in front of you can only ever show one main's worth, so this
+   row is the only place the whole mix is visible — and each chip removes its
+   own pick, so the thing you can see is the thing you can undo.
+   ⚠ It SCROLLS sideways and never wraps: `.v3-blue` is a fixed strip, and a
+   second line of chips pushes the New deck button out of the box. */
+.v3-blue-mix-picks {
+  display: flex; align-items: center; gap: 4px;
+  overflow-x: auto; overflow-y: hidden;
+  scrollbar-width: none; -ms-overflow-style: none;
+  max-width: 100%;
 }
+.v3-blue-mix-picks::-webkit-scrollbar { display: none; }
+/* Nothing picked yet — an instruction, in the mono the app uses for readouts.
+   ⚠ It was the shelf wheel's serif italic, borrowed as an "annotation" voice.
+   That voice is for a COUNT sitting beside something it describes; this line
+   is a direction telling you what to do next, and set in italic serif it read
+   as a caption on the dial rather than as the dial talking to you. The chips
+   that replace it are mono too, so the row no longer changes typeface the
+   moment you pick something. */
+.v3-blue-mix-picks.is-empty {
+  font-family: var(--font-mono);
+  font-size: 9.5px; letter-spacing: .3px; color: var(--text2); white-space: nowrap;
+}
+.v3-mix-chip {
+  flex: 0 0 auto; display: inline-flex; align-items: center; gap: 3px;
+  border: 0; border-radius: 999px; padding: 3px 7px 3px 8px;
+  background: color-mix(in srgb, var(--v3-accent, #e6b866) 22%, transparent);
+  color: var(--text);
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: .3px;
+  white-space: nowrap; cursor: pointer;
+}
+.v3-mix-chip i { font-style: normal; opacity: .5; font-size: 10px; }
+.v3-mix-chip:hover i { opacity: 1; }
 .v3-blue-mix-go {
   flex-shrink: 0; border: 0; border-radius: 999px;
   padding: 9px 15px;
@@ -7154,33 +7344,368 @@
    which case you are in rather than failing silently. */
 .v3-blue-mix-go:disabled { opacity: .34; cursor: default; }
 
-/* 0 | Username */
-.ob-userwrap {
-  display: flex; align-items: center; gap: 4px;
-  background: var(--surface); border: 1.5px solid var(--border);
-  border-radius: 14px; padding: 4px 16px; transition: border-color .15s;
+/* ⚠ A MAIN is a door, a SUB is a switch, and they must not look alike. A lit
+   main only means "there is something picked in here" — tapping it takes you
+   in, it does not toggle — so it gets a ring rather than the solid fill a real
+   pick gets. The "All X" hole at the head of a sub ring IS a pick and keeps the
+   solid one. */
+.ob-hole--main.is-on .ob-hole-c { fill: none; stroke-width: 3.2; }
+
+/* ── Stepping between rings: IN, THEN OUT. Never both. ────────────────────
+   The genres shrink into the record and vanish. Only once they are gone do the
+   new ones come back out of it. One ring on screen at a time, always.
+
+   ⚠ THE OVERLAP WAS THE WHOLE PROBLEM. Four versions failed before this and
+   every one had the two rings alive together for part of the move — an outward
+   zoom, a one-notch tick, a collapse with a .2s head start, and a scale-2.8
+   "nyoom" with a .14s handover. However they were eased, the result was sixteen
+   names sitting on top of another sixteen, which reads as a stacking bug rather
+   than as motion. There is no timing that makes two rings of text legible at
+   once, so they are SEQUENCED with a real gap: out by .2s, in from .22s.
+
+   ⚠ No perspective, no translateZ, no rotation. Depth is scale down to the size
+   of the record and back, which is enough because the record is a fixed anchor
+   the eye is already on.
+
+   ⚠ Both dials share the box for the length of the exit, so the outgoing one is
+   out of flow — and `mixDialRender` deletes any ghost still in flight before
+   starting a new one, because the removal timer alone loses to fast taps. */
+.mix-inline .ob-dial {
+  transform-origin: 50% 50%;
+  /* Coming back out of the record — and only after the old ring has gone. */
+  transition: transform .26s cubic-bezier(.16, .84, .3, 1) .22s,
+              opacity .12s ease .22s;
 }
-.ob-userwrap:focus-within { border-color: var(--accent); }
-.ob-at { font-size: 22px; font-weight: 700; color: var(--text2); }
+.mix-inline .ob-dial.is-ghost {
+  /* Going into the record. ⚠ THE FADE IS HELD, THEN QUICK. Fading across the
+     whole shrink (.16s against a .2s move) left the ring half gone before it
+     had visibly moved at all, so it read as a plain dissolve and the trip into
+     the record was invisible — which is exactly what it was reported as. It
+     stays solid for the first half now and winks out at the small end. */
+  transition: transform .2s cubic-bezier(.5, 0, .82, .4),
+              opacity .1s ease .1s;
+}
+
+/* ⚠ THE START STATE MUST NOT TRANSITION, and that stopped being optional the
+   moment the arrival took a .22s delay. `mixDialRender` sets the small state,
+   forces a reflow, then clears it. With a delay in force, adding the class
+   starts a transition that is still inside its OWN delay when the class comes
+   off, and the reversal resolves to a ZERO-duration transform — so the new
+   ring just appeared at full size, no growth at all. Measured with
+   getAnimations(): "transform 0ms +220ms". Only the ENTER states take this;
+   the ghost has to animate.
+   ⚠ SCOPED WITH .mix-inline, and it has to be. Unscoped this is (0,1,0)
+   against the (0,2,0) of the rule it is overriding, so it lost the cascade
+   outright and the arrival stayed on the delayed transition — reading
+   identically to having made no change at all. */
+.mix-inline .ob-dial--enter-in,
+.mix-inline .ob-dial--enter-out { transition: none; }
+
+/* ⚠ ONE state for all four cases. In and out are the same movement because the
+   record is the same place either way — directional variants were tried
+   (opposite spins, opposite Z) and only ever read as inconsistency. .18 is
+   about the hub's own radius, so the ring disappears at the size of the
+   record. */
+.ob-dial--leave-in, .ob-dial--enter-in,
+.ob-dial--leave-out, .ob-dial--enter-out { transform: scale(.18); opacity: 0; }
+
+/* The held hole (see mixStayHole in app.js): a copy of the genre you tapped,
+   on its own layer, standing still while the rings swap under it. The real
+   hole is `is-held` (hidden) on both rings for the duration. ⚠ No transition
+   and no transform on this layer — that is its whole job. */
+.mix-inline .ob-dial--stay {
+  transition: none !important; transform: none !important; opacity: 1 !important;
+  pointer-events: none; z-index: 3;
+}
+.ob-hole.is-held { visibility: hidden; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mix-inline .ob-dial, .mix-inline .ob-dial.is-ghost { transition: opacity .15s ease; }
+  .ob-dial--leave-in, .ob-dial--enter-in,
+  .ob-dial--leave-out, .ob-dial--enter-out { transform: none; }
+}
+
+/* ── Opening: the dial spins into place ──────────────────────────────────
+   The ring and the record arrive together, turning up out of the middle of the
+   cover. It is the only time the two move as one object — stepping between
+   rings deliberately holds the record still, because it is the fixed thing the
+   rings are read against, and on arrival there is nothing to be fixed against
+   yet.
+   ⚠️ A KEYFRAME, not a transition. Both svgs are fresh elements at this point
+   and a transition needs a previous value to run from, so it would simply
+   never fire — the same reason `.ob-hub-t` uses one.
+   ⚠️ The turn is anticlockwise into place and lands with a long decelerating
+   tail: a record reaching speed, not a spinner. Keep it under one turn — past
+   that the labels blur into an unreadable band and it reads as loading. */
+@keyframes mixSpinIn {
+  from { transform: rotate(-34deg) scale(.58); opacity: 0; }
+  55%  { opacity: 1; }
+  to   { transform: rotate(0deg) scale(1); opacity: 1; }
+}
+.mix-inline.is-opening .ob-dial,
+.mix-inline.is-opening .ob-hub-svg {
+  transform-origin: 50% 50%;
+  animation: mixSpinIn .5s cubic-bezier(.17, .84, .3, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mix-inline.is-opening .ob-dial,
+  .mix-inline.is-opening .ob-hub-svg { animation: none; }
+}
+
+/* ── The record ───────────────────────────────────────────────────────────
+   Its own layer, above the flying ring and never animated with it. */
+.ob-hub-svg {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  pointer-events: none; z-index: 2;
+}
+.ob-hub-disc, .ob-hub-groove { transition: stroke .28s ease, stroke-width .28s ease, opacity .28s ease; }
+/* ⚠ Lit whenever the mix has anything in it — the record is the only part of
+   the dial that is always on screen, so it is where "you have something"
+   belongs. Album accent, like the rest of the dial. */
+.ob-hub-svg.is-lit .ob-hub-groove {
+  stroke: var(--accent); stroke-width: 2.4; opacity: 1;
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--accent) 70%, transparent));
+}
+.ob-hub-svg.is-lit .ob-hub-disc {
+  stroke: color-mix(in srgb, var(--accent) 55%, var(--border));
+}
+
+/* ── The main you are inside, still on the ring ──────────────────────────
+   The genre you chose is IN the ring it opened, lit, in the hole it already
+   occupied — so the one thing that does not move between the two rings is the
+   name you pressed.
+
+   ⚠ THIS REPLACED A FLIGHT. The chosen label used to be held lit for 190ms and
+   then travel into the middle of the disc to become the record's label. It
+   answered the same question and was rejected for how it read — a name
+   crawling into the centre is unsettling to watch — and it charged 490ms for
+   an answer that costs nothing when it simply waits for you at the other end.
+
+   ⚠ AN OUTLINE, NOT A FILL, because it is not necessarily picked. Here the
+   ring means "this is where you are"; the solid fill means "this is in your
+   mix". Tapping it does pick the whole main, and .ob-hole.is-on is (0,3,0)
+   against this (0,2,0), so it takes the solid fill on top and the two states
+   read as one control rather than two. ⚠ Do NOT reuse .ob-hole--main.is-on's
+   ring for it: that ring already means "something in here is picked" on the
+   ring above, and the same mark cannot mean two things one step apart. */
+.ob-hole--all .ob-hole-c { stroke: var(--accent); stroke-width: 2.4; }
+.ob-hole--all .ob-hole-t { fill: var(--text); --lwght: 700; }
+
+/* The record's label arrives WITH the ring, not ahead of it. */
+.ob-hub-t {
+  font-family: 'Roboto Flex', var(--font-main);
+  font-size: calc(9px * var(--lsize, 1));
+  font-variation-settings: 'wdth' var(--lwdth, 100), 'wght' 600;
+  letter-spacing: .02em; fill: var(--text2);
+  text-anchor: middle; dominant-baseline: central;
+  transition: opacity .22s ease .2s;
+}
+/* ⚠ An ANIMATION, not a transition. The record is rebuilt by `mixHubSync` on
+   every step, so the label is a brand-new element each time and has no previous
+   value to transition from — a transition simply never fires. A keyframe on
+   insert does, and the delay lets the ring get moving first so the genre name
+   does not announce itself into an empty dial. */
+@keyframes obHubIn { from { opacity: 0; } to { opacity: 1; } }
+.ob-hub-t { animation: obHubIn .28s ease .12s both; }
+
+
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   0 | THE PLATE — the layout drawn as construction geometry
+   ══════════════════════════════════════════════════════════════════════════
+   All the numbers live in `OB_PLATE` / `OB_RIG` in screens.js; this file only
+   says what the layers are made of. Three of them, faintest first, plus holes:
+
+     .obp-rule   the grid the circles guide — the two verticals through the top
+                 corner hubs. x=44 is the text column AND the deck pulley's axis
+     .obp-cons   the construction circles whole, not just the arcs they lent
+     .obp-edge   the cut edge itself, the only line at full weight
+     .obp-bolt   the holes, at the convex hubs only
+
+   ⚠ ONE circle per corner. There was an offset "ghost" layer that drew each of
+     them again 8px outward, and it is the single thing that made the screen
+     look busy: it doubled every line, and the ghosts collided with the
+     neighbours their originals cleared. With one layer no two circles here
+     overlap — that is the property to re-check if you move a vertex.
+
+   ⚠ The panel breaks its own 24px padding (`margin: 0 -16px`) so the plate is
+     369 wide on a 385 screen — 8px margins, the same as the progress belt, and
+     one viewBox unit per pixel. Change the padding and this has to follow.
+   ⚠ Nothing here is fill. A plate you can see through is what lets the circles
+     cross the edge; give it a background and the whole idea collapses into a
+     card with rounded corners. */
+/* The plate is shorter than the stage, so centre it rather than letting a
+   block of dead air pile up under it. */
+.ob-panel--user.ob-panel--on {
+  display: flex; flex-direction: column; justify-content: center;
+  min-height: 100%; padding-top: 0;
+}
+/* ⚠ NO `width: 100%` here. As a flex item that resolves against the padded
+   337px column and the negative margins merely overflow it; auto width plus the
+   default stretch is what actually makes the box 337 + 32 = 369. */
+.ob-plate { position: relative; flex: 0 0 auto; aspect-ratio: 369 / 464; margin: 0 -16px; }
+.obp { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+
+.obp-rule  line   { stroke: var(--text2); stroke-width: .5;  opacity: .16; }
+.obp-cons  circle { fill: none; stroke: var(--text2); stroke-width: .6;  opacity: .38; }
+.obp-bolt  circle { fill: none; stroke: var(--text2); stroke-width: 1;   opacity: .6; }
+.obp-edge         { fill: none; stroke: var(--text2); stroke-width: 1.25; opacity: .75; }
+
+/* The field, one level down the same idea: a belt over two EQUAL pulleys, so
+   both its runs are exactly horizontal and its edges are grid lines too. */
+/* ⚠ NOTHING in the field is filled either — not the belt, not the wheels.
+   Filling the belt made the input an opaque slab that cut the construction
+   circles and the x=325 rule in half; the drawing stopped passing behind the UI
+   and the whole thing read as a rounded card sitting on a diagram. */
+.obp-belt   { fill: none; stroke: var(--text2); stroke-width: 1.5; opacity: .8; transition: stroke .15s, opacity .15s; }
+.obp-wheel  { fill: none; stroke: var(--text2); stroke-width: .8; opacity: .5; }
+.obp-groove { fill: none; stroke: var(--text2); stroke-width: .8; opacity: .28; }
+.obp-hub    { fill: none; stroke: var(--text2); stroke-width: 1; opacity: .6; transition: fill .22s, stroke .22s; }
+.ob-plate:focus-within .obp-belt { stroke: var(--accent); opacity: 1; }
+
+/* Valid handle → the belt tightens (goes to full weight) and the idler's bolt
+   seats. ⚠ The idler used to be a three-hole motor that spun on valid. It read
+   as a second, louder logo inside the field and fought the plate it sits on;
+   two matching pulleys is the calmer, more correct machine. */
+.ob-plate--ok .obp-belt { stroke: var(--ob-fill); opacity: 1; }
+.ob-plate--ok .obp-hub  { fill: var(--ob-fill); stroke: var(--ob-fill); }
+
+/* ── Content, positioned in the viewBox's own percentages so it rides the
+      geometry at any width. Left edge 44/369 = the x=44 rule. ── */
+/* ⚠ EVERY TOP HERE IS A % OF THE 464-TALL PLATE, and they were re-derived when
+   the rig replaced the two-pulley field. The belt now owns y 213 → 383 (top run
+   to the bottom of the r50 wheel), so the handle line sits ABOVE it and the
+   readout BELOW it — the meter used to sit at y=316, which the big wheel now
+   occupies. Plate y ÷ 464 = the number to type. */
+/* ══════════════════════════════════════════════════════════════
+   STEP 0 — the handle. Plain flow, on the shared `.ob-h` head.
+   ══════════════════════════════════════════════════════════════
+   ⚠ It used to be absolutely positioned in percentages of a 369×464 plate,
+   because it was laid over a technical drawing that had to line up with it.
+   With the drawing gone there is nothing to align to, and the percentages were
+   pure cost — every change meant re-deriving six `top`s. It is ordinary flow
+   now, which is also what lets it share a head and a surface language with
+   every other panel. */
+
+.ob-eyebrow {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 1.6px;
+  text-transform: uppercase; color: var(--text3); margin-bottom: 10px;
+}
+
+/* ── The slot ─────────────────────────────────────────────────────────────
+   The bento's neu-emboss (.v3-search-pill) pressed IN rather than raised —
+   same offsets, same colours, sign flipped — so it reads as a hole to put
+   something in rather than a button to press. Solid `--bg`, so it is the
+   surface itself deformed, which is the whole trick.
+   ⚠ It is a <label>, so the whole slot focuses the field. */
+.ob-user-well {
+  display: flex; align-items: center; gap: 10px;
+  height: 52px; padding: 0 22px;
+  border-radius: 999px; background: var(--bg); cursor: text;
+  box-shadow: inset 4px 4px 8px rgba(0,0,0,0.5),
+              inset -4px -4px 8px rgba(255,255,255,0.06);
+  transition: box-shadow .18s;
+}
+.sd-theme-light .ob-user-well {
+  box-shadow: inset 4px 4px 8px rgba(116,150,179,0.27),
+              inset -4px -4px 8px #ffffff;
+}
+/* Lit when the handle is good — the same signal the meter and the hint give. */
+.ob-plate--ok .ob-user-well {
+  box-shadow: inset 4px 4px 8px rgba(0,0,0,0.5),
+              inset -4px -4px 8px rgba(255,255,255,0.06),
+              inset 0 0 0 1px var(--ob-fill);
+}
+.sd-theme-light .ob-plate--ok .ob-user-well {
+  box-shadow: inset 4px 4px 8px rgba(116,150,179,0.27),
+              inset -4px -4px 8px #ffffff,
+              inset 0 0 0 1px var(--ob-fill);
+}
+.ob-at { font-size: 19px; font-weight: 700; color: var(--text2); flex-shrink: 0; }
 .ob-user-input {
-  flex: 1; background: none; border: none; outline: none;
-  font-family: inherit; font-size: 22px; font-weight: 700; color: var(--text);
-  padding: 12px 0; letter-spacing: -0.3px; min-width: 0;
+  flex: 1; min-width: 0;
+  background: none; border: none; outline: none; padding: 0;
+  font-family: inherit; font-size: 21px; font-weight: 700; color: var(--text);
+  letter-spacing: -0.3px;
 }
 .ob-user-input::placeholder { color: var(--text3); }
-.ob-user-hint { font-size: 12px; color: var(--text2); margin: 10px 4px 0; }
+
+/* ── The readout: budget, rule, reassurance — one centred block ──────────── */
+.ob-user-read { margin-top: 18px; text-align: center; }
+
+/* ⚠ The meter keeps its 141px width and is centred with `margin: auto`, not by
+   going full-width with `justify-content: center` — its `::before` rule is
+   `inset 0`, so a full-width element draws that underline right across the
+   panel instead of under the dots. 18 dots, 5px on an 8px pitch; the tick under
+   the 4th is the minimum `obUserValid` puts on Continue. */
+.ob-user-meter {
+  position: relative; margin: 0 auto;
+  display: flex; align-items: center; gap: 3px;
+  width: 141px; padding-bottom: 6px;
+}
+.ob-user-meter::before {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 0;
+  height: 1px; background: var(--border);
+}
+.ob-user-meter i {
+  position: relative; width: 5px; height: 5px; border-radius: 50%;
+  box-shadow: inset 0 0 0 1px var(--text3);
+  transition: background .18s, box-shadow .18s;
+}
+.ob-user-meter i.on { background: var(--ob-fill); box-shadow: inset 0 0 0 1px var(--ob-fill); }
+.ob-user-meter i.ob-gate::after {
+  content: ''; position: absolute; left: 50%; top: 100%; width: 1px; height: 6px;
+  background: var(--text3); transform: translateX(-50%);
+}
+
+/* The rule, in the drawing's voice — mono, because it is a constraint. */
+.ob-user-hint {
+  margin-top: 12px;
+  font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .6px;
+  text-transform: uppercase; color: var(--text3);
+}
 .ob-user-hint--ok { color: #3fbf6a; }
+
+/* ⚠ Sans and sentence case against the hint's mono uppercase, and placed
+   directly AFTER the constraint: "4–18 chars · a–z 0–9 _" is the line that
+   makes someone think but I want a real name, so the reassurance answers it in
+   place rather than pre-empting a worry they have not had yet. */
+.ob-user-note {
+  margin: 10px auto 0; max-width: 84%;
+  font-size: 11.5px; line-height: 1.45; color: var(--text3);
+}
 
 /* 1 | Connect service */
 .ob-services { display: flex; flex-direction: column; gap: 11px; }
+/* ⚠ Same emboss as step 0's slot, RAISED instead of pressed — these are things
+   you press, that one is a hole you put something in. No border: the shadow
+   pair is the edge, which is what makes the two pages read as one surface
+   language rather than "a drawing" and then "a form". */
 .ob-svc {
   display: flex; align-items: center; gap: 13px;
-  background: var(--surface); border: 1.5px solid var(--border);
-  border-radius: 15px; padding: 14px 16px; cursor: pointer;
-  font-family: inherit; color: var(--text); transition: border-color .15s, background .15s;
+  background: var(--bg); border: none;
+  border-radius: 15px; padding: 15px 16px; cursor: pointer;
+  font-family: inherit; color: var(--text);
+  box-shadow: -4px -4px 8px 0 rgba(255,255,255,0.07), 4px 4px 6px -1px rgba(0,0,0,0.5);
+  transition: box-shadow .18s, transform .12s;
 }
-.ob-svc:hover { border-color: var(--text2); }
-.ob-svc--on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
+.sd-theme-light .ob-svc {
+  box-shadow: -4px -4px 8px 0 #d8d2c8, 4px 4px 6px -1px rgba(116,150,179,0.27);
+}
+/* Pressing one presses it IN — the slot's own shadow, so the two states are
+   the same object seen from either side. */
+.ob-svc:active { transform: translateY(1px); }
+.ob-svc--on {
+  box-shadow: inset 4px 4px 8px rgba(0,0,0,0.5),
+              inset -4px -4px 8px rgba(255,255,255,0.06),
+              inset 0 0 0 1px var(--accent);
+}
+.sd-theme-light .ob-svc--on {
+  box-shadow: inset 4px 4px 8px rgba(116,150,179,0.27),
+              inset -4px -4px 8px #ffffff,
+              inset 0 0 0 1px var(--accent);
+}
 .ob-svc-ico {
   width: 40px; height: 40px; border-radius: 11px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center; color: #fff;
@@ -7196,7 +7721,9 @@
 .ob-svc-check svg { width: 14px; height: 14px; }
 .ob-svc--on .ob-svc-cta { display: none; }
 .ob-svc--on .ob-svc-check { display: flex; }
-.ob-note { font-size: 12px; color: var(--text2); text-align: center; margin-top: 16px; }
+/* Same voice and size as step 0's `.ob-user-note` — the quiet line that tells
+   you the step is not a trap. */
+.ob-note { font-size: 11.5px; line-height: 1.45; color: var(--text3); text-align: center; margin: 18px auto 0; max-width: 84%; }
 
 /* 2 | Tracking */
 .ob-track-card {
@@ -7222,6 +7749,180 @@
 }
 .ob-track-opt--on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   3 | GENRES — Pro's mix dial, and a list of the same tree
+   ══════════════════════════════════════════════════════════════════════════
+   The dial is the bento's, unchanged: same svg, same `.mix-inline` wrap, same
+   ring transitions and spin-in. Only `.mix-inline--ob` differs, and only in
+   the ways a cover-less host has to — it is in flow rather than over a cover,
+   always visible, and wears the SCREEN's palette rather than the dark tokens
+   the bento version carries for sitting on album art. */
+
+/* One row above the views: the DIAL's back on the left, the switch on the
+   right, level with each other. The back is the wheel's own — one ring up —
+   and shows only inside a main (`.ob-panel--in`); it keeps its space when
+   hidden so the switch never shifts. ⚠ It is not the rail's Back and must not
+   be folded into it: a Back that sometimes means "up a ring" and sometimes
+   "previous step" is two buttons in one coat, and it was rejected as such. */
+.ob-view-row { display: flex; align-items: center; justify-content: space-between; margin: -4px 0 10px; }
+.ob-mix-back {
+  visibility: hidden;
+  display: inline-flex; align-items: center; gap: 2px;
+  border: 0; border-radius: 999px; padding: 6px 11px 6px 7px;
+  background: var(--surface2); color: var(--text);
+  font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .3px;
+  cursor: pointer;
+  box-shadow: -2px -2px 5px rgba(255,255,255,0.06), 2px 2px 4px rgba(0,0,0,0.45);
+}
+.sd-theme-light .ob-mix-back { box-shadow: -2px -2px 5px #ffffff, 2px 2px 4px rgba(116,150,179,0.25); }
+.ob-mix-back svg { width: 13px; height: 13px; }
+.ob-panel--in .ob-mix-back { visibility: visible; }
+
+/* The switch. The service rows' emboss at pill scale: the track pressed IN,
+   the live segment sitting proud of it. */
+.ob-view {
+  display: inline-flex; gap: 2px; padding: 3px;
+  border-radius: 999px; background: var(--bg);
+  box-shadow: inset 3px 3px 6px rgba(0,0,0,0.45), inset -3px -3px 6px rgba(255,255,255,0.05);
+}
+.sd-theme-light .ob-view {
+  box-shadow: inset 3px 3px 6px rgba(116,150,179,0.22), inset -3px -3px 6px #ffffff;
+}
+.ob-view-btn {
+  border: 0; border-radius: 999px; padding: 6px 14px; background: none;
+  color: var(--text2); font-family: var(--font-mono); font-size: 10.5px;
+  letter-spacing: .4px; text-transform: uppercase; cursor: pointer;
+  transition: background .15s, color .15s, box-shadow .15s;
+}
+.ob-view-btn.is-on {
+  color: var(--text); background: var(--surface2);
+  box-shadow: -2px -2px 5px rgba(255,255,255,0.06), 2px 2px 4px rgba(0,0,0,0.45);
+}
+.sd-theme-light .ob-view-btn.is-on {
+  box-shadow: -2px -2px 5px #ffffff, 2px 2px 4px rgba(116,150,179,0.25);
+}
+
+/* One view at a time. ⚠ `display`, not `visibility`: the wheel is a square the
+   height of the panel and the list is longer still, and a hidden one must not
+   hold its height. The cost is that labels in a hidden wheel cannot be
+   measured — `obSyncGenres` refits them whenever the wheel is showing. */
+.ob-genres { display: none; }
+.ob-genres.is-on { display: block; animation: obFade .32s ease; }
+
+/* THE DOCK — this step's picks, between the stage and the footer, so they sit
+   against Continue, stay in reach however far the stage has scrolled, and
+   (being outside the stage) can never move the wheel or the walls. Steps 3-6
+   (`.ob-has-dock`); genre chips on 3, the walls' image chips on 4/5, people
+   on 6. TWO ROWS, then it fades; it scrolls inside the cap so a chip past the
+   fold can still be reached and removed.
+   ⚠ The fade is a mask, and only ONCE THERE IS OVERFLOW (`is-over`, measured in
+   obSyncDock): a permanent bottom fade would dim the second row of a two-row
+   set that fits perfectly. The cap is two rows of whichever chip the step
+   uses: 23px genre chips → 56px; 30px image chips → 70px. */
+.ob-picks-dock {
+  display: none; flex-wrap: wrap; align-items: center; align-content: flex-start; gap: 7px;
+  flex-shrink: 0; min-height: 26px; max-height: 70px; overflow-y: auto;
+  margin: 0 24px 2px;
+  scrollbar-width: none; -ms-overflow-style: none;
+}
+.s-onboarding[data-ob-step="3"] .ob-picks-dock { max-height: 56px; }
+.ob-has-dock .ob-picks-dock { display: flex; }
+.ob-picks-dock::-webkit-scrollbar { display: none; }
+.ob-picks-dock.is-over {
+  -webkit-mask-image: linear-gradient(#000 58%, transparent);
+          mask-image: linear-gradient(#000 58%, transparent);
+}
+/* ⚠ EMPTY, IT IS GONE — not a mono hint line. The hint ("Tap artists to
+   follow them") cost a row between the wall and the buttons on every step
+   before you had picked anything, which is exactly when the wall wants the
+   room; the head already says what to do. The stage runs to the footer until
+   the first pick, and the dock opens under it then. */
+.ob-picks-dock.is-empty { display: none; }
+.ob-mix-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  border: 0; border-radius: 999px; padding: 5px 9px 5px 11px;
+  background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--text);
+  font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .3px;
+  cursor: pointer;
+}
+.ob-mix-chip i { font-style: normal; opacity: .5; font-size: 12px; line-height: 1; }
+.ob-mix-chip:hover i { opacity: 1; }
+
+/* The wheel's box: a square out to the BELT's margin, not the text column's.
+   The panel pads 24px a side and the progress belt sits 8px in, so the wheel
+   bleeds 16px past the column each way — 369px in the 385px frame. The 320-unit
+   viewBox lands at ~1.15px a unit here against ~0.91 in the bento, so every
+   label budget the dial was tuned to is met with room over.
+   ⚠ It does not move. The switch above it is one fixed row and the chips are
+   BELOW it, capped — the wheel's top edge is the same pixel whatever you pick. */
+.ob-mix {
+  position: relative; aspect-ratio: 1 / 1;
+  width: calc(100% + 32px); margin: 2px -16px 6px;
+}
+.mix-inline--ob {
+  position: absolute; inset: 0; z-index: 1;
+  opacity: 1; pointer-events: auto;
+  border-radius: 0; overflow: visible;
+  /* ⚠ The bento's wrap pins DARK tokens so the dial survives a light home over
+     a tinted cover. There is no cover here — the dial sits on the screen, so
+     it takes the screen's own palette, light or dark, back off the theme. */
+  --bg: inherit; --surface: inherit; --surface2: inherit; --border: inherit;
+  --text: inherit; --text2: inherit; --text3: inherit; --accent: inherit;
+}
+/* The head sits a little tighter on this step: the wheel below it is the
+   tallest thing in the wizard and every row above it is a row it pays for. */
+.ob-panel--genres .ob-h { margin-bottom: 10px; }
+
+/* The list: BUBBLES — the chips this step had before the dial, in the wheel's
+   margins (bled 16px past the column, to the belt) and the step's emboss. A
+   main is a raised pill; picked, it is pressed IN with the accent rim, exactly
+   as a service row is (`.ob-svc--on`), and its subs unfold in a well beneath.
+   States are the dial's: pressed = picked, an accent RIM on a raised bubble =
+   something under it is picked (the lit-main ring), plain = nothing. */
+.ob-glist {
+  display: flex; flex-wrap: wrap; gap: 9px;
+  width: calc(100% + 32px); margin: 2px -16px 6px;
+}
+.ob-gbub {
+  border: 0; border-radius: 999px; padding: 9px 15px;
+  background: var(--bg); color: var(--text2);
+  font-family: inherit; font-size: 13px; font-weight: 600; letter-spacing: -.1px;
+  cursor: pointer;
+  box-shadow: -3px -3px 6px 0 rgba(255,255,255,0.07), 3px 3px 5px -1px rgba(0,0,0,0.5);
+  transition: box-shadow .18s, color .15s, transform .12s;
+}
+.sd-theme-light .ob-gbub { box-shadow: -3px -3px 6px 0 #d8d2c8, 3px 3px 5px -1px rgba(116,150,179,0.27); }
+.ob-gbub:active { transform: translateY(1px); }
+.ob-gbub.is-lit {
+  color: var(--text);
+  box-shadow: -3px -3px 6px 0 rgba(255,255,255,0.07), 3px 3px 5px -1px rgba(0,0,0,0.5),
+              inset 0 0 0 1.5px var(--accent);
+}
+.sd-theme-light .ob-gbub.is-lit {
+  box-shadow: -3px -3px 6px 0 #d8d2c8, 3px 3px 5px -1px rgba(116,150,179,0.27),
+              inset 0 0 0 1.5px var(--accent);
+}
+.ob-gbub.is-on {
+  color: var(--text);
+  box-shadow: inset 3px 3px 6px rgba(0,0,0,0.5), inset -3px -3px 6px rgba(255,255,255,0.06),
+              inset 0 0 0 1px var(--accent);
+}
+.sd-theme-light .ob-gbub.is-on {
+  box-shadow: inset 3px 3px 6px rgba(116,150,179,0.27), inset -3px -3px 6px #ffffff,
+              inset 0 0 0 1px var(--accent);
+}
+/* The well: a full-width item (so it breaks the line and lands under its main's
+   row), pressed into the surface like the handle slot — you are INSIDE the
+   genre — with the sub bubbles raised out of it, smaller than the mains. */
+.ob-gsubs {
+  flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 7px;
+  padding: 11px; margin: 1px 0 3px; border-radius: 20px;
+  box-shadow: inset 3px 3px 7px rgba(0,0,0,0.42), inset -3px -3px 7px rgba(255,255,255,0.05);
+  animation: obFade .28s ease;
+}
+.sd-theme-light .ob-gsubs { box-shadow: inset 3px 3px 7px rgba(116,150,179,0.24), inset -3px -3px 7px #ffffff; }
+.ob-gsubs .ob-gbub { padding: 7px 12px; font-size: 12px; }
+
 /* 4/5 | Search + walls */
 .ob-searchbar {
   display: flex; align-items: center; gap: 9px;
@@ -7235,8 +7936,7 @@
 }
 .ob-searchbar input::placeholder { color: var(--text3); }
 
-.ob-pinned { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 12px; }
-.ob-pinned:empty { display: none; }
+/* ⚠ `.ob-pinned` is gone — the walls' picks live in the dock (`.ob-picks-dock`). */
 .ob-chip {
   display: inline-flex; align-items: center; gap: 7px;
   background: var(--accent); color: var(--bg);
@@ -7245,6 +7945,12 @@
 }
 .ob-chip-img { width: 22px; height: 22px; border-radius: 6px; background-size: cover; background-position: center; flex-shrink: 0; }
 .ob-chip-img--round { border-radius: 50%; }
+/* A person's chip: initials on their gradient, where an artist has a photo. */
+.ob-chip-av {
+  width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 800; color: #fff; letter-spacing: .02em;
+}
 .ob-chip-t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ob-chip-x { font-size: 15px; line-height: 1; opacity: .7; flex-shrink: 0; }
 
@@ -7322,14 +8028,25 @@
 /* Footer */
 .s-onboarding .ob-footer {
   display: flex; align-items: center; gap: 12px;
-  padding: 12px 22px calc(20px + env(safe-area-inset-bottom));
-  flex-shrink: 0; border-top: 1px solid var(--border);
+  padding: 10px 22px calc(20px + env(safe-area-inset-bottom));
+  flex-shrink: 0;
+  /* ⚠ No rule above it. It had a hairline border-top, and with step 3's picks
+     docked directly above, the line cut the picks off from the button they
+     belong with. The dock and the footer are one strip. */
 }
+/* ⚠ Both buttons wear a RIM OF THE SCREEN'S BACKGROUND — a 5px ring of `--bg`
+   drawn as a box-shadow — because on the scrolling steps the wall now runs
+   under them and Skip, which was bare text, disappeared into faded album art.
+   The ring is the surface showing through around each button, so they read as
+   sitting ON the page rather than printed over whatever scrolled beneath. Skip
+   became a real pill for the same reason: text alone has no edge to rim. */
 .ob-skip {
-  background: none; border: none; cursor: pointer; font-family: inherit;
-  font-size: 14px; font-weight: 600; color: var(--text2); padding: 12px 6px; flex-shrink: 0;
+  border: none; cursor: pointer; font-family: inherit;
+  font-size: 14px; font-weight: 600; color: var(--text2); padding: 12px 16px; flex-shrink: 0;
+  background: var(--surface); border-radius: 12px;
+  box-shadow: 0 0 0 5px var(--bg);
 }
-.s-onboarding .ob-next { flex: 1; width: auto; margin: 0; }
+.s-onboarding .ob-next { flex: 1; width: auto; margin: 0; box-shadow: 0 0 0 5px var(--bg); }
 .s-onboarding .ob-next:disabled { opacity: .4; cursor: default; }
 
 
@@ -7382,7 +8099,7 @@
 /* ⚠ 14px at the top, not 6. The card is the first thing under the app header
    and at 6 it was tucked against it — this page opens on a large object and
    needs to look placed rather than jammed. */
-.prof2-scroll { padding: 14px 12px 75px; }
+.prof2-scroll { padding: 14px 12px 96px; }
 
 
 /* ── Profile card — traced from ProfileTheme_Regular4 (1).svg ────────────
@@ -7826,13 +8543,15 @@
      drop is — R(1−cos θ) as a share of the disc spacing, and the spacing is 65%
      of the rail — so the two scale together and this never needs a second number
      when the frame width changes.
-     ⚠⚠ IT IS PAIRED WITH `PROF_ARC_DEG`. At 12° this was 8%; at 24° the drop
-     nearly quadrupled (1−cos θ, not θ) and 8% clipped the bottom off both side
-     discs. Move one, measure, move the other — the clearance at 24°/16% is
-     5.3px.
+     ⚠⚠ IT IS PAIRED WITH `PROF_ARC_DEG` **AND** WITH THE DISC WIDTH. At 12°
+     this was 8%; at 24° the drop nearly quadrupled (1−cos θ, not θ) and 8%
+     clipped the bottom off both side discs. It then came DOWN to 13% when the
+     discs went 62% → 46%: the drop is R(1−cos θ) and R is spacing/θ, so a
+     narrower disc is a smaller hub and a shallower fall — at 46% the drop is
+     ~40px against ~53px at 62%. Move any of the three, measure, move this.
      ⚠ Vertical padding only. Horizontal padding here is still forbidden for
      the reason above it. */
-  padding: 4px 0 16%;
+  padding: 4px 0 13%;
   /* ⚠ FULL BLEED — cancels `.prof2-scroll`'s 12px side padding so the rail runs
      edge to edge while its heading and info panel stay inset with everything
      else. A carousel that stops short of the screen reads as a boxed-in list;
@@ -7850,7 +8569,13 @@
    middle of the wheel. See `profFavLoop` in app.js. */
 .prof-fav {
   position: relative;            /* the centre hole is absolute inside it */
-  flex: 0 0 62%; aspect-ratio: 1;
+  /* ⚠ 46%, not 62%. Three big circles in a row left no room to read the arc
+     they sit on — the curve is the point, and at 62% you mostly saw one disc.
+     ⚠ `profFavArc` needs NO change for this: it measures `spacing` off the DOM
+     and derives the hub from it, so the drop scales with the disc on its own.
+     The one number that does NOT follow automatically is the rail's
+     padding-bottom — see the pairing note there. */
+  flex: 0 0 46%; aspect-ratio: 1;
   scroll-snap-align: center;
   padding: 0; border: none; background: none; border-radius: 50%;
   cursor: pointer;
@@ -7907,8 +8632,11 @@
    does not grow and shrink as you scroll between a record they wrote about and
    one they didn't. The line hides, the box does not move. */
 .prof-fav-info {
+  /* ⚠ -20px, down from -30: this claws back the rail's bottom padding, and that
+     padding shrank with the discs (16% → 13%). Reclaim more than is there and
+     the title climbs into the wheel. */
   text-align: center; position: relative;
-  margin-top: -30px; padding: 0 8px; min-height: 96px;
+  margin-top: -20px; padding: 0 8px; min-height: 96px;
 }
 /* Title and year on one line. The year is set quieter and lighter so it reads as
    part of naming the record rather than as a second fact competing with it. */
@@ -8085,7 +8813,7 @@
    of .pfe-slot styles the three things you still CHOOSE rather than
    type: the favourite discs, the playlist tiles and the song rows.
    ============================================================ */
-.pfe-scroll { padding-bottom: 75px; }
+.pfe-scroll { padding-bottom: 96px; }
 
 /* top bar — back pill · title · Save.
    ⚠ 1fr auto 1fr, not space-between: the title has to sit on the page's centre
@@ -8240,6 +8968,80 @@
   transition: color .15s, background .15s;
 }
 .prof-song:hover .pfe-song-plus { color: var(--star); background: rgba(232,168,60,0.1); }
+
+/* ── the two COLOUR rows (`skinRow` in screens.js) and their preview ──
+   ⚠⚠ THE PREVIEW IS DRIVEN BY NOTHING. It paints itself from `var(--sd-bg)`
+   and `var(--pf-base)` — the same two variables `profSkinCss` writes inline on
+   this very screen — so it updates as you drag with no JS behind it at all, and
+   it can never disagree with the card it is previewing. An earlier version had
+   a per-row swatch that JS repainted by hand; it was more code and one more
+   thing to leave stale. If you find yourself writing a `skinSwatch()` again,
+   this is the note saying don't.
+   ⚠ It shows the DERIVED tokens too — the inner pane is `--pf-face`, the dot is
+   `--pf-ink` — so a colour that makes the card's own text unreadable shows you
+   that here, before you save it onto your profile. */
+.pfe-prev {
+  flex: 0 0 auto; width: 74px; height: 50px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--sd-bg);
+  box-shadow: inset 0 0 0 1px var(--pf-border);
+}
+.pfe-prev-card {
+  position: relative; width: 58px; height: 32px; border-radius: 5px;
+  display: flex; align-items: stretch; overflow: hidden;
+  background: var(--pf-base);
+  box-shadow: -1px -1px 2px var(--pf-lt), 1px 2px 3px var(--pf-dk);
+}
+/* The left pane, the way the real card splits — and it is `--pf-face`, so the
+   derived recess is on show next to the colour it was derived from. */
+.pfe-prev-pane { flex: 0 0 44%; background: var(--pf-face); }
+/* Two ticks of "text", in the ink the card would actually use. */
+.pfe-prev-card::after {
+  content: ''; position: absolute; right: 5px; top: 9px;
+  width: 18px; height: 3px; border-radius: 2px;
+  background: var(--pf-ink); opacity: .75;
+}
+.pfe-prev-card::before {
+  content: ''; position: absolute; right: 5px; top: 16px;
+  width: 11px; height: 3px; border-radius: 2px;
+  background: var(--pf-ink); opacity: .4;
+}
+
+.pfe-skin-f { gap: 8px; }
+/* ⚠ The native swatch chrome has to be stripped on BOTH pseudo-elements or
+   Chrome leaves a 2px inset border and a white plate around the colour. */
+.pfe-color {
+  flex: 0 0 auto; width: 30px; height: 24px; padding: 0;
+  border: 1px solid var(--pf-border); border-radius: 7px;
+  background: none; cursor: pointer;
+}
+.pfe-color::-webkit-color-swatch-wrapper { padding: 2px; }
+.pfe-color::-webkit-color-swatch { border: none; border-radius: 5px; }
+.pfe-color::-moz-color-swatch { border: none; border-radius: 5px; }
+/* The lightness track runs black → the card's own colour → white, so the slider
+   says which way is which without a label at either end. */
+.pfe-range {
+  flex: 1 1 auto; min-width: 0; height: 4px; margin: 0;
+  -webkit-appearance: none; appearance: none;
+  border-radius: 999px; cursor: pointer;
+  background: linear-gradient(90deg, #000 0%, var(--pf-base) 50%, #fff 100%);
+}
+.pfe-range::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 13px; height: 13px; border-radius: 50%;
+  background: var(--star); border: 2px solid var(--pf-slot); cursor: pointer;
+}
+.pfe-range::-moz-range-thumb {
+  width: 13px; height: 13px; border-radius: 50%;
+  background: var(--star); border: 2px solid var(--pf-slot); cursor: pointer;
+}
+.pfe-skin-x {
+  flex: 0 0 auto; width: 20px; height: 20px; border-radius: 50%;
+  border: none; background: none; cursor: pointer;
+  color: var(--pf-fg2); font-size: 15px; line-height: 1;
+  transition: color .15s, background .15s;
+}
+.pfe-skin-x:hover { color: var(--star); background: rgba(232,168,60,0.1); }
 
 /* ── the form's Tags row — a button, not a field ──
    The one row on the form you cannot type into: you wear what you own. It is
@@ -8592,7 +9394,7 @@
 }
 
 /* ── SETTINGS ─────────────────────────────────────────────── */
-.set-scroll { padding: 4px 12px 75px; }
+.set-scroll { padding: 4px 12px 96px; }
 .set-title {
   margin: 4px 0 13px; font-size: 26px; font-weight: 800;
   letter-spacing: -0.7px; color: var(--sd-ink);
@@ -8744,7 +9546,7 @@
    `--tint` (an "r,g,b" triple) and the field fills with a soft wash of it; the
    home bento takes its colour from the cover, and this is the same idea applied
    to a product. Gold stays reserved for what you can act on. */
-.shop-scroll { padding: 4px 12px 75px; }
+.shop-scroll { padding: 4px 12px 96px; }
 
 /* ── The store's name, DRAWN and not set ──────────────────────
    ⚠️ It used to be DM Sans 800 at 34px — the Apple-Store half of the brief

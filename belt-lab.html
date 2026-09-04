@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spindeck · belt lab</title>
+<!-- ============================================================
+     BELT LAB — put pulleys down, the belt wraps them.
+     NOT part of the mockup — a design tool, like dot-lab.html.
+     Opened from the toolbar's "⌾ Belt" button, or directly.
+
+     ⚠️ The solver is LOADED from belt.js, not copied in here, so
+     there is exactly one SD_BELT to maintain — the same one the
+     mix dial runs on (app.js `beltPath` is now SD_BELT.hull).
+
+     ⚠️ THE STAGE IS 1:1 WITH THE PHONE. One unit here is one CSS
+     pixel in the mockup, and the FRAME guide draws the real 393×852
+     device around your work — so a pulley that looks right here is
+     the size you type into screens.js. Do not rescale the stage
+     without moving the frame constants with it.
+
+     · Click empty space to drop a pulley, or press + PULLEY.
+     · The belt is SD_BELT.taut — a rubber band round the wheels
+       marked inside, in a plane where every wheel is solid. It works
+       out the loop order, which way round each wheel it goes, and who
+       it is touching at all. The list order does not affect it.
+     · A pulley is INSIDE the loop (the belt wraps round it) or
+       OUTSIDE it (it only presses against it — a notch, an S-bend).
+       SIDE — In | Out — is the ONLY thing that decides. `o` flips it.
+       ⚠️ NOTHING GUESSES. There was a classifier that worked the side
+       out from position and it is gone; a wheel never changes what it
+       is under your hand. Verified: an idler swept over 986 positions
+       across the whole stage, side changed 0 times.
+       An outside pulley KEEPS HOLD of the run it presses, however far
+       past it you push — the belt is dragged along and the notch just
+       gets deeper — and if you move it clear the belt goes and gets
+       it. It is on the belt because you said so.
+       ⚠️ Reaching a long way out means crossed tangents. That is a
+       TANGLE, not an error: you asked for it and got it exactly. The
+       Side control turns red and the note says how to resolve it —
+       set it to In, or move it back over a run.
+       ⚠️ The `out` and `off` labels report what the SOLVER did. A
+       wheel the belt genuinely cannot take (it overlaps a neighbour)
+       says so rather than being quietly re-wrapped.
+     · Clear empties the stage; RESET puts every knob back too.
+     · FOUR ways to size one: drag its rim, scroll over it, the
+       Radius slider, or [ and ]. Every number can also be typed.
+     · One DOT rides the belt — direction and speed at a glance.
+     · Seven pulley FACES, global or per wheel, with Rim and Detail.
+     · Save: named rigs in localStorage. WIP autosaves.
+     · Export: SVG (serialised from the very nodes on screen, so it
+       cannot drift), Call, Path d. With a frame on, coordinates come
+       out RELATIVE TO IT, ready to paste.
+     ============================================================ -->
+<style>
+  :root{
+    --bg:#111116; --panel:#1a1a22; --ink:#e8e2d6; --ink-dim:rgba(232,226,214,.55);
+    --gold:#e8a83c; --hair:rgba(232,226,214,.14); --bad:#e2564a; --stage:#0c0c10;
+    --mono:"Space Mono","Cascadia Mono",Consolas,monospace;
+    --sans:"DM Sans",system-ui,sans-serif;
+  }
+  *{ box-sizing:border-box; margin:0; }
+  body{
+    background:var(--bg); color:var(--ink); font-family:var(--sans);
+    height:100vh; overflow:hidden; padding:14px 18px;
+    display:flex; flex-direction:column; gap:10px;
+  }
+  header{ display:flex; align-items:baseline; gap:12px; flex-shrink:0; }
+  h1{ font-size:14px; letter-spacing:.02em; }
+  .eyebrow{ font-family:var(--mono); font-size:9.5px; text-transform:uppercase; letter-spacing:.14em; color:var(--gold); }
+  .back{
+    margin-left:auto; font-family:var(--mono); font-size:9.5px; text-decoration:none;
+    color:var(--ink-dim); border:1px solid var(--hair); border-radius:7px; padding:4px 9px;
+  }
+  .back:hover{ color:var(--gold); border-color:var(--gold); }
+
+  .lab{ display:flex; gap:12px; align-items:flex-start; min-height:0; flex:1; }
+  .card{ background:var(--panel); border:1px solid var(--hair); border-radius:11px; padding:9px 10px; }
+  .card h2{ font-family:var(--mono); font-size:8.5px; text-transform:uppercase; letter-spacing:.15em;
+            color:var(--ink-dim); font-weight:400; margin-bottom:7px; }
+  .card h2 em{ font-style:normal; color:var(--gold); }
+
+  /* ⚠ The wrapper fixes the box and #stage matches the viewBox's aspect exactly
+     — the pointer maths assumes the viewBox fills the box, so a letterboxed SVG
+     would put every click in the wrong place. */
+  /* ⚠ The WRAPPER carries the width, not the svg — otherwise the hint line's
+     intrinsic width sizes the flex item and shoves the panel off screen. */
+  .stage-wrap{ flex:0 0 auto; width:calc((100vh - 106px) * 0.7556); min-width:300px; }
+  #stage{ display:block; width:100%; aspect-ratio:680/900;
+          border-radius:9px; background:var(--stage); touch-action:none; cursor:crosshair; }
+  .hint{ font-family:var(--mono); font-size:9px; color:var(--ink-dim); margin-top:6px; line-height:1.6; }
+  .hint b{ color:var(--ink); font-weight:400; }
+
+  /* Two balanced columns, so every setting is on screen at once. The body
+     doesn't scroll — but on a short window the panel scrolls in place rather
+     than being clipped out of reach. */
+  .side{ column-count:2; column-gap:10px; width:472px; flex:0 0 472px;
+         max-height:100%; overflow-y:auto; }
+  .side .card{ break-inside:avoid; margin-bottom:10px; }
+
+  .row{ display:flex; align-items:center; gap:5px; margin-bottom:5px; font-size:10.5px; }
+  .row label{ flex:1; color:var(--ink-dim); }
+  input[type=range]{ width:62px; accent-color:var(--gold); height:13px; }
+  input[type=range]:disabled{ opacity:.3; }
+  .num{
+    width:40px; background:var(--stage); border:1px solid var(--hair); border-radius:6px;
+    color:var(--gold); font-family:var(--mono); font-size:9.5px; padding:3px 4px; outline:none; text-align:right;
+  }
+  .num:focus{ border-color:var(--gold); }
+  .num:disabled{ opacity:.35; }
+  .num::-webkit-outer-spin-button, .num::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
+
+  .seg{ display:flex; border:1px solid var(--hair); border-radius:7px; overflow:hidden; margin-bottom:7px; }
+  .seg button{
+    flex:1; padding:4px 0; background:none; border:none; cursor:pointer; color:var(--ink-dim);
+    font-family:var(--mono); font-size:9px; text-transform:uppercase; letter-spacing:.07em;
+  }
+  .seg button.on{ background:var(--gold); color:#161009; }
+  /* The Side segment sits IN a .row beside its label, so it gives up the
+     block margin and takes the row's flexible half instead. */
+  .seg--side{ flex:1; margin:0; }
+  .seg--side button:disabled{ opacity:.3; cursor:default; }
+  /* You asked for OUT and the belt could not do it — see the note under the
+     list. Lit but red, so the control never quietly disagrees with the stage. */
+  .seg--side button.on.warn{ background:var(--bad); color:#fff; }
+
+  .chk{ display:flex; align-items:center; gap:5px; font-size:10.5px; color:var(--ink-dim); cursor:pointer; }
+  .chk input{ accent-color:var(--gold); width:11px; height:11px; }
+  .chks{ display:grid; grid-template-columns:1fr 1fr; gap:5px 6px; }
+
+  .btn{
+    padding:5px 7px; border-radius:7px; border:1px solid var(--hair); background:none;
+    color:var(--ink); font-family:var(--mono); font-size:9px; cursor:pointer;
+    text-transform:uppercase; letter-spacing:.06em;
+  }
+  .btn:hover{ border-color:var(--gold); color:var(--gold); }
+  .btn:disabled{ opacity:.3; cursor:default; border-color:var(--hair); color:var(--ink); }
+  .btns{ display:flex; gap:5px; flex-wrap:wrap; }
+
+  /* ── face picker: every swatch draws itself with the real face code ── */
+  #faces{ display:grid; grid-template-columns:repeat(5,1fr); gap:4px; margin-bottom:7px; }
+  #faces button{
+    aspect-ratio:1; border:1px solid var(--hair); border-radius:7px; background:none;
+    cursor:pointer; padding:3px; color:var(--ink-dim);
+  }
+  #faces button.on{ border-color:var(--gold); color:var(--gold); }
+  #faces button:hover{ color:var(--ink); }
+  #faces svg{ width:100%; height:100%; display:block; }
+
+  #list{ display:flex; flex-direction:column; gap:3px; max-height:104px; overflow:auto; }
+  .w{
+    display:flex; align-items:center; gap:4px; padding:3px 5px; border-radius:6px;
+    border:1px solid var(--hair); font-family:var(--mono); font-size:9px; cursor:pointer;
+  }
+  .w.sel{ border-color:var(--gold); }
+  .w.err{ border-color:var(--bad); }
+  .w .n{ color:var(--ink-dim); width:10px; }
+  .w .r{ flex:1; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .w button{ background:none; border:none; color:var(--ink-dim); cursor:pointer; font-family:var(--mono); font-size:9px; padding:0 2px; }
+  .w button:hover{ color:var(--gold); }
+  .w button.pin{ color:var(--gold); }
+  #err{ font-family:var(--mono); font-size:9px; color:var(--bad); margin-top:6px; display:none; line-height:1.55; }
+
+  #saved{ display:flex; flex-wrap:wrap; gap:4px; margin-top:6px; }
+  .chip{
+    display:flex; align-items:center; gap:4px; padding:3px 6px; border-radius:6px;
+    border:1px solid var(--hair); font-family:var(--mono); font-size:9px; cursor:pointer; color:var(--ink-dim);
+  }
+  .chip:hover{ border-color:var(--gold); color:var(--gold); }
+  .chip span{ color:var(--bad); }
+  .empty{ font-family:var(--mono); font-size:9px; color:var(--ink-dim); }
+  #name{ flex:1; background:var(--stage); border:1px solid var(--hair); border-radius:6px; color:var(--ink);
+         font-family:var(--mono); font-size:9.5px; padding:4px 6px; outline:none; min-width:0; }
+  #name:focus{ border-color:var(--gold); }
+  #toast{
+    position:fixed; bottom:18px; left:50%; transform:translateX(-50%); background:var(--gold); color:#161009;
+    font-family:var(--mono); font-size:10px; padding:6px 11px; border-radius:8px; z-index:9;
+    opacity:0; transition:opacity .2s; pointer-events:none;
+  }
+  /* ⚠ Geometry probe. It must stay RENDERED — isPointInFill and getTotalLength
+     both return nothing on a display:none element. */
+  #probe{ position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; left:-9999px; }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="eyebrow">Spindeck</span>
+  <h1>Belt lab</h1>
+  <a class="back" href="index.html">← Back to the mockup</a>
+</header>
+
+<div class="lab">
+
+  <div class="stage-wrap">
+    <svg id="stage" viewBox="0 0 680 900"></svg>
+    <div class="hint">
+      <b>click</b> to drop a pulley &nbsp;·&nbsp; <b>drag</b> to move &nbsp;·&nbsp;
+      <b>rim / scroll / [ ]</b> to resize &nbsp;·&nbsp; <b>del</b> removes &nbsp;·&nbsp;
+      <b>alt-drag</b> duplicates &nbsp;·&nbsp; <b>o</b> in / out &nbsp;·&nbsp;
+      stage is <b>1:1</b> with the phone
+    </div>
+  </div>
+
+  <div class="side">
+
+    <div class="card">
+      <h2>Stage</h2>
+      <div class="seg" id="frame">
+        <button data-f="off">Off</button>
+        <button data-f="phone">Phone</button>
+        <button data-f="panel" class="on">Panel</button>
+      </div>
+      <div class="chks">
+        <label class="chk"><input type="checkbox" id="grid" checked> Grid</label>
+        <label class="chk"><input type="checkbox" id="cons"> Construction</label>
+        <label class="chk"><input type="checkbox" id="run" checked> Run</label>
+        <label class="chk"><input type="checkbox" id="fill"> Fill</label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Belt</h2>
+      <div class="row"><label>Clearance</label><input type="range" id="gap"  min="0"   max="40"  step="1"><input type="number" class="num" id="gapN"></div>
+      <div class="row"><label>Weight</label>   <input type="range" id="wt"   min="0.5" max="24"  step="0.5"><input type="number" class="num" id="wtN"></div>
+      <div class="row"><label>Dot</label>      <input type="range" id="dotR" min="0"   max="24"  step="0.5"><input type="number" class="num" id="dotRN"></div>
+      <div class="row"><label>Speed</label>    <input type="range" id="spd"  min="0"   max="400" step="10"><input type="number" class="num" id="spdN"></div>
+      <div class="row"><label>Snap</label>     <input type="range" id="snap" min="0"   max="32"  step="1"><input type="number" class="num" id="snapN"></div>
+    </div>
+
+    <div class="card">
+      <h2>Pulley face</h2>
+      <div id="faces"></div>
+      <div class="row"><label>Rim</label>   <input type="range" id="rim" min="0.25" max="8"   step="0.25"><input type="number" class="num" id="rimN"></div>
+      <div class="row"><label>Detail</label><input type="range" id="det" min="0"    max="100" step="5"><input type="number" class="num" id="detN"></div>
+    </div>
+
+    <div class="card">
+      <h2>Pulleys <em id="selN"></em></h2>
+      <div class="row"><label>Radius</label><input type="range" id="rad" min="4" max="200" step="1" disabled><input type="number" class="num" id="radN" disabled></div>
+      <div class="row"><label>X</label><input type="range" id="px" min="-200" max="900" step="1" disabled><input type="number" class="num" id="pxN" disabled></div>
+      <div class="row"><label>Y</label><input type="range" id="py" min="-200" max="900" step="1" disabled><input type="number" class="num" id="pyN" disabled></div>
+      <div class="btns" style="margin-bottom:6px">
+        <button class="btn" id="b-face" disabled>Face: global</button>
+      </div>
+      <!-- One click per state, no cycling: this is the control that decides
+           whether the belt goes ROUND a pulley or only presses against it, and
+           it overrules "Side follows position" for that wheel. -->
+      <div class="row" style="margin-bottom:6px">
+        <label>Side</label>
+        <div class="seg seg--side" id="side">
+          <button data-s="in"  title="The belt goes round it">In</button>
+          <button data-s="out" title="The belt only presses against it — a notch">Out</button>
+        </div>
+      </div>
+      <div id="list"></div>
+      <div id="err"></div>
+      <div class="btns" style="margin-top:6px">
+        <button class="btn" id="b-add">+ Pulley</button>
+        <button class="btn" id="b-order" title="Sort the list by bearing — numbering only, the belt is unaffected">Order ↻</button>
+        <button class="btn" id="b-clear" title="Remove every pulley — settings stay">Clear</button>
+        <button class="btn" id="b-reset" title="Back to the factory rig: settings, faces and all">Reset</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Presets</h2>
+      <div class="btns" id="presets">
+        <button class="btn" data-p="field">Field</button>
+        <button class="btn" data-p="logo">Logo</button>
+        <button class="btn" data-p="trio">Trio</button>
+        <button class="btn" data-p="serp">Serpentine</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Export</h2>
+      <div class="btns">
+        <button class="btn" id="x-svg">SVG</button>
+        <button class="btn" id="x-call">Call</button>
+        <button class="btn" id="x-path">Path d</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Saved rigs</h2>
+      <div class="btns">
+        <input id="name" placeholder="name…" spellcheck="false">
+        <button class="btn" id="b-save">Save</button>
+      </div>
+      <div id="saved"></div>
+    </div>
+
+  </div>
+</div>
+
+<svg id="probe"><path id="probe-p"></path></svg>
+<div id="toast"></div>
+
+<script src="belt.js?v=1"></script>
+<script>
+/* ══════════════════════════════════════════════════════════════════════════
+   A rig is a list of wheels plus the belt settings. Everything on screen is
+   derived from it, and it is exactly what the export writes out.
+   ══════════════════════════════════════════════════════════════════════════ */
+const KEY = 'spindeck-belt-lab', LIB = 'spindeck-belt-rigs';
+const INK = '#e8e2d6', GOLD = '#e8a83c', RED = '#e2564a', STAGE = '#0c0c10';
+const TAU = Math.PI * 2;
+const VW = 680, VH = 900;
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THE PHONE, 1:1
+   ══════════════════════════════════════════════════════════════════════════
+   One stage unit is one CSS pixel in the mockup, so what you draw here is the
+   size you type into screens.js. Traced from style.css (--pw/--ph/--pr/--sr)
+   and the onboarding chrome in app.css:
+
+     device 393×852, radius 55 · screen inset 4, radius 51 · status bar 59
+     chrome above the panel: .ob-top 8+12=20, .ob-rail 14+32=46
+     .ob-footer ≈ 118 · the step-0 plate is 369×464, centred in what is left
+
+   ⚠ Resize the stage and these must move with it, or the guide quietly lies.
+   ══════════════════════════════════════════════════════════════════════════ */
+const PHONE  = { x: 144, y: 24, w: 393, h: 852, r: 55 };
+const SCREEN = { x: 148, y: 28, w: 385, h: 844, r: 51 };
+const APP_Y  = 87;                                   // SCREEN.y + 59 status bar
+const PANEL  = { x: 156, y: 222, w: 369, h: 464 };   // step 0's plate, in place
+
+const S = {
+  wheels: [],            // { x, y, r, side, pin?, face? }   side: 1 in, -1 out
+  frame: 'panel',
+  gap: 4, wt: 2, dotR: 4, spd: 70, snap: 4, rim: 1, det: 60,
+  face: 'spoke',
+  run: true, grid: true, cons: false, fill: false,
+  sel: -1, lastR: 28,
+};
+
+/* The factory rig. Snapshotted HERE, before the WIP autosave is merged in at
+   boot, so Reset always has somewhere clean to get back to no matter what the
+   last session left behind. */
+const DEFAULTS = JSON.parse(JSON.stringify(S));
+
+/* Presets are AT PHONE SCALE and sit inside the frame — that is the point of
+   the guide. `field` is the real onboarding handle bubble: two equal pulleys on
+   the plate's x=44 / x=325 rules at y=248, which is why both runs come out
+   exactly level. */
+const PRESETS = {
+  field: [{ x: PANEL.x + 44, y: PANEL.y + 248, r: 26, side: 1 },
+          { x: PANEL.x + 325, y: PANEL.y + 248, r: 26, side: 1 }],
+  // The mark itself. Their shared BASELINE (300+88 = 366+22) is what makes the
+  // bottom run horizontal — drag one up and watch it stop being.
+  logo:  [{ x: 270, y: 300, r: 88, side: 1 }, { x: 440, y: 366, r: 22, side: 1 }],
+  trio:  [{ x: 240, y: 300, r: 44, side: 1 }, { x: 440, y: 300, r: 44, side: 1 }, { x: 340, y: 460, r: 26, side: 1 }],
+  /* An OUTSIDE pulley pressing in: the belt goes concave over it.
+     ⚠ An idler STRADDLES the run it deflects, and which side its CENTRE falls
+     is the whole thing. The top run here is at y = 520 - (52 + 4) = 464, so:
+         centre ABOVE it   (444 < 464)  → it presses down. A dip.
+         centre BELOW it   (470 > 464)  → it is just another inside pulley and
+                                          the loop bulges UP to swallow it.
+     The reach then sets how deep: dip = (y + r + gap) - run = 444+48-464 = 28,
+     and its ceiling is r + gap, so a deeper notch needs a BIGGER idler, not a
+     higher one. This preset has been wrong twice — check both sums after any
+     rescale. */
+  serp:  [{ x: 230, y: 520, r: 52, side: 1 }, { x: 340, y: 444, r: 44, side: -1 }, { x: 450, y: 520, r: 52, side: 1 }],
+};
+
+const svg = document.getElementById('stage');
+const probe = document.getElementById('probe-p');
+const NS = 'http://www.w3.org/2000/svg';
+const $ = id => document.getElementById(id);
+const el = (t, a) => { const n = document.createElementNS(NS, t); for (const k in a) n.setAttribute(k, a[k]); return n; };
+
+/* What the solver found. `wrap` is keyed by wheel index and holds the side the
+   belt ACTUALLY takes round that wheel — which is the solver's answer, not the
+   `side` you asked for; a wheel with no entry is one the belt never reaches. */
+let bad = [], off = [], tangle = [], wrap = {}, PATH = '', SPIN = 0, LAST = 0;
+
+// Where frame-relative coordinates are measured from — also what the grid and
+// the snap align to, so an 8 you count here is an 8 the app counts.
+function origin() {
+  if (S.frame === 'panel') return { x: PANEL.x, y: PANEL.y };
+  if (S.frame === 'phone') return { x: SCREEN.x + 8, y: APP_Y };
+  return { x: 0, y: 0 };
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   INSIDE OR OUTSIDE — YOU SAY. THERE IS NO GUESS.
+   ══════════════════════════════════════════════════════════════════════════
+   A pulley is INSIDE the loop (side +1, the belt wraps round its outside) or
+   OUTSIDE it (side -1, it only presses against it — a notch, an S-bend), and
+   the SIDE control is the only thing that decides. Every wheel carries `pin`,
+   so `taut` treats every side as binding and never re-wraps one.
+
+   ⚠ THERE WAS A `classify` HERE AND IT IS GONE — about eighty lines: contact
+   acquisition, stickiness in both directions, a `cameFrom` WeakMap holding
+   which side of the belt each wheel last came from, and a frozen contact band
+   to tell "pushing in" from "pulling out". Every piece was added to fix a real
+   complaint and every piece made the tool less predictable, because the same
+   drag meant different things depending on history you could not see, and a
+   wheel could change what it WAS under your hand. The Aphex string-and-pulley
+   tool (https://aphex.makisoftware.com/) never guesses — "it is up to you to
+   flip between IN and OUT to resolve tangles or create concave contours" — and
+   it is right. A guess that is correct nine times out of ten is worse than no
+   guess, because you have to check it every time.
+
+   ⚠ DO NOT BRING IT BACK. If a rig is tedious to set up, the answer is a
+   better control, not a cleverer inference.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ══════════════════════════════════════════════════════════════════════════
+   PULLEY FACES
+   ══════════════════════════════════════════════════════════════════════════
+   Each face is (r, ink, det) -> [nodes], drawn about the ORIGIN; the caller
+   translates and rotates it. Keeping them origin-relative is what lets the
+   same code draw the picker's swatches AND the real thing, so a swatch can
+   never drift from what it selects.
+
+   `det` (0–1) is the Detail slider: how much of a face's optional furniture to
+   draw. At 0 every face collapses toward a bare rim — the honest way to make
+   one quiet, rather than adding a separate "simple" face for each.
+
+   ⚠ Every face needs a mark that BREAKS ROTATIONAL SYMMETRY, or it looks dead
+   while it spins. That is why `record` carries a lead-in groove: real record
+   furniture is all concentric and would sit perfectly still.
+   ══════════════════════════════════════════════════════════════════════════ */
+const FACES = {
+  ring: (r, ink) => [el('circle', { r: r, fill: 'none', stroke: ink, 'stroke-width': S.rim })],
+
+  disc: (r, ink, det) => [
+    el('circle', { r: r, fill: ink, stroke: 'none' }),
+    ...(det > .2 ? [el('circle', { r: Math.max(1.2, r * .12), fill: STAGE, stroke: 'none' })] : []),
+  ],
+
+  record: (r, ink, det) => {
+    const o = [el('circle', { r: r, fill: '#16161c', stroke: ink, 'stroke-width': S.rim })];
+    [.84, .70, .56].forEach((k, i) => {
+      if (det > .15 + i * .22) o.push(el('circle', { r: (r * k).toFixed(2), fill: 'none', stroke: ink, 'stroke-width': S.rim * .5, opacity: .45 }));
+    });
+    o.push(el('circle', { r: (r * .30).toFixed(2), fill: 'none', stroke: ink, 'stroke-width': S.rim * .7, opacity: .7 }));
+    o.push(el('line', { x1: 0, y1: (-r * .30).toFixed(2), x2: 0, y2: (-r * .92).toFixed(2), stroke: ink, 'stroke-width': S.rim * .6, opacity: .5 }));
+    o.push(el('circle', { r: Math.max(1.2, r * .07).toFixed(2), fill: STAGE, stroke: ink, 'stroke-width': S.rim * .5 }));
+    return o;
+  },
+
+  /* The motor from the logo: three lightening holes on a bolt circle.
+     ⚠ Detail drives their SIZE, never their count. Interpolating the count
+     showed two of the three at mid-detail, which does not read as "less
+     detail" — it reads as a bug. Three or none. */
+  motor: (r, ink, det) => {
+    const o = [el('circle', { r: r, fill: 'none', stroke: ink, 'stroke-width': S.rim })];
+    if (det < .1) return o;
+    const hr = Math.max(1.2, r * (.09 + det * .09));
+    for (let i = 0; i < 3; i++) {
+      const a = (-90 + i * 120) * Math.PI / 180;
+      o.push(el('circle', {
+        cx: (Math.cos(a) * r * .55).toFixed(2), cy: (Math.sin(a) * r * .55).toFixed(2),
+        r: hr.toFixed(2), fill: 'none', stroke: ink, 'stroke-width': S.rim * .8,
+      }));
+    }
+    if (det > .6) o.push(el('circle', { r: (r * .55).toFixed(2), fill: 'none', stroke: ink, 'stroke-width': S.rim * .4, opacity: .3 }));
+    return o;
+  },
+
+  spoke: (r, ink, det) => {
+    const o = [el('circle', { r: r, fill: 'none', stroke: ink, 'stroke-width': S.rim })];
+    const n = Math.max(1, Math.round(1 + det * 4));
+    for (let i = 0; i < n; i++) {
+      const a = (-90 + i * 360 / n) * Math.PI / 180;
+      o.push(el('line', {
+        x1: 0, y1: 0, x2: (Math.cos(a) * r * .8).toFixed(2), y2: (Math.sin(a) * r * .8).toFixed(2),
+        stroke: ink, 'stroke-width': S.rim * .8, opacity: .55,
+      }));
+    }
+    o.push(el('circle', { r: Math.max(1.5, r * .13).toFixed(2), fill: ink, stroke: 'none' }));
+    return o;
+  },
+
+  // Teeth left the belt, so this is where they went — and on a timing drive
+  // the teeth belong to the sprocket anyway.
+  sprocket: (r, ink, det) => {
+    const o = [el('circle', { r: r, fill: 'none', stroke: ink, 'stroke-width': S.rim })];
+    const n = Math.max(6, Math.round(TAU * r / 11)), d = r * (.10 + det * .12);
+    for (let i = 0; i < n; i++) {
+      const a = i * TAU / n;
+      o.push(el('line', {
+        x1: (Math.cos(a) * (r - d)).toFixed(2), y1: (Math.sin(a) * (r - d)).toFixed(2),
+        x2: (Math.cos(a) * r).toFixed(2),       y2: (Math.sin(a) * r).toFixed(2),
+        stroke: ink, 'stroke-width': S.rim * .8, opacity: .8,
+      }));
+    }
+    o.push(el('circle', { r: Math.max(1.5, r * .1).toFixed(2), fill: ink, stroke: 'none' }));
+    return o;
+  },
+
+  // Almost nothing: index marks at the quarters and a centre cross. For when
+  // the belt is the drawing and a wheel only has to say where it is.
+  open: (r, ink, det) => {
+    const o = [], n = det > .5 ? 8 : 4, len = r * .22;
+    for (let i = 0; i < n; i++) {
+      const a = i * TAU / n;
+      o.push(el('line', {
+        x1: (Math.cos(a) * (r - len)).toFixed(2), y1: (Math.sin(a) * (r - len)).toFixed(2),
+        x2: (Math.cos(a) * r).toFixed(2),         y2: (Math.sin(a) * r).toFixed(2),
+        stroke: ink, 'stroke-width': S.rim,
+      }));
+    }
+    const c = Math.max(2, r * .1);
+    o.push(el('line', { x1: -c, y1: 0, x2: c, y2: 0, stroke: ink, 'stroke-width': S.rim * .8 }));
+    o.push(el('line', { x1: 0, y1: -c, x2: 0, y2: c, stroke: ink, 'stroke-width': S.rim * .8 }));
+    return o;
+  },
+};
+const FACE_KEYS = Object.keys(FACES);
+
+/* One wheel, placed and turned. ⚠ omega = v / r off ONE belt speed, so a small
+   pulley visibly spins faster — that ratio IS the logo. The belt rides at
+   r + clearance, so that is what sets omega, not r. */
+function wheelNode(w, i, forExport) {
+  const face = FACES[w.face] || FACES[S.face] || FACES.spoke;
+  const near = bad.includes(i) || bad.includes((i - 1 + S.wheels.length) % S.wheels.length);
+  const ink = forExport ? INK : (near ? RED : (i === S.sel ? GOLD : INK));
+  // ⚠ Driven by the BELT, so an idler turns backwards and a wheel the belt
+  // never reaches does not turn at all — the clearest tell that it is off it.
+  const s = wrap[i];
+  const rot = s === undefined ? 0 : (s < 0 ? -SPIN : SPIN) / Math.max(w.r + S.gap, 1) * 180 / Math.PI;
+  // Backed off the belt: still a wheel, just not driven. Fade it so you can see
+  // at a glance which idler stopped reaching.
+  const g = el('g', { transform: 'translate(' + w.x + ' ' + w.y + ') rotate(' + rot.toFixed(2) + ')',
+                      opacity: (!forExport && off.includes(i)) ? .32 : 1 });
+  face(w.r, ink, S.det / 100).forEach(n => g.appendChild(n));
+  return g;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Render. `build()` returns only the parts that belong in an export — belt,
+   wheels — so the SVG export is provably the drawing you are looking at.
+   ══════════════════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════════════════
+   The belt is one call now — SD_BELT.taut, a rubber band round the wheels
+   marked inside, in a plane where every wheel is solid.
+
+   ⚠ Everything this file used to do to keep an outside pulley honest is GONE,
+   because the solver cannot get those wrong: the SEATING (moving an idler to
+   the list slot beside the run it presses), the SLACK pass, the stand-down
+   fallback, and the list ORDER itself. `route` needed all of it because it
+   drew whatever tangent your side flag implied and had no idea where the belt
+   would really go. Don't reintroduce any of it here.
+   ══════════════════════════════════════════════════════════════════════════ */
+function solve() {
+  const r = SD_BELT.taut(S.wheels, S.gap);
+  bad = r.bad;                       // could not be honoured — re-wrapped or dropped
+  tangle = r.tangle;                 // honoured exactly, and the belt crosses itself
+  off = r.off;                       // not touching the belt at all
+  wrap = {};                         // and, for those that are, which way round
+  r.on.forEach(c => { wrap[c.i] = c.side; });
+  return r.d;
+}
+
+function build(forExport) {
+  const out = [];
+  if (PATH) {
+    if (S.fill) out.push(el('path', { d: PATH, fill: 'rgba(232,226,214,.06)', stroke: 'none' }));
+    out.push(el('path', { d: PATH, fill: 'none', stroke: INK, 'stroke-width': S.wt, 'stroke-linejoin': 'round' }));
+  }
+  S.wheels.forEach((w, i) => out.push(wheelNode(w, i, forExport)));
+  return out;
+}
+
+function drawFrame() {
+  if (S.frame === 'off') return;
+  const g = el('g', {});
+  const line = (a, b, c, d, o) => g.appendChild(el('line', { x1: a, y1: b, x2: c, y2: d, stroke: INK, 'stroke-width': .75, opacity: o }));
+  const box = (r, rad, o) => g.appendChild(el('rect', {
+    x: r.x, y: r.y, width: r.w, height: r.h, rx: rad, fill: 'none', stroke: INK, 'stroke-width': .75, opacity: o }));
+
+  box(PHONE, PHONE.r, .3);                                       // device
+  box(SCREEN, 51, .22);                                          // glass
+  line(SCREEN.x, APP_Y, SCREEN.x + SCREEN.w, APP_Y, .16);        // status bar
+  // The 8px margin the progress belt and the plate both sit on.
+  line(SCREEN.x + 8, APP_Y, SCREEN.x + 8, SCREEN.y + SCREEN.h, .12);
+  line(SCREEN.x + SCREEN.w - 8, APP_Y, SCREEN.x + SCREEN.w - 8, SCREEN.y + SCREEN.h, .12);
+
+  if (S.frame === 'panel') {
+    box(PANEL, 0, .28);                                          // step 0's plate box
+    line(PANEL.x + 44, PANEL.y, PANEL.x + 44, PANEL.y + PANEL.h, .2);    // the text column
+    line(PANEL.x + 325, PANEL.y, PANEL.x + 325, PANEL.y + PANEL.h, .2);  // its mirror
+    const t = el('text', { x: PANEL.x, y: PANEL.y - 6, fill: INK, 'font-size': 9, opacity: .3,
+                           'font-family': 'Space Mono, monospace' });
+    t.textContent = 'step 0 · 369 × 464';
+    g.appendChild(t);
+  }
+  svg.appendChild(g);
+}
+
+function draw() {
+  PATH = solve();
+  svg.textContent = '';
+
+  if (S.grid) {
+    // Aligned to the frame, so the 8s you count here are the app's 8s.
+    const o = origin(), g = el('g', {}), step = 8;
+    for (let x = o.x % step; x <= VW; x += step) g.appendChild(el('line', { x1: x, y1: 0, x2: x, y2: VH, stroke: INK, 'stroke-width': .5, opacity: .035 }));
+    for (let y = o.y % step; y <= VH; y += step) g.appendChild(el('line', { x1: 0, y1: y, x2: VW, y2: y, stroke: INK, 'stroke-width': .5, opacity: .035 }));
+    svg.appendChild(g);
+  }
+  drawFrame();
+
+  /* Construction: the circle the belt actually rides is the wheel PLUS the
+     clearance — the number people forget when a belt looks loose. */
+  if (S.cons) S.wheels.forEach(w => {
+    svg.appendChild(el('circle', { cx: w.x, cy: w.y, r: w.r + S.gap, fill: 'none', stroke: GOLD, 'stroke-width': .6, opacity: .4 }));
+    svg.appendChild(el('line', { x1: w.x - 7, y1: w.y, x2: w.x + 7, y2: w.y, stroke: GOLD, 'stroke-width': .6, opacity: .55 }));
+    svg.appendChild(el('line', { x1: w.x, y1: w.y - 7, x2: w.x, y2: w.y + 7, stroke: GOLD, 'stroke-width': .6, opacity: .55 }));
+  });
+
+  const parts = build(false);
+  const beltEl = parts.find(n => n.tagName === 'path' && n.getAttribute('fill') === 'none');
+  parts.forEach(n => svg.appendChild(n));
+
+  /* ONE dot riding the belt. ⚠ getPointAtLength needs an element that is
+     already laid out, so this runs AFTER the append, never before. */
+  if (S.dotR && beltEl && beltEl.getTotalLength) {
+    const L = beltEl.getTotalLength();
+    if (L) {
+      const p = beltEl.getPointAtLength(((SPIN % L) + L) % L);
+      svg.appendChild(el('circle', { cx: p.x.toFixed(2), cy: p.y.toFixed(2), r: S.dotR, fill: INK, stroke: 'none' }));
+    }
+  }
+
+  /* ⚠ These read `wrap`, the side the belt ACTUALLY took, not `w.side`. Asking
+     for outside and being outside are different things — a wheel nowhere near
+     the belt is neither, and says so. */
+  if (S.wheels.some((w, i) => wrap[i] !== 1)) S.wheels.forEach((w, i) => {
+    const t = el('text', { x: w.x, y: w.y + w.r + 12, fill: 'rgba(232,226,214,.5)', 'font-size': 8.5,
+                           'font-family': 'Space Mono, monospace', 'text-anchor': 'middle' });
+    t.textContent = (i + 1) + (wrap[i] === -1 ? ' out' : wrap[i] === undefined ? ' off' : '');
+    svg.appendChild(t);
+  });
+
+  /* Three things worth saying, and NOT "that pulley isn't touching" — a wheel
+     off the belt is an ordinary state you can already see (faded, "off"). */
+  const err = $('err');
+  const say = (msg, col) => { err.style.display = 'block'; err.style.color = col; err.textContent = msg; };
+  if (S.wheels.length && !S.wheels.some(w => w.side !== -1)) {
+    say('Every pulley is outside — there is no loop for them to press on. Put at least two inside.', GOLD);
+  } else if (!PATH && S.wheels.length > 1) {
+    say('No belt over this rig.', '');
+  } else if (tangle.length) {
+    /* Not an error — you asked for it and you got it, exactly. The belt has
+       crossed itself getting out to a pulley locked Out; flipping it to In,
+       moving it back over a run, or shrinking it are all ways out, and which
+       one is right is a design decision, not a solver's. */
+    say('The belt crosses itself reaching pulley ' + tangle.map(i => i + 1).join(', ') +
+        ' — it is set to Out, so the belt goes and gets it however far away it is. ' +
+        'Set it to In, or move it back over a run, to untangle.', GOLD);
+  } else if (bad.length) {
+    /* ⚠ SAY WHY. These are wheels you asked to be OUTSIDE that the belt could
+       not press against, so it went round them instead — and an override you
+       cannot see is the worst kind. Two causes, and they need different
+       answers, so name the one that applies. */
+    const jammed = i => S.wheels.some((k, j) => j !== i &&
+      Math.hypot(k.x - S.wheels[i].x, k.y - S.wheels[i].y) < k.r + S.wheels[i].r + 2 * S.gap);
+    const names = bad.map(i => i + 1).join(', ');
+    say('Pulley ' + names + ' could not press on the belt — it goes round it instead. ' +
+        (bad.every(jammed)
+          ? 'It overlaps a neighbour, so there is no gap to thread a belt through. Move it clear or shrink it.'
+          : 'It is wider than the loop it sits in, so it holds both runs apart rather than pressing on one. ' +
+            'Shrink it, or move it back over a single run.'), GOLD);
+  } else err.style.display = 'none';
+}
+
+/* ⚠ THE PANEL IS NOT REDRAWN BY THE ANIMATION. `draw` is the stage and only the
+   stage, because `tick` calls it on every frame the belt is turning — and the
+   panel rebuild used to be on the end of it, so `renderSelected` was writing
+   `radN.value` sixty times a second straight over whatever you were typing in
+   it. Every keystroke landed and was immediately overwritten, with the caret
+   thrown to the end. Anything that changes STATE calls `paint`; the spin calls
+   `draw`. */
+function paint() { draw(); renderList(); renderSelected(); }
+
+function renderFaces() {
+  const box = $('faces');
+  box.innerHTML = '';
+  FACE_KEYS.forEach(k => {
+    const b = document.createElement('button');
+    b.title = k;
+    b.className = S.face === k ? 'on' : '';
+    const s = document.createElementNS(NS, 'svg');
+    s.setAttribute('viewBox', '-19 -19 38 38');
+    FACES[k](15, 'currentColor', S.det / 100).forEach(n => s.appendChild(n));
+    b.appendChild(s);
+    b.onclick = () => { S.face = k; renderFaces(); commit(); };
+    box.appendChild(b);
+  });
+}
+
+function renderList() {
+  const L = $('list');
+  L.innerHTML = '';
+  if (!S.wheels.length) { L.innerHTML = '<div class="empty">No pulleys — click the stage.</div>'; return; }
+  const o = origin();
+  S.wheels.forEach((w, i) => {
+    const d = document.createElement('div');
+    d.className = 'w' + (i === S.sel ? ' sel' : '') + (bad.includes(i) ? ' err' : '');
+    d.innerHTML =
+      '<span class="n">' + (i + 1) + '</span>' +
+      '<span class="r">r' + w.r + ' · ' + (w.x - o.x) + ',' + (w.y - o.y) + (w.face ? ' · ' + w.face : '') + '</span>' +
+      '<button class="' + (w.pin ? 'pin' : '') + '" title="Inside / outside — click to pin">' +
+        (wrap[i] === -1 ? 'out' : wrap[i] === undefined ? 'off' : 'in') + '</button>' +
+      '<button title="Earlier">↑</button><button title="Later">↓</button><button title="Delete">×</button>';
+    const b = d.querySelectorAll('button');
+    d.onclick = () => { S.sel = i; paint(); };
+    b[0].onclick = e => { e.stopPropagation(); cycleSide(w); };
+    b[1].onclick = e => { e.stopPropagation(); reorder(i, -1); };
+    b[2].onclick = e => { e.stopPropagation(); reorder(i, +1); };
+    b[3].onclick = e => { e.stopPropagation(); S.wheels.splice(i, 1); S.sel = -1; commit(); };
+    L.appendChild(d);
+  });
+}
+/* auto → pinned OUTSIDE → pinned inside → auto.
+   ⚠ Outside comes FIRST on purpose. The old cycle went auto → pinned inside
+   first, and since auto almost always says "inside" already, the first press
+   changed nothing you could see — the button looked broken and you gave up
+   before reaching the state you actually wanted. Outside is the reason anyone
+   touches this control, so it is one press away. */
+const sideState = w => !w ? '' : (w.side === -1 ? 'out' : 'in');
+// In ↔ Out. Two states, because there are two.
+function cycleSide(w) { w.side = w.side === -1 ? 1 : -1; commit(); }
+function reorder(i, dir) {
+  const j = i + dir; if (j < 0 || j >= S.wheels.length) return;
+  const t = S.wheels[i]; S.wheels[i] = S.wheels[j]; S.wheels[j] = t;
+  S.sel = j; commit();
+}
+
+function renderSelected() {
+  const w = S.wheels[S.sel], o = origin();
+  $('selN').textContent = w ? '· ' + (S.sel + 1) : '';
+  ['rad', 'radN', 'px', 'pxN', 'py', 'pyN'].forEach(k => { $(k).disabled = !w; });
+  $('b-face').disabled = !w;
+  document.querySelectorAll('#side button').forEach(b => {
+    b.disabled = !w;
+    const on = sideState(w) === b.dataset.s;
+    b.classList.toggle('on', on);
+    b.classList.toggle('warn', on && b.dataset.s === 'out' && (bad.includes(S.sel) || tangle.includes(S.sel)));
+  });
+  if (w) {
+    put($('rad'), Math.min(200, w.r)); put($('radN'), w.r);
+    put($('px'), w.x - o.x);            put($('pxN'), w.x - o.x);
+    put($('py'), w.y - o.y);            put($('pyN'), w.y - o.y);
+  } else {
+    ['radN', 'pxN', 'pyN'].forEach(k => put($(k), ''));
+  }
+  $('b-face').textContent = 'Face: ' + (w && w.face ? w.face : 'global');
+}
+
+/* ── Pointer ───────────────────────────────────────────────────────────── */
+// Snap runs OFF THE FRAME ORIGIN, so an 8 here is an 8 in the app.
+function snapX(v) { const o = origin().x; return S.snap ? o + Math.round((v - o) / S.snap) * S.snap : Math.round(v); }
+function snapY(v) { const o = origin().y; return S.snap ? o + Math.round((v - o) / S.snap) * S.snap : Math.round(v); }
+function at(e) {
+  const b = svg.getBoundingClientRect();
+  return { x: (e.clientX - b.left) * VW / b.width, y: (e.clientY - b.top) * VH / b.height };
+}
+function hit(p) {
+  for (let i = S.wheels.length - 1; i >= 0; i--) {
+    const w = S.wheels[i], d = Math.hypot(p.x - w.x, p.y - w.y);
+    // ⚠ Scale the rim band to the wheel — a fixed band makes a small pulley all rim.
+    const band = Math.min(9, Math.max(3, w.r * .35));
+    if (Math.abs(d - w.r) < band) return { i: i, part: 'rim' };
+    if (d < w.r) return { i: i, part: 'body' };
+  }
+  return null;
+}
+/* A new wheel goes in beside the one it lands nearest. For a route that matters
+   — dropping an idler between two wheels has to land BETWEEN them in the list,
+   or the belt tries to reach it from the far side of the rig. */
+/* ⚠ APPENDED, not inserted beside the nearest wheel. That insertion existed to
+   seat a new pulley correctly in `route`'s ORDERED loop; `taut` works the order
+   out for itself, so all it did was renumber the list under you every time you
+   dropped something. A new pulley goes on the end and keeps its number.
+   ⚠ Pinned: a new pulley is an INSIDE pulley because you put it there. */
+function addAt(x, y) {
+  const w = { x: x, y: y, r: S.lastR, side: 1, pin: true };
+  S.wheels.push(w);
+  S.sel = S.wheels.length - 1;
+  commit();
+  return w;
+}
+let drag = null;
+svg.addEventListener('pointerdown', e => {
+  const p = at(e), h = hit(p);
+  /* ⚠ Placing hands straight over to the drag, so one gesture drops the pulley
+     AND positions it. It used to return here, which meant every new pulley
+     landed where you clicked and then had to be found and grabbed again — and
+     if you had moved at all while clicking, it stayed put and you were dragging
+     nothing. */
+  if (!h) {
+    const w = addAt(snapX(p.x), snapY(p.y));
+    drag = { part: 'body', dx: p.x - w.x, dy: p.y - w.y };
+    svg.setPointerCapture(e.pointerId);
+    return;
+  }
+  S.sel = h.i;
+  if (e.altKey && h.part === 'body') {
+    S.wheels.splice(h.i + 1, 0, Object.assign({}, S.wheels[h.i]));
+    S.sel = h.i + 1;
+  }
+  const w = S.wheels[S.sel];
+  drag = { part: h.part, dx: p.x - w.x, dy: p.y - w.y };
+  svg.setPointerCapture(e.pointerId);
+  paint();
+});
+svg.addEventListener('pointermove', e => {
+  if (!drag) return;
+  const p = at(e), w = S.wheels[S.sel]; if (!w) return;
+  if (drag.part === 'body') { w.x = snapX(p.x - drag.dx); w.y = snapY(p.y - drag.dy); }
+  else { const k = S.snap || 1; w.r = Math.max(4, Math.round(Math.hypot(p.x - w.x, p.y - w.y) / k) * k); S.lastR = w.r; }
+  commit();
+});
+addEventListener('pointerup', () => { drag = null; });
+svg.addEventListener('wheel', e => {
+  const h = hit(at(e)); if (!h) return;
+  e.preventDefault();
+  const w = S.wheels[h.i];
+  w.r = Math.max(4, w.r - Math.sign(e.deltaY) * (S.snap || 2));
+  S.sel = h.i; S.lastR = w.r; commit();
+}, { passive: false });
+
+addEventListener('keydown', e => {
+  if (/input|select|textarea/i.test(e.target.tagName)) return;
+  const w = S.wheels[S.sel]; if (!w) return;
+  const k = S.snap || 1;
+  // `o` is the Side control on the keyboard — an idler is one keystroke away.
+  if (e.key === 'o' || e.key === 'O') { e.preventDefault(); cycleSide(w); return; }
+  if (e.key === 'Backspace' || e.key === 'Delete') { S.wheels.splice(S.sel, 1); S.sel = -1; }
+  else if (e.key === 'ArrowLeft')  w.x -= k;
+  else if (e.key === 'ArrowRight') w.x += k;
+  else if (e.key === 'ArrowUp')    w.y -= k;
+  else if (e.key === 'ArrowDown')  w.y += k;
+  else if (e.key === '[')          { w.r = Math.max(4, w.r - k); S.lastR = w.r; }
+  else if (e.key === ']')          { w.r += k; S.lastR = w.r; }
+  else return;
+  e.preventDefault(); commit();
+});
+
+/* ── Controls ──────────────────────────────────────────────────────────── */
+/* Every number is a slider AND a field — type it or drag it, both write the
+   same state. The field clamps but does not rewrite what you are typing, so
+   "1" on its way to "12" survives. */
+/* ⚠ Writing to an input while it has focus resets the caret to the end, so a
+   field that is written back on every commit cannot be typed in — you get one
+   character, then the cursor jumps. Leave the focused one alone: it is already
+   showing exactly what was typed, and every other view of the value updates. */
+const put = (el, v) => { if (el !== document.activeElement) el.value = v; };
+
+function bindNum(k, apply) {
+  const r = $(k), n = $(k + 'N'), lo = +r.min, hi = +r.max;
+  r.oninput = () => apply(Math.max(lo, Math.min(hi, +r.value)));
+  /* ⚠ While typing, apply only a value that is ALREADY legal. Clamping a
+     half-typed "1" on its way to "12" up to the minimum was the other half of
+     the glitch: the wheel jumped to a size nobody asked for and that size was
+     then written back over the "1". Out of range simply waits. */
+  n.oninput = () => { const v = parseFloat(n.value); if (!isNaN(v) && v >= lo && v <= hi) apply(v); };
+  // Blur or Enter settles it — clamp the text, and commit what it now says.
+  n.onchange = () => {
+    const v = parseFloat(n.value);
+    const c = isNaN(v) ? lo : Math.max(lo, Math.min(hi, v));
+    n.value = c; apply(c);
+  };
+}
+['gap', 'wt', 'dotR', 'spd', 'snap', 'rim', 'det'].forEach(k => bindNum(k, v => {
+  S[k] = v; put($(k), v); put($(k + 'N'), v);
+  if (k === 'rim' || k === 'det') renderFaces();
+  commit();
+}));
+bindNum('rad', v => { const w = S.wheels[S.sel]; if (!w) return; w.r = v; S.lastR = v; commit(); });
+bindNum('px',  v => { const w = S.wheels[S.sel]; if (!w) return; w.x = origin().x + v; commit(); });
+bindNum('py',  v => { const w = S.wheels[S.sel]; if (!w) return; w.y = origin().y + v; commit(); });
+
+['run', 'grid', 'cons', 'fill'].forEach(k => { $(k).onchange = e => { S[k] = e.target.checked; commit(); }; });
+function syncFrame() { document.querySelectorAll('#frame button').forEach(b => b.classList.toggle('on', b.dataset.f === S.frame)); }
+document.querySelectorAll('#frame button').forEach(b => b.onclick = () => { S.frame = b.dataset.f; syncFrame(); commit(); });
+
+document.querySelectorAll('#side button').forEach(b => b.onclick = () => {
+  const w = S.wheels[S.sel]; if (!w) return;
+  w.side = b.dataset.s === 'out' ? -1 : 1;
+  commit();
+});
+// Cycle: global → each face in turn → back to global.
+$('b-face').onclick = () => {
+  const w = S.wheels[S.sel]; if (!w) return;
+  const i = w.face ? FACE_KEYS.indexOf(w.face) + 1 : 0;
+  w.face = i >= FACE_KEYS.length ? null : FACE_KEYS[i];
+  commit();
+};
+$('b-add').onclick = () => {
+  const o = origin();
+  addAt(o.x + 44 + (S.wheels.length % 4) * 72, o.y + 200 + Math.floor(S.wheels.length / 4) * 72);
+};
+/* Sort the LIST by bearing from the centroid, so the numbers on the stage run
+   round the rig instead of in the order you happened to drop them.
+   ⚠ It no longer changes the belt by a pixel — `taut` works the loop out for
+   itself. It used to be the way out of a tangled route, and that is why it is
+   worth keeping the note: there is nothing left to untangle. */
+$('b-order').onclick = () => {
+  if (S.wheels.length < 3) return;
+  const cx = S.wheels.reduce((s, w) => s + w.x, 0) / S.wheels.length;
+  const cy = S.wheels.reduce((s, w) => s + w.y, 0) / S.wheels.length;
+  const sel = S.wheels[S.sel];
+  S.wheels.sort((a, b) => Math.atan2(a.y - cy, a.x - cx) - Math.atan2(b.y - cy, b.x - cx));
+  S.sel = sel ? S.wheels.indexOf(sel) : -1; commit();
+};
+$('b-clear').onclick = () => { S.wheels = []; S.sel = -1; commit(); };
+/* Reset ≠ Clear. Clear empties the stage and leaves your settings alone; Reset
+   puts EVERY knob back — clearance, weight, dot, speed, snap, face, rim,
+   detail, frame, the checkboxes — and reloads the default rig. Saved rigs are
+   untouched: this drops the WIP, not your library. */
+$('b-reset').onclick = () => {
+  Object.assign(S, JSON.parse(JSON.stringify(DEFAULTS)));
+  S.wheels = PRESETS.field.map(w => Object.assign({ pin: true }, w));
+  S.sel = -1;
+  try { localStorage.removeItem(KEY); } catch (e) {}
+  syncInputs(); syncFrame(); renderFaces(); commit();
+  toast('Reset');
+};
+document.querySelectorAll('#presets button').forEach(b => b.onclick = () => {
+  /* ⚠ PINNED. These used to load unpinned, as a live check that the classifier
+     derived the authored sides — a good test while auto ran everything, and the
+     wrong contract now that it does not. A preset's sides are authored, so they
+     are set, not guessed at. */
+  S.wheels = PRESETS[b.dataset.p].map(w => Object.assign({ pin: true }, w));
+  S.sel = -1; commit();
+});
+
+/* ── Export ────────────────────────────────────────────────────────────── */
+function bounds() {
+  let a = Infinity, b = Infinity, c = -Infinity, d = -Infinity;
+  S.wheels.forEach(w => {
+    const r = w.r + S.gap + S.wt / 2;
+    a = Math.min(a, w.x - r); b = Math.min(b, w.y - r);
+    c = Math.max(c, w.x + r); d = Math.max(d, w.y + r);
+  });
+  return { x: Math.floor(a - 2), y: Math.floor(b - 2), w: Math.ceil(c - a + 4), h: Math.ceil(d - b + 4) };
+}
+$('x-svg').onclick = () => {
+  if (!S.wheels.length) return toast('Nothing to copy');
+  const B = bounds();
+  /* Serialise the SAME nodes the stage draws, with the selection colour forced
+     off, so what you copy cannot drift from what you see. Ink becomes
+     currentColor, so the mark takes its colour from wherever you paste it. */
+  const body = build(true).map(n => n.outerHTML).join('\n  ').split(INK).join('currentColor');
+  copy('<svg viewBox="' + B.x + ' ' + B.y + ' ' + B.w + ' ' + B.h + '" xmlns="http://www.w3.org/2000/svg">\n  ' + body + '\n</svg>');
+};
+$('x-path').onclick = () => { PATH ? copy(PATH) : toast('Nothing to copy'); };
+$('x-call').onclick = () => {
+  if (!S.wheels.length) return toast('Nothing to copy');
+  // Frame-relative, so the numbers drop straight into the screen you drew for.
+  /* ⚠ Emit the solver the STAGE ran. A rig with every wheel inside draws the
+     same under `hull`, which is cheaper and returns the path itself — so that
+     is what a plain rig exports; anything with an idler needs `taut`, whose
+     order-independence is the whole point and whose result is an object. */
+  const o = origin(), out = S.wheels.some(w => w.side === -1);
+  const head = S.frame === 'off' ? '' :
+    '// ' + S.frame + ' coords — origin (' + o.x + ', ' + o.y + ') on the lab stage\n';
+  const list = S.wheels.map(w =>
+    '  { x: ' + (w.x - o.x) + ', y: ' + (w.y - o.y) + ', r: ' + w.r + (out ? ', side: ' + w.side : '') + ' },').join('\n');
+  copy(head + 'SD_BELT.' + (out ? 'taut' : 'hull') + '([\n' + list + '\n], ' + S.gap + ')' + (out ? '.d' : ''));
+};
+function copy(t) { navigator.clipboard.writeText(t).then(() => toast('Copied'), () => toast('Copy failed')); }
+let tid;
+function toast(m) {
+  const t = $('toast');
+  t.textContent = m; t.style.opacity = 1;
+  clearTimeout(tid); tid = setTimeout(() => { t.style.opacity = 0; }, 1100);
+}
+
+/* ── Saved rigs ────────────────────────────────────────────────────────── */
+const RIG_KEYS = ['frame', 'gap', 'wt', 'dotR', 'rim', 'det', 'face'];
+function rigs() { try { return JSON.parse(localStorage.getItem(LIB)) || {}; } catch (e) { return {}; } }
+$('b-save').onclick = () => {
+  const i = $('name'), n = i.value.trim();
+  if (!n) return toast('Name it first');
+  const all = rigs(), rec = { wheels: S.wheels };
+  RIG_KEYS.forEach(k => rec[k] = S[k]);
+  all[n] = rec;
+  localStorage.setItem(LIB, JSON.stringify(all));
+  i.value = ''; renderSaved(); toast('Saved');
+};
+function renderSaved() {
+  const all = rigs(), box = $('saved'), keys = Object.keys(all);
+  box.innerHTML = '';
+  if (!keys.length) { box.innerHTML = '<div class="empty">Nothing saved yet.</div>'; return; }
+  keys.forEach(k => {
+    const c = document.createElement('div');
+    c.className = 'chip'; c.innerHTML = k + ' <span>×</span>';
+    c.onclick = () => {
+      const r = all[k];
+      S.wheels = r.wheels.map(w => Object.assign({}, w));
+      RIG_KEYS.forEach(n => { if (r[n] !== undefined) S[n] = r[n]; });
+      S.sel = -1; syncInputs(); syncFrame(); renderFaces(); commit();
+    };
+    c.querySelector('span').onclick = e => {
+      e.stopPropagation();
+      const a = rigs(); delete a[k];
+      localStorage.setItem(LIB, JSON.stringify(a)); renderSaved();
+    };
+    box.appendChild(c);
+  });
+}
+
+/* ── Boot + loop ───────────────────────────────────────────────────────── */
+function syncInputs() {
+  ['gap', 'wt', 'dotR', 'spd', 'snap', 'rim', 'det'].forEach(k => { put($(k), S[k]); put($(k + 'N'), S[k]); });
+  ['run', 'grid', 'cons', 'fill'].forEach(k => { $(k).checked = S[k]; });
+}
+function commit() { paint(); try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+function tick(t) {
+  const dt = LAST ? Math.min(64, t - LAST) / 1000 : 0; LAST = t;
+  if (S.run && S.spd && PATH) { SPIN += S.spd * dt; draw(); }
+  requestAnimationFrame(tick);
+}
+
+try {
+  const saved = JSON.parse(localStorage.getItem(KEY));
+  if (saved && saved.wheels) {
+    Object.assign(S, saved, { sel: -1 });
+    /* ⚠ MIGRATE. The WIP autosave is the whole of `S`, so a session saved while
+       the classifier existed restores `auto: true` and a set of UNPINNED wheels
+       — which quietly turned the guessing back on for anyone who had ever used
+       the lab before, and made "the default is off now" a change they could not
+       see. Whatever is loaded, every wheel keeps the side it was saved with and
+       nothing is allowed to reinterpret it. */
+    delete S.auto;
+    S.wheels.forEach(w => { w.pin = true; });
+  }
+} catch (e) {}
+if (!FACES[S.face]) S.face = 'spoke';
+if (!S.wheels.length) S.wheels = PRESETS.field.map(w => Object.assign({ pin: true }, w));
+syncInputs(); syncFrame(); renderFaces(); renderSaved(); commit();
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>

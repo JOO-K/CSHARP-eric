@@ -501,7 +501,14 @@ body {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  background: #000;
+  /* ⚠ THE SCREEN'S OWN COLOUR, not black. The status bar and the home indicator
+     are transparent strips above and below `.screen-content`, and with a black
+     phone behind them they read as two black bars — which a real iPhone does
+     not show: the app's colour runs to the edges and the time, the island and
+     the indicator float on it. `paintPhoneChrome` (app.js) sets `--pscreen-bg`
+     from the screen being shown, after every render. Black is only the
+     fallback for a screen with no background of its own. */
+  background: var(--pscreen-bg, #000);
 }
 
 /* Status bar */
@@ -568,7 +575,10 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  /* Follows the status bar's icon theme, now that it sits on the app's colour. */
+  color: #fff;
 }
+.home-indicator.dark-icons { color: #000; }
 .home-indicator::after {
   content: '';
   width: 134px;

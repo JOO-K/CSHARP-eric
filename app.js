@@ -173,7 +173,34 @@ function plVideoWatch(screenEl) {
   vids.forEach(v => screenEl._vidWatch.observe(v));
 }
 
+/* The phone takes its background from the screen it is showing, so the status
+   bar and the home indicator sit on the app's own colour instead of on two
+   black strips — see `.phone-screen` in style.css. One shot, after render:
+   every screen's background is a theme token fixed per variant, not something
+   that animates. Reads the FIRST child of `.screen-content`, which is the
+   screen root (`.app-screen` / `.s-home-v3` / …). */
+function paintPhoneChrome() {
+  document.querySelectorAll('.phone-screen').forEach(ps => {
+    const first = ps.querySelector('.screen-content > *');
+    const bg = first && getComputedStyle(first).backgroundColor;
+    const solid = bg && bg !== 'transparent' && !/^rgba\(.*,\s*0\)$/.test(bg);
+    if (solid) ps.style.setProperty('--pscreen-bg', bg);
+    else ps.style.removeProperty('--pscreen-bg');
+    /* ⚠ The icons follow the COLOUR, not `statusTheme`. That flag is per screen,
+       and a screen has a dark and a light variant — on a black phone white
+       icons were right for both; on the app's own cream they vanish. So the
+       time, the icons and the indicator go dark on a light background, read
+       off the same colour the phone just took. */
+    const m = solid && bg.match(/\d+(\.\d+)?/g);
+    if (m && m.length >= 3) {
+      const lum = (0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2]) / 255;
+      ps.querySelectorAll('.status-bar, .home-indicator').forEach(el => el.classList.toggle('dark-icons', lum > 0.5));
+    }
+  });
+}
+
 function paintAfterRender() {
+  paintPhoneChrome();
   document.querySelectorAll('.s-home-v3').forEach(el => populateHomeData(el));
   document.querySelectorAll('.s-pl2').forEach(plVideoWatch);
   document.querySelectorAll('.s-onboarding').forEach(obInit);
@@ -633,6 +660,47 @@ const ARTIST_IMG = {
   '100 gecs': 'images/artist-100gecs.jpg',
   'Carpenter Brut': 'images/artist-carpenterbrut.jpg',
 };
+/* Label / members / description for the artist page. Hand-written for the four
+   artists with a banner; anything else falls back to the album's label (from
+   the build data, when it has one) and a one-line genre description. Members
+   is "if any" — a solo act simply has no row (see .v3-ai-row.is-empty) — and
+   so is Description. */
+const ARTIST_INFO = {
+  'Crystal Castles': {
+    label: 'Fiction / Last Gang',
+    members: ['Ethan Kath', 'Edith Frances'],
+    desc: 'Toronto electronic duo formed in 2006. Lo-fi, abrasive synth-punk built on chiptune noise and buried, screamed vocals.',
+  },
+  'Phoebe Bridgers': {
+    label: 'Dead Oceans',
+    members: [],
+    desc: 'Los Angeles singer-songwriter. Hushed, dark-humoured indie folk; also one third of boygenius and half of Better Oblivion Community Center.',
+  },
+  '100 gecs': {
+    label: 'Dog Show / Atlantic',
+    members: ['Laura Les', 'Dylan Brady'],
+    desc: 'Hyperpop duo from St. Louis. A maximalist collage of pop-punk, ska, dubstep and nightcore, pitched somewhere between a joke and a manifesto.',
+  },
+  'Carpenter Brut': {
+    label: 'No Quarter Prod.',
+    members: ['Franck Hueso'],
+    desc: 'French darksynth project from Poitiers. Horror-movie synths over metal drums, wrapped in an ’80s VHS aesthetic.',
+  },
+};
+function artistInfoHtml(a) {
+  const info = ARTIST_INFO[a.artist] || {};
+  // No invented description: an artist without one loses the row, and the
+  // strip's reserved overhang shrinks with it (see --rev-cred-h in app.css).
+  const rows = [
+    ['Label',       info.label || a.label || ''],
+    ['Members',     (info.members || []).join(', ')],
+    ['Description', info.desc || ''],
+  ];
+  return rows.map(([lbl, val]) =>
+    `<div class="v3-ai-row v3-ai-row--${lbl.toLowerCase()}${val ? '' : ' is-empty'}">` +
+    `<span class="v3-ai-lbl">${lbl}</span><span class="v3-ai-val">${val}</span></div>`
+  ).join('');
+}
 window.onArtistName = function (el) {
   const scr = el && el.closest('.s-home-v3');
   if (!scr) return;
@@ -656,6 +724,8 @@ function populateArtistPage(scr) {
   if (genreEl) genreEl.textContent = a.genre || '';
   const box = scr.querySelector('.v3-artist-albums');
   if (box) box.innerHTML = artistAlbumsHtml(a);
+  const info = scr.querySelector('.v3-artist-info');
+  if (info) info.innerHTML = artistInfoHtml(a);
 }
 
 /* The artist's albums — replaces the rating histogram (an artist has no single
@@ -1314,7 +1384,7 @@ window.reactRing = reactRing;
    ⚠️ Tapping a CD used to raise a POPUP over the screen. It does not any more,
    and it should not go back: a floating panel covered the record you had just
    tapped, and it was a second surface to dismiss on top of a screen that already
-   has a nav. The nav's plateau is already the app's "what is playing" strip, so
+   has a nav. The nav's hump is already the app's "what is playing" strip, so
    the answer to "where do I hear this?" belongs in it. The plateau GROWS
    (`.s-home-v3--console`, see app.css), the friends ticker gives way to the
    album you tapped, and the room that opens up holds the four services.
@@ -1330,6 +1400,7 @@ window.reactRing = reactRing;
    be showing a profile favourite, which is not the shell's bento album. */
 window.openConsole = function (screenEl, album) {
   if (!screenEl || !album) return;
+  if (window.closeFriends) window.closeFriends(screenEl);   // one thing in the hump at a time
   screenEl._consoleAlbum = album;
 
   const box = screenEl.querySelector('.v3-console');
@@ -1377,8 +1448,12 @@ function consoleArmDismiss(scr) {
   const bento = scr.querySelector('.v3-bento');
   const bye = () => window.closeConsole(scr);
   /* ⚠ A tap on the console itself must not close it — the service buttons live
-     in there. They stop propagation, but the padding between them does not. */
-  const onBento = (ev) => { if (!ev.target.closest('.v3-console')) bye(); };
+     in there. They stop propagation, but the padding between them does not.
+     ⚠ Nor a tap on the CD. This fires on pointerdown, before the CD's click:
+     it was closing the console and `onCdTap` then found it closed and opened
+     it straight back up, so the CD could never put its own console away. The
+     CD is the toggle; it decides for itself. */
+  const onBento = (ev) => { if (!ev.target.closest('.v3-console, .v3-cd')) bye(); };
   if (body)  body.addEventListener('scroll', bye, { passive: true });
   if (bento) bento.addEventListener('pointerdown', onBento, true);
   scr._consoleOff = () => {
@@ -1424,7 +1499,14 @@ window.onLivePill = function (btn) {
      handed over to it and the gesture does not resolve until you pick a mix or
      leave — so while the dial is up this pill means "back" ahead of anything
      the screen underneath would otherwise make it mean. */
-  if (scr.classList.contains('s-home-v3--mixing')) { closeMixDial(); return; }
+  /* ⚠ ONE LEVEL AT A TIME. Inside a main's ring, Back means back to the mains —
+     not out of the dial. Closing from two levels deep would throw away the step
+     you took as well as the one you meant to undo, and there is no other way
+     back up: the mains are not on screen while you are inside one. */
+  if (scr.classList.contains('s-home-v3--mixing')) {
+    if (MIX.at) mixGoto(null); else closeMixDial();
+    return;
+  }
   if (scr.classList.contains('s-home-v3--review')) { goBack(); return; }
   toggleHand();   // regular bento state: the pill is the hand-layout switch
 };
@@ -1522,10 +1604,13 @@ window.toggleRevAction = function (btn, e) {
   // The dark/light shells show the SAME album, and this is state about the
   // record rather than about the screen — so the twin follows. (Deliberate
   // exception to the usual "scope handlers to the clicked shell" rule.)
+  // ALL matching squares, this shell included: the artist page's corner
+  // Favorite pill and the album page's quick-log square are the same toggle.
   homeShells().forEach(s => {
-    if (s === scr || s._album !== a) return;
-    const twin = s.querySelector(`.v3-rev-q[data-k="${k}"]`);
-    if (twin) twin.classList.toggle('on', on);
+    if (s !== scr && s._album !== a) return;
+    s.querySelectorAll(`.v3-rev-q[data-k="${k}"]`).forEach(b => {
+      if (b !== btn) b.classList.toggle('on', on);
+    });
   });
 };
 
@@ -1651,29 +1736,42 @@ function populateBigScore(scr, album) {
   const sub = scr.querySelector('.v3-rev-score-sub');
   if (sub) sub.innerHTML = halfStars(album.rating, 13, true);
 }
-function populateSongList(scr) {
+// The tracklist shows its first SONGS_SHOWN rows; a longer album gets a
+// "View all songs" button that expands the list in place (expandSongList).
+// Opening the page always starts collapsed — `all` is only ever passed by the
+// button. An album at or under the cap has no button at all.
+const SONGS_SHOWN = 8;
+function populateSongList(scr, all) {
   const wrap = scr && scr.querySelector('.v3-rev-songs');
   if (!wrap) return;
   const a = scr._album || window.featuredAlbum;
   if (!a) { wrap.innerHTML = ''; return; }
   const songs = songsFor(a);
-  // Every track is listed — the list used to cap at ~8.5 rows and scroll inside
-  // itself, which hid the back half of a long album behind a nested scroller.
-  // The header row reuses the row's own three cell classes so the labels can
-  // only ever sit over the columns they name (see .v3-song-head in app.css).
+  const shown = all ? songs : songs.slice(0, SONGS_SHOWN);
+  const more = songs.length - shown.length;
+  // In flow, not a nested scroller — the page is the scroller. The header row
+  // reuses the row's own cell classes so the labels can only ever sit over the
+  // columns they name (see .v3-song-head in app.css).
   wrap.innerHTML = `
     <div class="v3-song-head">
+      <span class="v3-song-num"></span>
       <span class="v3-song-title">Song</span>
       <span class="v3-song-dur">Length</span>
       <span class="v3-song-rate">Rating</span>
     </div>
-    <div class="v3-rev-songs-scroll">` + songs.map(s => `
+    <div class="v3-rev-songs-scroll">` + shown.map((s, i) => `
     <button class="v3-song-row" onclick="event.stopPropagation(); openSongLog(this)" data-title="${s.title}">
+      <span class="v3-song-num">${i + 1}</span>
       <span class="v3-song-title">${s.title}</span>
       <span class="v3-song-dur">${s.dur}</span>
       <span class="v3-song-rate">${s.rating.toFixed(1)}</span>
-    </button>`).join('') + `</div>`;
+    </button>`).join('') + `</div>` + (more > 0 ? `
+    <button class="v3-songs-more" onclick="event.stopPropagation(); expandSongList(this)">View all ${songs.length} songs</button>` : '');
 }
+window.expandSongList = function (el) {
+  const scr = el.closest('.s-home-v3');
+  if (scr) populateSongList(scr, true);
+};
 window.openSongLog = function(el) {
   const scr = el.closest('.app-screen');
   const a = (scr && scr._album) || window.activeAlbum || window.featuredAlbum;
@@ -2830,21 +2928,22 @@ function proWheelInit(root, box, opts) {
   /* Shelves are read from the catalogue, not invented: primary genre only (the
      part before the '/'), first album in that genre stands for it, For You
      pinned first and carrying whatever the bento is already showing. */
-  /* The order is editorial, and it goes broad → narrow: the three ways of
-     cutting the WHOLE catalogue first, then the genres underneath them. Genres
-     are read from the catalogue rather than listed, so the wheel can never
-     offer a shelf the archive cannot fill. */
-  const byGenre = new Map();
-  (window.ARCHIVE || []).forEach(a => {
-    const g = String(a.genre || '').split('/')[0].trim();
-    if (!g) return;
-    if (!byGenre.has(g)) byGenre.set(g, []);
-    byGenre.get(g).push(a);
-  });
+  /* The three ways of cutting the WHOLE catalogue, and then the door to the
+     dial. Broad → narrow, as before.
+
+     ⚠️ THE GENRE ROWS ARE GONE FROM THE WHEEL. It used to list the archive's
+     first eight genres here, which was the only way to pick one before the mix
+     dial existed. Now that the dial is the place genres are chosen, keeping a
+     second flat list of them meant two controls for one job that could not
+     agree: the wheel offered eight bare labels read off the catalogue, the
+     dial offers sixteen families and 236 subgenres and can combine them. One
+     of the two had to go, and it is the one that cannot express a mix.
+     ⚠️ `shelfPool`'s `genre` branch (the `default:` case) is deliberately left
+     in place — the shop's cosmetic commit still resolves shelves by label, and
+     it is the fallback for any shelf kind that has no branch of its own. */
   const all = [{ label: 'For You',     kind: 'all' },
                { label: 'Friends',     kind: 'friends' },
-               { label: 'Popular USA', kind: 'popular' },
-               ...[...byGenre.keys()].slice(0, 8).map(g => ({ label: g, kind: 'genre' }))];
+               { label: 'Popular USA', kind: 'popular' }];
 
   /* ⚠ A shelf you cannot swipe is not a shelf. Anything that cannot field two
      albums is dropped HERE, at build time, so it never appears — rather than
@@ -2860,8 +2959,13 @@ function proWheelInit(root, box, opts) {
      appended AFTER the two-album filter — it has no pool of its own to pass it.
      ⚠ Only on the real home. The shop's showcase commits cosmetically to one
      bento, and a sheet sliding up over the storefront to change a demo would be
-     the demo reaching out of its case. */
-  if (opts.realShelf) shelves.push({ label: 'Custom mix', kind: 'mix-open', count: '+' });
+     the demo reaching out of its case.
+     ⚠️ IT IS CALLED "Genre", not "Custom mix". With the flat genre rows gone
+     this is the only genre control there is, so it should be named for what it
+     gives you rather than for the shape of the thing behind it — "Custom mix"
+     described the dial, which you have not seen yet at the moment you are
+     reading the row. */
+  if (opts.realShelf) shelves.push({ label: 'Genre', kind: 'mix-open', count: '+' });
 
   const wheel = document.createElement('div');
   wheel.className = 'shop-pick';
@@ -3098,6 +3202,120 @@ function closePlCustomize() {
 /* Shop — placeholder purchase. There is no cart, no price total and no
    payment: the button becomes the state it would have bought. Enough to show
    what owning something looks like without pretending to charge for it. */
+/* ══ THE PROFILE SKIN — the card's colour and the page behind it ═══════════
+   Two things the owner picks, and each is TWO decisions: an RGB value and a
+   LIGHTNESS. They are separate controls on purpose — "what colour" and "how
+   dark" are not the same question, and folding them into one picker means every
+   change of hue throws away the depth you had already settled on. The slider
+   mixes the picked colour toward black or white, so the hue survives it.
+
+   ⚠ Only `--pf-base` (the card) and `--sd-bg` (the page) are PICKED. Everything
+   else here is DERIVED, because a colour system where the user sets ten tokens
+   by hand is a colour system where nine of them end up unreadable. The ink is
+   chosen by luminance against whatever the surface turned out to be, which is
+   the whole reason you can pick a near-white card in dark mode and still read
+   your own bio.
+
+   ⚠ `--pf-lt` / `--pf-dk` (the emboss) are deliberately NOT derived. They are
+   rgba white and black, so they already work over any base — the card keeps its
+   embossed edge whatever colour it becomes.
+   ─────────────────────────────────────────────────────────────────────────── */
+function sdRgb(hex) {
+  const h = String(hex || '').replace('#', '');
+  const n = h.length === 3 ? h.split('').map(x => x + x).join('') : h;
+  const v = parseInt(n, 16);
+  return isNaN(v) || n.length !== 6
+    ? null
+    : { r: (v >> 16) & 255, g: (v >> 8) & 255, b: v & 255 };
+}
+/* Mix toward white (l > 0) or black (l < 0). ⚠ A straight multiply would drag
+   everything toward black and desaturate on the way up; mixing against a target
+   keeps the hue where the user put it at both ends of the slider. */
+function sdMix(c, l) {
+  const t = Math.max(-100, Math.min(100, l || 0)) / 100;
+  const to = t >= 0 ? 255 : 0;
+  const k = Math.abs(t);
+  return { r: Math.round(c.r + (to - c.r) * k),
+           g: Math.round(c.g + (to - c.g) * k),
+           b: Math.round(c.b + (to - c.b) * k) };
+}
+const sdCss = c => 'rgb(' + c.r + ',' + c.g + ',' + c.b + ')';
+const sdCssA = (c, a) => 'rgba(' + c.r + ',' + c.g + ',' + c.b + ',' + a + ')';
+/* Perceived brightness (ITU-R BT.601). Good enough to answer the only question
+   asked of it: does black or white read on this? */
+const sdLum = c => (c.r * 299 + c.g * 587 + c.b * 114) / 255000;
+const sdInk = c => sdLum(c) > 0.56 ? { r: 22, g: 19, b: 13 } : { r: 255, g: 255, b: 255 };
+
+/* The inline style for a skinned profile screen, or '' when the owner has not
+   picked anything — an unset skin must leave the theme's own tokens completely
+   alone rather than re-stating them. */
+window.profSkinCss = function (P) {
+  const S = P && P.skin;
+  if (!S) return '';
+  const out = [];
+  const card = S.card && sdRgb(S.card);
+  if (card) {
+    const c = sdMix(card, S.cardL);
+    const ink = sdInk(c);
+    out.push('--pf-base:' + sdCss(c));
+    // The recessed inner face reads as a hollow in the card, so it steps AWAY
+    // from the light: darker on a light card, lighter on a dark one.
+    out.push('--pf-face:' + sdCss(sdMix(c, sdLum(c) > 0.5 ? -10 : 12)));
+    out.push('--pf-ink:' + sdCss(ink));
+    out.push('--pf-ink2:' + sdCssA(ink, 0.6));
+    out.push('--pf-edge:' + sdCssA(sdInk(c), 0.32));
+  }
+  const bg = S.bg && sdRgb(S.bg);
+  if (bg) {
+    const c = sdMix(bg, S.bgL);
+    const ink = sdInk(c);
+    out.push('--sd-bg:' + sdCss(c));
+    out.push('--pf-fg:' + sdCss(ink));
+    out.push('--pf-fg2:' + sdCssA(ink, 0.55));
+    out.push('--pf-border:' + sdCssA(ink, 0.14));
+    // ⚠ The username pill IS the screen background — that is what seats it in
+    // the banner. Its ink has to follow the page, not the card.
+    out.push('--pf-slot:' + sdCss(c));
+    out.push('--pf-slot-ink:' + sdCss(ink));
+    out.push('--pf-slot-ink2:' + sdCssA(ink, 0.55));
+  }
+  return out.join(';');
+};
+
+/* Live-edit. ⚠ Writes the variables straight onto every profile screen in the
+   DOM rather than re-rendering: a colour input dragged through a gradient fires
+   `input` on every frame, and a re-render per frame would both stutter and hand
+   the user a fresh element mid-drag. Same rule as `pfeditField` and
+   `profTagSync` — patch by hand, never re-render under a live control. */
+window.profSkinSet = function (key, value) {
+  const D = pfeditDraft();
+  if (!D.skin) D.skin = {};
+  D.skin[key] = (key === 'cardL' || key === 'bgL') ? Number(value) : value;
+  profSkinApply();
+};
+/* Clear one half of the skin back to the theme's own colours. */
+window.profSkinClear = function (which) {
+  const D = pfeditDraft();
+  if (!D.skin) return;
+  delete D.skin[which];
+  delete D.skin[which + 'L'];
+  if (!D.skin.card && !D.skin.bg) D.skin = null;
+  renderViewer();               // safe here: a reset is a click, not a drag
+};
+/* ⚠ `.s-prof2`, NOT `.s-pfedit`. The viewer can have the profile and the edit
+   page on stage at once (multi view, and both variants of each), and a skin that
+   only reached the form meant the card you were colouring sat there in the old
+   colour while you dragged. The preview needs nothing from here — it inherits
+   the same variables — but the real card does.
+   ⚠ setAttribute, not per-property writes: clearing half the skin has to REMOVE
+   the variables it set, and `style.foo = ''` one at a time leaves whatever the
+   new string no longer mentions. These screens carry no other inline style,
+   which is what makes that safe. */
+function profSkinApply() {
+  const css = profSkinCss(pfeditDraft());
+  document.querySelectorAll('.s-prof2').forEach(el => el.setAttribute('style', css));
+}
+
 /* Tags you own, for THIS SESSION only.
    ⚠ Deliberately not persisted. The storefront's own note says nothing is
    charged and nothing is kept, and a prototype that quietly remembers purchases
@@ -3302,6 +3520,76 @@ function fitNowText(textEl) {
   textEl.style.fontVariationSettings = `'wdth' 25, 'opsz' ${opsz}`;
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   THE FRIENDS PANEL — where a ticker tap goes (`openFriends` · `closeFriends`)
+   ══════════════════════════════════════════════════════════════════════════
+   The console's twin: `.s-home-v3--friends` grows the hump to half the screen
+   and `.v3-friends` (inside the nav, see bottomNav) fills with everyone in
+   FRIEND_ACTIVITY and the song they are on. It closes on the chevron, a scroll
+   of the page, or a touch anywhere outside the panel — same arming/tear-down
+   pattern as consoleArmDismiss, on the SCREEN rather than the bento because the
+   panel stands over the page and any touch off it should put it away. The two
+   humps are exclusive: opening one closes the other. */
+function friendsNowList() {
+  return (window.FRIEND_ACTIVITY || []).map(f => ({
+    name: f.user, init: f.init || (f.user || '?')[0].toUpperCase(), grad: f.grad || '',
+    song: (songsFor({ album: f.album, tracks: 10 })[0] || {}).title || 'Untitled',
+    album: f.album, artist: f.artist,
+  }));
+}
+function friendRowHtml(f) {
+  const esc = s => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+  const arg = String(f.name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+  return `
+    <button class="v3-fr-row" type="button" onclick="event.stopPropagation(); closeFriends(this); openFriendProfile('${arg}')">
+      <span class="v3-fr-av" style="background:${esc(f.grad)}">${esc(f.init)}</span>
+      <span class="v3-fr-txt">
+        <span class="v3-fr-name">${esc(f.name)}</span>
+        <span class="v3-fr-line"><span class="v3-fr-song">${esc(f.song)}</span><span class="v3-fr-sep">·</span><span class="v3-fr-album">${esc(f.album)}</span><span class="v3-fr-sep">·</span><span class="v3-fr-artist">${esc(f.artist)}</span></span>
+      </span>
+      <span class="v3-now-wave v3-fr-wave" aria-hidden="true"></span>
+    </button>`;
+}
+window.openFriends = function (scr) {
+  if (!scr) return;
+  window.closeConsole(scr);
+  const box = scr.querySelector('.v3-friends');
+  if (!box) return;
+  const list = box.querySelector('.v3-fr-list');
+  if (list) {
+    list.innerHTML = friendsNowList().map(friendRowHtml).join('');
+    list.querySelectorAll('.v3-now-wave').forEach(buildNowWave);
+    list.scrollTop = 0;
+  }
+  box.setAttribute('aria-hidden', 'false');
+  scr.classList.add('s-home-v3--friends');
+  friendsArmDismiss(scr);
+};
+window.closeFriends = function (elOrScreen) {
+  const scr = (elOrScreen && elOrScreen.closest)
+    ? elOrScreen.closest('.s-home-v3') : elOrScreen;
+  if (!scr || !scr.classList.contains('s-home-v3--friends')) return;
+  scr.classList.remove('s-home-v3--friends');
+  const box = scr.querySelector('.v3-friends');
+  if (box) box.setAttribute('aria-hidden', 'true');
+  if (scr._friendsOff) { scr._friendsOff(); scr._friendsOff = null; }
+};
+function friendsArmDismiss(scr) {
+  if (scr._friendsOff) scr._friendsOff();
+  const body = scr.querySelector('.v3-body');
+  const bye = () => window.closeFriends(scr);
+  /* A touch inside the panel is a row, the chevron, or a scroll of the list;
+     none of those is "outside". Capture, because the bento's children stop
+     propagation on their own handlers. */
+  const onDown = (ev) => { if (!ev.target.closest('.v3-friends')) bye(); };
+  if (body) body.addEventListener('scroll', bye, { passive: true });
+  scr.addEventListener('pointerdown', onDown, true);
+  scr._friendsOff = () => {
+    if (body) body.removeEventListener('scroll', bye, { passive: true });
+    scr.removeEventListener('pointerdown', onDown, true);
+  };
+}
+
 /* How long a friend holds the bar. It is also a READING window, not just a
    ticker interval — the bar is now a tap target, so it has to sit still long
    enough to notice a name, decide, and reach it. 4.2s was tuned for something
@@ -3323,16 +3611,16 @@ function renderNowBar(screenEl) {
   paintNow(textEl, list[i]);
   bar._nowItem = list[i];
 
-  /* The bar is a link to whoever is on it. ⚠ The handler reads `bar._nowItem`
-     rather than closing over `list[i]` — the ticker swaps every SWAP_MS, so a
-     captured value would send you to the person who was on the bar when the
-     screen was built, not the one you actually tapped. */
+  /* The bar opens the FRIENDS PANEL (openFriends) — the hump grows and lists
+     everyone listening, and a row is what opens a profile. It used to jump
+     straight to whoever was on the bar, which meant tapping a name you had
+     half-read as it swapped out from under you. `bar._nowItem` is still kept
+     in step for anything else that wants the person on the bar. */
   if (!bar._tapWired) {
     bar._tapWired = true;
     bar.addEventListener('click', (e) => {
       e.stopPropagation();
-      const it = bar._nowItem;
-      if (it && it.name) window.openFriendProfile(it.name);
+      window.openFriends(bar.closest('.s-home-v3'));
     });
   }
 
@@ -4553,7 +4841,7 @@ function buildPhoneHTML(screen, variant) {
         <div class="sb-icons">${SVG_SIGNAL}${SVG_WIFI}${SVG_BATTERY}</div>
       </div>
       <div class="screen-content">${v.html}</div>
-      <div class="home-indicator"></div>
+      <div class="home-indicator ${screen.statusTheme === 'dark' ? 'dark-icons' : ''}"></div>
     </div>
   </div>`;
 }
@@ -4816,6 +5104,7 @@ function renderMobileSingle() {
   document.getElementById('mb-next').disabled = currentIdx === SCREENS.length - 1;
   requestAnimationFrame(() => {
     scaleMobilePhone();
+    paintPhoneChrome();
     center.querySelectorAll('.s-home-v3').forEach(el => populateHomeData(el));
     center.querySelectorAll('.s-onboarding').forEach(obInit);
     applyFilletMasks();
@@ -5571,11 +5860,13 @@ const OB = {
   username: '',
   service: null,        // 'spotify' | 'apple' | 'soundcloud'
   tracking: null,       // null = undecided, then true/false
-  genres:   new Set(),
+  genres:   new Set(),  // ⚠ shared BY REFERENCE with OB_MIX — never reassign it
   artists:  new Set(),  // artist names
   albums:   new Set(),  // "artist – album" keys
   following:new Set(),  // handles
   q: { artists: '', albums: '' },
+  genreView: 'wheel',   // step 3: 'wheel' (the mix dial) | 'list' (the same tree, flat)
+  genreOpen: new Set(), // step 3 list: which mains are unfolded
 };
 
 // The tracking step only appears once a service is connected.
@@ -5584,7 +5875,7 @@ function obActiveSteps() { return OB.service ? [0,1,2,3,4,5,6,7] : [0,1,3,4,5,6,
 const obEsc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 // onclick-safe: survives HTML-decode then JS single-quote parse.
 const obOc  = s => String(s).replace(/\\/g,'\\\\').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,"\\'");
-const obUserValid = () => /^[a-zA-Z0-9_]{3,20}$/.test(OB.username);
+const obUserValid = () => /^[a-zA-Z0-9_]{4,18}$/.test(OB.username);
 // (albumKey() — "artist – album" — is defined above, reused here for album selection.)
 
 // Kick off a fresh signup (from the auth screen).
@@ -5592,6 +5883,8 @@ window.obStart = function () {
   OB.step = 0; OB.username = ''; OB.service = null; OB.tracking = null;
   OB.genres.clear(); OB.artists.clear(); OB.albums.clear(); OB.following.clear();
   OB.q.artists = ''; OB.q.albums = '';
+  OB.genreView = 'wheel'; OB.genreOpen.clear();
+  OB_MIX.at = null; OB_MIX.from = null;
   navigate('onboarding');
 };
 
@@ -5635,8 +5928,9 @@ function obSyncOne(root) {
   const num = idx + 1, total = active.length;
 
   const bar = root.querySelector('.ob-prog-bar'); if (bar) bar.style.width = (num / total * 100) + '%';
-  const nEl = root.querySelector('.ob-step-n');   if (nEl) nEl.textContent = num;
-  const tEl = root.querySelector('.ob-step-t');   if (tEl) tEl.textContent = total;
+  const pad = n => String(n).padStart(2, '0');
+  const nEl = root.querySelector('.ob-step-n');   if (nEl) nEl.textContent = pad(num);
+  const tEl = root.querySelector('.ob-step-t');   if (tEl) tEl.textContent = pad(total);
 
   root.querySelectorAll('.ob-panel').forEach(p => p.classList.toggle('ob-panel--on', +p.dataset.step === OB.step));
 
@@ -5649,8 +5943,11 @@ function obSyncOne(root) {
   root.querySelectorAll('.ob-svc').forEach(b => b.classList.toggle('ob-svc--on', b.dataset.svc === OB.service));
   root.querySelectorAll('.ob-track-opt').forEach(b =>
     b.classList.toggle('ob-track-opt--on', OB.tracking !== null && ((+b.dataset.track === 1) === OB.tracking)));
-  root.querySelectorAll('.ob-panel[data-step="3"] .chip').forEach(c =>
-    c.classList.toggle('selected', OB.genres.has(c.textContent)));
+  /* Step 3 — the dial is built into this instance on first sync, then only
+     repainted; the list and the chips are re-rendered from OB.genres. */
+  obMixBuild(root);
+  root.querySelectorAll('.ob-mix .mix-inline').forEach(w => mixWrapSync(w, OB_MIX));
+  obSyncGenres(root);
 
   obRenderWall(root, 'artists');
   obRenderWall(root, 'albums');
@@ -5659,11 +5956,23 @@ function obSyncOne(root) {
   obSyncFooter(root);
 }
 
+/* Repaints everything on step 0 that reacts to what's typed: the hint line, the
+   motor pulley (hollow → solid + turning once the handle is valid) and the
+   18-pulley character meter. */
 function obUserHint(root) {
-  const uh = root.querySelector('.ob-user-hint'); if (!uh) return;
   const ok = obUserValid();
+  const n  = OB.username.length;
+
+  // ⚠ The panel, not `.ob-plate` — step 0 has no plate any more. Kept as the
+  // same class name so the rig's own lit states still work if it is restored.
+  const panel = root.querySelector('.ob-panel--user') || root.querySelector('.ob-plate');
+  if (panel) panel.classList.toggle('ob-plate--ok', ok);
+
+  root.querySelectorAll('.ob-user-meter i').forEach((d, i) => d.classList.toggle('on', i < n));
+
+  const uh = root.querySelector('.ob-user-hint'); if (!uh) return;
   uh.classList.toggle('ob-user-hint--ok', ok);
-  uh.textContent = ok ? '@' + OB.username + ' is available' : '3–20 characters · letters, numbers, underscores';
+  uh.textContent = ok ? '@' + OB.username + ' — available' : '4–18 chars · a–z 0–9 _';
 }
 
 function obSyncFooter(root) {
@@ -5681,6 +5990,201 @@ function obSyncFooter(root) {
   else                 { next.textContent = 'Continue';                              next.disabled = false; }
 }
 
+// ── Step 3 · genres: Pro's mix dial, and a list of the same tree ──────────
+/* ⚠ THE SAME DIAL AS PRO'S, not a copy of it. `mixDialSvg`, `mixGoto`,
+   `mixToggle` and the rest take a dial CONTEXT (see `MIX`); this is
+   onboarding's. `genres` IS `OB.genres` — the one Set, shared by reference — so
+   the wheel, the list, the chip row and the footer count cannot disagree, and
+   `obStart`'s `.clear()` empties the dial with everything else.
+   ⚠ `wraps()` is EVERY onboarding instance's dial. The viewer shows the dark
+   and light variants side by side, and a step into a main has to happen on
+   both — the same multi-instance discipline as the rest of `OB`.
+   ⚠ `onSync` repaints the rest of the step on every dial tap, so a pick made
+   on the wheel shows up in the chip row, the list and the Continue count. Taps
+   made in the list go the other way: `obToggleGenre` → `obSync` →
+   `obSyncOne` → `mixWrapSync`. Both roads end at the same DOM. */
+const OB_MIX = {
+  genres: OB.genres, at: null, from: null,
+  ring: { items: [], seat: [] },
+  wraps: () => [...document.querySelectorAll('.s-onboarding .ob-mix .mix-inline')],
+  // The chips, the list AND the footer's count — a wheel tap has to move all three.
+  onSync: () => document.querySelectorAll('.s-onboarding').forEach(r => { obSyncGenres(r); obSyncFooter(r); }),
+};
+
+/* Build this instance's dial into `.ob-mix`, once. Mirrors `mixInlineBuild`
+   minus the cover: there is no album behind it here, so no blur and no tint —
+   the wrap wears the screen's own palette (`.mix-inline--ob` in app.css).
+   ⚠ Inserted BEFORE the back pill, which is already in the markup, so the pill
+   paints on top. */
+function obMixBuild(root) {
+  const host = root.querySelector('.ob-mix'); if (!host) return;
+  if (host.querySelector('.mix-inline')) return;
+  const wrap = document.createElement('div');
+  wrap.className = 'mix-inline mix-inline--ob';
+  wrap.innerHTML = mixDialSvg(OB_MIX) + mixHubSvg(OB_MIX);
+  host.insertBefore(wrap, host.firstChild);
+  mixDialTap(wrap, OB_MIX);
+  const dial = wrap.querySelector('.ob-dial');
+  mixDialFitLabels(dial);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => mixDialFitLabels(dial));
+  mixWrapSync(wrap, OB_MIX);
+  /* ⚠ It spins in on BUILD as well as on arrival — a page loaded straight onto
+     this step, or the screen re-rendered under you, still gets the entrance.
+     If the panel is hidden at the time the keyframe is simply never seen. */
+  obMixSpinWrap(wrap);
+}
+
+/* Everything on step 3 that is not the dial's own ring: which view is up, the
+   back pill, the chip row, the list, and the label fit. */
+function obSyncGenres(root) {
+  const panel = root.querySelector('.ob-panel[data-step="3"]'); if (!panel) return;
+  const view = OB.genreView;
+  panel.querySelectorAll('.ob-view-btn').forEach(b => b.classList.toggle('is-on', b.dataset.view === view));
+  panel.querySelectorAll('.ob-genres').forEach(g => g.classList.toggle('is-on', g.dataset.genres === view));
+  // The dial's back: only inside a main, and only while the wheel is the view.
+  panel.classList.toggle('ob-panel--in', view === 'wheel' && !!OB_MIX.at);
+
+  obRenderGenreList(panel);
+  obSyncDock(root);
+
+  /* ⚠ Labels can only be MEASURED while the wheel is on screen. The panel is
+     `display: none` on every other step and the wheel is hidden behind the list
+     view, and `getComputedTextLength` reports 0 for anything not rendered — so
+     a dial built on step 0 was never fitted. Refit whenever it is showing; the
+     fit resets first, so running it again costs nothing. */
+  if (view === 'wheel' && panel.classList.contains('ob-panel--on'))
+    panel.querySelectorAll('.ob-dial:not(.is-ghost), .ob-hub-svg').forEach(mixDialFitLabels);
+}
+
+/* ── THE DOCK — what you have picked on this step, against Continue ────────
+   One strip between the stage and the footer (`.ob-picks-dock`), outside the
+   scroll, so it is always in reach and can never push the wheel or the walls.
+   ⚠ It began as step 3's chip row and is now every pick step's: genres (3),
+   artists (4), albums (5), people (6). The artist/album walls used to pin
+   their picks in an `.ob-pinned` row ABOVE the wall — moved here so the whole
+   wizard keeps its picks in one place, on the button they feed.
+   Two rows, then a fade — the mask only once there is overflow (`is-over`,
+   measured), so a two-row set that fits is never dimmed. Each chip removes its
+   own pick. Empty, it is the step's one-line instruction. */
+const OB_DOCK_HINT = {
+  4: 'Tap artists to follow them',
+  5: 'Tap the records that made you',
+  6: 'Follow a few to start',
+};
+function obSyncDock(root) {
+  const dock = root.querySelector('.ob-picks-dock'); if (!dock) return;
+  const step = OB.step;
+  root.classList.toggle('ob-has-dock', step >= 3 && step <= 6);
+  root.dataset.obStep = step;
+  /* The stage fades out at the bottom on the steps that SCROLL — the walls,
+     the people, the genre bubbles — so cards dissolve into the dock instead of
+     being cut off at a hard edge above Skip and Continue. Not on the wheel:
+     it is sized to fit, and a fade across its lower rim would read as a bug. */
+  root.classList.toggle('ob-stage-fade', step === 4 || step === 5 || step === 6 || (step === 3 && OB.genreView === 'list'));
+
+  let html = '', hint = '';
+  if (step === 3) {
+    hint = OB.genreView === 'list' ? 'Open a genre and tap what you like'
+         : OB_MIX.at               ? 'Tap the subgenres you want'
+                                   : 'Tap a genre to open it';
+    html = [...OB.genres].map(g =>
+      `<button class="ob-mix-chip" type="button" onclick="obToggleGenre(this,'${obOc(g)}')" title="Remove ${obEsc(g)}">` +
+      `${obEsc(mixChipLabel(g))}<i>×</i></button>`).join('');
+  } else if (step === 4) {
+    hint = OB_DOCK_HINT[4];
+    html = obArtistList().filter(a => OB.artists.has(a.name)).map(a => obChip('artist', a.name, a.image, a.name)).join('');
+  } else if (step === 5) {
+    hint = OB_DOCK_HINT[5];
+    html = obAlbumList().filter(a => OB.albums.has(albumKey(a))).map(a => obChip('album', albumKey(a), a.image, a.album)).join('');
+  } else if (step === 6) {
+    hint = OB_DOCK_HINT[6];
+    // ⚠ Deduped by handle: FRIEND_ACTIVITY lists a user once per post, so the
+    // people list carries repeats, and one follow must not become three chips.
+    const seen = new Set();
+    html = obPeopleList().filter(p => OB.following.has(p.user) && !seen.has(p.user) && seen.add(p.user)).map(p =>
+      `<button class="ob-chip" onclick="obToggleFollow('${obOc(p.user)}')">` +
+      `<span class="ob-chip-av" style="background:${p.grad}">${obEsc(p.init)}</span>` +
+      `<span class="ob-chip-t">@${obEsc(p.user)}</span><span class="ob-chip-x">×</span></button>`).join('');
+  }
+  dock.classList.toggle('is-empty', !html);
+  if (html) dock.innerHTML = html; else dock.textContent = hint;
+  // Measurable only while shown; hidden it reads 0/0 and simply stays unfaded.
+  dock.classList.toggle('is-over', dock.scrollHeight > dock.clientHeight + 1);
+  /* ⚠ On the fade steps `.ob-foot` (dock + footer) is an OVERLAY on the stage,
+     and the stage's fade spans exactly its height — measured HERE, after the
+     dock has been filled, because the dock is 0, 1 or 2 rows tall depending
+     on what is picked and a measurement taken before the render is one sync
+     stale. The panel's bottom padding takes the same number. */
+  const foot = root.querySelector('.ob-foot');
+  if (foot) root.style.setProperty('--ob-foot', foot.offsetHeight + 'px');
+}
+
+/* The LIST: the same two levels as the dial, as BUBBLES — the chips step 3 had
+   before the dial, in the wheel's margins and the step's emboss. The sixteen
+   mains are raised pills. ⚠ Tapping a main PICKS it and unfolds its subs in a
+   well beneath — the dial's rule ("going in picks it"), kept on purpose so the
+   two views mean the same thing by the same tap; an earlier cut had rows that
+   unfolded without picking, and the two views then disagreed about what a tap
+   on "Rock" was. Tapping it again takes the pick out and folds the well; subs
+   picked inside stay picked (they are in the chip row) and the main stays LIT
+   — accent rim, not pressed — the dial's "something in here" ring.
+   ⚠ The well is a full-width flex item, so it breaks the line: it lands under
+   the ROW its main is on, not necessarily right under the bubble. That is the
+   price of a wrap of bubbles rather than a column of rows, and it reads fine
+   because the pressed bubble is the only pressed one on the row. */
+function obRenderGenreList(panel) {
+  const box = panel.querySelector('.ob-glist'); if (!box) return;
+  box.innerHTML = Object.keys(SD_GENRE_TREE).map(m => {
+    const on = OB.genres.has(m);
+    const lit = !on && mixPicksIn(m, OB_MIX).length > 0;
+    const open = OB.genreOpen.has(m);
+    const subs = (SD_GENRE_TREE[m] || []).filter(x => x.toLowerCase() !== m.toLowerCase());
+    const bub = (g, cls, fn) =>
+      `<button class="ob-gbub${cls}" type="button" onclick="${fn}('${obOc(g)}')">${obEsc(g)}</button>`;
+    return bub(m, (on ? ' is-on' : lit ? ' is-lit' : '') + (open ? ' is-open' : ''), 'obListMain') +
+      (open ? `<div class="ob-gsubs">${subs.map(x => bub(x, OB.genres.has(x) ? ' is-on' : '', 'obToggleGenre')).join('')}</div>` : '');
+  }).join('');
+}
+
+/* The dial's entrance, replayed on every arrival at the step and every switch
+   back to the wheel — the same `is-opening` keyframe the home plays. */
+function obMixSpinWrap(wrap) {
+  const still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (still) return;
+  wrap.classList.remove('is-opening');
+  void wrap.getBoundingClientRect();
+  wrap.classList.add('is-opening');
+  clearTimeout(wrap._spin);
+  wrap._spin = setTimeout(() => wrap.classList.remove('is-opening'), MIX_OPEN_MS);
+}
+function obMixSpin() { OB_MIX.wraps().forEach(obMixSpinWrap); }
+/* Landing on step 3 always lands on the TOP ring — the picks survive, the ring
+   you were standing in when you left does not, the same rule `openMixDial`
+   keeps. Called after `obSync`, so the wraps exist. */
+function obMixArrive() {
+  if (OB.step !== 3) return;
+  if (OB_MIX.at) { OB_MIX.at = null; OB_MIX.from = null; mixDialRender(null, OB_MIX); }
+  obMixSpin();
+}
+
+/* The wheel's own back — one ring up, as the home's corner pill does. ⚠ Its
+   OWN button, on the left of the switch row, and not folded into the rail's
+   Back: that was tried, and a Back that sometimes means "up a ring" and
+   sometimes "previous step" is two buttons wearing one coat. */
+window.obMixBack = function () { if (OB_MIX.at) mixGoto(null, OB_MIX); };
+window.obSetGenreView = function (v) {
+  if (OB.genreView === v) return;
+  OB.genreView = v;
+  obSync();
+  if (v === 'wheel') obMixSpin();
+};
+// A main bubble: in and picked, or out and unpicked — one tap either way.
+window.obListMain = function (m) {
+  if (OB.genreOpen.has(m)) { OB.genreOpen.delete(m); OB.genres.delete(m); }
+  else                     { OB.genreOpen.add(m);    OB.genres.add(m);    }
+  obSync();
+};
+
 /* ══════════════════════════════════════════════════════════════════════════
    THE MIX DIAL — Pro's multi-genre shelf (`mixInlineBuild` · `openMixDial`)
    ══════════════════════════════════════════════════════════════════════════
@@ -5690,11 +6194,14 @@ function obSyncFooter(root) {
    wheel, belt. Pick six and it is a machine you built. The mark isn't printed
    on the screen, it is what your choices make.
 
-   ⚠️ THIS IS NOT ONBOARDING, and it was. Step 3 is plain chips again: a new
-   user's first thirty seconds is the worst possible place to teach a gesture,
-   and a wall of chips is instantly legible in a way a dial is not. Here the
-   audience is a Pro user who has already held the cover to change shelf — the
-   dial is the reward for knowing the app, not the toll to enter it.
+   ⚠️ IT IS ALSO ONBOARDING'S STEP 3 — again, and by decision (2026-09-03). It
+   left once because a new user's first thirty seconds is a bad place to teach
+   a gesture and a wall of chips is instantly legible where a dial is not. It
+   came back with that objection answered rather than overruled: step 3 offers
+   the wheel AND a list of the same tree, one switch apart, so nobody has to
+   learn the dial to get through the door — and anyone who takes to it has met
+   the app's signature control before they have seen the home. Same code, via
+   the dial CONTEXT (`OB_MIX`, in the onboarding section).
 
    WHERE IT SITS — IN THE BENTO, not in a window.
    Pro's cover-hold opens the shelf wheel: a vertical scroll that picks ONE
@@ -5731,7 +6238,67 @@ function obSyncFooter(root) {
 
 /* What the dial is holding. Kept OUTSIDE the DOM so closing and reopening the
    sheet returns you to the mix you were building rather than a blank dial. */
-const MIX = { genres: new Set() };
+/* `genres` is what you have PICKED — a flat set of labels, each either a main
+   genre (meaning "all of it") or a subgenre, gathered across as many mains as
+   you like. `at` is which main's ring is on screen, or null for the top.
+   ⚠ `at` resets on every open, `genres` never does: the ring you were last
+   looking at is not work, the picks are. */
+/* ⚠ A DIAL CONTEXT, and there are two of them. Everything below that draws or
+   reads a dial takes one as its last argument (`d`, defaulting to this one, so
+   the home's call sites read exactly as they did). Onboarding's is `OB_MIX`,
+   whose `genres` is `OB.genres` itself. The context carries:
+     genres / at / from   the state, as documented above
+     ring                 the ring as drawn — items, and seat[hole] = item index
+                          (was the module-global MIX_RING)
+     wraps()              every `.mix-inline` this dial is currently drawn in —
+                          ONE on the home, one per `.s-onboarding` instance in
+                          the viewer, all of which must step and light together
+     onSync()             what to repaint besides the dial itself: the home's
+                          info-box readout, onboarding's chips and list */
+const MIX = {
+  genres: new Set(), at: null, from: null,
+  ring: { items: [], seat: [] },
+  wraps: () => (mixHost ? [mixHost.querySelector('.mix-inline')].filter(Boolean) : []),
+  onSync: () => mixHomeReadout(),
+};
+
+/* ── The ring currently on screen ──────────────────────────────────────────
+   Top level: the eight mains. Inside one: "All <main>" first, then its subs.
+   ⚠ "All X" is a PICK, not a shortcut that ticks every sub — it stores the main
+   itself, and `mixShelf` expands that to the main plus all its subs at commit
+   time. Ticking the subs instead would make deselecting one of them silently
+   turn "all" into "some", which is not what the hole says it does. */
+function mixRing(d = MIX) {
+  if (!d.at) return Object.keys(SD_GENRE_TREE).map(m => ({ label: m, value: m, kind: 'main' }));
+  /* ⚠ THE MAIN ITSELF HEADS ITS OWN RING, under its own name — it read "All
+     Electronic" once. Two things changed with the label. It is the genre you
+     just tapped, so it has to be spelled the way it was spelled on the ring
+     you tapped it from, or "the one that did not move" is not recognisably the
+     same thing. And it is a legitimate pick in its own right rather than a
+     special "everything" control — picking it still takes the whole main,
+     because mixShelf expands it to [main, ...subs] at commit.
+     ⚠ Its VALUE is unchanged, so MIX.genres, mixHoleOn and mixShelf all speak
+     exactly what they spoke before. Only the label moved. */
+  /* ⚠ A MAIN THAT LISTS ITS OWN NAME AMONG ITS SUBS IS DROPPED FROM THE SUBS,
+     and that only became a bug when the head stopped saying "All X". Seven of
+     the sixteen do it — Jazz, Punk, Folk, Country, Classical, Soundtrack,
+     Experimental — because straight-ahead jazz is a genre as well as a family.
+     With the head labelled "All Jazz" the two were merely redundant; labelled
+     "Jazz" they are the same word twice on one ring AND the same value, so
+     mixHoleOn lights both and either one toggles the same pick. The head is
+     the one that stays: it is the hole that holds its place from the ring you
+     came from. ⚠ Those rings are therefore 14-15 holes, not 16, which is what
+     mixHerePin's angle fallback exists for. */
+  const subs = (SD_GENRE_TREE[d.at] || [])
+    .filter(s => s.toLowerCase() !== d.at.toLowerCase())
+    .map(s => ({ label: s, value: s, kind: 'sub' }));
+  return [{ label: d.at, value: d.at, kind: 'all' }].concat(subs);
+}
+// Everything picked that lives under this main — what makes a main read as "on".
+const mixPicksIn = (m, d = MIX) => [m].concat(SD_GENRE_TREE[m] || []).filter(g => d.genres.has(g));
+// Is this hole lit?
+const mixHoleOn = (it, d = MIX) => it.kind === 'main' ? mixPicksIn(it.value, d).length > 0
+                                                      : d.genres.has(it.value);
 
 /* ⚠ EVERY NUMBER HERE IS SIZED TO THE BENTO'S ALBUM CELL, not to a sheet.
    The dial used to be a bottom sheet 340px wide; it now lives inside
@@ -5752,9 +6319,24 @@ const DIAL = {
      `holeOn` past 12 and the longest names start condensing again.
      The other limit is that neighbours must not merge: holes sit
      `2·ring·sin(9°)` apart, so a picked pair at 80/12 clears by 1.0 units. */
-  ring: 80,       // where the holes sit — IN from 120, see the budget above
-  hole: 10,       // a hole …
-  holeOn: 12,     // … and a picked one, so a pulley reads heavier than a hole
+  /* ⚠ PULLED IN, and the dots shrank with it — the two move together or the
+     picked holes merge. The label budget is what is left after
+     `ring + holeOn + 5`, so every unit the ring comes in is a unit the names
+     gain, and at twenty holes the floor is set by neighbours touching:
+     spacing is 2·ring·sin(9°), which must clear 2·holeOn.
+         80 / 12 at 20 holes  →  25.0 apart,  1.0 clear, budget 61
+         62 /  9 at 20 holes  →  19.4 apart,  1.4 clear, budget 82
+         59 / 10.5 at 16      →  23.0 apart,  2.0 clear, budget 83
+     ⚠ WHICH IS WHY EVERY RING IS CAPPED AT 16 HOLES (`SD_GENRE_TREE` gives each
+     main at most 15 subs). Bigger dots and a tighter ring are only compatible
+     with FEWER holes: at twenty the dots have to shrink to stay apart, which is
+     the opposite of what was asked for. Sixteen buys larger pulleys, a ring
+     closer to the record, more daylight between neighbours AND a slightly
+     better label budget, all at once. Add a 17th sub to any main and the picked
+     holes start touching. */
+  ring: 59,       // where the holes sit
+  hole: 8,        // a hole …
+  holeOn: 10.5,   // … and a picked one, so a pulley reads heavier than a hole
   hub: 30,        // the record in the middle
   gap: 5,         // belt clearance off every wheel — the logo's belt never touches
   /* ⚠ There is no `hit` radius any more, and don't add one back: how far a
@@ -5769,7 +6351,35 @@ function dialPt(deg, r) {
   const a = (deg - 90) * Math.PI / 180;
   return { x: DIAL.cx + Math.cos(a) * r, y: DIAL.cy + Math.sin(a) * r };
 }
-const dialAngleOf = i => i * 360 / SD_GENRES.length;
+/* ⚠ The ring no longer has a fixed size. It was `SD_GENRES.length` everywhere —
+   twenty — and the dial now draws eight mains or four-to-seven subs, so every
+   one of these takes the count. */
+
+/* ── ⚠ THE RING IS ROTATED, and with few holes it has to be ────────────────
+   The box is square and the dial is round, so a label pointing into a CORNER
+   has 41% further to go than one pointing along an axis (226 units against
+   160). At twenty holes that averaged out. At FOUR — R&B's ring — every hole
+   lands exactly on an axis, the four tightest directions on the dial, and
+   "Electronic soul" needed 92 units in the 61 it was given.
+   So each ring is turned by whatever offset maximises its WORST label budget.
+   For n=4 that is 45°, putting all four on the diagonals and taking the
+   tightest budget from 61 to 127. Searched rather than derived: the room
+   function is a max of two cosines and the best offset is not a formula worth
+   writing when a degree-by-degree sweep over one step is exact and runs once
+   per ring size.
+   ⚠ Cached by n, not by ring — it depends only on the count. */
+const DIAL_OFF = {};
+function dialOffset(n) {
+  if (DIAL_OFF[n] != null) return DIAL_OFF[n];
+  let best = 0, bestMin = -1;
+  for (let off = 0; off < 360 / n; off++) {
+    let worst = Infinity;
+    for (let i = 0; i < n; i++) worst = Math.min(worst, dialRoom(i * 360 / n + off));
+    if (worst > bestMin) { bestMin = worst; best = off; }
+  }
+  return (DIAL_OFF[n] = best);
+}
+const dialAngleOf = (i, n) => i * 360 / n + dialOffset(n);
 
 /* ── The box is a SQUARE and the dial is a CIRCLE, so the corners are free ──
    How far the middle can reach before it hits the viewBox depends entirely on
@@ -5785,8 +6395,8 @@ function dialRoom(deg) {
 /* How far a genre's slice may reach — the room at its NARROWEST edge, not along
    its centre line. A wedge drawn to the room at its middle would poke out of
    the square along the edge nearer an axis, and the label with it. */
-function dialReach(deg) {
-  const half = 360 / SD_GENRES.length / 2;
+function dialReach(deg, n) {
+  const half = 360 / n / 2;
   return Math.min(dialRoom(deg - half), dialRoom(deg + half)) - 2;
 }
 
@@ -5805,21 +6415,62 @@ function dialReach(deg) {
    put the editorial order back; nothing else needs to change.
    ⚠ Both sorts fall back to the original index on a tie, so the seating is
    deterministic — the ring must not reshuffle between renders. */
-function dialSeating() {
-  const slots = SD_GENRES.map((_, i) => ({ i, room: dialReach(dialAngleOf(i)) }))
-                         .sort((a, b) => (b.room - a.room) || (a.i - b.i));
-  const byLen = SD_GENRES.map((g, i) => ({ g, i }))
-                         .sort((a, b) => (b.g.length - a.g.length) || (a.i - b.i));
-  const seat = new Array(SD_GENRES.length);
-  byLen.forEach((e, k) => { seat[slots[k].i] = e.i; });
+/* ⚠ Computed PER RING now, not once at load. It used to be a module constant
+   because `SD_GENRES` was one; the ring changes every time you step in or out
+   of a main, so the seating has to be worked out with it. */
+/* ⚠ Seated by `dialRoom` — the room along the label's OWN bearing — not by
+   `dialReach`, which is the wedge's narrowest edge. With twenty holes the wedge
+   was ±9° and the two answers were nearly the same; at seven the wedge is ±26°
+   and they diverge hard: straight up, `dialReach` reports 175.6 because the
+   wedge's edges point at the corners, while the label going straight up only
+   has 160. That put "Psychedelic pop" in the tightest slot on the dial believing
+   it was the roomiest, and it drew off the top of the viewBox. */
+/* ⚠ `pin` NAILS ONE ITEM TO ONE HOLE and seats everything else around it — how
+   the main you chose keeps the place it had on the ring you came from. Without
+   a pin this is byte-for-byte the old function: same sort keys, same tie-break
+   on the original index, so an unpinned ring is seated exactly as before. */
+function dialSeating(labels, pin) {
+  const n = labels.length;
+  const seat = new Array(n);
+  let holes = labels.map((_, i) => i);
+  let items = labels.map((_, i) => i);
+  if (pin && pin.hole >= 0 && pin.hole < n && pin.item >= 0 && pin.item < n) {
+    seat[pin.hole] = pin.item;
+    holes = holes.filter(h => h !== pin.hole);
+    items = items.filter(i => i !== pin.item);
+  }
+  const slots = holes.map(h => ({ h, room: dialRoom(dialAngleOf(h, n)) }))
+                     .sort((x, y) => (y.room - x.room) || (x.h - y.h));
+  const byLen = items.map(i => ({ i, len: labels[i].length }))
+                     .sort((x, y) => (y.len - x.len) || (x.i - y.i));
+  byLen.forEach((e, k) => { seat[slots[k].h] = e.i; });
   return seat;
 }
-// seat[hole] = genre index, and its inverse. Computed once: `SD_GENRES` is a
-// constant and `screens.js` is loaded before this file.
-const DIAL_SEAT = dialSeating();
-const DIAL_HOLE = (() => { const m = []; DIAL_SEAT.forEach((g, h) => { m[g] = h; }); return m; })();
-// Where a GENRE sits, as opposed to where a hole is.
-const dialAngleOfGenre = gi => dialAngleOf(DIAL_HOLE[gi]);
+
+/* Where the main you are inside should sit: the hole it occupied on the ring
+   you came from.
+   ⚠ The two rings are BOTH 16 holes today (16 mains, and 15 subs plus the main
+   itself), so this is normally the same hole index at the same angle — the
+   name genuinely does not move. The fallback matters if a main is ever given a
+   different number of subs: the hole index alone would then point somewhere
+   else entirely, because `dialAngleOf` folds in a per-count rotation
+   (`dialOffset`), so it is the ANGLE that is matched and the nearest hole to it
+   that is taken. */
+function mixHerePin(items, n, d = MIX) {
+  if (!d.at || !d.from) return null;
+  const item = items.findIndex(it => it.kind === 'all');
+  if (item < 0) return null;
+  if (d.from.n === n) return { item, hole: d.from.hole };
+  const a = dialAngleOf(d.from.hole, d.from.n) - dialOffset(n);
+  const hole = ((Math.round(a / (360 / n)) % n) + n) % n;
+  return { item, hole };
+}
+
+/* The ring as drawn — the items, and seat[hole] = item index — lives on the
+   dial context as `d.ring`. Written by `mixDialSvg` and read by `dialWheels` /
+   `mixDialSync` / `mixGoto`, which need to know where each item ended up
+   without walking the seating again. ⚠ Per CONTEXT, not a module global: the
+   home and onboarding can each be standing in a different ring. */
 
 /* A genre's TAP TARGET: the wedge it owns, from the hub out to its reach, with
    its hole and its label both inside.
@@ -5868,78 +6519,45 @@ function dialWedge(a, half, r0, r1) {
    ⚠ The iteration cap is not decoration: a degenerate set (two wheels sharing a
    centre) would otherwise wrap forever and hang the tab instead of drawing
    nothing. */
-function beltPath(circles) {
-  const cs = circles.map(c => ({ x: c.x, y: c.y, r: c.r + DIAL.gap }));
-  const f = n => n.toFixed(2);
-  if (!cs.length) return '';
-  if (cs.length === 1) {                       // nothing picked: the hub alone
-    const c = cs[0];
-    return `M ${f(c.x)} ${f(c.y - c.r)} A ${c.r} ${c.r} 0 1 1 ${f(c.x)} ${f(c.y + c.r)}` +
-           ` A ${c.r} ${c.r} 0 1 1 ${f(c.x)} ${f(c.y - c.r)} Z`;
-  }
+/* The convex hull of a set of CIRCLES — what a belt physically is. The solver
+   lives in belt.js as `SD_BELT.hull` so belt-lab.html can drive the same one;
+   this is just the dial's clearance applied to it.
+   ⚠ Not an outline offset from the hull of the CENTRES: that cuts through the
+   big wheels' hubs and floats off the small ones. */
+function beltPath(circles) { return SD_BELT.hull(circles, DIAL.gap); }
 
-  const TAU = Math.PI * 2;
-  const at = (i, a) => ({ x: cs[i].x + Math.cos(a) * cs[i].r, y: cs[i].y + Math.sin(a) * cs[i].r });
-
-  let start = 0;
-  for (let i = 1; i < cs.length; i++) if (cs[i].y - cs[i].r < cs[start].y - cs[start].r) start = i;
-
-  const startAng = -Math.PI / 2;               // outward normal, pointing up
-  let cur = start, ang = startAng, d = `M ${f(at(start, startAng).x)} ${f(at(start, startAng).y)}`;
-
-  for (let guard = 0; guard < cs.length * 2 + 4; guard++) {
-    let best = -1, bestTurn = Infinity, bestAng = 0;
-    for (let j = 0; j < cs.length; j++) {
-      if (j === cur) continue;
-      const dx = cs[j].x - cs[cur].x, dy = cs[j].y - cs[cur].y;
-      const dist = Math.hypot(dx, dy);
-      if (!dist) continue;
-      const t = (cs[cur].r - cs[j].r) / dist;
-      if (t < -1 || t > 1) continue;           // one wheel swallows the other
-      const phi = Math.atan2(dy, dx) - Math.acos(t);
-      const turn = ((phi - ang) % TAU + TAU) % TAU;
-      if (turn < bestTurn) { bestTurn = turn; best = j; bestAng = phi; }
-    }
-    if (best < 0) break;
-
-    const wrapEnd = at(cur, bestAng);          // arc this wheel wraps …
-    d += ` A ${cs[cur].r} ${cs[cur].r} 0 ${bestTurn > Math.PI ? 1 : 0} 1 ${f(wrapEnd.x)} ${f(wrapEnd.y)}`;
-    const land = at(best, bestAng);            // … then the straight run
-    d += ` L ${f(land.x)} ${f(land.y)}`;
-    cur = best; ang = bestAng;
-
-    if (cur === start) {                       // closed: the start wheel's last arc
-      const close = ((startAng - ang) % TAU + TAU) % TAU;
-      const pe = at(cur, startAng);
-      d += ` A ${cs[cur].r} ${cs[cur].r} 0 ${close > Math.PI ? 1 : 0} 1 ${f(pe.x)} ${f(pe.y)}`;
-      break;
-    }
-  }
-  return d + ' Z';
-}
-
-// What the belt has to wrap: the hub, plus a pulley for every picked genre.
-function dialWheels() {
+/* What the belt has to wrap: the hub, plus a pulley for every LIT hole on the
+   ring you are looking at.
+   ⚠ On the top ring that means a main lights when anything under it is picked,
+   so the belt still shows where your mix is even when the picks themselves are
+   one level down. */
+function dialWheels(d = MIX) {
   const w = [{ x: DIAL.cx, y: DIAL.cy, r: DIAL.hub }];
-  SD_GENRES.forEach((g, i) => {
-    if (!MIX.genres.has(g)) return;
-    const p = dialPt(dialAngleOfGenre(i), DIAL.ring);   // where this GENRE sits
+  const n = d.ring.items.length;
+  d.ring.seat.forEach((idx, h) => {
+    if (!mixHoleOn(d.ring.items[idx], d)) return;
+    const p = dialPt(dialAngleOf(h, n), DIAL.ring);
     w.push({ x: p.x, y: p.y, r: DIAL.holeOn });
   });
   return w;
 }
 
-function mixDialSvg() {
-  const half = 360 / SD_GENRES.length / 2;
+function mixDialSvg(d = MIX) {
+  const items = mixRing(d);
+  const n = items.length;
+  const seat = dialSeating(items.map(it => it.label), mixHerePin(items, n, d));
+  d.ring = { items, seat };                   // what dialWheels / mixDialSync read
+  const half = 360 / n / 2;
   const lr = DIAL.ring + DIAL.holeOn + 5;
-  /* ⚠ Walks HOLES, not genres — `DIAL_SEAT` decides which name sits in which,
-     so that the long ones land in the corners. `data-i` stays the GENRE index,
-     because that is what `MIX`, `mixToggle` and `mixDialSync` speak in. */
-  const holes = DIAL_SEAT.map((gi, h) => {
-    const g = SD_GENRES[gi];
-    const a = dialAngleOf(h);
+  /* ⚠ Walks HOLES, not items — the seating decides which name sits in which, so
+     the long ones land in the corners. `data-i` is the index into the RING,
+     which is what everything downstream speaks in. */
+  const holes = seat.map((gi, h) => {
+    const it = items[gi];
+    const g = it.label;
+    const a = dialAngleOf(h, n);
     const p = dialPt(a, DIAL.ring);
-    const reach = dialReach(a);
+    const reach = dialReach(a, n);
     /* Radial labels. The text is laid out along +x at the label radius and the
        whole group is turned to the hole's bearing, so it points straight out of
        the ring. `a - 90` because the SVG's 0° is 3 o'clock and the dial's is 12.
@@ -5953,16 +6571,19 @@ function mixDialSvg() {
     /* ⚠ The budget is stamped on the label, not recomputed later: it is a
        property of WHERE this one sits, and `mixDialFitLabels` would otherwise
        have to walk back from `data-i` through the seating to find the angle. */
-    const budget = (reach - lr).toFixed(1);
+    /* ⚠ Off `dialRoom` at the label's own bearing, NOT off the wedge's reach —
+       see `dialSeating`. The wedge may legitimately reach further than the
+       label can, and budgeting from it is what let a name run off the crop. */
+    const budget = (dialRoom(a) - lr - 2).toFixed(1);
     /* ⚠ The hit wedge is FIRST, so it paints under its own hole and label. It
        is invisible but it is the only thing here that takes a pointer — the
        circle and the text are `pointer-events: none`, so a tap anywhere in the
        slice reports the same target and there are no dead gaps between them. */
-    return `<g class="ob-hole" data-i="${gi}">
+    return `<g class="ob-hole ob-hole--${it.kind}" data-i="${gi}">
         <path class="ob-hole-hit" d="${dialWedge(a, half, DIAL.hub, reach)}"/>
         <circle class="ob-hole-c" cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="${DIAL.hole}"/>
         <g transform="translate(${DIAL.cx} ${DIAL.cy})">
-          <text class="ob-hole-t" data-w="${budget}" transform="${t}"
+          <text class="ob-hole-t" data-w="${budget}" data-full="${obEsc(g)}" transform="${t}"
                 text-anchor="${flip ? 'end' : 'start'}">${obEsc(g)}</text>
         </g>
       </g>`;
@@ -5980,12 +6601,43 @@ function mixDialSvg() {
         <path class="ob-dial-belt" d=""/>
         ${holes}
       </g>
+    </svg>`;
+}
+
+/* ── The record, on its OWN layer ─────────────────────────────────────────
+   ⚠ It used to live inside the dial's svg. It had to come out: the transition
+   flies the whole RING through 3D space, and the one thing that must not move
+   is the record it flies out of and back into. Anything sharing the animated
+   element goes with it.
+   Kept as a second svg on the same viewBox, so hub and ring are in one
+   coordinate system and `DIAL` still describes both. */
+function mixHubSvg(d = MIX) {
+  return `<svg class="ob-hub-svg" viewBox="0 0 ${DIAL.vb} ${DIAL.vb}" aria-hidden="true">
       <g class="ob-dial-hub">
         <circle class="ob-hub-disc" cx="${DIAL.cx}" cy="${DIAL.cy}" r="${DIAL.hub}"/>
         <circle class="ob-hub-groove" cx="${DIAL.cx}" cy="${DIAL.cy}" r="${DIAL.hub - 7}"/>
-        <circle class="ob-hub-hole" cx="${DIAL.cx}" cy="${DIAL.cy}" r="3.6"/>
+        ${d.at
+          ? `<text class="ob-hub-t" data-w="48" data-full="${obEsc(d.at)}" x="${DIAL.cx}" y="${DIAL.cy}">${obEsc(d.at)}</text>`
+          : `<circle class="ob-hub-hole" cx="${DIAL.cx}" cy="${DIAL.cy}" r="3.6"/>`}
       </g>
     </svg>`;
+}
+
+/* Rewrite the record in place — it is not part of the flying ring, so it is
+   never replaced, only relabelled. */
+function mixHubSync(d = MIX) {
+  d.wraps().forEach(wrap => {
+    const old = wrap.querySelector('.ob-hub-svg');
+    if (old) old.insertAdjacentHTML('afterend', mixHubSvg(d)), old.remove();
+    else wrap.insertAdjacentHTML('beforeend', mixHubSvg(d));
+    const svg = wrap.querySelector('.ob-hub-svg');
+    /* ⚠ THE RECORD LIGHTS WHEN THE MIX IS NON-EMPTY. It is the one part of the
+       dial that is always on screen and never scrolls past, so it is where "you
+       have something" belongs — and it takes the ALBUM's accent, like everything
+       else here, so the machine agrees with the cover behind it. */
+    svg.classList.toggle('is-lit', d.genres.size > 0);
+    mixDialFitLabels(svg);
+  });
 }
 
 /* ⚠ TAP, not turn. The rotary drag is gone: it was a lovely gesture in a sheet
@@ -6019,60 +6671,257 @@ function mixDialFitLabels(svg) {
      viewBox edge, less two units so a glyph never sits flush on the crop.
      Derived from `DIAL` rather than written out, so moving the ring in or out
      moves the budget with it. */
-  svg.querySelectorAll('.ob-hole-t').forEach(t => {
+  svg.querySelectorAll('[data-w]').forEach(t => {
     /* ⚠ PER LABEL, read off the element. A name in a corner has ~88 units and
        one on an axis has ~70, so a single shared budget would either condense
        the corners for nothing or let the axes overflow. Stamped by
        `mixDialSvg`, which is where the angle is known. */
     const budget = parseFloat(t.dataset.w);
     if (!budget) return;
-    let wdth = 100;
-    t.style.setProperty('--lwdth', wdth);
-    for (let pass = 0; pass < 3; pass++) {
-      let w = 0;
-      try { w = t.getComputedTextLength(); } catch (e) { return; }
-      if (!w || w <= budget) break;
-      const next = Math.max(DIAL_WDTH_MIN, Math.floor(wdth * budget / w));
-      if (next >= wdth) break;          // already as narrow as it will go
-      wdth = next;
-      t.style.setProperty('--lwdth', wdth);
+    /* ⚠ RESET FIRST. The fit can shrink the size and trim characters, and it
+       runs a second time when the webfont lands — measuring an already-trimmed
+       label against the same budget would trim it again, and again. Every pass
+       starts from the name as written. */
+    if (t.dataset.full != null) t.textContent = t.dataset.full;
+    t.style.removeProperty('--lsize');
+    const measure = w => { t.style.setProperty('--lwdth', w);
+                           try { return t.getComputedTextLength(); } catch (e) { return null; } };
+    const full = measure(100);
+    if (full === null) return;
+    if (full <= budget) return;                       // fits as drawn
+
+    /* ⚠ BINARY SEARCH, not a proportional walk. The walk guessed
+       `wdth × budget / measured` and iterated three times, which assumes width
+       responds roughly in proportion to the axis — and it does not. Measured on
+       Roboto Flex here: "Psychedelic pop" is 106.8 units at wdth 100 and 101.4
+       at wdth 60, so the whole axis buys 5%. A proportional guess therefore
+       moves the axis about two points a pass and the loop ran out of passes
+       still overflowing, with the label reading as clipped and the safety net
+       looking broken. Five halvings find the widest axis that fits whatever the
+       response curve is. */
+    let lo = DIAL_WDTH_MIN, hi = 100, best = DIAL_WDTH_MIN;
+    for (let pass = 0; pass < 5 && lo <= hi; pass++) {
+      const mid = Math.floor((lo + hi) / 2);
+      const w = measure(mid);
+      if (w === null) return;
+      if (w <= budget) { best = mid; lo = mid + 1; } else { hi = mid - 1; }
+    }
+    t.style.setProperty('--lwdth', best);
+
+    /* ⚠ NOTHING LEAVES THE BOX. The axis alone buys about 5%, so a genuinely
+       long name in a tight slice is still over after the search — and a label
+       running off the crop is the one failure that looks like a broken app
+       rather than a full one. Two more steps, in the order that costs least:
+       give up SIZE (down to 82% — the ring reads as one row of type, so that is
+       the last thing worth spending), and only then give up CHARACTERS. */
+    let w2 = t.getComputedTextLength();
+    if (w2 > budget) {
+      t.style.setProperty('--lsize', Math.max(0.82, budget / w2).toFixed(3));
+      w2 = t.getComputedTextLength();
+    }
+    if (w2 > budget) {
+      const full = t.textContent;
+      for (let k = full.length - 1; k > 1 && w2 > budget; k--) {
+        t.textContent = full.slice(0, k) + '…';
+        w2 = t.getComputedTextLength();
+      }
     }
   });
 }
 
-function mixDialTap(svg) {
-  if (!svg || svg._wired) return;
-  svg._wired = true;
-  svg.addEventListener('click', (e) => {
+/* ⚠ Wired to the WRAPPER, not the svg. Stepping between rings replaces the svg
+   wholesale, and a listener on the element being replaced dies with it. */
+function mixDialTap(wrap, d = MIX) {
+  if (!wrap || wrap._wired) return;
+  wrap._wired = true;
+  wrap.addEventListener('click', (e) => {
     /* ⚠ Swallowed whether or not it hit a genre. The dial covers `.v3-album`,
        which carries `onAlbumArt` — a tap on the empty middle would otherwise
        fall through and navigate to the album page out from under the dial. */
     e.stopPropagation();
     const g = e.target.closest && e.target.closest('.ob-hole');
     if (!g) return;
-    const genre = SD_GENRES[+g.dataset.i];
-    if (genre) mixToggle(genre);
+    const it = d.ring.items[+g.dataset.i];
+    if (!it) return;
+    // A main takes you INTO it; everything else is a pick — including the
+    // head of a sub ring, which picks the overall genre (it just is not
+    // picked FOR you on the way in any more).
+    if (it.kind === 'main') mixGoto(it.value, d);
+    else mixToggle(it.value, d);
   });
 }
 
-function mixToggle(g) {
-  MIX.genres.has(g) ? MIX.genres.delete(g) : MIX.genres.add(g);
-  mixDialSync();
+/* Step into a main's ring, or back out to the top. Redraws — the holes change.
+   ⚠ IT STEPS ON THE FRAME YOU TAP, and an earlier cut did not: the chosen hole
+   was held lit for 190ms and its label then FLEW into the record and became the
+   label there. It answered the right question — which genre did I just open —
+   and it was rejected for how it read: a name crawling out of the ring and into
+   the middle of the disc is unsettling to watch, and it put a 490ms toll on
+   every step into a genre. The answer moved to the destination instead, where
+   it costs nothing: the main you chose is IN the ring you land on, lit, in the
+   hole it already occupied. ⚠ Gone with it: MIX_PICK_MS, MIX_FLY_MS,
+   mixFlying, mixPicking, mixPickIn, mixFlyLabel, .ob-fly-* and .is-handoff. */
+function mixGoto(main, d = MIX) {
+  /* ⚠ The direction is what the animation MEANS: going in, the ring you leave
+     opens outward past you and the new one rises from the hub; coming out, the
+     reverse. Same transition played both ways, so the gesture reads as depth
+     rather than as a generic fade. */
+  /* ⚠ WHICH HOLE THE MAIN WAS IN, recorded on the way through. The ring it
+     opens has that same main in it, and it has to land in the SAME PLACE or it
+     is just another name in a new arrangement — the whole point is that the
+     one hole which does not move is the one you pressed. Read off `d.ring`,
+     which is the ring as actually drawn, seating included. */
+  if (main) {
+    const h = d.ring.seat.findIndex(gi => {
+      const it = d.ring.items[gi];
+      return it && it.kind === 'main' && it.value === main;
+    });
+    d.from = h >= 0 ? { hole: h, n: d.ring.items.length } : null;
+  } else d.from = null;
+  /* ⚠️ GOING IN PICKS IT. Tapping a main is a statement that you want that
+     genre — the ring of subgenres is there to REFINE it, not to make you say it
+     twice — so the main lands in the mix on the way through and the hole you
+     arrive on is already filled rather than merely outlined. Removing it is one
+     tap on that same hole, or its chip in the info box.
+     ⚠️ It is re-added on every entry, including after you have removed it and
+     stepped back out and in. That is the price of "the genre you opened is in
+     your mix" being true without exception, and it is the behaviour that makes
+     one tap enough. */
+  /* ⚠ NOT ANY MORE (2026-09-04): the main is not added FOR you on the way in.
+     Landing with "All Electronic" already in the mix read as weird next to
+     the subgenres. The overall genre is still a pick — tap the head hole of
+     the sub ring — it is just your tap, not the step in, that makes it one. */
+  /* ⚠ `stay` is the genre that must not move while the rings swap: the main
+     you are opening, or — on the way out — the one you are leaving. Read by
+     mixDialRender, which holds that hole on its own layer. */
+  d.stay = main || d.at || null;
+  d.at = main || null;
+  mixDialRender(main ? 'in' : 'out', d);
 }
 
-function mixDialSync() {
+function mixToggle(g, d = MIX) {
+  d.genres.has(g) ? d.genres.delete(g) : d.genres.add(g);
+  mixDialSync(d);
+}
+
+/* Redraw the ring itself. `mixDialSync` only repaints STATE on the holes that
+   are already there, so stepping between levels — where the holes themselves
+   change — has to come through here. */
+/* ⚠ Must outlast the LONGEST of the transitions in app.css — the incoming
+   ring's .2s delay plus its .3s growth. Cut this short and the outgoing dial is
+   yanked out of the DOM mid-move. */
+/* ⚠ The outgoing ring is GONE by the time the new one starts (.2s out, .22s
+   before the next begins), so this only has to outlast the exit. */
+const MIX_ANIM_MS = 240;
+
+function mixDialRender(dir, d = MIX) {
+  const still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  /* ⚠ EVERY wrap this dial is drawn in. On the home that is one; in onboarding
+     it is one per rendered `.s-onboarding` (dark + light in the viewer), and a
+     step into a main has to happen on all of them or the two variants end up
+     showing different rings of the same state. */
+  d.wraps().forEach(wrap => {
+    /* ⚠ CLEAR ANY GHOST STILL IN FLIGHT FIRST. The outgoing dial is removed on a
+       timer, so tapping again before it fires left two, three, four rings stacked
+       on top of each other — every one of them mid-transition and all of them
+       drawing labels. The timer is a fallback; this is the guarantee.
+       ⚠ It has to run BEFORE the live ring is picked, not after: a ghost sits
+       ahead of its replacement in the DOM, so querySelector would hand back the
+       ghost and the sweep would then detach the very node we were about to
+       insert next to. */
+    wrap.querySelectorAll('.ob-dial.is-ghost').forEach(g => g.remove());
+    const old = wrap.querySelector('.ob-dial'); if (!old) return;
+
+    old.insertAdjacentHTML('afterend', mixDialSvg(d));
+    const dial = old.nextElementSibling;
+    mixDialFitLabels(dial);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => mixDialFitLabels(dial));
+
+    if (!dir || still) { old.remove(); return; }
+
+    /* ⚠ THE TWO RINGS OVERLAP for one transition — the old one is still in the
+       DOM while the new one arrives, which is the whole reason this reads as
+       depth instead of a swap. The hub is deliberately OUTSIDE the animated
+       group: it stays put and the rings move past it, so there is a fixed thing
+       to read the movement against.
+       ⚠ The outgoing dial is marked `is-ghost` so `mixDialSync` cannot pick it up and
+       repaint the ring that is already on its way out. */
+    old.classList.add('is-ghost', 'ob-dial--leave-' + dir);
+    dial.classList.add('ob-dial--enter-' + dir);
+    void dial.getBoundingClientRect();          // commit the start state
+    dial.classList.remove('ob-dial--enter-' + dir);
+    setTimeout(() => old.remove(), MIX_ANIM_MS + 40);
+    mixStayHole(wrap, old, dial, d);
+  });
+  mixHubSync(d);
+  mixDialSync(d);
+}
+
+/* ⚠ THE ONE HOLE THAT DOES NOT MOVE. The seating already puts the genre you
+   tapped in the same hole on both rings, but both rings are whole <svg>s that
+   scale into the record and back — so its name went to the middle and came
+   out again with everything else, and "the one that stays" was only true of
+   where it ended up. A child cannot opt out of its parent's transform, so for
+   the length of the swap the hole is lifted onto a THIRD layer on the same
+   viewBox (like the record): the copy stands still, the same hole is hidden
+   on the outgoing ring and on the arriving one, and when the arrival has
+   finished the copy goes and the real hole is shown in its place.
+   ⚠ Matched by LABEL (`data-full`), not by ring index — the old ring's items
+   are already gone from `d.ring` by the time this runs. A main and its head
+   hole share one label, which is what makes them the same hole.
+   ⚠ `is-ghost` on the layer, so the sweep at the top of mixDialRender clears
+   it if the next tap comes before the timer, and mixWrapSync never repaints
+   it. It sits AFTER the live dial, so `querySelector('.ob-dial')` still finds
+   the live one first. */
+const MIX_STAY_MS = 540;   // outlasts the arrival's .22s delay + .26s growth
+function mixStayHole(wrap, oldDial, newDial, d) {
+  const want = d.stay;
+  if (!want) return;
+  const holeIn = svg => [...svg.querySelectorAll('.ob-hole')]
+    .find(g => { const t = g.querySelector('.ob-hole-t'); return t && t.dataset.full === want; });
+  const a = holeIn(oldDial), b = holeIn(newDial);
+  if (!a || !b) return;
+  mixWrapSync(wrap, d);                       // so the copy carries the lit state
+  newDial.insertAdjacentHTML('afterend',
+    `<svg class="ob-dial is-ghost ob-dial--stay" viewBox="0 0 ${DIAL.vb} ${DIAL.vb}" aria-hidden="true">` +
+    `<g class="ob-dial-ring">${b.outerHTML}</g></svg>`);
+  const layer = newDial.nextElementSibling;
+  a.classList.add('is-held'); b.classList.add('is-held');
+  setTimeout(() => {
+    b.classList.remove('is-held');
+    if (layer && layer.parentNode) layer.remove();
+  }, MIX_STAY_MS);
+}
+
+function mixWrapSync(wrap, d = MIX) {
+  const svg = wrap.querySelector('.ob-dial:not(.is-ghost)');
+  if (svg) {
+    svg.querySelectorAll('.ob-hole').forEach(g => {
+      const it = d.ring.items[+g.dataset.i];
+      const on = !!it && mixHoleOn(it, d);
+      g.classList.toggle('is-on', on);
+      const c = g.querySelector('.ob-hole-c');
+      if (c) c.setAttribute('r', on ? DIAL.holeOn : DIAL.hole);
+    });
+    const belt = svg.querySelector('.ob-dial-belt');
+    if (belt) belt.setAttribute('d', beltPath(dialWheels(d)));
+  }
+  const hub = wrap.querySelector('.ob-hub-svg');
+  if (hub) hub.classList.toggle('is-lit', d.genres.size > 0);
+}
+
+/* Repaint STATE onto every wrap of this dial — lit holes, the belt, the record —
+   then whatever else the context wants painted (`d.onSync`). The ring itself is
+   not rebuilt here; that is `mixDialRender`. */
+function mixDialSync(d = MIX) {
+  d.wraps().forEach(w => mixWrapSync(w, d));
+  if (d.onSync) d.onSync();
+}
+
+/* The HOME's readout — `MIX.onSync`. Lives in the info box under the dial. */
+function mixHomeReadout() {
   const host = mixHost;
   if (!host) return;
-  const svg = host.querySelector('.mix-inline .ob-dial');
-  if (!svg) return;
-  svg.querySelectorAll('.ob-hole').forEach(g => {
-    const on = MIX.genres.has(SD_GENRES[+g.dataset.i]);
-    g.classList.toggle('is-on', on);
-    const c = g.querySelector('.ob-hole-c');
-    if (c) c.setAttribute('r', on ? DIAL.holeOn : DIAL.hole);
-  });
-  const belt = svg.querySelector('.ob-dial-belt');
-  if (belt) belt.setAttribute('d', beltPath(dialWheels()));
 
   /* The readout lives in the INFO BOX now, not in the hub. The box that
      normally says what this album is says what the mix is instead — same slot,
@@ -6080,13 +6929,38 @@ function mixDialSync() {
      did not.
      ⚠ It counts ALBUMS, not genres. "3 picked" tells you what you did; "41
      albums" tells you whether the shelf is worth having. */
-  const n = mixPool().length, picked = MIX.genres.size;
+  /* ⚠ ONE shelf, read twice. The count in the box and the deck the button
+     commits have to be the same thing — building the shelf here and letting
+     the button build its own is how the two come to disagree. */
+  const picked = MIX.genres.size;
+  const shelf = picked ? mixShelf() : null;
+  const n = shelf ? shelfPool(shelf).length : 0;
   const nEl = host.querySelector('.v3-blue-mix-n');
-  const gEl = host.querySelector('.v3-blue-mix-g');
-  if (nEl) nEl.textContent = !picked ? 'Build a mix'
-                           : n + (n === 1 ? ' album' : ' albums');
-  if (gEl) gEl.textContent = !picked ? 'Tap the genres you want'
-                           : picked + (picked === 1 ? ' genre' : ' genres');
+  if (nEl) nEl.textContent = !picked ? 'Build your genre mix'
+                           : n + (n === 1 ? ' album' : ' albums') +
+                             (shelf.widened ? ' · related' : '');
+
+  /* ⚠ THE PICKS THEMSELVES, not a count of them. "3 genres" tells you how many
+     you have and nothing about WHICH — and with the picks now scattered across
+     several rings, the ring in front of you can only ever show one main's
+     worth. This row is the only place the whole mix is visible, so it lists it,
+     and each chip removes its own pick: the thing you can see is the thing you
+     can undo. It scrolls sideways rather than wrapping — `.v3-blue` is a fixed
+     strip and a second line would push the button out of it. */
+  const picks = host.querySelector('.v3-blue-mix-picks');
+  if (picks) {
+    if (!picked) {
+      picks.classList.add('is-empty');
+      picks.textContent = MIX.at ? 'Tap the subgenres you want' : 'Tap a genre to open it';
+    } else {
+      picks.classList.remove('is-empty');
+      /* ⚠ `obEsc` on the label AND on the attribute. "R&B" is a genre and a
+         bare & in either place is malformed markup. */
+      picks.innerHTML = [...MIX.genres].map(g =>
+        `<button class="v3-mix-chip" type="button" data-g="${obEsc(g)}" title="Remove ${obEsc(g)}">` +
+        `${obEsc(mixChipLabel(g))}<i>×</i></button>`).join('');
+    }
+  }
 
   /* ⚠ NO MINIMUM NUMBER OF GENRES — one genre is a mix. The dial is an
      ALTERNATIVE way to cut the catalogue, not a "combine several things"
@@ -6099,12 +6973,64 @@ function mixDialSync() {
   if (go) {
     go.disabled = !picked || n < 2;
     go.textContent = !picked ? 'Pick a genre'
-                   : n < 2   ? (n ? 'Too few' : 'Empty')
-                   : 'Play this mix';
+                   : n < 2   ? (n ? 'Too few' : 'None yet')
+                   : 'New deck';
   }
 }
 
-const mixShelf = () => ({ label: 'Your mix', kind: 'mix', genres: [...MIX.genres] });
+// In the chips, a main reads as it does on the ring — "Electronic", not
+// "All Electronic" (the "All" prefix was the weird part).
+const mixChipLabel = g => g;
+
+/* ⚠ A picked MAIN expands to itself plus every sub under it. Containment alone
+   is not enough: "Electronic" catches Electronic and Electronic soul but not
+   Ambient, Techno or UK Garage, so "All Electronic" would quietly be NARROWER
+   than the subs it is offered above. Expanding here keeps `shelfPool` a dumb
+   matcher and puts the meaning of "all" in one place.
+   ⚠ Deduped: subs overlap between mains (Indie rock is under Rock and Indie),
+   and `shelfPool` visits each album once so a duplicate label is harmless — but
+   it would show up in any count taken off this list. */
+// Every main a subgenre sits under. ⚠ Deliberately more than one — Shoegaze is
+// under Alternative AND Indie, Trip-hop under Electronic AND Hip-Hop.
+const mixParentsOf = s => Object.keys(SD_GENRE_TREE)
+  .filter(m => (SD_GENRE_TREE[m] || []).indexOf(s) >= 0);
+
+/* ⚠ A SHELF THAT CANNOT BE SWIPED IS NOT A SHELF, so a pick that cannot fill
+   one WIDENS to the family it belongs to rather than sitting there dead.
+   Picking one subgenre is meant to be enough — there has never been a minimum
+   number of genres — but "enough" was being decided by the archive rather than
+   by the design: 233 of the 236 subgenres match fewer than two albums, so
+   almost every single pick left New deck disabled and the dial looked broken.
+
+   ⚠ EXACT FIRST, ALWAYS. The widening only happens when the exact pool is
+   under the queue floor, so a subgenre that CAN stand on its own is never
+   quietly broadened — and with real genre data behind it this branch stops
+   running altogether. It is a graceful degradation, not the normal path.
+
+   ⚠ It is not silent: the readout says "· related" when it fires, because a
+   shelf that is not what you asked for has to say so.
+
+   ⚠ Only SUBGENRES widen. A main already reaches its whole family through the
+   expansion below, so a main with nothing under it genuinely has nothing. */
+const MIX_MIN = 2;                 // the queue floor commitShelf enforces
+const MIX_OPEN_MS = 560;           // the spin-in; must outlast the keyframe
+const mixShelf = () => {
+  const picks = [...MIX.genres];
+  /* ⚠ A picked MAIN expands to [main, ...subs]: containment on the main's name
+     alone would reach "Electronic soul" but not Ambient or Techno, so "all of
+     Electronic" would be NARROWER than the subs offered under it. */
+  const exact = [...new Set(picks.flatMap(g =>
+    (g in SD_GENRE_TREE) ? [g, ...SD_GENRE_TREE[g]] : [g]))];
+  const shelf = { label: 'Your mix', kind: 'mix', genres: exact };
+  if (!picks.length || shelfPool(shelf).length >= MIX_MIN) return shelf;
+  const family = [...new Set(picks.filter(g => !(g in SD_GENRE_TREE))
+                                  .flatMap(mixParentsOf))];
+  if (!family.length) return shelf;
+  const wide = { label: shelf.label, kind: shelf.kind,
+                 genres: [...new Set(exact.concat(family))], widened: true };
+  // No point saying "related" if the family cannot field a deck either.
+  return shelfPool(wide).length >= MIX_MIN ? wide : shelf;
+};
 const mixPool  = () => (MIX.genres.size ? shelfPool(mixShelf()) : []);
 
 /* ── Mounted IN THE BENTO ───────────────────────────────────────────────
@@ -6137,11 +7063,11 @@ function mixInlineBuild(host) {
        viewer's zoom), a wash over it, then the dial. */
     wrap.innerHTML = `<span class="mix-inline-bg"></span>` +
                      `<span class="mix-inline-tint"></span>` +
-                     mixDialSvg();
+                     mixDialSvg() + mixHubSvg();
     wrap.addEventListener('click', e => e.stopPropagation());
     album.appendChild(wrap);
     const dial = wrap.querySelector('.ob-dial');
-    mixDialTap(dial);
+    mixDialTap(wrap);
     /* ⚠ Measurable HERE because `.mix-inline` is only `opacity: 0` when idle,
        never `display: none` — the same reason the shelf wheel's `rowPx()` can
        measure a row before the wheel is armed. */
@@ -6160,13 +7086,18 @@ function mixInlineBuild(host) {
     bar.className = 'v3-blue-mix';
     bar.innerHTML = `<div class="v3-blue-mix-txt">` +
                       `<span class="v3-blue-mix-n"></span>` +
-                      `<span class="v3-blue-mix-g"></span>` +
+                      `<div class="v3-blue-mix-picks"></div>` +
                     `</div>` +
                     `<button class="v3-blue-mix-go" type="button"></button>`;
     /* ⚠ `.v3-blue` opens the album page on click. The bar covers it completely
        and stops the bubble, so choosing a mix cannot navigate away from the
        screen you are choosing it for. */
     bar.addEventListener('click', e => e.stopPropagation());
+    // Delegated: the chips are rebuilt on every pick.
+    bar.addEventListener('click', e => {
+      const chip = e.target.closest && e.target.closest('.v3-mix-chip');
+      if (chip) { MIX.genres.delete(chip.dataset.g); mixDialSync(); }
+    });
     bar.querySelector('.v3-blue-mix-go').addEventListener('click', () => {
       if (!MIX.genres.size || mixPool().length < 2) return;
       commitShelf(mixShelf());
@@ -6196,7 +7127,32 @@ window.openMixDial = function (fromEl) {
      the mix readout, and flips the corner pill to Back — the app's one
      dedicated back button, which is how you leave a gesture still "held". */
   host.classList.add('s-home-v3--mixing');
-  mixDialSync();
+  /* ⚠ Always opens on the TOP ring. The picks survive — they are the work — but
+     the ring you happened to be standing in when you left is not, and dropping
+     someone back inside "Alternative" with no memory of why is worse than one
+     extra tap. */
+  MIX.at = null;
+  MIX.from = null;
+  mixDialRender();
+  /* ⚠️ THE ENTRANCE, and the one moment the dial moves as a WHOLE — ring and
+     record together, because a record is a thing that spins and this is the
+     only time the two are not telling you about a step between rings. Stepping
+     keeps the record still on purpose (it is the fixed thing the rings move
+     against); arriving has nothing to be fixed against yet.
+     ⚠️ A CLASS ON THE WRAP, not on the dial: `mixDialRender` replaces the ring
+     on every step, so a class living on it would be lost — and the record is a
+     sibling that has to spin with it.
+     ⚠️ Removed and re-added around a reflow so a reopen actually replays it;
+     an animation does not restart just because its element was re-marked. */
+  const wrap = host.querySelector('.mix-inline');
+  const still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (wrap && !still) {
+    wrap.classList.remove('is-opening');
+    void wrap.getBoundingClientRect();
+    wrap.classList.add('is-opening');
+    clearTimeout(wrap._spin);
+    wrap._spin = setTimeout(() => wrap.classList.remove('is-opening'), MIX_OPEN_MS);
+  }
 };
 
 function closeMixDial() {
@@ -6228,21 +7184,17 @@ function obChip(type, key, image, label) {
 }
 function obRenderWall(root, kind) {
   const wall   = root.querySelector(`.ob-wall[data-wall="${kind}"]`);
-  const pinned = root.querySelector(`.ob-pinned[data-pinned="${kind}"]`);
   if (!wall) return;
+  // ⚠ The picks are no longer pinned above the wall — they are in the dock (obSyncDock).
   const q = OB.q[kind];
   if (kind === 'artists') {
     const sel = OB.artists, list = obArtistList();
     const match  = list.filter(a => !q || a.name.toLowerCase().includes(q));
-    const chosen = list.filter(a => sel.has(a.name));
-    if (pinned) pinned.innerHTML = chosen.map(a => obChip('artist', a.name, a.image, a.name)).join('');
     wall.innerHTML = match.map(a => obCard('artist', a.name, a.image, a.genre, sel.has(a.name))).join('')
       || `<div class="ob-empty">No artists match “${obEsc(q)}”.</div>`;
   } else {
     const sel = OB.albums, list = obAlbumList();
     const match  = list.filter(a => !q || a.album.toLowerCase().includes(q) || a.artist.toLowerCase().includes(q));
-    const chosen = list.filter(a => sel.has(albumKey(a)));
-    if (pinned) pinned.innerHTML = chosen.map(a => obChip('album', albumKey(a), a.image, a.album)).join('');
     wall.innerHTML = match.slice(0, 60).map(a => obCard('album', albumKey(a), a.image, a.artist, sel.has(albumKey(a)), a.album)).join('')
       || `<div class="ob-empty">No albums match “${obEsc(q)}”.</div>`;
   }
@@ -6287,7 +7239,7 @@ function obRenderProfile(root) {
 
 // ── Actions ───────────────────────────────────────────────────
 window.obSetUsername = function (v) {
-  OB.username = String(v).replace(/[^a-zA-Z0-9_]/g, '').slice(0, 20);
+  OB.username = String(v).replace(/[^a-zA-Z0-9_]/g, '').slice(0, 18);
   document.querySelectorAll('.s-onboarding').forEach(r => {
     const ui = r.querySelector('.ob-user-input');
     if (ui && ui.value !== OB.username) ui.value = OB.username;   // echo the sanitized value
@@ -6297,7 +7249,8 @@ window.obSetUsername = function (v) {
 };
 window.obConnect      = function (id)  { OB.service = OB.service === id ? null : id; obSync(); };
 window.obSetTracking  = function (v)   { OB.tracking = v; obSync(); setTimeout(() => obNext(), 240); };
-window.obToggleGenre  = function (el, name) { OB.genres.has(name) ? OB.genres.delete(name) : OB.genres.add(name); obSync(); };
+// ⚠ Called as (el, name) by the chip row and as (name) by the bubbles; `el` was never used.
+window.obToggleGenre  = function (a, b) { const name = b === undefined ? a : b; OB.genres.has(name) ? OB.genres.delete(name) : OB.genres.add(name); obSync(); };
 window.obToggleArtist = function (name){ OB.artists.has(name) ? OB.artists.delete(name) : OB.artists.add(name); obSync(); };
 window.obToggleAlbum  = function (key) { OB.albums.has(key) ? OB.albums.delete(key) : OB.albums.add(key); obSync(); };
 window.obToggleFollow = function (user){ OB.following.has(user) ? OB.following.delete(user) : OB.following.add(user); obSync(); };
@@ -6311,6 +7264,7 @@ window.obNext = function () {
   OB.step = active[i + 1];
   obSync();
   obScrollTop();
+  obMixArrive();
 };
 window.obBack = function () {
   const active = obActiveSteps();
@@ -6319,6 +7273,7 @@ window.obBack = function () {
   OB.step = active[i - 1];
   obSync();
   obScrollTop();
+  obMixArrive();
 };
 function obScrollTop() { document.querySelectorAll('.s-onboarding .ob-stage').forEach(s => s.scrollTop = 0); }
 window.obFinish = function () { navigate('home'); };
@@ -7303,7 +8258,8 @@ window.pfeditDraft = function () {
       /* ⚠ Seeded THROUGH profTags, not copied. A profile with no `tags` still
          shows two (seeded off the handle), so a form that opened blank would
          look like the edit page had lost them. */
-      tags: (window.profTags ? profTags(P) : []).map(t => t.id) };
+      tags: (window.profTags ? profTags(P) : []).map(t => t.id),
+      skin: P.skin ? { ...P.skin } : null };
   }
   return window.PFEDIT;
 };
@@ -7355,6 +8311,11 @@ window.pfeditSave = function () {
        Leaving it in the whitelist would only copy PROFILE's own value back over
        itself. The personas still carry the field; nothing shows it. */
     tags: (D.tags || []).slice(),
+    /* ⚠ Copied, not referenced: `skin` is an object, and assigning the draft's
+       own would leave PROFILE holding the thing Cancel is supposed to throw
+       away. `null` when the owner cleared it, which is what puts the theme's
+       colours back. */
+    skin: D.skin ? { ...D.skin } : null,
     pic: D.pic,
     favs: (D.favs || []).slice(),
     socials: { ...(D.socials || {}) },
@@ -8076,8 +9037,38 @@ const DZ_GRADS = ['linear-gradient(135deg,#e05a6b,#8a2f52)', 'linear-gradient(13
                   'linear-gradient(135deg,#3fae7a,#1d6b4a)', 'linear-gradient(135deg,#b06ae0,#5f2f8a)',
                   'linear-gradient(135deg,#e0a53f,#8a5f1d)', 'linear-gradient(135deg,#e05aa8,#8a2f6b)',
                   'linear-gradient(135deg,#4fc3d0,#1d6b7a)'];
+/* Deezer's genre vocabulary -> ours. ⚠ The regional genres all land on World:
+   the dial has one hole for them and eight separate labels would each match
+   nothing. */
 const DZ_GEN = { 'Rap/Hip Hop': 'Hip-Hop', 'Electro': 'Electronic', 'Films/Games': 'Soundtrack',
-                 'Dance': 'Electronic', 'Soul & Funk': 'Soul', 'Asian Music': 'K-Pop' };
+                 'Dance': 'Electronic', 'Soul & Funk': 'Soul', 'Asian Music': 'K-Pop',
+                 'African Music': 'World', 'Brazilian Music': 'World', 'Cumbia': 'World',
+                 'Indian Music': 'World', 'Latin Music': 'World', 'Salsa': 'World',
+                 'Traditional Mexicano': 'World', 'Reggaeton': 'World' };
+
+/* ⚠ THE FIX THIS FILE HAS BEEN PROMISING: `genre_id` -> a genre name.
+   `dzRecord` set `genre: ''` on every album the rec deal dealt, which is TWO
+   THIRDS of the live archive (measured: 67 of 100), so the other 33 carried
+   eight labels between them and most of the mix dial matched nothing at all.
+   ⚠ It costs NO extra requests. `genre_id` is already in the payload
+   `artist/<id>/albums` returns — the same response the deal is reading for the
+   title and the cover — so this is a lookup, not a fetch. That is why it is
+   done here and not by hydrating each album.
+   ⚠ Ids are stable and there are 28 of them, so the table is written out
+   rather than pulled from `/genre` at boot: one fewer request, and one fewer
+   thing that can fail and leave the whole archive genre-less again. */
+const DZ_GID = {
+  132: 'Pop', 116: 'Rap/Hip Hop', 122: 'Reggaeton', 152: 'Rock', 113: 'Dance',
+  165: 'R&B', 85: 'Alternative', 186: 'Christian', 106: 'Electro', 466: 'Folk',
+  144: 'Reggae', 129: 'Jazz', 84: 'Country', 67: 'Salsa', 65: 'Traditional Mexicano',
+  98: 'Classical', 173: 'Films/Games', 464: 'Metal', 169: 'Soul & Funk',
+  2: 'African Music', 16: 'Asian Music', 153: 'Blues', 75: 'Brazilian Music',
+  71: 'Cumbia', 81: 'Indian Music', 95: 'Kids', 197: 'Latin Music'
+};
+/* ⚠ genre_id 0 is 'All', which means Deezer does not know — it must stay blank
+   rather than becoming a label, or a third of the archive joins one bogus
+   shelf. Same for an id not in the table. */
+const dzGenreOf = id => { const g = DZ_GID[id]; return g ? (DZ_GEN[g] || g) : ""; };
 
 function dzSeed() {
   let h = 0;
@@ -8111,7 +9102,7 @@ function dzRecord(al, artist) {
   return {
     album: title, artist: ar.name || '',
     year: parseInt((al.release_date || '').slice(0, 4), 10) || 0,
-    genre: '', tracks: al.nb_tracks || 10,
+    genre: dzGenreOf(al.genre_id), tracks: al.nb_tracks || 10,
     image: al.cover_xl || al.cover_big || al.cover_medium || '',
     rating: rating,
     reviewCount: 4000 + (dzSeed(title, 'rc') % 86) * 1000,
