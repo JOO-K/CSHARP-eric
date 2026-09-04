@@ -3350,6 +3350,8 @@ window.sdBuy = function (btn) {
      `setPlan` — which re-renders the screen, and brings this row back already
      reading "Active" from `shopHtml`. Nothing to swap in by hand. */
   if (btn.classList.contains('shop-pro-btn')) { setPlan(true); return; }
+  // A skin goes on the bento the moment it is bought (and stays on).
+  if (btn.dataset && btn.dataset.skin) setBentoSkin(btn.dataset.skin);
   const owned = document.createElement('span');
   owned.className = 'shop-owned shop-owned--new';   // --new = start transparent, fade in below
   /* ⚠ The word is the TILE's to choose. Everything cosmetic in here becomes
@@ -3675,6 +3677,26 @@ window.setPlan = function (pro) {
 // Stamped on `body`, so it survives every screen rebuild without being re-applied.
 function applyPlanClass() { document.body.classList.toggle('sd-pro', SD_PRO); }
 
+/* ══ THE BENTO SKIN — one id, or null ═══════════════════════════════════════
+   Same shape as the plan: a body class (`sd-skin-<id>`) so every shell on
+   stage wears it at once, kept in localStorage so it survives a reload. The
+   artwork itself is in bentoSkinBackHtml / bentoSkinFrontHtml (screens.js); this only says which one
+   shows. Buying a skin in the shop routes here through sdBuy's data-skin. */
+const SKIN_KEY = 'spindeck-skin';
+const SKIN_IDS = ['furry'];
+let SD_SKIN = null;
+try { SD_SKIN = localStorage.getItem(SKIN_KEY) || null; } catch (e) {}
+if (SKIN_IDS.indexOf(SD_SKIN) < 0) SD_SKIN = null;
+function applySkinClass() {
+  SKIN_IDS.forEach(id => document.body.classList.toggle('sd-skin-' + id, SD_SKIN === id));
+}
+window.bentoSkin = function () { return SD_SKIN; };
+window.setBentoSkin = function (id) {
+  SD_SKIN = SKIN_IDS.indexOf(id) >= 0 ? id : null;
+  try { SD_SKIN ? localStorage.setItem(SKIN_KEY, SD_SKIN) : localStorage.removeItem(SKIN_KEY); } catch (e) {}
+  applySkinClass();
+};
+
 const PLANS = [
   { id: 'free', label: 'Free', hint: 'View the app as a free account' },
   { id: 'pro',  label: 'Pro',  hint: 'View the app as a Pro subscriber' },
@@ -3692,7 +3714,7 @@ function renderPlanBar() {
     b.addEventListener('click', () => setPlan(b.dataset.plan === 'pro')));
 }
 
-function initPlan() { applyPlanClass(); renderPlanBar(); }
+function initPlan() { applyPlanClass(); applySkinClass(); renderPlanBar(); }
 
 // ── Hand layout (left/right) ──────────────────────────────────
 function getHand() { return localStorage.getItem('spindeck-hand') || 'left'; }

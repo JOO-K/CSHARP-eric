@@ -3291,6 +3291,40 @@
    freeze it so it snaps instead of floating across. The arrow dots morph visibly. */
 .v3-hand-swapping .v3-for-single { transition: none; }
 
+/* ── Bento skins (see bentoSkinBackHtml / bentoSkinFrontHtml in screens.js) ──
+   BACK is a <g> inside the fill's svg: the svg is `overflow: visible`, so the
+   ears above y=0 and the curl below y=730 still draw, and the svg's one
+   drop-shadow is cast by the union. FRONT is two flat <svg>s in the bento's
+   box: the ears band above the top edge, the curl band below the bottom one.
+   Colours read the same `--v3-box1-color` the fill does, so the skin follows
+   the album's procedural colour. Hand mode mirrors both about the centre. */
+.v3-skin-back, .v3-skin-front { display: none; }
+body.sd-skin-furry .v3-skin--furry { display: block; }
+.v3-bg-fill { overflow: visible; }
+.v3-skin-front {
+  position: absolute; left: 0; width: 100%;
+  pointer-events: none;
+  z-index: 4;                 /* over the cells' shadow and the feed's sticky header (2); under the frame (5) */
+}
+.v3-skin-front--ears { top: -11.91%; height: 11.91%; }     /* 86.945 / 730 */
+.v3-skin-front--tail { top: 99.88%;  height: 10.26%; }     /* 729.147 / 730 · 74.908 / 730 */
+/* Mirror with the hand toggle. The back <g> keeps its -86.945 lift; the
+   front svgs flip about their own centre, which is the bento's.
+   ⚠️ Furry was drawn over the LEFT-hand bento (tail under the For You column,
+   not the cover), so it is the RIGHT-hand default that mirrors, not --left. */
+.s-home-v3:not(.s-home-v3--left) .v3-skin-back  { transform: matrix(-1, 0, 0, 1, 689, -86.945); }
+.s-home-v3:not(.s-home-v3--left) .v3-skin-front { transform: scaleX(-1); }
+.v3-skin-outer { fill: var(--v3-box1-color, #3a1e2e); }
+.v3-skin-inner { fill: color-mix(in srgb, var(--v3-box1-color, #3a1e2e) 75%, #fff); }
+.s-home-v3--light .v3-skin-outer { fill: var(--v3-box1-color, #f0ece3); }
+.s-home-v3--light .v3-skin-inner { fill: color-mix(in srgb, var(--v3-box1-color, #f0ece3) 75%, #fff); }
+/* The shop tile's preview: the ears, cropped to the field. */
+.shop-field--skin svg { width: 34px; height: auto; }
+/* The ears stand ~12% of the bento above its top edge (~47px at the 393
+   frame), and the body's 20px clearance plus the bento's 10px margin only
+   give them 30 — the scroller would clip the tips. Room for them when worn. */
+body.sd-skin-furry .v3-body { padding-top: 40px; }
+
 /* Background fill SVG — fills only inside the outer bento frame shape */
 .v3-bg-fill {
   position: absolute;

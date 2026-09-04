@@ -259,13 +259,50 @@ function platRowsHtml(slot) {
               </button>`).join('');
 }
 
+/* ══ BENTO SKINS — bought in the shop, worn by the bento ═══════════════════
+   `body.sd-skin-<id>` (setBentoSkin in app.js) is what shows one; nothing is
+   drawn until then. Two layers, and it takes both:
+   · BACK — inside `.v3-bg-fill`, drawn before the silhouette, so the fill's
+     one drop-shadow is cast by the UNION of frame + ears + tail. Separate
+     layers each cast their own and the frame's landed on the ears and tail.
+   · FRONT — flat copies (no shadow) of only what stands OUTSIDE the frame:
+     the ears above the top edge and the tail's curl below the bottom one,
+     each in an <svg> whose viewBox is cropped to that band so the tucked
+     parts clip away. At z-index 4 they sit over the frame's shadow and over
+     the feed's sticky "Today" header (z 2), which was painting across the
+     tail. Nothing casts a shadow onto them because nothing is above them.
+   FURRY (Eric, 2026-09-04, images/skin-furry-source.svg) was drawn in Figma
+   over the real bento: the frame is 891 tall with the ears' flat bases at
+   y=86.945 — that line is the bento's top edge — and 86.945 + 729.147 =
+   816.09 is the bottom edge, which is where the tail's upper arm ends
+   (815.66). So the artwork is at (0, -86.945) in bento units; the arm is
+   inside the frame and only the curl shows.
+   Hand mode mirrors both layers about the bento's centre (see .v3-skin-* in
+   app.css) so the ears and tail swap sides with the album.
+   Outer ears and tail take the bento's colour; inner ears the same colour a
+   quarter of the way to white. */
+function bentoSkinBackHtml() {
+  return `<g class="v3-skin-back v3-skin--furry" transform="translate(0 -86.945)"><path class="v3-skin-outer" d="M271.193 27.1351C260.863 45.1685 243.754 86.9451 203.781 86.9451H379.724C391.991 59.0226 360.127 21.9865 338.605 6.95886C328.91 0.188953 292.216 -9.5636 271.193 27.1351Z"/><path class="v3-skin-inner" d="M283.856 39.9244C276.538 54.1016 264.419 86.9451 236.103 86.9451H360.736C369.426 64.9933 346.855 35.8768 331.609 24.0625C324.741 18.7402 298.748 11.0731 283.856 39.9244Z"/><path class="v3-skin-outer" d="M561.782 27.1351C551.452 45.1685 534.343 86.9451 494.37 86.9451H670.312C682.58 59.0226 650.716 21.9865 629.194 6.95886C619.498 0.188953 582.804 -9.5636 561.782 27.1351Z"/><path class="v3-skin-inner" d="M574.445 39.9244C567.127 54.1016 555.008 86.9451 526.692 86.9451H651.325C660.015 64.9933 637.444 35.8768 622.198 24.0625C615.33 18.7402 589.337 11.0731 574.445 39.9244Z"/><path class="v3-skin-outer" d="M46.9079 815.661H179.627C185.261 815.661 189.828 811.093 189.828 805.459C189.828 799.825 185.261 795.257 179.627 795.257H47.6451C21.6076 795.257 0.5 816.365 0.5 842.402C0.5 868.44 21.6076 889.547 47.6451 889.547H136.18C142.256 889.547 147.181 884.622 147.181 878.546C147.181 872.471 142.256 867.545 136.18 867.545H46.9079C32.5803 867.545 20.9655 855.93 20.9655 841.603C20.9655 827.275 32.5803 815.661 46.9079 815.661Z"/></g>`;
+}
+function bentoSkinFrontHtml() {
+  /* The ears: frame y 0→86.945. The curl: frame y 816.09→891, i.e. bento
+     y 729.147→804.06 — positioned at 99.88% of the bento, 10.26% tall. */
+  return `<svg class="v3-skin-front v3-skin-front--ears v3-skin--furry" viewBox="0 0 689 86.945" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><path class="v3-skin-outer" d="M271.193 27.1351C260.863 45.1685 243.754 86.9451 203.781 86.9451H379.724C391.991 59.0226 360.127 21.9865 338.605 6.95886C328.91 0.188953 292.216 -9.5636 271.193 27.1351Z"/><path class="v3-skin-inner" d="M283.856 39.9244C276.538 54.1016 264.419 86.9451 236.103 86.9451H360.736C369.426 64.9933 346.855 35.8768 331.609 24.0625C324.741 18.7402 298.748 11.0731 283.856 39.9244Z"/><path class="v3-skin-outer" d="M561.782 27.1351C551.452 45.1685 534.343 86.9451 494.37 86.9451H670.312C682.58 59.0226 650.716 21.9865 629.194 6.95886C619.498 0.188953 582.804 -9.5636 561.782 27.1351Z"/><path class="v3-skin-inner" d="M574.445 39.9244C567.127 54.1016 555.008 86.9451 526.692 86.9451H651.325C660.015 64.9933 637.444 35.8768 622.198 24.0625C615.33 18.7402 589.337 11.0731 574.445 39.9244Z"/></svg>
+            <svg class="v3-skin-front v3-skin-front--tail v3-skin--furry" viewBox="0 816.092 689 74.908" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><path class="v3-skin-outer" d="M46.9079 815.661H179.627C185.261 815.661 189.828 811.093 189.828 805.459C189.828 799.825 185.261 795.257 179.627 795.257H47.6451C21.6076 795.257 0.5 816.365 0.5 842.402C0.5 868.44 21.6076 889.547 47.6451 889.547H136.18C142.256 889.547 147.181 884.622 147.181 878.546C147.181 872.471 142.256 867.545 136.18 867.545H46.9079C32.5803 867.545 20.9655 855.93 20.9655 841.603C20.9655 827.275 32.5803 815.661 46.9079 815.661Z"/></svg>`;
+}
+
 function bentoHtml() {
   return `<!-- BENTO: all children absolutely positioned in 690×670 SVG coordinate space -->
           <div class="v3-bento">
 
+            <!-- Skin, front layer (ears + tail curl) — see bentoSkinFrontHtml -->
+            ${bentoSkinFrontHtml()}
+
             <!-- Background fill: paints album color inside the bento frame shape.
-                 Two silhouettes (right/left hand) — CSS shows one via .s-home-v3--left -->
+                 Two silhouettes (right/left hand) — CSS shows one via .s-home-v3--left.
+                 The skin's BACK layer is drawn first so the shadow is one union. -->
             <svg class="v3-bg-fill" viewBox="0 0 689 730" xmlns="http://www.w3.org/2000/svg">
+              ${bentoSkinBackHtml()}
               <path class="bg-right" fill="currentColor" d="M518.5 0.5H20.5C9.454 0.5 0.5 9.4543 0.5 20.5V709.147C0.5 720.192 9.454 729.147 20.5 729.147H518.5C529.546 729.147 538.5 720.192 538.5 709.147L538.5 609C538.5 570.34 569.84 539 608.5 539H668.5C679.546 539 688.5 530.046 688.5 519V107.5C688.5 96.4543 679.546 87.5 668.5 87.5H558.5C547.454 87.5 538.5 78.5457 538.5 67.5V20.5C538.5 9.4543 529.546 0.5 518.5 0.5Z"/>
               <path class="bg-left" fill="currentColor" d="M170.5 0.5H668.5C679.546 0.5 688.5 9.45432 688.5 20.5V709.147C688.5 720.192 679.546 729.147 668.5 729.147H170.5C159.454 729.147 150.5 720.192 150.5 709.147L150.5 609C150.5 570.34 119.16 539 80.4999 539H20.4999C9.45422 539 0.499939 530.046 0.499939 519V107.5C0.499939 96.4543 9.45422 87.5 20.4999 87.5H130.5C141.546 87.5 150.5 78.5457 150.5 67.5V20.5C150.5 9.45431 159.454 0.5 170.5 0.5Z"/>
             </svg>
@@ -3299,6 +3336,7 @@ const SHOP_EVENTS = [
 function shopHtml(light) {
   const dots = '<i class="v3-ring-dot"></i>'.repeat(6);
   const pro  = typeof isPro === 'function' && isPro();
+  const skin = typeof bentoSkin === 'function' ? bentoSkin() : null;
   const cat  = window.SHOP_CAT;
 
   /* Which aisles a thing belongs to. NO attribute at all = never filtered,
@@ -3460,6 +3498,21 @@ function shopHtml(light) {
               ${frame('Gold',     'border:4px solid #e8a83c',       '232,168,60',  '$1')}
               ${frame('Dashed',   'border:3px dashed currentColor', '232,226,214', '$1')}
               ${frame('Double',   'border:2px solid #e8a83c; box-shadow:0 0 0 4px rgba(232,168,60,.28)', '232,168,60', '$2')}
+            </div>
+
+            <!-- Skins dress the BENTO — the one thing on your home that is
+                 yours to look at all day. The preview is the skin's own ears,
+                 cropped, in the tile's tint. data-skin routes the purchase
+                 through setBentoSkin, so buying it puts it on straight away. -->
+            ${sec('Skins', 'your bento, dressed up', 'general themes')}
+            <div class="shop-sheet shop-sheet--row" data-cat="general themes">
+              <div class="shop-tile shop-tile--sm" style="--tint:232,168,60" data-cat="general themes">
+                <div class="shop-field shop-field--tint shop-field--skin"><svg viewBox="196 -4 494 92" aria-hidden="true"><path fill="currentColor" d="M271.193 27.1351C260.863 45.1685 243.754 86.9451 203.781 86.9451H379.724C391.991 59.0226 360.127 21.9865 338.605 6.95886C328.91 0.188953 292.216 -9.5636 271.193 27.1351Z"/><path fill="currentColor" d="M561.782 27.1351C551.452 45.1685 534.343 86.9451 494.37 86.9451H670.312C682.58 59.0226 650.716 21.9865 629.194 6.95886C619.498 0.188953 582.804 -9.5636 561.782 27.1351Z"/><path fill="currentColor" opacity=".55" d="M283.856 39.9244C276.538 54.1016 264.419 86.9451 236.103 86.9451H360.736C369.426 64.9933 346.855 35.8768 331.609 24.0625C324.741 18.7402 298.748 11.0731 283.856 39.9244Z"/><path fill="currentColor" opacity=".55" d="M574.445 39.9244C567.127 54.1016 555.008 86.9451 526.692 86.9451H651.325C660.015 64.9933 637.444 35.8768 622.198 24.0625C615.33 18.7402 589.337 11.0731 574.445 39.9244Z"/></svg></div>
+                <div class="shop-tile-name">Furry</div>
+                ${skin === 'furry'
+                  ? `<span class="shop-owned">Owned</span>`
+                  : `<button class="shop-buy" data-skin="furry" onclick="event.stopPropagation(); sdBuy(this)">$2</button>`}
+              </div>
             </div>
 
             ${sec('Badges', 'they sit next to your name', 'general badges')}
