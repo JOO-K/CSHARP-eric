@@ -58,6 +58,7 @@ not a state at all any more — see *Fullscreen is the album page*.
 | `playlists` | Playlists | Float·Dark, Float·Light |
 | `playlist-new` | New Playlist (creation) | Float·Dark, Float·Light |
 | `playlist` | Playlist Page (detail) | Float·Dark, Float·Light |
+| `review-page` | Review Page — one review in full, with its comments | Float·Dark, Float·Light |
 | `notifications` | Notifications (activity inbox) | Float·Dark, Float·Light |
 | `settings` | Settings | Float·Dark, Float·Light |
 | `shop` | Shop — four aisles: General, Events, Themes, Badges | Float·Dark, Float·Light |
@@ -1606,6 +1607,32 @@ the other three. Events, Themes and Badges are the full shelf.
   the brief, and a ring around your favourites is the look of your page the same
   way a theme is.
 
+#### Skins — the bento's costume (`SKIN_IDS` · `bentoSkin` · `bentoSkinOwned` in app.js)
+
+A skin dresses the **home bento** — Furry (Eric, 2026-09-04) is ears above the
+top edge and a tail curl below, drawn as `bentoSkinBackHtml` /
+`bentoSkinFrontHtml` in screens.js and coloured from the same
+`--v3-box1-color` the fill uses. It shows via a body class (`sd-skin-furry`)
+so every shell on stage wears it at once.
+
+- ⚠️ **Owned and worn are two facts** (2026-09-11): `SD_SKIN` is the one being
+  worn (`localStorage['spindeck-skin']`, or null for a bare bento) and
+  `SD_SKIN_OWNED` is everything bought (`'spindeck-skin-owned'`). They used to
+  be one key, so buying Furry put it on with no way off short of clearing
+  storage. Anyone wearing it from the old key is migrated into the wardrobe.
+- **The shop tile is the toggle once owned.** Unowned → the `$2` buy button;
+  `sdBuy` routes `data-skin` through `buyBentoSkin` (own + wear) and then
+  **re-renders like Pro does**, because the tile's owned state is a
+  `Wear / Wearing` pill (`.shop-wear`, filled in the star when on) that
+  `shopHtml` owns — an "Owned" pill swapped in by hand could never take it off.
+- **Settings › Appearance** carries the same switch (`Furry bento`), or a
+  chevron to the shop when it isn't owned yet. It is real state, so it does
+  **not** go through the presentational `sdToggle`.
+- Every control is stamped `data-skin-wear="<id>"` and `syncSkinControls`
+  patches all of them in place (Dark + Light shells, shop tile + settings
+  switch) — no re-render, so flipping it keeps your scroll position.
+  `setBentoSkin` refuses an id that isn't owned.
+
 #### Events — tickets, and what Pro actually unlocks (`SHOP_EVENTS`)
 
 The one thing in the shop that **is not a cosmetic**. Everything else dresses up
@@ -3020,12 +3047,41 @@ Shrinking the cover doesn't fix it; the stepped shell is what says "bento".
   does: the personas' art is on Deezer's CDN, and without it the canvas is
   tainted and `toBlob()` throws. The sheet degrades to a message if that happens.
 
-**Two entry points, both YOUR review only** — you can post your own take, not
-someone else's:
-- the **log sheet's footer** (hidden for song/artist subjects, which have no card
-  layout), reading live `SDLOG` so the post matches the sheet as it stands;
-- the **`.v3-rev-card--mine`** card, which `populateReviewList` now builds from
-  the album's saved draft (see *Log Sheet*) and leads the list with.
+### The universal share button + sheet (2026-09-11)
+
+**`shareBtnHtml(kind, arg, cls?)` is THE share control** — a compact 28px round
+icon (`.sd-share-btn`, neutral greys, `currentColor` glyph, so it sits on any
+surface; `--lg` 34px, `--cta` for the album page's rated CTA). `sdShare(btn)`
+turns its kind into a **job** — `{ title, sub, build(), text, url, file }` —
+that one sheet renders. **Adding a place to share from is one `shareBtnHtml`
+call; adding a KIND is one branch in `shareJob` and one card builder.**
+
+| kind | where it sits | card | text |
+|---|---|---|---|
+| `review` | the log sheet's Share · your own card's foot · the rated CTA (`syncRevCta`) | `buildShareCard` — the bento **plus a big score row** under it (the strip's score was a footnote) | “quote” — 4.5/5 ●●●●◐ for *album* by artist · @you |
+| `rev` | the review page's hero, under the heart (arg: the `REV_INDEX` key) | **`buildReviewCard`** — the page's hero as a picture: photo · name/@handle, the score big with the records, the words at reading size, the record named at the foot; the reviewer's handle in the footer | “quote” — 4.5/5 for *album* by artist · @them |
+| `playlist` | the playlist page, beside the back pill (`.plp-toprow`) | `buildPlaylistCard` — cover big, name, first six tracks (an mp4 cover falls back to the first track's art) | name — N songs by … |
+| `favs` | the profile's *Favourite albums* heading (`.prof-sec-hd--row`) | `buildFavsCard` — the five records as **CDs on a ring** around the handle (clockwise from the top, numbered), the same five named beneath in that order | @you's favourite albums: … |
+
+- **The sheet is 95% tall** (it rides `.sd-log-sheet`, grab nub wired via
+  `wireSheetGrab`) and holds **the card and the buttons, nothing else**
+  (2026-09-11): a flex column, the card (`.sd-share-preview`) takes every
+  pixel the buttons leave and the canvas grows to whichever edge it meets, and
+  a 3×2 grid of `.sd-share-app` — Instagram · X · Messages · Copy link · Copy
+  text · Save image — sits on the bottom edge. No title, no labels, no text
+  block (the words are still what Copy text and Messages send). The status
+  note is a toast OVER the card (`.sd-share-note.is-on`; sticky while building
+  or on a failure), so it costs no height. ⚠️ **Every button is a real gesture**:
+  `navigator.share` where the browser has it (Instagram lives in the OS sheet;
+  Messages too), an intent URL for X, the clipboard for links and text, `sms:`
+  as the no-share fallback. Nothing pretends to post. The PNG blob is still
+  built when the sheet OPENS (Safari drops the gesture after an await).
+- **`openShareSheet(el, job)`** — or the old `(el, album, review)`, which
+  becomes a review job, so the log sheet's Share and `shareMyReview` still
+  work. `ov._job` guards a card that finishes after another share opened.
+- Links are the live URL with a `#kind=slug` fragment — a placeholder until
+  there is routing. Everything inside the sheet reads the `--sd-*` tokens, so
+  it re-inks with the light shell like the log sheet does.
 
 ## SD_DOTS — the brand dot language (`dots.js`)
 **THE Spindeck asset primitive**: a grid of **rounded-square dots** — dot = 56%
@@ -3355,8 +3411,9 @@ Emblems the owner pins on a card, drawn in the **dot system** (new 5×5 entries 
 
 - ⚠️ Two pencils in two corners would be a coin flip. The `+` sits next to the badges it adds to; the pencil is the whole playlist.
 - ⚠️ The badge row **still renders on your own card when there are no badges yet** — otherwise the only way to get a first badge would be a control that appears once you already have one.
-- ⚠️ `@media (hover: none) { opacity: 1 }` on the corner handle, or it is unreachable on the device this is designed for.
+- ⚠️ **The pencil is always visible** (2026-09-11). It used to fade in on hover with a `(hover: none)` escape hatch for touch, and on the desktop viewer nobody found it — Eric asked for "an edit button on each playlist" while it was already there. Hover now only deepens its background.
 - **`openEditPlaylist`** re-uses the New Playlist page rather than adding an edit screen — every field is already there, and a second form would drift out of sync with the first. `PLNEW.editing` holds the stable key and is the only thing that tells the two apart; `plnewCreateLabel` swaps the button to *Save changes*. ⚠️ `openNewPlaylist` must clear it, or "+" silently overwrites whatever was edited last.
+- **Delete lives inside the editor, edit mode only** — a red ghost `.plnew-delete` button directly under *Save changes* (`playlistNewHtml` renders it only when `S.editing` is set; a new playlist has nothing to delete). It never acts on its own: `plnewAskDelete(btn)` mounts a confirm sheet (`#pldel`, `.pldel-sheet` on the `.sd-log-overlay` scrim, same material as the badges sheet) **into the `.s-plnew` the tap came from**, asking *Delete "name"? Are you sure you want to delete it?* with Cancel / Delete. `plnewDelete` then has the same two homes as saving: a created playlist is spliced out of `PLNEW_CREATED`; an authored sample gets `{ deleted: true }` in `plCustom` under its stable key and `plLists()` filters it out (`.filter(l => !l.deleted)`). ⚠️ That flag persists with the badges in `localStorage['spindeck-pl-custom']`, so a deleted sample stays gone across reloads — clear that key to get the sample wall back. After deleting it clears the back stack and lands on the wall rather than `goBack()`, because the recorded location may be the page of the playlist that no longer exists.
 - Saving branches on where the playlist lives: one you created is a real object in `PLNEW_CREATED` and gets mutated; an authored sample is regenerated on every `plLists()` call, so the change goes to `plCustom` under the **stable key** and is merged back over the literal.
 - ⚠️ **`key` is stamped last in `plLists()`, from the literal's own name**, so it cannot be overridden. Everything customisable is stored under it rather than under the displayed name — which is what lets the editor rename a playlist without orphaning its badges.
 - ⚠️ **The sheet writes through immediately** — no Save, same as the log sheet and the dev box. Every tap re-renders the wall behind it, so you choose against the real card rather than a preview.
@@ -3419,6 +3476,14 @@ ticks up. By the time you press Create you've already seen the result.
   tracklist — real `pl.songs` if it has them, else the seeded stand-in. Both the
   detail page and the library browser call it, so they can't drift; its keys
   match `plnewPool()`'s so the picker knows what's already added.
+
+⚠️ **`window.PLNEW = PLNEW` is not optional.** `PLNEW` is a top-level `const` in
+app.js, which is a global *binding* but NOT a window property — and
+`playlistNewHtml` reads `window.PLNEW` to paint a fresh render. Until 2026-09-11
+that line was missing, so the getter silently used its empty fallback: the edit
+page opened with a blank name, no cover and Public selected whatever the
+playlist actually was, and only the `call('plnew…')` helpers (which close over
+the real `PLNEW`) painted correctly.
 
 **Rendering discipline — read this before touching it.** State lives in `PLNEW`;
 the screen paints it two ways:
@@ -3858,11 +3923,34 @@ identical and the disc under your thumb does not move.
   runs — so an attempt against a zero-width rail must NOT count as having run,
   or the next paint (triggered by the user's own scroll) yanks the rail back to
   disc 2 under their finger.
-- The info panel carries **album + year on one line**, then artist, then stars
-  and the review count, then **what they wrote about it**. ⚠️ Genre was dropped:
-  it said little at this size, and the archive's genre strings are inconsistent
-  enough ("Hip-hop" / "Experimental hip-hop" / "Korean hip-hop") that it read as
-  noise.
+- The info panel carries **album + year on one line**, then artist — **and
+  nothing else** (2026-09-11: the stars, the review count and the line they
+  wrote came out; `profFavReview` went with them). ⚠️ Genre was dropped
+  earlier: it said little at this size, and the archive's genre strings are
+  inconsistent enough ("Hip-hop" / "Experimental hip-hop" / "Korean hip-hop")
+  that it read as noise.
+
+#### Pinned reviews (`profPins` · `profPinsHtml` · picker kind `review`)
+
+Directly under the favourites rail: up to `PROF_PIN_MAX` (3) of their own
+reviews, rendered as the **album page's review card** (`revCardHtml`, app.js —
+a pin is the review as writing, not an event; the history below keeps the
+feed row via `profReviewRowHtml`). Same `prof::handle::album` key as the
+history row so a like is shared, and each pin is registered in `REV_INDEX` so
+a tap opens the review page (which honours a passed `handle` — a persona's
+name is not its handle). `.prof-pins .v3-rev-*` re-points the card's
+hard-coded warm ink at the profile's `--pf-*` tokens for the cream light mode.
+- `P.pins` is a list of album names in slot order (`''` = empty slot),
+  resolved against `profReviewLog`. **A persona with no `pins` shows its two
+  most recent reviews** so a random profile is never blank; clearing them all
+  is a real state and shows the `.prof-pins-empty` hint.
+- **Edit Profile** has a matching "Pinned reviews" row of three tiles (the
+  `.prof-pl` tile: cover, album, "4.5 · what you wrote") under the favourite
+  discs. A tile opens `openProfEditor('review', slot)` — the same popup, kind
+  `review`, listing `profReviewLog(T)`; `profPickReview` sets the slot,
+  **clears it if you pick what is already there**, and moves a review pinned in
+  another slot rather than duplicating it. The draft seeds `pins` through
+  `profPins` (like tags) and `pfeditSave` whitelists it.
 
 ##### The discs sit on a WHEEL, not a line (`profFavArc`)
 
@@ -4644,11 +4732,53 @@ halfStars(rating, size)  // halfStars(4.4, 16) → star span HTML
 
 ---
 
+## Pull to refresh — home feed + album wall (`sdPtr*` in `app.js`)
+
+Pull down from the top of the **home** scroller or the **album wall** and the
+body follows the finger (at ~55%, resistance), a vinyl fades in and turns with
+the pull, and at `PTR_THRESH` (64px) it **lands**: accent colour, a bump, and
+a buzz. Release past it and the disc spins while the content re-deals; short
+of it, everything eases back. Home re-deals the friend feed (`_FEED = null` →
+`renderFriendFeed`); the wall repaints `wallGridHtml()` (its order is
+deterministic, so the wall refresh is the gesture more than new data).
+- **Delegated at the document**, so it survives every `renderViewer()` rebuild.
+  `sdPtrTarget` only arms on a `.v3-body` at `scrollTop 0` inside a shell that
+  has `.v3-feed-items` or `.wall2-grid`, and **never in `--review` state**
+  (same body, album page).
+- **The body itself is translated**; the indicator (`.sd-ptr`) is inserted as a
+  sibling before it, parked at `body.offsetTop`, `z-index: 1` so it paints over
+  the transformed body. `--p` = pull / threshold. **The disc never scales**: it
+  is the album accent in both themes, rises in opacity with the pull, and
+  **fills like a clock** — two copies of the record, a faint ghost under an
+  accent fill whose conic mask sweeps `--p × 360°`; at the threshold the ghost
+  drops and it is one whole record, and on release the mask goes and it spins.
+  `done()` must reset `--p` to 0 or the disc stays after the refresh.
+- **Touch and mouse are separate paths**: touch needs a non-passive `touchmove`
+  to stop the scroller, and `.v3-body { overscroll-behavior-y: contain }` keeps
+  Chrome's own pull-to-refresh out of it; mouse is for the desktop viewer.
+  ⚠️ A mouse pull ends with a click on whatever is under the cursor — on the
+  wall that opens an album — so `_ptrSwallow` eats the one click after a pull.
+- **Haptics (`sdHaptic`)**: `navigator.vibrate` (Android). iOS Safari has no
+  vibration API; toggling a native `switch` checkbox is the one thing that
+  clicks the Taptic engine from a page (17.4+) and only inside a user gesture,
+  so it is tried and not promised. ⚠️ Unverified on device — Eric tests on
+  the phone.
+
 ## Log Sheet — Letterboxd-style logging (`app.js`)
 
 `openLogSheet(triggerEl, subject?)` builds a **singleton** bottom sheet (`#sd-log`) lazily and mounts it into the triggering `.app-screen` so it stays inside the phone frame. Reusable from anywhere.
 - **Subject:** defaults to the current bento album (`currentBentoAlbum()`); pass a `{ image, title, subtitle }` to log something else (a song does this via `openSongLog`).
 - **Contents:** cover + title/subtitle header · large centered **vinyl rate** control (drag/tap for half-record ratings, `setLogRating`) · one-line **Listened (ear) · Listen later · Favorite** toggles (`toggleLogOpt`) · a review textarea · a footer status line. The sheet floats with 10px margins (matches the bento).
+- **The five records are 54px with a 7px gap** (2026-09-11, up from 32/8, then 50/12): a 298px row, ~76% of the 393px frame, so it stops about 12% short of each screen edge. Sized on `.sd-log-rate .sd-rec`, not `.sd-rec`, because the per-song rows reuse the glyph at 14px.
+- **The rate control follows five-star interaction guidance, translated to records** (2026-09-11; WCAG 44px targets, Letterboxd's half rule, MUI's tap-to-clear, NN/g's live feedback). Pointer events on `.sd-log-stars-track` (`role="slider"`): the track is divided into **five equal cells** (`valueAt`), each a ~60px square (`::before` pads it vertically; `touch-action: none`), and the **left half of a record is the half, the right half the whole**. A **press sets, a slide adjusts** with the fill following live; **sliding left off the track clears**. A tap always sets what it lands on — re-tapping the current value does NOT clear it (tried, rejected). There is **no number** under the discs; the fill is the readout. ⚠️ **The fill is measured in records and gaps** (`recFillWidth`, reading `--rec` / `--gap` from the track's container), not as a percentage of the row — the row is 5 discs + 4 gaps, so a percentage put the half at 55% of the first disc and 45% of the last. Both the big control and the per-song rows use it. Steps buzz via `navigator.vibrate` where it exists (Android only). Keyboard: ←/→ by a half, Home/End, Delete to clear. ⚠️ **Only the release commits** — `paintLogRating` (fill + number + ARIA) runs live, `setLogRating` (which also saves the draft and pokes the pet) runs once on pointerup, so a drag is not sixty writes and sixty reactions.
+- **A song's sheet sizes to its content** (`.sd-log-sheet--song`, toggled in
+  `openLogSheet`): no review box and no song list, so it ends under the three
+  buttons with the page showing above it, instead of 95% of empty sheet.
+- **The sheet is almost fullscreen** (2026-09-11, was 75%): `height: calc(95% - 10px)` — the 10px bottom float is taken out of the 95% so a true 5% of the screen stays clear at the top.
+- **The header restates the album page's info box** (2026-09-11). Sheet padding is **12px all round** — 12 is the album page's gutter (review panel 10px + row padding 12px = song text 22px from the screen edge; the sheet is 10px in + 12px = the same 22px), and top = left so the cover sits an even distance from the corner; the nub is absolutely positioned over the header's top edge so it takes no row. The head is a **centred column**: the cover, **two option buttons wide** (`calc((200% - 8px) / 3)`, square, 12px radius — the width two `.sd-log-opt` cells plus their gap resolve to), then the text under it at full width and centred, **never clamped or ellipsised** — the album page wraps its title, so does this. Share and ✕ are absolutely positioned in the top corners either side of the nub, which is why the head starts 30px down. Type is the review-state `.v3-blue` rules verbatim: Roboto Flex, title 22px/400 at 92% condensed to `wdth 85`, the **year** inline after it (`.sd-log-year`, 14px/300 at 50%; the subject carries `year`, and `:empty` hides it for artists), artist 14.5px/700 at 88%. Move these with the album page's rules if those change.
+- **The grab nub closes the sheet** — tap, or drag it down past 70px (`wireSheetGrab` in app.js, pointer events with capture, finger travel divided by the viewer zoom). It is wired on all three bottom sheets (log, badges, delete-confirm) so they behave alike. The `::before` on `.sd-log-grab` is the hit area.
+- **The per-song rows are the album page's tracklist rows** — `.sd-log-song` restates `.v3-song-row` (9px rhythm, 10px gap, 12px type, hairline between rows, mono track number in a 14px cell at the head). A negative side margin keeps the title flush with the sheet's left margin while the hover / logged tint bleeds 12px past it. The logged rail is an inset box-shadow in the gutter, not a border, so it never shifts the text. Retune both lists together.
+- **The review box grows on tap** — `min-height` 88 → 132px (~50%) on `:focus`, with a short ease, and it stays grown via `.has-text` while there is anything in it (toggled on input and on draft restore) so a saved review comes back readable rather than folded.
 
 ### There is no Save button — it autosaves
 Every change writes through to `localStorage['spindeck-logs']`, so a half-typed
@@ -4668,10 +4798,21 @@ sheet **reopens where you left off** rather than blank.
   albums can share a name; song titles are not unique across the catalogue).
 - Per-song ratings are merged back **by title, not index**: the draft only
   stores tracks that were touched, so its indices aren't the tracklist's.
-- With no Save button, the footer `.sd-log-status` is the *only* signal the work
-  is kept. It reads "Saves as you type" at rest and flashes a green "Draft
-  saved" for 1.5s on each write. The wording is swapped in JS; the `.on` class
-  only carries colour and the tick.
+- With no Save button, the **"Updated 5 min ago" stamp at the top** of the
+  sheet (`.sd-log-updated`, centred between Share and ✕, in the album's
+  `--star` accent) is the *only* signal the work is kept (2026-09-11; it
+  replaced the footer's "Saves as you type / Draft saved"). `flashLogSaved`
+  stamps `SDLOG.updated`, `paintLogUpdated` renders it via `logAgo` (just now
+  / N min / N h / N d), a 30s interval ages it while the sheet is open (cleared
+  in `closeLogSheet`), and it comes back from the draft's `updated` on reopen.
+  Empty until the first write.
+- **Every write also re-renders YOUR review card on the album page** behind the
+  sheet (`flashLogSaved` → `populateReviewList` on every shell), so the review
+  updates as you type and is already there when the sheet closes.
+- **Light theme**: the sheet is a child of the shell that opened it, so
+  `.s-home-v3--light .sd-log-*` overrides re-ink it (#f7f4ee, a shade lighter
+  than the #f0ece3 page, the same relationship as the dark pair). The badges
+  and delete sheets are still dark in both themes.
 - ⚠️ **Debugging note:** CSS transitions don't advance on a closed sheet (it
   isn't rendered), so `getComputedStyle` there returns frozen values from the
   previous state. Verify the status line with the sheet actually open, or you'll
@@ -4682,11 +4823,26 @@ The album page's **quick-log squares read and write these same drafts**
 about whether you favourited a record — and a favourite survives a reload.
 - The old inline compose block (`.v3-rev-mine` stars + textarea + Post) was replaced by a single `.v3-rev-cta` "Review, rate, log" button that opens this sheet.
 
-### Quick log — the squares beside the CTA
-The album page carries the **same three toggles** as a row of squares attached
-to the CTA (`.v3-rev-cta-row` › `.v3-rev-quick` › `.v3-rev-q`), so marking
-something listened / later / favourite costs one tap instead of opening the
-sheet. They butt directly onto the button and each other — a `-1px` left margin
+### Quick log — the strip under the CTA
+The album page carries the **same three toggles** as a joined strip **under**
+the CTA (`.v3-rev-cta-row` › `.v3-rev-quick` › `.v3-rev-q`; since 2026-09-11 —
+they were squares beside it, and the album-state rules in app.css turn the row
+into a column, the CTA full width with all corners rounded, the three cells
+sharing the row at 42px tall), so marking something listened / later /
+favourite costs one tap instead of opening the sheet. The base rules below
+still describe the cascade (shared borders, outer corners only), which the
+strip keeps.
+
+**The CTA changes face once you have rated** (`syncRevCta`, called from
+`syncQuickLog`, 2026-09-11): untouched → "Review, rate, log"; rated → your
+discs (`halfStars`) + "Your rating **4.5**" with an "Edit" pill on the
+right (it said "Edit rating?" until the share icon joined the row) (`.v3-rev-cta--rated`); written but unrated → "You reviewed this ·
+Edit review?". Same button and handler — only the face changes. It is stamped
+in `data-state` and only rebuilt on change, because `flashLogSaved` now runs
+`syncQuickLog` on every autosave so the button (and the squares) follow the
+sheet live. ⚠️ Call it as `homeShells().forEach(s => syncQuickLog(s))`, never
+`forEach(syncQuickLog)` — the latter hands the array index in as the album,
+which read `albumDraft(1)` → `{}` and wiped the second shell on every close. They butt directly onto the button and each other — a `-1px` left margin
 collapses the shared border, and only the outer corners are rounded, so the four
 read as one cascading control. `align-items: stretch` gives them their height
 from the CTA rather than hard-coding one.
@@ -4744,23 +4900,43 @@ Top to bottom: CTA (`.v3-rev-mine`) · histogram · **tracklist** · artist albu
   and there's no CD column to align against. The `:not(--album)` half of that
   rule pair styled the retired plain review state and is dead.
 
-## Review cards (`populateReviewList` in app.js)
+## Review cards (`revCardHtml` / `revCardInner` · `populateReviewList` in app.js)
 
-One card = `.v3-rev-card-top` (avatar · name · **`.v3-rev-acts`** · time) then
-`.v3-rev-meta` (rating) then `.v3-rev-text`.
+**The list is padded and varied** (`revsFor(a)`, 2026-09-11): the archive
+authors three one-liners per record, which ended the page after three cards.
+`revsFor` pads to `REV_TARGET` (8 — about one screen; 14 was too many) with seeded extras (DZ_NAMES × DZ_QUOTES,
+no repeats per album) and lengthens about a third with 1–3 sentences from
+`REV_MORE`, so quick takes sit beside paragraphs. **Every rating is re-dealt
+too** (the archive authors [4.5, 4, 4] for nearly every record, so the list
+read as a wall of 4.5s): seeded per album + reviewer through `seedRand` from
+a pool skewed by the album's own score, so a loved record still collects a 3
+and the odd 2.5. Deterministic and cached on the album (`_revsFull`) so keys,
+likes and threads stay put. ⚠️ `order` in `populateReviewList` is that padded
+list — keying the extras against `a.reviews` would put them all at index 0.
 
-- **The social actions live top-right, the timestamp hard right.** `.v3-rev-acts`
-  (upvote pill + comment count) carries `margin-left: auto`; `.v3-rev-time` is
-  just `flex-shrink: 0` after it. They used to sit in the meta row pressed
-  against the rating vinyls, which read as one crowded cluster.
-- **The meta row is the rating, led by its verb** — `.v3-rev-verb` ("rated") +
-  vinyls + `.v3-rev-score`. The card therefore reads **down** as one sentence:
-  name (subject) → rated 4.0 (verb + object) → what they said. It's the same
-  subject-verb-object rule the feed and inbox rows follow across, and the verb
-  is what turns a bare row of vinyls into something you read rather than decode.
-- **Four** builders emit this markup — the **pinned** card, the **list** card,
-  and two **"mine"** cards (the inline composer's and the saved-draft one).
-  Change all four together.
+**One builder** (2026-09-11 — it was four copies: pinned, list, and two
+"mine" cards, forever drifting). The card is the **review page's hero at list
+scale**: `.v3-rev-card-top` = 36px photo (`feedFace`) · `.v3-rev-who` (name,
+with the pinned chip beside it, over `@handle · when`) · **`.v3-rev-big`** on
+the right (the score at 21px/800 with the small records under it) — then
+`.v3-rev-text` (3 lines, clamped) — then `.v3-rev-foot` › `.v3-rev-acts`
+(Share on your own card only — the **upvote pill AND the comment pill sit
+under the records** in `.v3-rev-big`, stacked and stretched to the column's
+width — the like a true SQUARE (`aspect-ratio: 1`, heart over count), the
+comment pill squarish beneath it; the foot row is only emitted for Share). ⚠️ **The card
+is a two-column GRID** (`"top big" / "text big" / "foot foot"`): `.v3-rev-big`
+is a direct child spanning both left rows, which is what keeps the text up
+against the name — inside the top row its three-item height pushed the text
+down. The text stops at five lines and **fades out** (`.is-long`, set by
+`markLongReviews` only on cards that really overflow — a mask on every card
+would dim short reviews too; ⚠️ it runs synchronously AND on 80ms/600ms
+timers, because a panel still `display:none` measures every card as 0×0 and
+the fade shipped invisible the first time); the page runs it full width. About half
+the reviews run long (2–5 extra sentences from `REV_MORE`, enough to cross the clamp). ⚠️ **No "rated" row any
+more** (`.v3-rev-meta` / `.v3-rev-verb` / `.v3-rev-score` are not emitted; the
+CSS is kept for the moment). The handle is derived from the name unless
+given; your own card passes `PROFILE.handle` and your photo, and `likes:
+null` (no upvote pill on yourself).
 - ⚠️ **The pinned card is a HIGHLIGHTED ROW, not a card in a box.** It first
   shipped outlined in `--star`, inset 10px and rounded, and read as stifled — a
   panel sitting *on top of* the list rather than the first item *in* it. Now
@@ -4770,24 +4946,69 @@ One card = `.v3-rev-card-top` (avatar · name · **`.v3-rev-acts`** · time) the
   why it's lit; it needs no border to explain itself. ⚠️ The negative margin
   has to match the list's gutter — change one and change the other.
 
+### The review page (`review-page` · `reviewPageHtml` · `openReviewPage`)
+
+**A card is a summary; tapping it opens the review as a page** (2026-09-11 —
+the Reddit-style thread that unfolded inside every card is gone from the
+album page: the list is for reviews, the page is for the conversation).
+`openReviewPage(key, compose?)` reads the card's entry from **`REV_INDEX`**
+(every builder writes one: pinned, list, both "mine"), pushes the back stack,
+sets `window.activeReview`, forces `CMT_OPEN[key]` and navigates. The page
+**hero is the album page's CARD, larger** (2026-09-11 — a Letterboxd-shaped
+hero with a "name rated it" line was built and then dropped; Eric preferred
+the card): `revCardHtml` with `big: true` and `.v3-rev-card--hero`, so
+photo · name/@handle · the score column (number, records, like, comments)
+step up in size (the like a HEART, 60% of the column and square — the card
+keeps its thumb — with the review's **share button under it** at the same
+size; no comment pill — the count is in the Comments heading) and the text runs full width at
+13.5px in DM Sans, unclamped. Your own review gets Share in the foot and no
+like. Card text has no widows: `revNoWidow` joins the last two words with a
+non-breaking space, and `text-wrap: pretty` helps where the browser has it. `cmtCardTap`
+ignores the hero (it is already the page). One builder, so the page cannot
+drift from the card that opened it. Then the thread under a *Comments*
+heading. ⚠️ The light shell's background fallback is **dark** (#1c1c22): the ink is hard-coded light, and the palette lands after the page does — a cream fallback was white-on-cream. The cards on the album page wear the same
+`feedFace` photo in `.v3-rev-av` (18px) instead of initials on a gradient. **Same key on both
+surfaces**, so a like or a comment on the page is the one on the card.
+The shell wears the album palette like the album page (inline from
+`COLOR_CACHE` in the getter, `applyAlbumColorsUrl` again after navigate for
+a cold cover); the light shell floods with the album colour the way the light
+album page does. `cmtCardTap` → `openReviewPage`; `cmtCompose` on a card →
+the page with the composer focused, on the page → focus. **From the album page it opens IN PLACE** (2026-09-11 — a separate screen
+re-rendered the header, the nav and the colour, which read as a reload; a
+flying-card version was jarring too). Like the bento→album transition, it is
+the SAME shell changing state: `rvpOpenInPlace` fades the bento + review
+panel out (`--rvp-out`, 200ms), fills `.v3-rvp-panel` (a slot at the end of
+both home variants' `.v3-body`) with **`reviewPanelHtml(R)`** — the panel the
+standalone `reviewPageHtml` also wraps — and adds `--rvp`, which hides the
+bento/panel and fades the review panel in. `rvpBack` is the mirror; the
+record line is Back in place (`rvpRecordTap`) and opens the album on the
+standalone page. Both shells switch together. Every `.s-rvp` rule is written
+`:is(.s-rvp, .s-home-v3--rvp)` so the two hosts share one stylesheet, and
+`cmtCompose` / `cmtAutoMore` / `cmtFill` look for either. The standalone
+screen remains for the profile's pins and the rail, with a body cross-fade
+(`sdFadeOut` / `rvpIn` / `body.sd-return`).
+
 ### Comments (`revThread` / `cmtThreadHtml` in app.js)
 
-Every review card carries a **threaded comment section**, collapsed behind the
-comment pill in `.v3-rev-acts` and expanded under `.v3-rev-text`. Replies nest
-Reddit-style; **`CMT_DEFAULT` (3)** top-level threads show, the rest sit behind
-*"View n more comments"*.
-
-⚠️ **Two gestures, two verbs.** Tapping the **card** (`cmtCardTap`) opens the
-comments to READ them — reading shouldn't cost a trip to a button — and taps
-again to put them away. Tapping the **pill** (`cmtCompose`) starts WRITING one:
-it opens the thread if shut and focuses the composer, and it deliberately does
-**not** toggle, because "comment" is the wrong label for a button that hides the
-comments and toggling it shut mid-sentence threw away what you'd typed.
-⚠️ Everything clickable inside the card must `stopPropagation` or it collapses
-the thread on its way up: the upvote pill, the comment pill, the share button,
-and **`.v3-cmt-wrap` itself** — without that last one, clicking a comment (or
-the space beside one) closes the thread you're reading. All four builders wire
-`data-k` + `onclick` on the card; the inline-composer one does it in JS. There's a like on every comment and one composer per
+A review's comment section lives on its page (`cmtWrapHtml` under the
+*Comments N* heading, always open). ⚠️ **FLAT since 2026-09-11 — no comments
+on comments** (`CMT_FLAT = true`): everyone answers the review, nothing
+indents, the Reply button is not emitted and the generator deals every node
+as a root. The nesting machinery described below is intact behind that flag
+for the day threads come back. **The composer is FIRST** in the thread
+(2026-09-11) — commenting must not cost a scroll to the bottom.
+**`CMT_DEFAULT` (3)** comments show, then the page **loads more as you
+scroll**: `cmtAutoMore` (a capture-phase scroll listener on the page's
+`.v3-body`) reveals `CMT_PAGE` (5) more each time the bottom nears, via
+`CMT_SHOWN[key]`; the "View n more" button stays as the fallback, and the
+thread pads 60px so it runs out through the body's own bottom fade. Counts
+were raised to feed it — `revMeta` deals 6–43 comments and `revThread` caps
+at 48. On the page the comment like is a 22px heart over its count, a real
+target. **On the review page the rows are the
+hero's shape, smaller** (`.s-rvp .v3-cmt*`, CSS only over the shared
+`cmtNodeHtml`): 28px photo in its own column, "name · when" over the text,
+and the like (heart over count) on the far right, top-aligned. No record line.
+There's a like on every comment and one composer per
 thread — **Reply aims that composer at a comment** (`CMT_REPLY_TO`) so the post
 nests under it; posting with nothing aimed lands at the **base** of the thread.
 The gold *"replying to @handle ✕"* chip is the only thing that says which, so

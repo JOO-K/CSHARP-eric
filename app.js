@@ -968,6 +968,11 @@ window.PLNEW_CREATED = [];
 // `editing` is the stable key of the playlist being edited, or null when this is
 // a new one. It is what makes `plnewCreate` update instead of insert.
 const PLNEW = { name: '', cover: null, privacy: 'public', songs: [], q: '', mode: 'search', libOpen: null, editing: null };
+/* ⚠️ A top-level `const` is NOT a window property. `playlistNewHtml` reads
+   `window.PLNEW` to paint a fresh render, and without this line it was quietly
+   getting its empty fallback — so the edit page opened with a blank name, no
+   cover and Public selected, whatever the playlist actually was. */
+window.PLNEW = PLNEW;
 const PLNEW_FALLBACK_COVER = 'images/spindeck-appicon.png';
 
 // Every song in the archive, flattened once — songsFor() is deterministic per
@@ -1021,6 +1026,76 @@ window.openEditPlaylist = function (key) {
 };
 
 window.plnewCancel = function () { PLNEW.editing = null; goBack('playlists'); };
+
+/* DELETE — only offered while editing an existing playlist (the button is not
+   rendered on a new one; there is nothing to delete yet). It always asks first:
+   a playlist is the one thing in the app the user MADE, and the delete button
+   sits a thumb's width from Save.
+
+   The confirm is a small bottom sheet mounted INTO the .s-plnew the tap came
+   from (dark and light are separate elements in the viewer, so it has to be the
+   right one), riding .sd-log-overlay for the scrim like the badges sheet. */
+function ensurePldelSheet() {
+  let ov = document.getElementById('pldel');
+  if (ov) return ov;
+  ov = document.createElement('div');
+  ov.id = 'pldel';
+  ov.className = 'sd-log-overlay pldel-overlay';
+  ov.innerHTML = `
+    <div class="pldel-sheet" role="alertdialog" aria-modal="true" aria-labelledby="pldel-title">
+      <div class="sd-log-grab"></div>
+      <div class="pldel-title" id="pldel-title"></div>
+      <p class="pldel-sub">Are you sure you want to delete it? This can't be undone.</p>
+      <div class="pldel-btns">
+        <button class="pldel-cancel" type="button">Cancel</button>
+        <button class="pldel-go" type="button">Delete</button>
+      </div>
+    </div>`;
+  ov.addEventListener('click', e => { if (e.target === ov) closePlnewDelete(); });
+  ov.querySelector('.pldel-cancel').addEventListener('click', closePlnewDelete);
+  wireSheetGrab(ov, '.pldel-sheet', closePlnewDelete);
+  ov.querySelector('.pldel-go').addEventListener('click', plnewDelete);
+  return ov;
+}
+
+window.plnewAskDelete = function (btn) {
+  if (!PLNEW.editing) return;
+  const host = (btn && btn.closest && btn.closest('.s-plnew')) || document.querySelector('.s-plnew');
+  if (!host) return;
+  const ov = ensurePldelSheet();
+  ov.querySelector('.pldel-title').textContent = `Delete “${PLNEW.name.trim() || PLNEW.editing}”?`;
+  host.appendChild(ov);
+  requestAnimationFrame(() => ov.classList.add('open'));
+};
+
+function closePlnewDelete() {
+  const ov = document.getElementById('pldel');
+  if (ov) ov.classList.remove('open');
+}
+
+/* Two homes, same as saving: one you created is a real object in PLNEW_CREATED
+   and is spliced out; an authored sample is re-dealt by `plLists()` on every
+   call, so it gets a `deleted` flag in plCustom under its stable key and
+   `plLists()` filters it out. That flag lives in localStorage with the badges,
+   so a deleted sample stays gone across reloads — clear
+   `spindeck-pl-custom` to get the sample wall back. */
+window.plnewDelete = function () {
+  const key = PLNEW.editing;
+  if (!key) return;
+  const made = window.PLNEW_CREATED || [];
+  const i = made.findIndex(l => l.name === key);
+  if (i !== -1) made.splice(i, 1);
+  else plSetCustom(key, { deleted: true });
+  if (window.activePlaylist && (window.activePlaylist.key === key || window.activePlaylist.name === key)) {
+    window.activePlaylist = null;
+  }
+  PLNEW.editing = null;
+  closePlnewDelete();
+  // Not goBack(): the recorded location may be the page of the playlist that no
+  // longer exists. The wall is the only sensible place to land.
+  backStack.length = 0;
+  navigate('playlists', 'back');
+};
 
 window.plnewSetName = function (v) { PLNEW.name = v;  plnewSync(); };
 window.plnewSetPriv = function (p) { PLNEW.privacy = p; plnewSync(); };
@@ -1554,25 +1629,14 @@ window.submitReview = function (btn) {
     const myKey = 'mine::' + (alb.album || '');
     const card = document.createElement('div');
     card.className = 'v3-rev-card v3-rev-card--mine';
-    card.dataset.k = myKey;                     // the 4th card builder — tap opens its thread
+    card.dataset.k = myKey;                     // the 4th card builder — tap opens its page
+    REV_INDEX[myKey] = { key: myKey, album: alb, name: 'You', mine: true, rating, text, ago: 'just now', likes: 0, comments: 0 };
     card.onclick = () => cmtCardTap(card);
-    card.innerHTML = `
-      <div class="v3-rev-card-top">
-        <div class="v3-rev-av" style="background:linear-gradient(135deg,var(--v3-accent,#e8a83c),#c76b2a)">Y</div>
-        <span class="v3-rev-name">You</span>
-        <span class="v3-rev-acts">
-          <span class="v3-rev-likes">♥ 0</span>
-          ${cmtBtnHtml(myKey, 0, 'v3-up--sm')}
-        </span>
-        <span class="v3-rev-time">just now</span>
-      </div>
-      <div class="v3-rev-meta">
-        <span class="v3-rev-verb">rated</span>
-        ${halfStars(rating, 10)}
-        <span class="v3-rev-score">${rating.toFixed(1)}</span>
-      </div>
-      <div class="v3-rev-text">${text}</div>
-      ${cmtWrapHtml(myKey, 0)}`;
+    card.innerHTML = revCardInner({
+      key: myKey, name: 'You', handle: (window.PROFILE || {}).handle || 'you',
+      face: (window.PROFILE || {}).pic || 'images/rp-01.jpg', ago: 'just now',
+      rating, text, likes: null, comments: 0, share: true,
+    });
     list.insertBefore(card, list.firstChild);
   }
   btn.textContent = 'Posted ✓';
@@ -1630,6 +1694,34 @@ function syncQuickLog(scr, album) {
   if (!scr) return;
   const d = albumDraft(album || shellAlbum(scr));
   scr.querySelectorAll('.v3-rev-q').forEach(b => b.classList.toggle('on', !!d[b.dataset.k]));
+  syncRevCta(scr, d);
+}
+/* The CTA answers to the draft (2026-09-11). Untouched record → "Review, rate,
+   log". Once you have rated it, the button becomes your score — the discs and
+   the number — with an "Edit rating?" pill on the right; written but unrated,
+   "You reviewed this · Edit review?". Same button, same handler (it opens the
+   sheet either way); only the face changes, so the page never grows a second
+   control for the same act. The state is stamped in `data-state` and the
+   markup is only rebuilt when it changes — this runs on every autosave. */
+function syncRevCta(scr, d) {
+  const cta = scr.querySelector('.v3-rev-cta');
+  if (!cta) return;
+  const rated = d.rating > 0, wrote = !!(d.text || '').trim();
+  const state = rated ? 'r' + d.rating : (wrote ? 'w' : '');
+  if (cta.dataset.state === state) return;
+  cta.dataset.state = state;
+  cta.classList.toggle('v3-rev-cta--rated', !!state);
+  // Once there is something to share, the share icon rides the CTA too — so
+  // posting and sharing are one row, not a trip back into the sheet.
+  const sh = typeof shareBtnHtml === 'function' ? shareBtnHtml('review', '', 'sd-share-btn--cta') : '';
+  if (rated) {
+    const n = String(d.rating).replace(/\.0$/, '');
+    cta.innerHTML = `${halfStars(d.rating, 16)}<span class="v3-rev-cta-you">Your rating <b>${n}</b></span>${sh}<span class="v3-rev-cta-edit">Edit</span>`;
+  } else if (wrote) {
+    cta.innerHTML = `${SD_ICONS.logbox}<span class="v3-rev-cta-you">You reviewed this</span>${sh}<span class="v3-rev-cta-edit">Edit</span>`;
+  } else {
+    cta.innerHTML = `${SD_ICONS.logbox}<span>Review, rate, log</span>`;
+  }
 }
 // Friends / Popular / New filter tabs
 window.setReviewFilter = function (btn) {
@@ -1775,7 +1867,7 @@ window.expandSongList = function (el) {
 window.openSongLog = function(el) {
   const scr = el.closest('.app-screen');
   const a = (scr && scr._album) || window.activeAlbum || window.featuredAlbum;
-  openLogSheet(el, { image: a ? a.image : '', title: el.dataset.title, subtitle: a ? a.album : '', isSong: true });
+  openLogSheet(el, { image: a ? a.image : '', title: el.dataset.title, subtitle: a ? a.album : '', year: a ? (a.year || '') : '', isSong: true });
 };
 
 // Friend-rec tag at the top of the review panel — populated only when a friend
@@ -1800,7 +1892,7 @@ function revMeta(r, i) {
   return {
     ago: REV_TIMES[seed % REV_TIMES.length],
     likes: 3 + (seed * 13) % 140,
-    comments: (seed * 7) % 18,
+    comments: 6 + (seed * 7) % 38,          // 6–43: enough that the page scrolls into them (2026-09-11)
   };
 }
 
@@ -1876,6 +1968,12 @@ const CMT_SEQ   = Object.create(null);   // key → id counter for your comments
    right edge. Generated comments cap at depth 2; this is the ceiling for the
    ones you write. */
 const CMT_MAX_DEPTH = 3;
+/* ⚠️ FLAT (2026-09-11): no comments on comments. A thread is one level —
+   everyone answers the review — so nothing indents and nothing needs a
+   "replying to" chip. The generator deals every node as a root, the Reply
+   button is not emitted, and the nesting machinery below is left intact
+   behind this flag for the day threads come back. */
+const CMT_FLAT = true;
 
 // Same handles the inbox pins and the feed casts, so a commenter has the same
 // face here as everywhere else (feedFace hashes anything it doesn't know).
@@ -1942,7 +2040,7 @@ function cmtDealer(pool, rnd) {
 
 function revThread(key, total) {
   if (CMT_CACHE[key]) return CMT_CACHE[key];
-  const n = Math.max(0, Math.min(24, Number(total) || 0));
+  const n = Math.max(0, Math.min(48, Number(total) || 0));
   const rnd = seedRand('cmt::' + key);
   const pick = a => a[Math.floor(rnd() * a.length)];
   const dealOpen = cmtDealer(CMT_OPEN_LINES, rnd);
@@ -1961,7 +2059,7 @@ function revThread(key, total) {
     };
     // Reddit's shape is mostly top-level with a few deep pockets — and a reply
     // needs something to answer, hence the 45% split and the depth cap at 2.
-    const parents = flat.filter(c => c.depth < 2);
+    const parents = CMT_FLAT ? [] : flat.filter(c => c.depth < 2);
     if (i && parents.length && rnd() < 0.45) {
       const p = parents[Math.floor(rnd() * parents.length)];
       node.depth = p.depth + 1;
@@ -2043,9 +2141,9 @@ function cmtNodeHtml(key, c) {
                 data-k="${_revAttr(key)}" data-i="${c.id}" data-n="${c.likes}"
                 aria-pressed="${lk}"
                 onclick="event.stopPropagation(); cmtLike(this)">♥ <span>${c.likes + (lk ? 1 : 0)}</span></button>
-              <button class="v3-cmt-reply" type="button"
+              ${CMT_FLAT ? '' : `<button class="v3-cmt-reply" type="button"
                 data-k="${_revAttr(key)}" data-i="${c.id}"
-                onclick="event.stopPropagation(); cmtReply(this)">Reply</button>
+                onclick="event.stopPropagation(); cmtReply(this)">Reply</button>`}
             </div>
           </div>
         </div>${kids}`;
@@ -2054,19 +2152,20 @@ function cmtNodeHtml(key, c) {
 function cmtThreadHtml(key, total) {
   if (!CMT_OPEN[key]) return '';
   const roots = cmtRoots(key, total);
-  const shown = CMT_ALL[key] ? roots : roots.slice(0, CMT_DEFAULT);
+  const shown = CMT_ALL[key] ? roots : roots.slice(0, CMT_SHOWN[key] || CMT_DEFAULT);
   const rest = roots.slice(shown.length).reduce((s, c) => s + cmtSize(c), 0);
   /* The composer is one box that does both jobs: with a target it posts a
      nested reply, without one it posts at the base of the thread. The chip is
      the only thing that says which — so it doubles as the way out of reply
      mode. */
   const to = CMT_REPLY_TO[key] ? cmtFind(key, CMT_REPLY_TO[key]) : null;
+  /* The composer comes FIRST (2026-09-11) — commenting should not cost a
+     scroll to the bottom of a list that now pages in as you go — and the list
+     ends in a sentinel that the page's scroll listener (cmtAutoMore) reads to
+     reveal the next few. The "View n more" button stays as the no-scroll
+     fallback. */
   return `
       <div class="v3-cmt-thread">
-        ${shown.map(c => cmtNodeHtml(key, c)).join('')
-          || `<div class="v3-cmt-none">No comments yet — start it off.</div>`}
-        ${rest > 0 ? `<button class="v3-cmt-more" type="button" data-k="${_revAttr(key)}"
-          onclick="event.stopPropagation(); cmtMore(this)">View ${rest} more comment${rest > 1 ? 's' : ''}</button>` : ''}
         <form class="v3-cmt-add" data-k="${_revAttr(key)}" onsubmit="return cmtAdd(this)">
           ${to ? `<button class="v3-cmt-to" type="button" data-k="${_revAttr(key)}"
             onclick="event.stopPropagation(); cmtReplyCancel(this)">replying to @${to.node.user}<span>✕</span></button>` : ''}
@@ -2077,7 +2176,40 @@ function cmtThreadHtml(key, total) {
             <button class="v3-cmt-post" type="submit">${to ? 'Reply' : 'Post'}</button>
           </div>
         </form>
+        ${shown.map(c => cmtNodeHtml(key, c)).join('')
+          || `<div class="v3-cmt-none">No comments yet — start it off.</div>`}
+        ${rest > 0 ? `<button class="v3-cmt-more" type="button" data-k="${_revAttr(key)}" data-rest="${rest}"
+          onclick="event.stopPropagation(); cmtMore(this)">View ${rest} more comment${rest > 1 ? 's' : ''}</button>` : ''}
       </div>`;
+}
+
+/* Infinite-ish: as the review page's body nears its bottom, reveal CMT_PAGE
+   more (up to the thread's total). Delegated in the capture phase because
+   scroll does not bubble; the wrap's innerHTML is replaced but the scrolling
+   body is not, so the reader's position holds. */
+const CMT_SHOWN = Object.create(null);
+const CMT_PAGE = 5;
+function cmtAutoMore(body) {
+  const page = body.closest('.s-rvp, .s-home-v3--rvp'); if (!page) return;
+  const more = page.querySelector('.v3-cmt-more'); if (!more) return;
+  if (body.scrollTop + body.clientHeight < body.scrollHeight - 140) return;
+  const key = more.dataset.k;
+  const wrap = more.closest('.v3-cmt-wrap');
+  const total = wrap ? +wrap.dataset.n || 0 : 0;
+  CMT_SHOWN[key] = (CMT_SHOWN[key] || CMT_DEFAULT) + CMT_PAGE;
+  cmtRender(key);
+}
+document.addEventListener('scroll', e => {
+  const t = e.target;
+  if (t && t.classList && t.classList.contains('v3-body')) cmtAutoMore(t);
+}, true);
+/* ⚠️ A thread that does not overflow the screen can never BE scrolled, so the
+   first page would be the last. After any thread paint, keep paging while the
+   body still fits (bounded: it stops when the list runs out or overflows). */
+function cmtFill() {
+  document.querySelectorAll('.s-rvp .v3-body, .s-home-v3--rvp .v3-body').forEach(b => {
+    if (b.scrollHeight <= b.clientHeight + 140) cmtAutoMore(b);
+  });
 }
 
 /* The slot a thread renders into. Always emitted (and empty while collapsed) so
@@ -2100,6 +2232,10 @@ function cmtRender(key) {
     if (w.dataset.cmt !== key) return;
     w.innerHTML = cmtThreadHtml(key, +w.dataset.n || 0);
   });
+  setTimeout(cmtFill, 0);                    // a thread must overflow the screen to be scrollable
+  document.querySelectorAll('.rvp-cmts-n').forEach(n => {
+    if (n.dataset.k === key) n.textContent = cmtCount(key, +n.dataset.n || 0);
+  });
   document.querySelectorAll('.v3-cmt-btn').forEach(b => {
     if (b.dataset.k !== key) return;
     const open = !!CMT_OPEN[key];
@@ -2110,17 +2246,108 @@ function cmtRender(key) {
   });
 }
 
-/* Tapping the review body opens its comments — reading them shouldn't cost a
-   trip to a button. Toggles, so the same tap puts them away. */
-window.cmtCardTap = function (card) {
-  const k = card.dataset.k;
-  if (!k) return;
-  CMT_OPEN[k] = !CMT_OPEN[k];
-  if (!CMT_OPEN[k]) {                     // collapsing resets the thread's state
-    CMT_ALL[k] = false;
-    delete CMT_REPLY_TO[k];
+/* ── The review PAGE (2026-09-11) ────────────────────────────────────────
+   A review card is a summary; tapping it opens the review as a page of its
+   own (`review-page` screen, `reviewPageHtml` in screens.js) — the full text,
+   the reviewer, the record, and the comments. The Reddit-style thread that
+   used to unfold inside every card is gone from the album page: the list is
+   for reviews, the page is for the conversation.
+   `REV_INDEX` is what the card builders write into (key → the review as the
+   page needs it) so a tap only has to carry the key; the same key drives the
+   upvote pill and the comment thread on both surfaces, so a like or a comment
+   on the page is the like or comment on the card. */
+const REV_INDEX = Object.create(null);
+/* Back from the review page: the album page re-renders behind, so it gets an
+   entrance of its own (body.sd-return → .s-home-v3--review animates in). */
+/* ── IN PLACE: the review as a state of the album page's shell (2026-09-11) ─
+   The bento→album page transition works because it is the SAME shell changing
+   state. So is this: `.s-home-v3--rvp` on the shell hides the bento and the
+   review panel and shows `.v3-rvp-panel`, filled with `reviewPanelHtml`. The
+   header, the nav and the album colour are never touched, so there is nothing
+   to flash and nothing to reload. `--rvp-out` is the 200ms fade of whatever is
+   leaving (the album content on the way in, the panel on the way out). Both
+   shells on stage are switched together, like every other shell state. */
+function rvpOpenInPlace(R, compose) {
+  const shells = homeShells().filter(sh => sh.classList.contains('s-home-v3--review'));
+  if (!shells.length) return false;
+  shells.forEach(sh => sh.classList.add('s-home-v3--rvp-out'));
+  setTimeout(() => {
+    shells.forEach(sh => {
+      const panel = sh.querySelector('.v3-rvp-panel');
+      if (panel) panel.innerHTML = reviewPanelHtml(R);
+      sh.classList.add('s-home-v3--rvp');
+      sh.classList.remove('s-home-v3--rvp-out');
+      const body = sh.querySelector('.v3-body'); if (body) body.scrollTop = 0;
+    });
+    setTimeout(cmtFill, 60); setTimeout(cmtFill, 420);
+    if (compose) setTimeout(() => { const inp = document.querySelector('.s-home-v3--rvp .v3-cmt-input'); if (inp) inp.focus(); }, 380);
+  }, 200);
+  return true;
+}
+window.rvpBack = function () {
+  const shells = [...document.querySelectorAll('.s-home-v3--rvp')];
+  if (shells.length) {                        // in place: fade the panel, put the album page back
+    shells.forEach(sh => sh.classList.add('s-home-v3--rvp-out'));
+    setTimeout(() => shells.forEach(sh => {
+      sh.classList.remove('s-home-v3--rvp', 's-home-v3--rvp-out');
+      const p = sh.querySelector('.v3-rvp-panel'); if (p) p.innerHTML = '';
+      const b = sh.querySelector('.v3-body'); if (b) b.scrollTop = 0;
+    }), 200);
+    return;
   }
-  cmtRender(k);
+  const body = document.querySelector('.s-rvp .v3-body');
+  sdFadeOut(body, () => {
+    document.body.classList.add('sd-return');
+    goBack('home');
+    setTimeout(() => document.body.classList.remove('sd-return'), 600);
+  });
+};
+// The record line: in place it is the album you are on, so it is Back; on
+// the standalone page it opens the album.
+window.rvpRecordTap = function (btn, name) {
+  if (btn.closest('.s-home-v3--rvp')) { rvpBack(); return; }
+  const arch = window.ARCHIVE || [];
+  openAlbumPage(arch.find(x => x.album === name) || arch[0]);
+};
+/* Fade a scroller's CONTENT out, then do the thing. The shell — and with it
+   the album colour — stays put, so the screen never flashes; the next screen's
+   content fades in on its own (rvpIn / rvpReturn). Reduced motion skips it. */
+function sdFadeOut(el, then) {
+  const reduced = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!el || !el.animate || reduced) { then(); return; }
+  let done = false;
+  const go = () => { if (!done) { done = true; then(); } };
+  el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, easing: 'ease-out', fill: 'forwards' }).onfinish = go;
+  setTimeout(go, 320);                       // an animation paused in a background tab still has to navigate
+}
+window.openReviewPage = function (key, compose, card) {
+  const R = REV_INDEX[key];
+  if (!R) return;
+  CMT_OPEN[key] = true;                       // the thread IS the page — always open here
+  window.activeReview = R;
+  // From a card on the album page: open IN PLACE (see rvpOpenInPlace). From
+  // anywhere else (the profile's pins, the rail): the standalone screen.
+  if (card && card.closest && card.closest('.s-home-v3--review') && typeof reviewPanelHtml === 'function') {
+    if (rvpOpenInPlace(R, compose)) return;
+  }
+  backStack.push(captureLocation());          // Back lands where you left
+  navigate('review-page');
+  // Colour the page from the record once the shell exists (the cold-cover
+  // case; a cached palette is already inline from the getter), and aim the
+  // composer if the comment pill was what brought you here.
+  const paint = () => document.querySelectorAll('.s-rvp').forEach(s => {
+    if (R.album && R.album.image && typeof applyAlbumColorsUrl === 'function') applyAlbumColorsUrl(s, R.album.image);
+  });
+  setTimeout(paint, 80); setTimeout(paint, 320); setTimeout(paint, 900);   // a cold cover extracts async
+  setTimeout(cmtFill, 400); setTimeout(cmtFill, 1200);                     // first page → enough to scroll
+  if (compose) setTimeout(() => { const inp = document.querySelector('.s-rvp .v3-cmt-input'); if (inp) inp.focus(); }, 380);
+};
+/* Tapping a review card opens its page. (It used to toggle the thread in
+   place — see the note above.) The card itself is handed along so it can fly. */
+window.cmtCardTap = function (card) {
+  if (card.classList.contains('v3-rev-card--hero')) return;   // already the page
+  const k = card.dataset.k;
+  if (k) openReviewPage(k, false, card);
 };
 
 /* The pill starts a comment: opens the thread if it's shut, then puts the
@@ -2131,10 +2358,12 @@ window.cmtCardTap = function (card) {
    so an input reference taken before it is stale, but the wrap survives. */
 window.cmtCompose = function (btn) {
   const k = btn.dataset.k;
-  const card = btn.closest('.v3-rev-card');
-  const wrap = card && card.querySelector('.v3-cmt-wrap');
+  // On a card: the conversation lives on the review page — go there with the
+  // composer aimed. On the page itself: just put the cursor in it.
+  const page = btn.closest('.s-rvp, .s-home-v3--rvp');
+  if (!page) { if (REV_INDEX[k]) openReviewPage(k, true, btn); return; }
   if (!CMT_OPEN[k]) { CMT_OPEN[k] = true; cmtRender(k); }
-  const input = wrap && wrap.querySelector('.v3-cmt-input');
+  const input = page.querySelector('.v3-cmt-input');
   if (input) input.focus();
 };
 window.cmtMore = function (btn) {
@@ -2203,11 +2432,127 @@ window.cmtAdd = function (form) {
   return false;    // never submit — there is no server behind this
 };
 
+/* ── The reviews an album SHOWS (2026-09-11) ────────────────────────────
+   The archive authors three one-liners per record and Deezer records get
+   three generated ones — a list that ends after three cards reads as a dead
+   page. `revsFor(a)` pads to REV_TARGET with seeded extras (names from
+   DZ_NAMES, lines from DZ_QUOTES, no name or line used twice on one album)
+   and then LENGTHENS about a third of them with one to three sentences from
+   REV_MORE, so the list mixes a quick take with a paragraph the way a real
+   one does. Deterministic per album and cached on it, so keys, likes and
+   comment threads stay put across filter switches and re-renders.
+   ⚠️ `order` in populateReviewList must be THIS list, not `a.reviews` — the
+   extras are not in the archive array, and indexOf would key them all to 0. */
+const REV_TARGET = 8;                  // about one screen of cards (was 14 — too many)
+// DZ_NAMES is seven handles — not enough to pad a list to fourteen without
+// repeats — so the extras also draw on these. Faces come from feedFace(name).
+const REV_NAMES = [['nova_wr', 'NW'], ['drumkid', 'DK'], ['helio', 'H'], ['vxblank', 'VB'], ['marshmist', 'MM'],
+  ['tapehiss', 'TH'], ['lo_fi_lena', 'LL'], ['bassline_b', 'BB'], ['reverbqueen', 'RQ'], ['crateduster', 'CD'],
+  ['sidechain', 'SC'], ['glasswing', 'GW'], ['moth_light', 'ML'], ['pocketradio', 'PR'], ['synthwren', 'SW'], ['okcomputerfan', 'OK']];
+const REV_MORE = [
+  'the sequencing is the thing nobody talks about — every track hands off to the next like it knew it was coming.',
+  'i had this on in the background for a week before it clicked, and then it clicked hard.',
+  'the production is doing so much quiet work. listen on headphones, then listen again on speakers.',
+  'not every song lands, but the ones that do land so hard it hardly matters.',
+  'the back half is where it lives. people bail after track five and miss the whole point.',
+  'there is a two minute stretch in the middle of this record i would put up against anything.',
+  'i keep trying to explain it to people and end up just playing it for them instead.',
+  'the lyrics read like nothing on paper and then the delivery makes them the saddest thing you have heard.',
+  'it sounds like the year it came out and somehow also like right now.',
+  'the closer recontextualises everything before it. do not skip it, do not shuffle this.',
+  'my only complaint is that it ends. forty minutes is not enough of this.',
+  'i understand why some people bounce off it. i also think they are wrong.',
+];
+function revsFor(a) {
+  if (!a) return [];
+  if (a._revsFull) return a._revsFull;
+  const base = (a.reviews || []).slice();
+  const names = base.map(r => r.name), lines = base.map(r => r.text);
+  const scale = (a.rating || 4) >= 4.4 ? [5, 4.5, 4.5, 4, 5, 3.5] : [4.5, 4, 4, 3.5, 4.5, 3];
+  for (let i = 0, tries = 0; base.length < REV_TARGET && tries < 80; tries++) {
+    const pool = DZ_NAMES.concat(REV_NAMES);
+    const u = pool[dzSeed(a.album, 'xn', tries) % pool.length];
+    const q = DZ_QUOTES[dzSeed(a.album, 'xq', tries) % DZ_QUOTES.length];
+    if (names.indexOf(u[0]) >= 0 || lines.indexOf(q) >= 0) continue;
+    names.push(u[0]); lines.push(q);
+    base.push({ name: u[0], init: u[1], grad: DZ_GRADS[DZ_NAMES.indexOf(u)] || '#555',
+                rating: scale[dzSeed(a.album, 'xr', i) % scale.length], text: q, _extra: true });
+    i++;
+  }
+  /* Re-deal every RATING (2026-09-11): the archive authors [4.5, 4, 4] for
+     nearly every record and the extras drew from a six-value scale, so a list
+     read as a wall of 4.5s. Seeded per album + reviewer through seedRand (not
+     dzSeed % n — see the profReviewLog note on why that is linear), from a
+     pool skewed by the album's own score: a loved record still collects a 3
+     and the odd 2.5; a middling one still gets its 5s. */
+  const hi = (a.rating || 4) >= 4.4;
+  const pool = hi ? [5, 5, 4.5, 4.5, 4, 4, 4, 3.5, 3.5, 3, 2.5, 5]
+                  : [4.5, 4, 4, 3.5, 3.5, 3.5, 3, 3, 2.5, 2, 5, 4];
+  // Lengthen about a third, by a different amount each — a copy, never the
+  // archive object itself.
+  a._revsFull = base.map((r, i) => {
+    const rating = pool[Math.floor(seedRand('rv::' + a.album + '::' + (r.name || '') + '::' + i)() * pool.length)];
+    const h = dzSeed(a.album, 'len', r.name, i);
+    if (h % 2) return { ...r, rating };            // about half run long (was a third)
+    const n = 2 + (h >> 4) % 4;                    // by two to five sentences — enough to cross the card's clamp
+    const extra = [];
+    for (let k = 0; k < n; k++) extra.push(REV_MORE[(h >> (6 + k * 4)) % REV_MORE.length]);
+    return { ...r, rating, text: r.text + ' ' + extra.filter((x, j, arr) => arr.indexOf(x) === j).join(' ') };
+  });
+  return a._revsFull;
+}
+
+/* ── ONE review card builder (2026-09-11) ────────────────────────────────
+   The pinned card, the list card and both "mine" cards used to be four copies
+   of the same markup ("change all four together"). They are one function now.
+   The card echoes the REVIEW PAGE's hero at list scale: photo · name over
+   @handle · when on the left, the big score with the small records under it
+   on the right, then the text, then the pills at the foot. No "rated" — the
+   number says it. `share` adds the Instagram button (your own card only). */
+function revCardInner(o) {
+  const handle = o.handle || String(o.name || 'listener').toLowerCase().replace(/[^a-z0-9_]+/g, '_');
+  return `
+      <div class="v3-rev-card-top">
+        <div class="v3-rev-av" style="background-image:url('${o.face}')"></div>
+        <div class="v3-rev-who">
+          <span class="v3-rev-name-row"><span class="v3-rev-name">${o.name}</span>${o.chip ? `<span class="v3-rev-pin-chip">${o.chip}</span>` : ''}</span>
+          <span class="v3-rev-sub">@${handle}${o.ago ? ` · ${o.ago}` : ''}</span>
+        </div>
+      </div>
+      <!-- A grid AREA beside both the top row and the text (see .v3-rev-card in
+           app.css), so the like button's height pushes nothing down. -->
+      <div class="v3-rev-big">
+        <span class="v3-rev-big-n">${Number(o.rating || 0).toFixed(1)}</span>
+        ${halfStars(o.rating || 0, o.big ? 22 : 13)}
+        ${o.likes == null ? '' : (o.big
+          ? upvoteHtml(o.key, o.likes, 'v3-up--sm v3-up--like v3-up--heart').replace(/<svg[\s\S]*?<\/svg>/, typeof RVP_HEART !== 'undefined' ? RVP_HEART : '')
+          : upvoteHtml(o.key, o.likes, 'v3-up--sm v3-up--like'))}
+        ${o.big ? (typeof shareBtnHtml === 'function' ? shareBtnHtml('rev', o.key, 'sd-share-btn--hero') : '') : cmtBtnHtml(o.key, o.comments || 0, 'v3-up--sm v3-up--cmtcol')}
+      </div>
+      ${o.text ? `<div class="v3-rev-text">${revNoWidow(o.text)}</div>` : ''}
+      ${o.share && !o.big && typeof shareBtnHtml === 'function' ? `<div class="v3-rev-foot">
+        <span class="v3-rev-acts">${shareBtnHtml('review', '')}<span class="v3-rev-share-lbl">Share your review</span></span>
+      </div>` : ''}`;
+}
+/* No widows: the last two words are joined with a non-breaking space so a
+   review never ends on a line holding one word. (CSS `text-wrap: pretty` does
+   the same where the browser has it; this is the guarantee.) */
+function revNoWidow(t) {
+  const s = String(t || '').trim();
+  const i = s.lastIndexOf(' ');
+  return (i > 0 && s.length > 24) ? s.slice(0, i) + ' ' + s.slice(i + 1) : s;
+}
+function revCardHtml(o) {
+  return `
+    <div class="v3-rev-card${o.cls ? ' ' + o.cls : ''}" data-k="${_revAttr(o.key)}" onclick="cmtCardTap(this)">${revCardInner(o)}
+    </div>`;
+}
+
 function populateReviewList(scr, filter) {
   const a = scr._album || window.featuredAlbum;
   const list = scr && scr.querySelector('.v3-rev-list');
   if (!a || !list) return;
-  let revs = (a.reviews || []).slice();
+  let revs = revsFor(a).slice();
   if (filter === 'popular') revs.sort((x, y) => (y.rating || 0) - (x.rating || 0));
   else if (filter === 'new') revs.reverse();
   const countEl = scr.querySelector('.v3-rev-count');
@@ -2217,26 +2562,14 @@ function populateReviewList(scr, filter) {
   // ⚠️ Must match `feedRevKey` exactly — the feed row's like and this card's
   // like are the same act, and its comment button opens THIS thread.
   const pinKey = 'pin::' + a.album + '::' + (pin ? pin.name || '' : '');
-  const pinHtml = pin ? `
-    <div class="v3-rev-card v3-rev-card--pinned" data-k="${_revAttr(pinKey)}" onclick="cmtCardTap(this)">
-      <div class="v3-rev-card-top">
-        <div class="v3-rev-av" style="background:${pin.grad || '#555'}">${pin.init || '?'}</div>
-        <span class="v3-rev-name">${pin.name || 'Listener'}</span>
-        <span class="v3-rev-pin-chip">from your feed</span>
-        <span class="v3-rev-acts">
-          ${upvoteHtml(pinKey, pin.likes || revUpvotes(pin, 0), 'v3-up--sm')}
-          ${cmtBtnHtml(pinKey, pin.comments || 0, 'v3-up--sm')}
-        </span>
-        <span class="v3-rev-time">${pin.ago || ''}</span>
-      </div>
-      <div class="v3-rev-meta">
-        <span class="v3-rev-verb">rated</span>
-        ${halfStars(pin.rating || 4, 10)}
-        <span class="v3-rev-score">${(pin.rating || 4).toFixed(1)}</span>
-      </div>
-      <div class="v3-rev-text">${pin.text || ''}</div>
-      ${cmtWrapHtml(pinKey, pin.comments || 0)}
-    </div>` : '';
+  if (pin) REV_INDEX[pinKey] = { key: pinKey, album: a, name: pin.name || 'Listener', init: pin.init, grad: pin.grad,
+    rating: pin.rating || 4, text: pin.text || '', ago: pin.ago || '', likes: pin.likes || revUpvotes(pin, 0),
+    comments: pin.comments || 0, pinned: true };
+  const pinHtml = pin ? revCardHtml({
+    key: pinKey, cls: 'v3-rev-card--pinned', name: pin.name || 'Listener', face: feedFace(pin.name || 'listener'),
+    ago: pin.ago || '', chip: 'from your feed', rating: pin.rating || 4, text: pin.text || '',
+    likes: pin.likes || revUpvotes(pin, 0), comments: pin.comments || 0,
+  }) : '';
   // Identify each review by its position in the album's OWN list, not its
   // position in the filtered array — otherwise switching filter reshuffles the
   // seeded timestamps/counts and orphans your upvotes.
@@ -2246,55 +2579,42 @@ function populateReviewList(scr, filter) {
   const mine = (window.albumDraft && albumDraft(a)) || {};
   const myText = (mine.text || '').trim();
   const myKey = 'mine::' + a.album;
-  const mineHtml = (mine.rating || myText) ? `
-    <div class="v3-rev-card v3-rev-card--mine" data-k="${_revAttr(myKey)}" onclick="cmtCardTap(this)">
-      <div class="v3-rev-card-top">
-        <div class="v3-rev-av" style="background:linear-gradient(135deg,var(--v3-accent,#e8a83c),#c76b2a)">Y</div>
-        <span class="v3-rev-name">You</span>
-        <span class="v3-rev-acts">
-          ${cmtBtnHtml(myKey, 0, 'v3-up--sm')}
-          <button class="v3-rev-share" type="button" title="Share to Instagram"
-                  onclick="event.stopPropagation(); shareMyReview(this)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="1.1" fill="currentColor" stroke="none"/></svg>
-            Share
-          </button>
-        </span>
-        <span class="v3-rev-time">your review</span>
-      </div>
-      <div class="v3-rev-meta">
-        <span class="v3-rev-verb">rated</span>
-        ${halfStars(mine.rating || 0, 10)}
-        <span class="v3-rev-score">${(mine.rating || 0).toFixed(1)}</span>
-      </div>
-      ${myText ? `<div class="v3-rev-text">${myText}</div>` : ''}
-      ${cmtWrapHtml(myKey, 0)}
-    </div>` : '';
+  REV_INDEX[myKey] = { key: myKey, album: a, name: 'You', mine: true, rating: mine.rating || 0, text: myText,
+    ago: 'your review', likes: 0, comments: 0 };
+  const mineHtml = (mine.rating || myText) ? revCardHtml({
+    key: myKey, cls: 'v3-rev-card--mine', name: 'You', handle: (window.PROFILE || {}).handle || 'you',
+    face: (window.PROFILE || {}).pic || 'images/rp-01.jpg', ago: 'your review',
+    rating: mine.rating || 0, text: myText, likes: null, comments: 0, share: true,
+  }) : '';
 
-  const order = a.reviews || [];
+  const order = revsFor(a);                // ⚠️ the padded list — see revsFor
   list.innerHTML = mineHtml + pinHtml + revs.map((r) => {
     const i = Math.max(0, order.indexOf(r));
     const m = revMeta(r, i);
     const key = a.album + '::' + (r.name || '') + '::' + i;
-    return `
-    <div class="v3-rev-card" data-k="${_revAttr(key)}" onclick="cmtCardTap(this)">
-      <div class="v3-rev-card-top">
-        <div class="v3-rev-av" style="background:${r.grad || '#555'}">${r.init || '?'}</div>
-        <span class="v3-rev-name">${r.name || 'Listener'}</span>
-        <span class="v3-rev-acts">
-          ${upvoteHtml(key, revUpvotes(r, i), 'v3-up--sm')}
-          ${cmtBtnHtml(key, m.comments, 'v3-up--sm')}
-        </span>
-        <span class="v3-rev-time">${m.ago}</span>
-      </div>
-      <div class="v3-rev-meta">
-        <span class="v3-rev-verb">rated</span>
-        ${halfStars(r.rating || 4, 10)}
-        <span class="v3-rev-score">${(r.rating || 4).toFixed(1)}</span>
-      </div>
-      <div class="v3-rev-text">${r.text || ''}</div>
-      ${cmtWrapHtml(key, m.comments)}
-    </div>`;
+    REV_INDEX[key] = { key, album: a, name: r.name || 'Listener', init: r.init, grad: r.grad,
+      rating: r.rating || 4, text: r.text || '', ago: m.ago, likes: revUpvotes(r, i), comments: m.comments };
+    return revCardHtml({
+      key, name: r.name || 'Listener', face: feedFace(r.name || 'listener'), ago: m.ago,
+      rating: r.rating || 4, text: r.text || '', likes: revUpvotes(r, i), comments: m.comments,
+    });
   }).join('') || `<div class="v3-rev-empty">No reviews yet — be the first.</div>`;
+  /* A long review FADES at the clamp instead of ending in an ellipsis — but only
+     one that really overflows: a mask on every card would dim the last line of
+     a short review too. ⚠️ Measured now AND again after layout: when the panel
+     is still display:none (the --review class lands after this runs on some
+     routes) every card measures 0×0 and nothing is marked — which is how the
+     fade shipped invisible the first time. */
+  markLongReviews(list);
+  setTimeout(() => markLongReviews(list), 80);
+  setTimeout(() => markLongReviews(list), 600);
+}
+function markLongReviews(list) {
+  if (!list || !list.isConnected) return;
+  list.querySelectorAll('.v3-rev-text').forEach(t => {
+    if (!t.clientHeight) return;                          // not laid out yet — leave it for the next pass
+    t.classList.toggle('is-long', t.scrollHeight > t.clientHeight + 2);
+  });
 }
 
 // Friend-feed card taps: the card is the review → album page scrolled to the
@@ -3122,6 +3442,7 @@ function ensurePlcSheet() {
 
   ov.addEventListener('click', e => { if (e.target === ov) closePlCustomize(); });
   ov.querySelector('.plc-x').addEventListener('click', closePlCustomize);
+  wireSheetGrab(ov, '.plc-sheet', closePlCustomize);
   return ov;
 }
 
@@ -3350,8 +3671,11 @@ window.sdBuy = function (btn) {
      `setPlan` — which re-renders the screen, and brings this row back already
      reading "Active" from `shopHtml`. Nothing to swap in by hand. */
   if (btn.classList.contains('shop-pro-btn')) { setPlan(true); return; }
-  // A skin goes on the bento the moment it is bought (and stays on).
-  if (btn.dataset && btn.dataset.skin) setBentoSkin(btn.dataset.skin);
+  /* A skin goes on the bento the moment it is bought — and the tile becomes a
+     Wear/Wearing toggle, which is markup `shopHtml` owns, so re-render the way
+     Pro does rather than swapping in an "Owned" pill that could never take it
+     off again. */
+  if (btn.dataset && btn.dataset.skin) { buyBentoSkin(btn.dataset.skin); renderViewer(); return; }
   const owned = document.createElement('span');
   owned.className = 'shop-owned shop-owned--new';   // --new = start transparent, fade in below
   /* ⚠ The word is the TILE's to choose. Everything cosmetic in here becomes
@@ -3677,25 +4001,67 @@ window.setPlan = function (pro) {
 // Stamped on `body`, so it survives every screen rebuild without being re-applied.
 function applyPlanClass() { document.body.classList.toggle('sd-pro', SD_PRO); }
 
-/* ══ THE BENTO SKIN — one id, or null ═══════════════════════════════════════
+/* ══ THE BENTO SKIN — OWNED vs WORN ═════════════════════════════════════════
    Same shape as the plan: a body class (`sd-skin-<id>`) so every shell on
    stage wears it at once, kept in localStorage so it survives a reload. The
-   artwork itself is in bentoSkinBackHtml / bentoSkinFrontHtml (screens.js); this only says which one
-   shows. Buying a skin in the shop routes here through sdBuy's data-skin. */
+   artwork itself is in bentoSkinBackHtml / bentoSkinFrontHtml (screens.js);
+   this only says which one shows.
+
+   ⚠️ Two facts, two keys. `SD_SKIN` is the one being WORN (or null);
+   `SD_SKIN_OWNED` is every skin bought. They used to be the same thing — buying
+   Furry put it on and there was no way to take it off short of clearing
+   localStorage — which is why the shop tile is now a Wear/Wearing toggle once
+   owned, and Settings › Appearance carries the same switch. A skin you have
+   taken off is still yours; only `bentoSkinOwned` decides what the shop sells. */
 const SKIN_KEY = 'spindeck-skin';
+const SKIN_OWNED_KEY = 'spindeck-skin-owned';
 const SKIN_IDS = ['furry'];
 let SD_SKIN = null;
+let SD_SKIN_OWNED = [];
 try { SD_SKIN = localStorage.getItem(SKIN_KEY) || null; } catch (e) {}
+try { SD_SKIN_OWNED = JSON.parse(localStorage.getItem(SKIN_OWNED_KEY)) || []; } catch (e) {}
 if (SKIN_IDS.indexOf(SD_SKIN) < 0) SD_SKIN = null;
+SD_SKIN_OWNED = SD_SKIN_OWNED.filter(id => SKIN_IDS.indexOf(id) >= 0);
+// Migration: before the split, "worn" implied "owned". Anyone already wearing
+// Furry from the old single key keeps it in the wardrobe.
+if (SD_SKIN && SD_SKIN_OWNED.indexOf(SD_SKIN) < 0) SD_SKIN_OWNED.push(SD_SKIN);
 function applySkinClass() {
   SKIN_IDS.forEach(id => document.body.classList.toggle('sd-skin-' + id, SD_SKIN === id));
 }
-window.bentoSkin = function () { return SD_SKIN; };
+function saveSkin() {
+  try {
+    SD_SKIN ? localStorage.setItem(SKIN_KEY, SD_SKIN) : localStorage.removeItem(SKIN_KEY);
+    localStorage.setItem(SKIN_OWNED_KEY, JSON.stringify(SD_SKIN_OWNED));
+  } catch (e) {}
+}
+window.bentoSkin      = function () { return SD_SKIN; };
+window.bentoSkinOwned = function (id) { return SD_SKIN_OWNED.indexOf(id) >= 0; };
+// Wear one (or null = bare bento). Only an owned skin can be worn.
 window.setBentoSkin = function (id) {
-  SD_SKIN = SKIN_IDS.indexOf(id) >= 0 ? id : null;
-  try { SD_SKIN ? localStorage.setItem(SKIN_KEY, SD_SKIN) : localStorage.removeItem(SKIN_KEY); } catch (e) {}
+  SD_SKIN = (SKIN_IDS.indexOf(id) >= 0 && SD_SKIN_OWNED.indexOf(id) >= 0) ? id : null;
+  saveSkin();
   applySkinClass();
+  syncSkinControls();
 };
+// Buy = own it AND put it on, so the purchase shows up on the bento straight away.
+window.buyBentoSkin = function (id) {
+  if (SKIN_IDS.indexOf(id) < 0) return;
+  if (SD_SKIN_OWNED.indexOf(id) < 0) SD_SKIN_OWNED.push(id);
+  setBentoSkin(id);
+};
+window.toggleBentoSkin = function (id) { setBentoSkin(SD_SKIN === id ? null : id); };
+/* Every control that shows the worn state, in every shell on stage (Dark and
+   Light render side by side, and the shop tile and the Settings switch both
+   exist). Patched in place rather than re-rendering, so flipping the switch
+   does not lose the scroll position of the page you flipped it on. */
+function syncSkinControls() {
+  document.querySelectorAll('[data-skin-wear]').forEach(el => {
+    const on = el.dataset.skinWear === SD_SKIN;
+    el.classList.toggle('is-on', on);
+    if (el.classList.contains('set-sw')) el.setAttribute('aria-checked', String(on));
+    else el.textContent = on ? 'Wearing' : 'Wear';
+  });
+}
 
 const PLANS = [
   { id: 'free', label: 'Free', hint: 'View the app as a free account' },
@@ -4904,6 +5270,7 @@ const NAV_PAGES = [
   { id: 'playlists',    label: 'Playlists'     },
   { id: 'playlist-new', label: 'New Playlist'  },
   { id: 'playlist',     label: 'Playlist Page' },
+  { id: 'review-page',  label: 'Review Page'   },
   { id: 'notifications',label: 'Notifications' },
   { id: 'settings',     label: 'Settings'      },
 ];
@@ -5313,21 +5680,36 @@ function saveLog(now) {
   };
   if (now) write(); else _sdlogT = setTimeout(write, SDLOG_DEBOUNCE);
 }
-// With the Save button gone, this is the only signal that the work is kept.
-// The wording is swapped in JS rather than cross-faded between two stacked
-// labels in CSS — one label, one source of truth, nothing to get out of step.
+/* Every write does two things beyond the localStorage put:
+   1. YOUR review card on the album page behind the sheet is re-rendered, so
+      the review "updates as you write it" — close the sheet and it is already
+      there, rating and text, with nothing to post.
+   2. The "Updated …" stamp at the top of the sheet repaints. With no Save
+      button it is the only signal the work is kept; it reads "just now" on a
+      write and ages every 30s while the sheet is open (`_sdlogTick`). */
 function flashLogSaved() {
-  const el = document.querySelector('#sd-log .sd-log-status');
-  const txt = el && el.querySelector('.sd-log-status-txt');
-  if (!el || !txt) return;
-  el.classList.add('on');
-  txt.textContent = 'Draft saved';
-  clearTimeout(el._t);
-  el._t = setTimeout(() => {
-    el.classList.remove('on');
-    txt.textContent = 'Saves as you type';
-  }, 1500);
+  if (SDLOG) SDLOG.updated = Date.now();
+  paintLogUpdated();
+  homeShells().forEach(s => syncQuickLog(s));
+  if (typeof populateReviewList === 'function') homeShells().forEach(s => {
+    const active = s.querySelector('.v3-rev-filter.active');       // keep the tab the user chose
+    populateReviewList(s, active ? active.dataset.f : 'popular');
+  });
 }
+function logAgo(t) {
+  const s = Math.max(0, (Date.now() - t) / 1000);
+  if (s < 45) return 'just now';
+  if (s < 3600) return `${Math.max(1, Math.round(s / 60))} min ago`;
+  if (s < 86400) return `${Math.round(s / 3600)} h ago`;
+  return `${Math.round(s / 86400)} d ago`;
+}
+function paintLogUpdated() {
+  const el = document.querySelector('#sd-log .sd-log-updated');
+  if (!el) return;
+  const t = SDLOG && SDLOG.updated;
+  el.textContent = t ? `Updated ${logAgo(t)}` : '';
+}
+let _sdlogTick = null;
 // Flip one flag on a subject's draft WITHOUT opening the sheet — the album
 // page's quick-log squares write through here, so the two surfaces agree.
 function writeDraftFlag(subj, k, on) {
@@ -5341,6 +5723,178 @@ function albumDraft(a) {
   return a ? (logDrafts()[logKey({ title: a.album, subtitle: a.artist })] || {}) : {};
 }
 
+/* The grab nub on every bottom sheet: TAP closes, DRAG DOWN follows the finger
+   and closes past 70px (or snaps back). Pointer events with capture, so the
+   drag survives leaving the nub; `touch-action: none` on the nub keeps the
+   sheet's own scroller out of it. The finger's travel is divided by the
+   viewer's zoom (rendered / layout width) so the sheet tracks the finger
+   rather than moving faster or slower than it. Closing by drag leaves the
+   inline transform in place for one frame so the exit transition runs from
+   where the sheet was let go, not from the top. */
+function wireSheetGrab(ov, sheetSel, close) {
+  const grab = ov.querySelector('.sd-log-grab');
+  const sheet = ov.querySelector(sheetSel);
+  if (!grab || !sheet || grab._wired) return;
+  grab._wired = true;
+  let y0 = null, dy = 0, k = 1;
+  grab.addEventListener('pointerdown', e => {
+    y0 = e.clientY; dy = 0;
+    k = sheet.getBoundingClientRect().width / sheet.offsetWidth || 1;
+    try { grab.setPointerCapture(e.pointerId); } catch (x) {}
+    sheet.classList.add('is-dragging');
+    e.preventDefault(); e.stopPropagation();
+  });
+  grab.addEventListener('pointermove', e => {
+    if (y0 === null) return;
+    dy = Math.max(0, (e.clientY - y0) / k);
+    sheet.style.transform = `translateY(${dy}px)`;
+  });
+  const end = e => {
+    if (y0 === null) return;
+    y0 = null;
+    sheet.classList.remove('is-dragging');
+    if (dy > 70 || dy < 6) {                 // a real pull, or a tap
+      requestAnimationFrame(() => { sheet.style.transform = ''; close(); });
+    } else {
+      sheet.style.transform = '';            // snap back up
+    }
+    e.stopPropagation();
+  };
+  grab.addEventListener('pointerup', end);
+  grab.addEventListener('pointercancel', end);
+  grab.addEventListener('click', e => e.stopPropagation());
+}
+
+/* ══ PULL TO REFRESH — the home feed and the album wall (2026-09-11) ═══════
+   Delegated at the document, so it survives every renderViewer() rebuild
+   without being re-wired. A pull starts only on a `.v3-body` that is already
+   at the top, inside a shell that has something to refresh (`sdPtrTarget`),
+   and never on the album page (the same body, in --review state).
+
+   THE FEEL. The body follows the finger at ~55% (resistance), a vinyl fades
+   in and rotates with the pull, and at THRESH it "lands": the disc snaps to
+   the album accent and bumps up, the phone buzzes (sdHaptic) — that is the
+   moment. Release past it and the disc spins while the feed re-deals; short
+   of it, everything eases back. Touch and mouse are handled separately —
+   touch needs a non-passive touchmove to stop the scroller (and the
+   browser's own pull-to-refresh: `.v3-body` is also `overscroll-behavior-y:
+   contain`), mouse is for the desktop viewer.
+
+   ⚠️ A mouse pull ends with mouseup on whatever is under the cursor, and a
+   click would follow — on the wall that opens an album. `_ptrSwallow` eats
+   the one click that follows an active pull. */
+const PTR_THRESH = 64, PTR_MAX = 112;
+let _ptr = null, _ptrSwallow = false;
+function sdPtrTarget(t) {
+  const body = t && t.closest && t.closest('.v3-body');
+  if (!body) return null;
+  const scr = body.closest('.s-home-v3');
+  if (!scr || scr.classList.contains('s-home-v3--review')) return null;
+  const kind = scr.querySelector('.v3-feed-items') ? 'feed' : scr.querySelector('.wall2-grid') ? 'wall' : null;
+  return kind ? { body, scr, kind } : null;
+}
+function sdPtrIndicator(scr, body) {
+  let ind = scr.querySelector(':scope > .sd-ptr');
+  if (!ind) {
+    ind = document.createElement('div');
+    ind.className = 'sd-ptr';
+    // Two copies of the record: a faint ghost, and the accent one revealed by a
+    // clockwise sweep (a conic mask on --p) — it fills like a clock as you pull.
+    ind.innerHTML = `<span class="sd-ptr-disc"><span class="sd-ptr-ghost">${SDLOG_REC}</span><span class="sd-ptr-fill">${SDLOG_REC}</span></span>`;
+    scr.insertBefore(ind, body);
+  }
+  ind.style.top = body.offsetTop + 'px';
+  return ind;
+}
+/* Haptics where the web has them. Android: navigator.vibrate. iOS Safari has
+   no vibration API; toggling a native `switch` checkbox is the one thing that
+   clicks the Taptic engine from a page (17.4+), and only inside a user gesture
+   — so it is tried, and nothing is promised. */
+function sdHaptic(ms) {
+  try { if (navigator.vibrate) navigator.vibrate(ms || 12); } catch (x) {}
+  try {
+    let sw = document.getElementById('sd-haptic');
+    if (!sw) {
+      sw = document.createElement('input');
+      sw.type = 'checkbox'; sw.id = 'sd-haptic'; sw.setAttribute('switch', '');
+      sw.style.cssText = 'position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;left:-9px;top:-9px';
+      document.body.appendChild(sw);
+    }
+    sw.click();
+  } catch (x) {}
+}
+function sdRefreshShell(kind) {
+  if (kind === 'feed') {
+    window._FEED = null;                                   // feedEvents() deals a fresh feed
+    document.querySelectorAll('.v3-feed-items').forEach(el => {
+      const scr = el.closest('.s-home-v3');
+      if (scr && typeof renderFriendFeed === 'function') renderFriendFeed(scr);
+    });
+  } else if (kind === 'wall') {
+    document.querySelectorAll('.wall2-grid').forEach(g => { g.innerHTML = wallGridHtml(); });
+  }
+}
+function sdPtrStart(t, x, y) {
+  if (_ptr) return;
+  const h = sdPtrTarget(t);
+  if (!h || h.body.scrollTop > 0 || h.body.classList.contains('is-refreshing')) return;
+  _ptr = { ...h, x0: x, y0: y, pull: 0, armed: false, active: false,
+           k: h.body.getBoundingClientRect().width / h.body.offsetWidth || 1 };
+}
+// Returns true while the pull owns the gesture (caller preventDefaults).
+function sdPtrMove(x, y) {
+  const s = _ptr; if (!s) return false;
+  const dy = (y - s.y0) / s.k, dx = (x - s.x0) / s.k;
+  if (!s.active) {
+    if (dy < -4 || Math.abs(dx) > 12 && Math.abs(dx) > dy) { _ptr = null; return false; }   // a scroll up or a sideways swipe
+    if (dy < 8) return false;
+    s.active = true;
+    s.ind = sdPtrIndicator(s.scr, s.body);
+    s.body.classList.add('is-pulling');
+    s.body.classList.remove('ptr-settle');
+  }
+  const pull = Math.max(0, Math.min(PTR_MAX, dy * 0.55));
+  s.pull = pull;
+  s.body.style.transform = `translateY(${pull}px)`;
+  s.ind.style.setProperty('--p', Math.min(1, pull / PTR_THRESH).toFixed(3));
+  const armed = pull >= PTR_THRESH;
+  if (armed !== s.armed) {
+    s.armed = armed;
+    s.ind.classList.toggle('is-armed', armed);
+    if (armed) sdHaptic(12);
+  }
+  return true;
+}
+function sdPtrEnd() {
+  const s = _ptr; _ptr = null;
+  if (!s || !s.active) return;
+  _ptrSwallow = true; setTimeout(() => { _ptrSwallow = false; }, 0);
+  s.body.classList.remove('is-pulling');
+  s.body.classList.add('ptr-settle');
+  const done = () => {
+    s.body.style.transform = '';
+    s.ind.classList.remove('is-armed', 'is-refreshing');
+    s.ind.style.setProperty('--p', '0');       // the disc's opacity rides --p: put it away, or it stays
+    s.body.classList.remove('is-refreshing');
+    setTimeout(() => s.body.classList.remove('ptr-settle'), 420);
+  };
+  if (!s.armed) { done(); return; }
+  // Landed: hold the body a little open, spin the disc, re-deal, settle.
+  s.body.classList.add('is-refreshing');
+  s.ind.classList.add('is-refreshing');
+  s.body.style.transform = `translateY(${Math.round(PTR_THRESH * 0.75)}px)`;
+  sdHaptic(8);
+  setTimeout(() => { sdRefreshShell(s.kind); done(); }, 700);
+}
+document.addEventListener('touchstart', e => { if (e.touches.length === 1) sdPtrStart(e.target, e.touches[0].clientX, e.touches[0].clientY); }, { passive: true, capture: true });
+document.addEventListener('touchmove',  e => { if (_ptr && e.touches.length === 1 && sdPtrMove(e.touches[0].clientX, e.touches[0].clientY)) e.preventDefault(); }, { passive: false, capture: true });
+document.addEventListener('touchend',    sdPtrEnd, true);
+document.addEventListener('touchcancel', sdPtrEnd, true);
+document.addEventListener('mousedown', e => { if (e.button === 0) sdPtrStart(e.target, e.clientX, e.clientY); }, true);
+document.addEventListener('mousemove', e => { if (_ptr && sdPtrMove(e.clientX, e.clientY)) e.preventDefault(); }, true);
+document.addEventListener('mouseup', sdPtrEnd, true);
+document.addEventListener('click', e => { if (_ptrSwallow) { e.stopPropagation(); e.preventDefault(); } }, true);
+
 function ensureLogSheet() {
   let ov = document.getElementById('sd-log');
   if (ov) return ov;
@@ -5350,21 +5904,24 @@ function ensureLogSheet() {
   ov.innerHTML = `
     <div class="sd-log-sheet" role="dialog" aria-modal="true">
       <div class="sd-log-grab"></div>
+      <!-- "Updated 5 min ago" — the only signal the work is kept, now that the
+           footer is gone. Sits between Share and ✕, in the album's accent. -->
+      <div class="sd-log-updated" aria-live="polite"></div>
       <div class="sd-log-head">
         <div class="sd-log-cover"></div>
         <div class="sd-log-meta">
-          <div class="sd-log-album"></div>
+          <div class="sd-log-title"><span class="sd-log-album"></span><span class="sd-log-year"></span></div>
           <div class="sd-log-artist"></div>
         </div>
         <button class="sd-log-share" type="button">Share</button>
         <button class="sd-log-x" aria-label="Close">✕</button>
       </div>
       <div class="sd-log-rate">
-        <span class="sd-log-stars-track">
+        <span class="sd-log-stars-track" role="slider" tabindex="0" aria-label="Rating"
+              aria-valuemin="0" aria-valuemax="5" aria-valuenow="0" aria-valuetext="No rating">
           <span class="sd-log-stars-empty">${SDLOG_RECS}</span>
           <span class="sd-log-stars-fill">${SDLOG_RECS}</span>
         </span>
-        <span class="sd-log-rate-val"></span>
       </div>
       <div class="sd-log-opts">
         <button class="sd-log-opt" data-k="listened"><span class="sd-log-opt-ico">${SDLOG_ICONS.ear}</span><span>Listened</span></button>
@@ -5378,20 +5935,13 @@ function ensureLogSheet() {
         <div class="sd-log-songs-hd">Songs <span class="sd-log-songs-sub">optional — only rated songs get logged</span></div>
         <div class="sd-log-songs-list"></div>
       </div>
-      <!-- No Save button: the sheet autosaves. This line is the only feedback
-           that the draft is kept, so it says so at rest and lights up on write. -->
-      <div class="sd-log-foot">
-        <span class="sd-log-status" aria-live="polite">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5.5 5.5L20 7"/></svg>
-          <span class="sd-log-status-txt">Saves as you type</span>
-        </span>
-      </div>
     </div>`;
 
   ov.addEventListener('click', e => { e.stopPropagation(); if (e.target === ov) closeLogSheet(); });
   ov.addEventListener('mousedown', e => e.stopPropagation());
   ov.querySelector('.sd-log-sheet').addEventListener('click', e => e.stopPropagation());
   ov.querySelector('.sd-log-x').addEventListener('click', closeLogSheet);
+  wireSheetGrab(ov, '.sd-log-sheet', closeLogSheet);
   /* Share what you just wrote. Reads live SDLOG rather than the saved draft so
      the post reflects the sheet as it stands, debounce or no debounce. */
   ov.querySelector('.sd-log-share').addEventListener('click', function (e) {
@@ -5409,16 +5959,76 @@ function ensureLogSheet() {
   ov.querySelector('.sd-log-write').addEventListener('input', e => {
     if (!SDLOG) return;
     SDLOG.text = e.target.value;
+    e.target.classList.toggle('has-text', !!e.target.value.trim());   // keeps the box grown after blur
     saveLog();
   });
 
+  /* ── The vinyl rate control ─────────────────────────────────────────────
+     Built to the usual five-star guidance, translated to records:
+       • each record is its own SQUARE hit cell (a fifth of the track, padded
+         vertically by ::before to match) — ≥44px, the WCAG touch minimum;
+       • the LEFT half of a record is the half, the RIGHT half the whole —
+         Letterboxd's half-star rule — so a tap needs no second control;
+       • a PRESS sets, a SLIDE adjusts with the fill and the number following
+         the finger live (feedback while you act, not after);
+       • sliding LEFT past the first record clears to nothing (tapping the
+         value you already have does NOT clear it — Eric, 2026-09-11: a tap
+         always sets what it lands on, so a re-tap is just a confirmation);
+       • a step change buzzes on devices that can (`navigator.vibrate`,
+         Android; iOS Safari has no web haptics), and the keyboard works:
+         ←/→ by a half, Home/End, Delete to clear (role="slider").
+     Only the RELEASE commits: painting is free, but `setLogRating` also saves
+     the draft and pokes the pet, and neither should fire sixty times a drag. */
   const track = ov.querySelector('.sd-log-stars-track');
-  const rateFrom = e => {
+  let rateDown = null;                      // { x0, v0, last } while a finger is on it
+  const valueAt = clientX => {
     const r = track.getBoundingClientRect();
-    const x = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
-    setLogRating(Math.max(0.5, Math.min(5, Math.ceil((x / r.width) * 10) / 2)));
+    const x = clientX - r.left;
+    if (x < -8) return 0;                   // slid off the left edge → clear
+    const cell = r.width / 5;
+    const i = Math.max(0, Math.min(4, Math.floor(x / cell)));
+    const half = (x - i * cell) < cell / 2;
+    return Math.min(5, i + (half ? 0.5 : 1));
   };
-  track.addEventListener('click', rateFrom);
+  const buzz = () => { try { navigator.vibrate && navigator.vibrate(6); } catch (x) {} };
+  track.addEventListener('pointerdown', e => {
+    if (!SDLOG) return;
+    e.preventDefault(); e.stopPropagation();
+    try { track.setPointerCapture(e.pointerId); } catch (x) {}
+    const v = valueAt(e.clientX);
+    rateDown = { x0: e.clientX, v0: SDLOG.rating, last: v };
+    track.classList.add('is-rating');
+    paintLogRating(v); buzz();
+  });
+  track.addEventListener('pointermove', e => {
+    if (!rateDown) return;
+    const v = valueAt(e.clientX);
+    if (v === rateDown.last) return;
+    rateDown.last = v;
+    paintLogRating(v); buzz();
+  });
+  const rateEnd = e => {
+    if (!rateDown) return;
+    const d = rateDown; rateDown = null;
+    track.classList.remove('is-rating');
+    setLogRating(d.last);
+  };
+  track.addEventListener('pointerup', rateEnd);
+  track.addEventListener('pointercancel', e => { if (rateDown) { rateDown = null; track.classList.remove('is-rating'); paintLogRating(SDLOG ? SDLOG.rating : 0); } });
+  track.addEventListener('click', e => e.stopPropagation());   // the pointer pair already handled it
+  track.addEventListener('keydown', e => {
+    if (!SDLOG) return;
+    const cur = SDLOG.rating || 0;
+    let v = null;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowUp')   v = Math.min(5, cur + 0.5);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowDown') v = Math.max(0, cur - 0.5);
+    if (e.key === 'Home') v = 0.5;
+    if (e.key === 'End')  v = 5;
+    if (e.key === 'Delete' || e.key === 'Backspace') v = 0;
+    if (v === null) return;
+    e.preventDefault();
+    setLogRating(v);
+  });
 
   // Per-song rating + note (event-delegated over the song list)
   const songs = ov.querySelector('.sd-log-songs-list');
@@ -5457,7 +6067,7 @@ window.openLogSheet = function(triggerEl, subject) {
   let subj = subject;
   if (!subj) {
     if (artistMode && album) subj = { image: ARTIST_IMG[album.artist] || album.image, title: album.artist, subtitle: album.genre || '', isArtist: true };
-    else if (album) subj = { image: album.image, title: album.album, subtitle: album.artist };
+    else if (album) subj = { image: album.image, title: album.album, subtitle: album.artist, year: album.year || '' };
   }
   if (!subj) return;
   const host = (triggerEl && triggerEl.closest && triggerEl.closest('.app-screen'))
@@ -5474,11 +6084,17 @@ window.openLogSheet = function(triggerEl, subject) {
     listened: !!saved.listened, later: !!saved.later, fav: !!saved.fav,
     text: saved.text || '',
     songs: [],
+    updated: saved.updated || 0,        // putDraft stamps it; 0 = never saved
   };
+  paintLogUpdated();
+  clearInterval(_sdlogTick);
+  _sdlogTick = setInterval(paintLogUpdated, 30000);
   ov.querySelector('.sd-log-cover').style.backgroundImage = `url("${subj.image}")`;
   ov.querySelector('.sd-log-album').textContent = subj.title;
+  ov.querySelector('.sd-log-year').textContent = subj.year || '';   // :empty hides it (songs / artists)
   ov.querySelector('.sd-log-artist').textContent = subj.subtitle;
   ov.querySelector('.sd-log-write').value = SDLOG.text;
+  ov.querySelector('.sd-log-write').classList.toggle('has-text', !!(SDLOG.text || '').trim());
   ov.querySelectorAll('.sd-log-opt').forEach(b => b.classList.toggle('on', !!SDLOG[b.dataset.k]));
   setLogRating(SDLOG.rating);
   // Album mode → per-song rows below; single-song mode → no nested song list,
@@ -5497,7 +6113,12 @@ window.openLogSheet = function(triggerEl, subject) {
   const shareBtn = ov.querySelector('.sd-log-share');
   if (shareBtn) shareBtn.hidden = !!(subj.isSong || subj.isArtist);
   const sheet = ov.querySelector('.sd-log-sheet');
-  if (sheet) sheet.scrollTop = 0;
+  if (sheet) {
+    sheet.scrollTop = 0;
+    // A song has no review box and no song list, so the sheet ends under the
+    // three buttons instead of standing 95% tall over nothing (2026-09-11).
+    sheet.classList.toggle('sd-log-sheet--song', !!subj.isSong);
+  }
   _sdlogRestoring = false;              // paints done — live edits save from here
   requestAnimationFrame(() => ov.classList.add('open'));
 };
@@ -5521,6 +6142,7 @@ function fillLogSongs(ov, album) {
   box.hidden = false;
   list.innerHTML = songs.map((s, i) => `
     <div class="sd-log-song" data-i="${i}">
+      <span class="sd-log-song-num">${i + 1}</span>
       <span class="sd-log-song-title">${s.title}</span>
       <span class="sd-log-song-val"></span>
       <span class="sd-log-song-rate-track">
@@ -5539,7 +6161,7 @@ function setSongRating(i, v) {
   const row = ov && ov.querySelector(`.sd-log-song[data-i="${i}"]`);
   if (!row) return;
   const fill = row.querySelector('.sd-log-song-fill');
-  if (fill) fill.style.width = (v / 5 * 100) + '%';
+  if (fill) fill.style.width = recFillWidth(v);
   const val = row.querySelector('.sd-log-song-val');
   if (val) val.textContent = v ? String(v).replace(/\.0$/, '') : '';
   markSongLogged(row, i);
@@ -5555,19 +6177,46 @@ function markSongLogged(row, i) {
 
 window.closeLogSheet = function() {
   saveLog(true);          // flush a pending debounce — closing must never drop keystrokes
+  clearInterval(_sdlogTick); _sdlogTick = null;
   const ov = document.getElementById('sd-log');
   if (ov) ov.classList.remove('open');
   // Whatever was just logged may light the album page's quick-log squares.
-  homeShells().forEach(syncQuickLog);
+  // (Not `forEach(syncQuickLog)` — that hands the array INDEX in as the album,
+  // so the second shell read albumDraft(1) → {} and was wiped on every close.)
+  homeShells().forEach(s => syncQuickLog(s));
 };
 
+/* ⚠️ The fill's width is measured in RECORDS AND GAPS, not as a percentage of
+   the row. The row is 5 discs + 4 gaps, so "70%" of it is not the middle of
+   the fourth disc — at 0.5 a 10% fill covered 55% of the first record, at 4.5
+   a 90% fill covered 45% of the last. `--rec` / `--gap` live on the track's
+   container in app.css (the big control and the per-song rows each set their
+   own), so the maths follows any resize. A full five is simply 100%. */
+function recFillWidth(v) {
+  const whole = Math.floor(v), half = (v - whole) >= 0.5;
+  if (whole >= 5) return '100%';
+  if (!whole && !half) return '0px';
+  return `calc(${whole} * (var(--rec) + var(--gap))${half ? ' + var(--rec) / 2' : ''})`;
+}
+// Paint only — the fill and the slider's ARIA value. Used live while a finger
+// is on the track; nothing is saved until it lifts.
+function paintLogRating(v) {
+  const ov = document.getElementById('sd-log');
+  if (!ov) return;
+  const label = v ? String(v).replace(/\.0$/, '') : '';
+  ov.querySelector('.sd-log-stars-fill').style.width = recFillWidth(v);
+  const track = ov.querySelector('.sd-log-stars-track');
+  if (track) {
+    track.setAttribute('aria-valuenow', String(v || 0));
+    track.setAttribute('aria-valuetext', v ? `${label} of 5` : 'No rating');
+  }
+}
 function setLogRating(v) {
   if (!SDLOG) return;
   SDLOG.rating = v;
   const ov = document.getElementById('sd-log');
   if (!ov) return;
-  ov.querySelector('.sd-log-stars-fill').style.width = (v / 5 * 100) + '%';
-  ov.querySelector('.sd-log-rate-val').textContent = v ? String(v).replace(/\.0$/, '') : '';
+  paintLogRating(v);
   saveLog(true);          // a tap, not typing — no reason to debounce it
   // ⚠️ Only for a real tap. openLogSheet() calls this to REPAINT a saved draft,
   // so without the guard the pet threw a rating reaction every time the sheet
@@ -7581,8 +8230,11 @@ function personaSkinCss(p) {
      screen with the album's procedural colour via `.s-home-v3--review`, which is
      only (0,1,0) specificity — a plain `.app-screen.persona-x` rule is (0,2,0)
      and silently beat it, killing the fullscreen fill. */
+  /* ⚠️ The REVIEW PAGE (.s-rvp) floods with the album colour the same way and
+     is held off here too — without this the persona's cream beat the page's
+     dark fallback at (0,4,0) and its light ink vanished (2026-09-11). */
   const bg = (bases, t) =>
-    bases.map(b => `${b}:not(.s-home-v3--review)`).join(',\n') + ` { background: ${t.bg}; }`;
+    bases.map(b => `${b}:not(.s-home-v3--review):not(.s-rvp)`).join(',\n') + ` { background: ${t.bg}; }`;
 
   const block = (bases, t) => `
 ${each(bases, PERSONA_INK1)} { color: ${t.ink}; }
@@ -8052,6 +8704,7 @@ const PFE_KIND = {
   playlist: { title: 'Choose a playlist', ph: 'Search your playlists' },
   photo:    { title: 'Choose a photo',    ph: '' },
   tag:      { title: 'Your tags',        ph: '' },
+  review:   { title: 'Pin a review',      ph: 'Search your reviews' },
 };
 let _profSlot = 0;
 let _profKind = 'album';
@@ -8135,6 +8788,14 @@ function profPickerItems(q) {
       .map(x => ({ img: x.image, t: x.title, s: x.album + ' · ' + x.artist,
                    on: !!cur && cur.title === x.title && cur.album === x.album,
                    pick: `profPickSong('${obOc(x.key)}')` }));
+  }
+  if (_profKind === 'review') {
+    // Your own review log, one per album — the pin is the album's name.
+    const cur = (window.profPins ? profPins(T) : [])[_profSlot];
+    return profReviewLog(T)
+      .filter(e => !q || e.album.album.toLowerCase().includes(q) || e.album.artist.toLowerCase().includes(q) || String(e.text).toLowerCase().includes(q))
+      .map(e => ({ img: e.album.image, t: e.album.album, s: Number(e.rating).toFixed(1) + ' · ' + e.text,
+                   on: e.album.album === cur, pick: `profPickReview('${obOc(e.album.album)}')` }));
   }
   if (_profKind === 'playlist') {
     const cur = (T.playlistNames || [])[_profSlot];
@@ -8224,6 +8885,21 @@ window.profPick = function (name) {
   T.favs[_profSlot] = name;
   profAfterPick();
 };
+/* Pin = set this slot to the album; picking the one already there clears it,
+   and a review pinned in another slot moves rather than duplicates. */
+window.profPickReview = function (name) {
+  const T = profFavTarget();
+  const pins = (window.profPins ? profPins(T) : []).slice();
+  while (pins.length < 3) pins.push('');
+  if (pins[_profSlot] === name) pins[_profSlot] = '';
+  else {
+    const j = pins.indexOf(name);
+    if (j >= 0) pins[j] = '';
+    pins[_profSlot] = name;
+  }
+  T.pins = pins;
+  profAfterPick();
+};
 window.profPickSong = function (key) {
   const t = plnewPool().find(x => x.key === key); if (!t) return;
   const T = profFavTarget();
@@ -8281,6 +8957,9 @@ window.pfeditDraft = function () {
          shows two (seeded off the handle), so a form that opened blank would
          look like the edit page had lost them. */
       tags: (window.profTags ? profTags(P) : []).map(t => t.id),
+      // Seeded through profPins like tags: a persona with none authored still
+      // shows two, so the form must open on what the profile shows.
+      pins: (window.profPins ? profPins(P) : (P.pins || [])).slice(),
       skin: P.skin ? { ...P.skin } : null };
   }
   return window.PFEDIT;
@@ -8345,6 +9024,7 @@ window.pfeditSave = function () {
     // on the draft, so anything missing from this whitelist is silently dropped
     // on save even though the edit page showed it working.
     favSongs: (D.favSongs || []).slice(),
+    pins: (D.pins || []).slice(),
     playlistNames: (D.playlistNames || []).slice(),
     playlistCovers: (D.playlistCovers || []).slice(),
   });
@@ -8613,22 +9293,6 @@ function profFavArc(rail, items) {
   });
 }
 
-/* Their own words about the centred record, if there are any.
-   ⚠ Read from `profReviewLog(P)` — the SAME log the review history further
-   down the page is built from — so the two can never quote the same person
-   differently. ⚠ Cached per handle on the section: the log walks the archive to
-   build itself, and this runs on every scroll frame. */
-function profFavReview(sec, album) {
-  const P = window.PROFILE || {};
-  const key = String(P.handle || P.name || 'you');
-  if (sec._rvKey !== key) {
-    sec._rvKey = key;
-    sec._rvMap = new Map();
-    const log = (typeof profReviewLog === 'function') ? profReviewLog(P) : [];
-    log.forEach(e => { if (e && e.album && e.text) sec._rvMap.set(e.album.album, e); });
-  }
-  return sec._rvMap.get(album) || null;
-}
 
 /* Which disc is under the middle of the rail.
    ⚠ Measured against the rail's own scroll box, so `.prof-fav-rail` must stay
@@ -8658,28 +9322,14 @@ function profFavPaint(rail) {
   profFavArc(rail, items);
 
   const set  = (sel, v) => { const el = sec.querySelector(sel); if (el) el.textContent = v; };
-  const setH = (sel, v) => { const el = sec.querySelector(sel); if (el) el.innerHTML = v; };
-  /* The review line HIDES rather than emptying: an empty box still holds its
-     line-height, and the panel would twitch a row taller every time you scrolled
-     onto a record they never wrote about. */
-  const setRv = e => {
-    const el = sec.querySelector('.prof-fav-rv');
-    if (!el) return;
-    el.textContent = e ? e.text : '';
-    el.hidden = !e;
-  };
   const name = items[best].dataset.alb;
   const a = name && (window.ARCHIVE || []).find(x => x.album === name);
   if (!a) {
     set('.prof-fav-name', 'Empty slot');
     set('.prof-fav-yr', '');
     set('.prof-fav-artist', 'Tap to add a favourite');
-    setH('.prof-fav-stars', '');
-    set('.prof-fav-meta', '');
-    setRv(null);
     return;
   }
-  setRv(profFavReview(sec, a.album));
   /* The whole reason the rail exists: a cover alone does not tell you what an
      album is. ⚠ The YEAR sits with the title — it is part of naming a record,
      not a statistic about it — and the genre is gone. It said little at this
@@ -8688,9 +9338,9 @@ function profFavPaint(rail) {
   set('.prof-fav-name', a.album);
   set('.prof-fav-yr', a.year ? String(a.year) : '');
   set('.prof-fav-artist', a.artist);
-  setH('.prof-fav-stars', (typeof halfStars === 'function') ? halfStars(a.rating || 0, 11) : '');
-  const rc = window.fmtRc ? fmtRc(a.reviewCount || 0) : (a.reviewCount || 0);
-  set('.prof-fav-meta', rc + ' reviews');
+  // Name, year, artist — and that is the panel (2026-09-11). The stars, the
+  // review count and their line about it are gone; what they wrote lives in
+  // PINNED REVIEWS under the rail now.
 }
 
 window.toggleProfCd = function (btn, e, slot) {

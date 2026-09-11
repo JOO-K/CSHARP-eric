@@ -3103,6 +3103,10 @@
 /* The comment pill is the same object as the upvote pill, so the pair reads as
    one control. `is-open` means its thread is showing below. */
 .v3-cmt-btn.is-open { background: rgba(232,168,60,0.16); color: var(--star); }
+/* On a CARD the open state means nothing any more (the thread lives on the
+   review page, and CMT_OPEN stays true once you have been there), so the pill
+   keeps its resting look. On the page it lights as before. */
+.v3-rev-card .v3-cmt-btn.is-open { background: rgba(255,255,255,0.06); color: rgba(232,226,214,0.5); }
 
 /* ⚠️ `.v3-up`'s own colours are hard-coded for a DARK surface, because every
    other place it appears — the review cards — sits on the album's procedural
@@ -4496,20 +4500,22 @@ body.sd-skin-furry .v3-body { padding-top: 40px; }
 .s-home-v3--review.s-home-v3--album.s-home-v3--artist .v3-artist-fav {
   display: flex; flex-direction: row; align-items: center; justify-content: center;
   position: absolute;
-  left: 80.77%; top: 0.437%; right: auto;
+  /* Lowered (2026-09-11): it was the Back pill's twin in the top corner. It now
+     sits on the info box's LAST line — the artist-info line, whose centre is
+     ~28px up from the bento's bottom edge once the page has settled (measure
+     AFTER the entry animation: mid-flight the box overhangs and the numbers
+     lie) — flush with the box's 12px right padding. px, deliberately: that
+     line is px type, not a % of the bento. Same corner in both hand modes. */
+  left: auto; right: 12px; top: auto; bottom: 13px;
   width: 19.16%; height: 7.54%;
   min-width: 0; margin: 0; padding: 0;
   border: none; border-radius: 999px;
   background: #111116;
   box-shadow: -4px -4px 8px 0 rgba(255,255,255,0.07), 4px 4px 6px -1px rgba(0,0,0,0.5);
   color: rgba(232,226,214,0.85);
-  transform: translate(-4px, 4px);
+  transform: none;
   z-index: 6;
   transition: color .15s, transform .06s;
-}
-/* Back is top-right in right-hand mode, so Favorite takes the left corner. */
-.s-home-v3--review.s-home-v3--album.s-home-v3--artist:not(.s-home-v3--left) .v3-artist-fav {
-  left: 0.07%; transform: translate(4px, 4px);
 }
 .s-home-v3--review.s-home-v3--album.s-home-v3--artist .v3-artist-fav .sd-dot-ico { width: 17px; height: 17px; }
 .s-home-v3--review.s-home-v3--album.s-home-v3--artist .v3-artist-fav:hover { filter: brightness(1.14); }
@@ -4586,6 +4592,9 @@ body.sd-skin-furry .v3-body { padding-top: 40px; }
 .s-home-v3--artist .v3-artist-info {
   display: flex; flex-direction: column; gap: 5px;
   width: 100%; margin-top: 12px;
+  /* The favourite pill sits on this block's last line, at the right — keep the
+     rows out from under it (its 19.16% width plus a gutter). */
+  box-sizing: border-box; padding-right: calc(19.16% + 18px);
 }
 .s-home-v3--review.s-home-v3--album.s-home-v3--artist { --rev-cred-h: 125px; }
 /* Without a description the block is two short rows, so most of that reserve
@@ -5002,6 +5011,36 @@ body.sd-skin-furry .v3-body { padding-top: 40px; }
      it just hangs 2px past the edge the row is now aligned to. */
   margin-left: 0;
 }
+/* ── Quick-log squares UNDER the CTA (2026-09-11) ─────────────────────────
+   The row was CTA + three squares side by side; it is now two rows — the
+   button full width on top, the three toggles as one joined strip beneath it
+   spanning the same width. Cleaner, and the CTA gets the whole line for its
+   label. The strip keeps the cascade (shared borders, outer corners only) so
+   it still reads as one control; `--sd-q` no longer sets a width here — the
+   cells share the row — only the strip's height. */
+.s-home-v3--review.s-home-v3--album .v3-rev-cta-row {
+  flex-direction: column; align-items: stretch; gap: 6px;
+  min-height: 0;
+}
+.s-home-v3--review.s-home-v3--album .v3-rev-cta-row .v3-rev-cta { border-radius: 7px; justify-content: center; }
+.s-home-v3--review.s-home-v3--album .v3-rev-quick { height: 42px; }
+.s-home-v3--review.s-home-v3--album .v3-rev-q { flex: 1 1 0; width: auto; }
+.s-home-v3--review.s-home-v3--album .v3-rev-q:first-child { margin-left: 0; border-radius: 7px 0 0 7px; }
+/* ── The CTA once you have rated (syncRevCta) ─────────────────────────────
+   Your discs + "Your rating 4.5" on the left, an "Edit rating?" pill on the
+   right — the button asks rather than repeats the invitation. Same box, same
+   height, same handler. */
+.s-home-v3--review.s-home-v3--album .v3-rev-cta-row .v3-rev-cta--rated { justify-content: flex-start; }
+.v3-rev-cta--rated .hstars { display: inline-flex; gap: 3px; flex-shrink: 0; }
+.v3-rev-cta-you { flex: 1; min-width: 0; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.v3-rev-cta-you b { color: var(--star, #e8a83c); font-weight: 800; }
+.v3-rev-cta-edit {
+  flex-shrink: 0; padding: 4px 9px; border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.16);
+  font-size: 10.5px; font-weight: 600; letter-spacing: 0.01em;
+  color: rgba(232,226,214,0.75);
+}
+.v3-rev-cta--rated:hover .v3-rev-cta-edit { background: rgba(255,255,255,0.08); color: #fff; }
 .s-home-v3--review .v3-rev-hist { margin-top: 10px; }
 /* The full tracklist, in flow — it no longer caps its height and scrolls inside
    itself (the page is the scroller; a nested one hid the rest of the album). */
@@ -5145,15 +5184,73 @@ body.sd-skin-furry .v3-body { padding-top: 40px; }
   padding: 2px 6px; border-radius: 999px;
   flex-shrink: 0;
 }
-.v3-rev-card-top { display: flex; align-items: center; gap: 5px; margin-bottom: 3px; }
+/* ── The card is the review page's hero at list scale (2026-09-11) ────────
+   photo · name over @handle · when | big score with the small records under
+   it, right-aligned. Then the text, then the pills at the foot. `.v3-rev-meta`
+   (the "rated" row) is no longer emitted. */
+/* ⚠️ A GRID, two columns: the left holds the top row (photo · name) and the
+   text under it; the right is the score column (number, records, like) spanning
+   both rows. That is what keeps the text up against the name — as a flex row
+   the score column's height (three things tall) pushed the text down with it. */
+.v3-rev-card {
+  padding: 11px 0;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px;
+  grid-template-areas: "top big" "text big" "foot foot";
+  /* ⚠️ `auto 1fr`: the score column spans rows 1–2 and is taller than a short
+     review, and with two auto rows the grid split its excess between them —
+     which pushed the text down and read as "centred". The text row takes all
+     of it, so the text sits under the name whatever its length. */
+  grid-template-rows: auto 1fr auto;
+  align-items: start;
+}
+.v3-rev-card-top { grid-area: top; display: flex; align-items: center; gap: 9px; margin-bottom: 0; }
+.v3-rev-text { grid-area: text; }
+.v3-rev-foot { grid-area: foot; }
+.v3-rev-who { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.v3-rev-name-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.v3-rev-sub {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.04em;
+  color: rgba(232,226,214,0.4);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.v3-rev-big { grid-area: big; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+/* The like: as wide as the column (the records set it, ~53px) and squarish,
+   centred, a size up — a real button under the score, not a chip. */
+/* A SQUARE (2026-09-11): as wide as the records row (the column), and as tall
+   as it is wide — the heart over the count, stacked. */
+.v3-rev-big .v3-up--like {
+  align-self: stretch; margin-top: 3px; box-sizing: border-box; aspect-ratio: 1;
+  display: inline-flex; flex-direction: column; justify-content: center; align-items: center; gap: 3px;
+  padding: 4px; font-size: 11px; border-radius: 10px;
+}
+.v3-rev-big .v3-up--like svg { width: 20px; height: 20px; }
+/* The comment count sits under the like, same width, same shape (2026-09-11).
+   The foot row only exists on your own card now, for Share. */
+.v3-rev-big .v3-up--cmtcol {
+  align-self: stretch; margin-top: 4px; box-sizing: border-box;
+  justify-content: center; padding: 7px 4px; gap: 4px;
+  font-size: 11px; border-radius: 9px;
+}
+.v3-rev-big .v3-up--cmtcol svg { width: 14px; height: 14px; }
+.v3-rev-big-n {
+  font-family: var(--font-main); font-size: 21px; font-weight: 800;
+  line-height: 1; letter-spacing: -0.02em;
+  color: rgba(232,226,214,0.92);
+}
+.v3-rev-big .hstars { display: inline-flex; gap: 2px; }
+.v3-rev-foot { display: flex; align-items: center; margin-top: 8px; }
+.v3-rev-foot .v3-rev-acts { margin-left: 0; }
+/* A PHOTO now (2026-09-11), not initials on a gradient: `feedFace(name)` —
+   the same face the person's comments wear — so the list reads the way it
+   will once there are real accounts. */
 .v3-rev-av {
-  width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 7px; font-weight: 700; color: #fff;
+  width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+  background: #333 center/cover no-repeat;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.08);
 }
 .v3-rev-name {
-  font-size: 11px; font-weight: 600;
-  color: rgba(232,226,214,0.8);
+  font-size: 12.5px; font-weight: 700;
+  color: rgba(232,226,214,0.9);
   /* ⚠️ The name is the only elastic thing in this row. The pills grew a step,
      and on the PINNED card they share the line with the "from your feed" chip
      and the timestamp — without this a long handle pushes the timestamp off the
@@ -5182,9 +5279,22 @@ body.sd-skin-furry .v3-body { padding-top: 40px; }
   color: rgba(232,226,214,0.5);
 }
 .v3-rev-likes { font-size: 9.5px; color: rgba(232,226,214,0.25); }
+/* Not full width on the card — a measure, not a slab — so a paragraph reads
+   as one. The page lets the text run the full width. Six lines, then the
+   ellipsis: long reviews should LOOK long here, without being endless. */
+/* Five lines, then a long review FADES OUT rather than stopping at an ellipsis
+   — the fade says "there is more" the way a cut-off line does, without the
+   glyph. `.is-long` is set by populateReviewList only on cards that really
+   overflow, so a short review is never dimmed. */
 .v3-rev-text {
-  font-size: 10.5px; line-height: 1.3; color: rgba(232,226,214,0.45);
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  margin-top: 5px;                                    /* the score column already sets the measure */
+  font-size: 11.5px; line-height: 1.4; color: rgba(232,226,214,0.68);
+  max-height: calc(1.4em * 5); overflow: hidden;              /* five lines (was six) — a long review fades sooner */
+  text-wrap: pretty;                                          /* no widows (revNoWidow is the guarantee) */
+}
+.v3-rev-text.is-long {
+  -webkit-mask-image: linear-gradient(to bottom, #000 30%, rgba(0,0,0,0.5) 65%, transparent 100%);
+          mask-image: linear-gradient(to bottom, #000 30%, rgba(0,0,0,0.5) 65%, transparent 100%);
 }
 .v3-rev-empty {
   padding: 34px 0; text-align: center;
@@ -5201,6 +5311,91 @@ body.sd-skin-furry .v3-body { padding-top: 40px; }
    every `.v3-rev-*` around them. ⚠️ The ARTIST page forces the cream bg
    instead, so each of these needs a `--light.--artist` counterpart below. */
 .v3-cmt-wrap:empty { display: none; }
+
+/* ═══ THE REVIEW PAGE (.s-rvp — reviewPageHtml) ══════════════════════════
+   One review, pronounced. Dark ink like the album page's review panel in
+   BOTH themes; the light shell floods with the album colour the way the
+   light album page does, so the page reads as the album's. The reviewer's
+   photo is ringed in the album accent — the one place on the page the person
+   and the record share a colour. The text is the app's review voice
+   (Crimson Text) at reading size, and it is NEVER clamped here: the card
+   was the taste, this is the thing. */
+/* A CROSS-FADE, both ways (2026-09-11 — the flying card was jarring): only the
+   CONTENT fades (the .v3-body), never the shell, so the album colour behind
+   it holds the whole way. sdFadeOut fades the outgoing content, the incoming
+   screen's body fades in here. */
+:is(.s-rvp, .s-home-v3--rvp) { color: #e8e2d6; }
+/* ── The review IN PLACE (.s-home-v3--rvp on the album page's shell) ───────
+   The bento and the review panel step aside, the review panel takes the body.
+   --rvp-out is the 200ms fade of whatever is leaving. ⚠️ .v3-review-panel's
+   entry animation fills forwards and would pin its opacity at 1, so it is
+   switched off before the fade. */
+.v3-rvp-panel { display: none; }
+.s-home-v3--rvp .v3-rvp-panel { display: block; }
+.s-home-v3--rvp .v3-bento, .s-home-v3--rvp .v3-review-panel { display: none; }
+.s-home-v3--rvp-out:not(.s-home-v3--rvp) .v3-bento,
+.s-home-v3--rvp-out:not(.s-home-v3--rvp) .v3-review-panel { animation: none; opacity: 0; transition: opacity .2s ease-out; }
+.s-home-v3--rvp.s-home-v3--rvp-out .v3-rvp-panel { opacity: 0; transition: opacity .2s ease-out; animation: none; }
+.s-home-v3--rvp .v3-rvp-panel { animation: rvpIn .3s ease-out both; }
+:is(.s-rvp, .s-home-v3--rvp) .v3-body { animation: rvpIn .34s ease-out both; }
+@keyframes rvpIn { from { opacity: 0; } to { opacity: 1; } }
+body.sd-return .s-home-v3--review .v3-body { animation: rvpIn .34s ease-out both; }
+@media (prefers-reduced-motion: reduce) { :is(.s-rvp, .s-home-v3--rvp) .v3-body, body.sd-return .s-home-v3--review .v3-body { animation: none; } }
+/* ⚠️ The fallback is DARK. The ink on this page is hard-coded light (like the
+   album page's review panel), and the palette arrives a beat after the page
+   does — a cream fallback meant white text on cream until then, and for good
+   if the cover had never been extracted. The page is legible from the first
+   frame now, and the album colour floods in on top. */
+:is(.s-rvp, .s-home-v3--rvp).s-home-v3--light { background: var(--v3-box1-color, #1c1c22); color: #e8e2d6; }
+/* …and re-ink what the light theme darkened, since the page is dark in both
+   themes: the shell's inherited ink, the header's masked logo and bubbles,
+   the handle, and the upvote/comment pills. Verified in the viewer. */
+:is(.s-rvp, .s-home-v3--rvp) .rvp-name { color: #e8e2d6; }
+:is(.s-rvp, .s-home-v3--rvp).s-home-v3--light .v3-header-logo { background-color: rgba(232,226,214,0.9); }
+:is(.s-rvp, .s-home-v3--rvp).s-home-v3--light .v3-header-handle { color: rgba(232,226,214,0.42); }
+:is(.s-rvp, .s-home-v3--rvp).s-home-v3--light .v3-bubble { color: rgba(232,226,214,0.62); background: rgba(255,255,255,0.06); }
+:is(.s-rvp, .s-home-v3--rvp).s-home-v3--light .v3-up { background: rgba(255,255,255,0.06); color: rgba(232,226,214,0.5); }
+:is(.s-rvp, .s-home-v3--rvp).s-home-v3--light .v3-up:hover { background: rgba(255,255,255,0.1); color: #e8e2d6; }
+:is(.s-rvp, .s-home-v3--rvp).s-home-v3--light .v3-up.is-on { background: rgba(232,168,60,0.16); color: var(--star, #e8a83c); }
+:is(.s-rvp, .s-home-v3--rvp).s-home-v3--light .v3-up.is-on svg { fill: rgba(232,168,60,0.2); }
+.rvp-scroll { padding: 16px 12px 96px; }                      /* the back pill sat hard under the header (2026-09-11) */
+.rvp-scroll > .plp-back-pill { margin-bottom: 16px; }
+/* ── The review page's hero is the CARD, larger (2026-09-11) ──────────────
+   Built by revCardHtml with `big` and this class; every measure steps up and
+   the text runs full width at reading size, unclamped. Not tappable — it is
+   already the page (cmtCardTap ignores it). */
+.v3-rev-card--hero { padding: 4px 0 16px; cursor: default; column-gap: 14px; }
+.v3-rev-card--hero .v3-rev-av { width: 56px; height: 56px; }
+.v3-rev-card--hero .v3-rev-card-top { gap: 12px; }
+.v3-rev-card--hero .v3-rev-who { gap: 3px; }
+.v3-rev-card--hero .v3-rev-name { font-size: 16px; }
+.v3-rev-card--hero .v3-rev-sub { font-size: 10.5px; }
+.v3-rev-card--hero .v3-rev-big { gap: 5px; }
+.v3-rev-card--hero .v3-rev-big-n { font-size: 40px; }
+.v3-rev-card--hero .v3-rev-big .hstars { gap: 3px; }
+/* The like a size smaller than the card's, and no comment pill (the count is
+   in the Comments heading below). Text 13.5px. */
+/* A HEART here (the card keeps its thumb), 60% of the column and square, and
+   the review's share button under it at the same size. */
+.v3-rev-card--hero .v3-rev-big .v3-up--like { align-self: flex-end; width: 60%; font-size: 10.5px; margin-top: 4px; border-radius: 10px; padding: 3px; gap: 2px; }
+.v3-rev-card--hero .v3-rev-big .v3-up--like svg { width: 16px; height: 16px; }
+.v3-rev-card--hero .v3-rev-big .v3-up--heart.is-on { color: #ff5c8a; background: rgba(255,92,138,0.14); }
+.v3-rev-card--hero .v3-rev-big .v3-up--heart.is-on svg { fill: currentColor; }
+.v3-rev-card--hero .v3-rev-big .sd-share-btn--hero {
+  align-self: flex-end; width: 60%; height: auto; aspect-ratio: 1; margin-top: 4px;
+  border-radius: 10px; color: rgba(232,226,214,0.6);
+}
+.v3-rev-card--hero .v3-rev-big .sd-share-btn--hero svg { width: 16px; height: 16px; }
+.v3-rev-card--hero .v3-rev-text {
+  margin-top: 10px; max-height: none;
+  font-size: 13.5px; line-height: 1.5; color: rgba(232,226,214,0.92);
+  white-space: pre-wrap; overflow-wrap: anywhere;
+  -webkit-mask-image: none; mask-image: none;
+}
+.v3-rev-card--hero .v3-rev-foot { margin-top: 12px; }
+.rvp-cmts-hd { margin: 14px 0 2px; font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(232,226,214,0.45); }
+.rvp-cmts-n { margin-left: 4px; color: rgba(232,226,214,0.7); }
+
 .v3-cmt-thread { padding: 5px 0 2px; }
 .v3-cmt-kids {
   margin-left: 7px;
@@ -5630,45 +5825,179 @@ body.sd-skin-furry .v3-body { padding-top: 40px; }
   background: #1c1c22;
   color: #e8e2d6;
   border-radius: 20px;
-  padding: 9px 14px 14px;
+  /* ⚠️ 12px all round (2026-09-11, was 9/14/14). 12 is the album page's gutter:
+     its review panel is 10px in and its song rows pad 12px, so song text sits
+     22px from the screen edge — the sheet is 10px in + 12px = the same 22px.
+     Top = left so the cover sits an even distance from the corner; the nub is
+     taken out of flow (absolute) so it does not push the header down. */
+  padding: 12px 12px 14px;
+  position: relative;
   box-shadow: 0 -10px 34px rgba(0,0,0,0.5);
   transform: translateY(130%);
   transition: transform .3s cubic-bezier(.22,1,.36,1);
   font-family: var(--font-main);
-  height: 75%;                     /* takes ~75% of the screen */
-  max-height: 75%;
+  /* Almost fullscreen (2026-09-11, was 75%): 5% of the screen stays clear at
+     the top so the page behind still shows through the scrim. The 10px float
+     off the bottom is taken out of the 95%, so the top gap is a true 5%. */
+  height: calc(95% - 10px);
+  max-height: calc(95% - 10px);
   overflow-y: auto;
   scrollbar-width: none;
 }
 .sd-log-sheet::-webkit-scrollbar { display: none; }
 .sd-log-overlay.open .sd-log-sheet { transform: translateY(0); }
+/* A song's sheet has no review box and no song list: it ends under the three
+   buttons, and the space above it is the page (2026-09-11). */
+.sd-log-sheet.sd-log-sheet--song { height: auto; }
 
+/* The nub is a CONTROL, not decoration: tap it or drag it down to close
+   (wireSheetGrab in app.js, on every bottom sheet). The pseudo-element is the
+   hit area — a 4px bar is not a target on a phone. */
 .sd-log-grab {
+  position: relative;
   width: 38px; height: 4px; border-radius: 999px;
   background: rgba(232,226,214,0.25);
   margin: 0 auto 15px;
+  cursor: grab; touch-action: none;
+  transition: background .15s;
 }
-.sd-log-head { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+.sd-log-grab::before { content: ''; position: absolute; inset: -14px -40px; }
+.sd-log-grab:hover, .sd-log-grab:active { background: rgba(232,226,214,0.5); }
+
+/* ── Pull to refresh (sdPtr* in app.js) ──────────────────────────────────
+   The body itself is translated while you pull — the indicator is a sibling
+   parked at the body's top edge, under the header, with z-index so it paints
+   above the (transformed) body. `--p` is the pull as a fraction of the
+   threshold: the disc fades in, grows and turns with it; at 1 it lands — the
+   accent colour and a bump — and spins while the feed re-deals. */
+.v3-body { overscroll-behavior-y: contain; }         /* not the browser's pull-to-refresh, ours */
+.v3-body.ptr-settle { transition: transform .42s cubic-bezier(.22,1,.36,1); }
+.v3-body.is-pulling { transition: none; }
+.sd-ptr {
+  position: absolute; left: 0; right: 0; height: 0; z-index: 1;
+  display: flex; justify-content: center; pointer-events: none;
+}
+/* The disc is the album's accent in both themes and never changes size
+   (2026-09-11). Two copies: a faint GHOST underneath, and the FILL on top,
+   revealed by a conic mask that sweeps clockwise with --p — so the record
+   fills like a clock face as you pull and is whole at the threshold. The
+   whole thing also rises in opacity with the pull, from nothing. On release
+   past the threshold the mask drops and the record spins. */
+.sd-ptr-disc {
+  position: relative; display: block; width: 34px; height: 34px; margin-top: 14px;
+  color: var(--star, #e8a83c);
+  opacity: min(1, var(--p, 0));
+  transition: opacity .25s ease;
+}
+.sd-ptr-ghost, .sd-ptr-fill { position: absolute; inset: 0; display: block; }
+.sd-ptr-ghost { opacity: 0.22; }
+.sd-ptr-fill {
+  -webkit-mask: conic-gradient(#000 calc(var(--p, 0) * 360deg), transparent 0);
+          mask: conic-gradient(#000 calc(var(--p, 0) * 360deg), transparent 0);
+}
+.sd-ptr-disc svg { display: block; width: 100%; height: 100%; }
+/* Landed: the sweep is complete, the ghost is gone — one solid record. */
+.sd-ptr.is-armed .sd-ptr-ghost { opacity: 0; }
+.sd-ptr.is-refreshing .sd-ptr-disc { opacity: 1; }
+.sd-ptr.is-refreshing .sd-ptr-fill { -webkit-mask: none; mask: none; animation: sdPtrSpin .6s linear infinite; }
+@keyframes sdPtrSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .sd-ptr.is-refreshing .sd-ptr-fill { animation: none; }
+}
+/* Log sheet only: the nub floats over the header's top edge instead of taking
+   a row of its own, so the cover can sit 12px from the top like it does from
+   the left. (Badges + delete sheets keep it in flow — their heads are short.) */
+.sd-log-sheet .sd-log-grab { position: absolute; top: 5px; left: 50%; margin: 0; transform: translateX(-50%); }
+.sd-log-sheet.is-dragging, .plc-sheet.is-dragging, .pldel-sheet.is-dragging { transition: none; }
+/* ── The header IS the album page's info box, restated ───────────────────
+   A centred column (2026-09-11): the cover, then the text under it, full
+   width, so nothing is ever cut off — the album page wraps its title and so
+   does this. Cover = exactly TWO option buttons wide (two thirds of the row
+   plus the one gap between them — the same sum two .sd-log-opt's flex:1
+   resolve to), square, with the options' 12px radius, so cover / vinyls /
+   options read as one centred stack. The type is the review-state .v3-blue
+   rules verbatim: Roboto Flex, title 22px/400 at 92% ink condensed to
+   wdth 85, the year inline after it at 14px/300 and 50%, the artist
+   14.5px/700 at 88%. If those rules move on the album page, move these too.
+   Share and ✕ leave the flow and sit in the top corners either side of the
+   nub, which is why the head starts 30px down. */
+.sd-log-head {
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  margin: 30px 0 4px; text-align: center;
+}
 .sd-log-cover {
-  width: 46px; height: 46px; border-radius: 7px; flex-shrink: 0;
+  width: calc((200% - 8px) / 3); aspect-ratio: 1; flex-shrink: 0;
+  border-radius: 12px;
   background: #333 center/cover no-repeat;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.45);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
 }
-.sd-log-meta { flex: 1; min-width: 0; }
-.sd-log-album  { font-size: 14px; font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sd-log-artist { font-size: 12px; font-weight: 700; color: rgba(232,226,214,0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sd-log-meta { width: 100%; min-width: 0; font-family: 'Roboto Flex', var(--font-main); }
+.sd-log-title { line-height: 1.12; }
+.sd-log-album {
+  display: inline; font-size: 22px; font-weight: 400;
+  color: rgba(232,226,214,0.92);
+  font-variation-settings: 'wdth' 85;
+}
+.sd-log-year { display: inline; margin-left: 6px; font-size: 14px; font-weight: 300; color: rgba(232,226,214,0.5); }
+.sd-log-year:empty { display: none; }
+.sd-log-artist {
+  margin-top: 5px;
+  font-size: 14.5px; font-weight: 700; color: rgba(232,226,214,0.88);
+}
+.sd-log-head .sd-log-share { position: absolute; top: 9px; left: 12px; }
+.sd-log-head .sd-log-x     { position: absolute; top: 8px; right: 10px; }
+/* "Updated 5 min ago" — centred between Share and ✕, under the nub, in the
+   album's accent (`--star` re-tints per record, like the vinyls). Empty until
+   the first write, so a fresh sheet shows nothing rather than "never". */
+.sd-log-updated {
+  position: absolute; top: 17px; left: 50%; transform: translateX(-50%);
+  max-width: 55%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--star, #e8a83c);
+  pointer-events: none;
+}
 .sd-log-x {
   background: none; border: none; color: rgba(232,226,214,0.5);
   font-size: 15px; cursor: pointer; padding: 4px; line-height: 1;
 }
 
-/* Rate — the vinyl is the hero: large, centered, near the top */
+/* Rate — the vinyl is the hero: large, centered, near the top.
+   ⚠️ The five records are sized here, not on .sd-rec, because the per-song rows
+   reuse the same glyph at 14px. 5 × 54 + 4 × 7 = 298px — about 76% of the
+   393px frame, so the row stops ~12% short of each screen edge (Eric,
+   2026-09-11: "12% off the sides"; then "larger, smaller gaps, same sides").
+   The pointer maths in the sheet reads the track's rendered width and divides
+   it into five equal cells, so the size is free to move.
+   ⚠️ The track is the HIT AREA and is meant to be five ~60px squares: ::before
+   pads it 3px above and below so each cell is as tall as it is wide, and
+   `touch-action: none` keeps a slide on it from scrolling the sheet. */
 .sd-log-rate {
   display: flex; flex-direction: column; align-items: center; gap: 7px;
-  padding: 12px 0 18px;
+  padding: 12px 0 13px;              /* 18 → 8 → 13: the option buttons sit 5px higher than they began (2026-09-11) */
+  /* ⚠️ Read by recFillWidth (app.js) — the fill is measured in these units.
+     Change the disc size or the gap HERE and nowhere else. */
+  --rec: 54px; --gap: 7px;
 }
-.sd-log-stars-track { position: relative; display: inline-flex; cursor: pointer; }
-.sd-log-stars-empty, .sd-log-stars-fill { display: flex; gap: 8px; }
+.sd-log-stars-track {
+  position: relative; display: inline-flex; cursor: pointer;
+  touch-action: none; user-select: none; -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+}
+.sd-log-stars-track::before { content: ''; position: absolute; inset: -3px 0; }
+.sd-log-stars-track:focus-visible { box-shadow: 0 0 0 2px rgba(232,168,60,0.5); border-radius: 8px; }
+.sd-log-stars-empty, .sd-log-stars-fill { display: flex; gap: var(--gap); }
+.sd-log-rate .sd-rec { width: var(--rec); height: var(--rec); }
+/* The fill follows the finger; a short ease makes a slide read as one motion
+   rather than five jumps, and is short enough (120ms) that a tap still lands. */
+.sd-log-stars-fill { transition: width .12s ease-out; }
+.sd-log-stars-track.is-rating .sd-log-stars-fill { transition: width .06s linear; }
+.sd-log-stars-track.is-rating .sd-rec { transform: scale(1.04); }
+.sd-log-rate .sd-rec { transition: transform .12s ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  .sd-log-stars-fill, .sd-log-rate .sd-rec { transition: none; }
+  .sd-log-stars-track.is-rating .sd-rec { transform: none; }
+}
 .sd-log-stars-empty { color: rgba(232,226,214,0.20); }
 .sd-log-stars-fill {
   position: absolute; top: 0; left: 0; width: 0;
@@ -5676,7 +6005,7 @@ body.sd-skin-furry .v3-body { padding-top: 40px; }
   color: var(--star, #e8a83c);
 }
 .sd-rec { width: 32px; height: 32px; flex: 0 0 auto; display: block; }
-.sd-log-rate-val { font-size: 13px; font-weight: 700; color: var(--star, #e8a83c); min-height: 15px; }
+/* No number under the discs (2026-09-11) — the fill IS the readout. */
 
 /* Options — one line, three equal cells */
 .sd-log-opts { display: flex; gap: 8px; }
@@ -5697,9 +6026,14 @@ body.sd-skin-furry .v3-body { padding-top: 40px; }
 .sd-log-opt[data-k="fav"].on .sd-log-opt-ico { color: #ff5c8a; }
 
 .sd-log-review { position: relative; padding: 12px 0 0; }
+/* The box grows ~50% downward the moment you tap into it (88 → 132px), and
+   stays grown while it holds text — a saved draft should come back readable,
+   not folded into three lines. It is a min-height so a long review still
+   scrolls inside the sheet instead of the sheet clipping it. */
 .sd-log-write {
   width: 100%; box-sizing: border-box; resize: none;
   min-height: 88px;
+  transition: min-height .28s cubic-bezier(.22,1,.36,1), border-color .15s;
   background: rgba(232,226,214,0.06);
   border: 1px solid rgba(232,226,214,0.1);
   border-radius: 12px;
@@ -5708,6 +6042,8 @@ body.sd-skin-furry .v3-body { padding-top: 40px; }
 }
 .sd-log-write::placeholder { color: rgba(232,226,214,0.35); }
 .sd-log-write:focus { outline: none; border-color: rgba(232,226,214,0.25); }
+.sd-log-write:focus, .sd-log-write.has-text { min-height: 132px; }
+@media (prefers-reduced-motion: reduce) { .sd-log-write { transition: border-color .15s; } }
 
 /* Per-song rating + review list (album log sheet only) */
 .sd-log-songs { padding-top: 14px; }
@@ -5717,35 +6053,50 @@ body.sd-skin-furry .v3-body { padding-top: 40px; }
 }
 .sd-log-songs-sub { font-size: 10px; font-weight: 500; color: rgba(232,226,214,0.4); }
 .sd-log-songs-list { display: flex; flex-direction: column; }
-/* Title starts at the sheet's own left margin — there is no track-number
-   column any more, and the old 8px inset left the list looking indented
-   against everything above it. */
+/* ⚠️ These rows are the ALBUM PAGE'S tracklist rows (.v3-song-row and its
+   cells), restated for the sheet (2026-09-11): same 9px vertical rhythm, 10px
+   cell gap, 12px type, hairline between rows, and the mono track number at
+   the head. If you retune one, retune the other — the sheet is meant to read
+   as the same list you just tapped on the album page.
+   The 12px side padding is pulled back out with a negative margin so the
+   title still starts at the sheet's own 12px margin (flush with the cover,
+   heading and review box above — and 22px from the screen edge, exactly
+   where the album page puts it), and the hover/logged tint bleeds to the
+   sheet's edge the way it bleeds to the album's. */
 .sd-log-song {
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-  padding: 7px 8px 7px 0; border-radius: 9px;
-  border-left: 2px solid transparent;
-  transition: background .15s, border-color .15s;
+  margin: 0 -12px; padding: 9px 12px;
+  border-top: 1px solid rgba(232,226,214,0.06);
+  font-size: 12px; color: #e8e2d6;
+  transition: background .15s, box-shadow .15s;
 }
-/* ⚠️ With no left padding the accent rail would print over the first glyph, so
-   the logged state pads the text across rather than drawing on top of it. */
+.sd-log-song:first-child { border-top: none; }
+.sd-log-song:hover { background: rgba(232,226,214,0.045); }
+/* The logged rail sits INSIDE the 12px gutter (inset shadow), so it never
+   shifts the text the way the old border + padding swap did. */
 .sd-log-song.is-logged {
   background: rgba(232,168,60,0.08);
-  border-left-color: var(--star, #e8a83c);
-  padding-left: 7px;
+  box-shadow: inset 2px 0 0 var(--star, #e8a83c);
 }
+.sd-log-song-num {
+  flex-shrink: 0; width: 14px; text-align: left;
+  color: rgba(232,226,214,0.4); font-size: 9.5px; font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.sd-log-song.is-logged .sd-log-song-num { color: var(--star, #e8a83c); }
 .sd-log-song-title {
-  flex: 1; min-width: 0; font-size: 12.5px; color: #e8e2d6;
+  flex: 1; min-width: 0;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .sd-log-song-val {
   flex-shrink: 0; min-width: 12px; text-align: right;
-  font-size: 11px; font-weight: 700; font-family: var(--font-mono); color: var(--star, #e8a83c);
+  font-size: 11.5px; font-weight: 700; font-family: var(--font-mono); color: var(--star, #e8a83c);
 }
-.sd-log-song-rate-track { position: relative; display: inline-flex; cursor: pointer; flex-shrink: 0; }
-.sd-log-song-empty, .sd-log-song-fill { display: flex; gap: 4px; }
+.sd-log-song-rate-track { position: relative; display: inline-flex; cursor: pointer; flex-shrink: 0; --rec: 14px; --gap: 4px; }
+.sd-log-song-empty, .sd-log-song-fill { display: flex; gap: var(--gap); }
 .sd-log-song-empty { color: rgba(232,226,214,0.20); }
 .sd-log-song-fill { position: absolute; top: 0; left: 0; width: 0; overflow: hidden; color: var(--star, #e8a83c); }
-.sd-log-song .sd-rec { width: 14px; height: 14px; }
+.sd-log-song .sd-rec { width: var(--rec); height: var(--rec); }
 .sd-log-song-note-btn {
   flex-shrink: 0; width: 26px; height: 26px; padding: 5px;
   display: inline-flex; align-items: center; justify-content: center;
@@ -5771,22 +6122,41 @@ body.sd-skin-furry .v3-body { padding-top: 40px; }
    saved" for ~1.5s on each write, so the reassurance is there without a
    toast. Both labels are stacked in the same grid cell so the swap can't
    reflow the footer. */
-.sd-log-foot { display: flex; justify-content: flex-end; padding-top: 14px; }
-.sd-log-status {
-  display: inline-flex; align-items: center; gap: 6px;
-  font-family: var(--font-mono); font-size: 9.5px;
-  letter-spacing: 0.06em; text-transform: uppercase;
-  color: rgba(232,226,214,0.3);
-  transition: color .2s;
+/* The footer ("Saves as you type" / "Draft saved") is gone (2026-09-11) —
+   the "Updated …" stamp at the top of the sheet carries that job now. */
+
+/* ── Light theme — the sheet goes light with the shell it is mounted in ──
+   The sheet is a child of the .app-screen that opened it, so the light shell's
+   class is an ancestor and one override block re-inks it. The page is #f0ece3;
+   the sheet is a shade lighter than the page for the same reason the dark
+   sheet (#1c1c22) is a shade lighter than the dark page (#111116). Anything
+   that already reads a --sd-* token (the Share pill) needs nothing here. */
+.s-home-v3--light .sd-log-overlay.open { background: rgba(26,18,8,0.35); }
+.s-home-v3--light .sd-log-sheet { background: #f7f4ee; color: #1a1208; box-shadow: 0 -10px 34px rgba(26,18,8,0.22); }
+.s-home-v3--light .sd-log-grab { background: rgba(26,18,8,0.22); }
+.s-home-v3--light .sd-log-grab:hover, .s-home-v3--light .sd-log-grab:active { background: rgba(26,18,8,0.42); }
+.s-home-v3--light .sd-log-album  { color: rgba(26,18,8,0.92); }
+.s-home-v3--light .sd-log-year   { color: rgba(26,18,8,0.5); }
+.s-home-v3--light .sd-log-artist { color: rgba(26,18,8,0.88); }
+.s-home-v3--light .sd-log-x { color: rgba(26,18,8,0.5); }
+.s-home-v3--light .sd-log-stars-empty, .s-home-v3--light .sd-log-song-empty { color: rgba(26,18,8,0.14); }
+.s-home-v3--light .sd-log-opt {
+  background: rgba(26,18,8,0.05); border-color: rgba(26,18,8,0.1); color: rgba(26,18,8,0.7);
 }
-.sd-log-status svg {
-  width: 11px; height: 11px;
-  opacity: 0; transition: opacity .2s;
+.s-home-v3--light .sd-log-opt-ico { color: rgba(26,18,8,0.5); }
+.s-home-v3--light .sd-log-opt.on { color: #1a1208; background: rgba(26,18,8,0.09); border-color: rgba(26,18,8,0.18); }
+.s-home-v3--light .sd-log-write, .s-home-v3--light .sd-log-song-note {
+  background: rgba(26,18,8,0.05); border-color: rgba(26,18,8,0.1); color: #1a1208;
 }
-/* The wording is swapped by flashLogSaved(); the class only carries the colour
-   and the tick, so there is no second label to keep in step. */
-.sd-log-status.on { color: #7fcf9e; }
-.sd-log-status.on svg { opacity: 1; }
+.s-home-v3--light .sd-log-write::placeholder, .s-home-v3--light .sd-log-song-note::placeholder { color: rgba(26,18,8,0.4); }
+.s-home-v3--light .sd-log-write:focus, .s-home-v3--light .sd-log-song-note:focus { border-color: rgba(26,18,8,0.3); }
+.s-home-v3--light .sd-log-songs-hd { color: #1a1208; }
+.s-home-v3--light .sd-log-songs-sub { color: rgba(26,18,8,0.45); }
+.s-home-v3--light .sd-log-song { border-top-color: rgba(26,18,8,0.08); color: #1a1208; }
+.s-home-v3--light .sd-log-song:hover { background: rgba(26,18,8,0.045); }
+.s-home-v3--light .sd-log-song.is-logged { background: rgba(232,168,60,0.16); }
+.s-home-v3--light .sd-log-song-num { color: rgba(26,18,8,0.4); }
+.s-home-v3--light .sd-log-song-note-btn { background: rgba(26,18,8,0.05); border-color: rgba(26,18,8,0.1); color: rgba(26,18,8,0.55); }
 
 /* ── Quick share ──────────────────────────────────────────────
    The log sheet's footer button, the share control on YOUR review card, and the
@@ -5820,30 +6190,59 @@ body.sd-skin-furry .v3-body { padding-top: 40px; }
 .v3-rev-share svg { width: 12px; height: 12px; }
 .v3-rev-share:hover { background: rgba(232,168,60,0.18); color: var(--star); }
 
-.sd-share-sheet { max-width: none; }
-.sd-share-sub { font-size: 11px; }
+/* ═══ SHARE (share.js) ═══════════════════════════════════════════════════
+   `.sd-share-btn` is THE share control — a 28px round icon that sits on any
+   surface (neutral greys, `currentColor` glyph). The sheet rides
+   `.sd-log-sheet` for its 95% height and light-theme re-ink; everything
+   inside reads the `--sd-*` tokens so it follows the shell it opened from. */
+.sd-share-btn {
+  width: 28px; height: 28px; border-radius: 999px; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid rgba(128,128,128,0.28); background: rgba(128,128,128,0.14);
+  color: inherit; cursor: pointer; padding: 0;
+  transition: background .15s, color .15s;
+}
+.sd-share-btn svg { width: 15px; height: 15px; }
+.sd-share-btn:hover { background: var(--star, #e8a83c); border-color: var(--star, #e8a83c); color: #1a1208; }
+.sd-share-btn--lg { width: 34px; height: 34px; }
+.sd-share-btn--lg svg { width: 17px; height: 17px; }
+.sd-share-btn--cta { margin-left: auto; margin-right: 8px; color: rgba(232,226,214,0.8); }
+.v3-rev-cta--rated .sd-share-btn--cta + .v3-rev-cta-edit { margin-left: 0; }
+.v3-rev-share-lbl { margin-left: 8px; font-size: 10.5px; color: rgba(232,226,214,0.5); }
+.plp-toprow { display: flex; align-items: center; justify-content: space-between; }
+.prof-sec-hd--row { display: flex; align-items: center; justify-content: space-between; }
+.prof-sec-hd--row .sd-share-btn { color: var(--pf-fg2); }
+
+/* Card + buttons, and nothing else: the sheet is a column, the card takes
+   every pixel the buttons leave, the buttons sit on the bottom edge. */
+.sd-share-sheet { max-width: none; display: flex; flex-direction: column; padding-bottom: 12px; overflow: hidden; }
+.sd-share-x { position: absolute; top: 10px; right: 10px; z-index: 2; }
 .sd-share-preview {
-  margin: 4px 0 14px;
-  border-radius: 12px; overflow: hidden;
-  background: rgba(0,0,0,0.3);
+  flex: 1; min-height: 0; margin: 22px 0 12px; position: relative;
+  display: flex; align-items: center; justify-content: center;   /* no box behind it: the card floats, no letterbox */
 }
-/* The canvas is 1080×1350; let it scale to the sheet and keep its ratio. */
-.sd-share-preview canvas { display: block; width: 100%; height: auto; }
-.sd-share-foot { display: flex; gap: 10px; }
-.sd-share-foot button {
-  flex: 1; padding: 11px 0; border-radius: 999px;
-  font-family: var(--font-main); font-size: 12.5px; font-weight: 700;
-  cursor: pointer; transition: filter .15s, opacity .15s;
-}
-.sd-share-save { border: 1px solid var(--sd-line); background: none; color: var(--sd-ink); }
-.sd-share-go   { border: none; background: var(--star, #e8a83c); color: #1a1208; }
-.sd-share-foot button:disabled { opacity: .4; cursor: default; }
-.sd-share-foot button:not(:disabled):hover { filter: brightness(1.08); }
+/* The canvas keeps its 4:5 and grows to whichever edge it meets first. */
+.sd-share-preview canvas { display: block; width: auto; height: auto; max-width: 100%; max-height: 100%; border-radius: 12px; box-shadow: 0 8px 28px rgba(0,0,0,0.45); }
 .sd-share-note {
-  padding-top: 9px; text-align: center;
-  font-family: var(--font-mono); font-size: 9.5px; line-height: 1.5;
-  color: var(--sd-ink3);
+  position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%);
+  max-width: 88%; padding: 6px 11px; border-radius: 999px;
+  background: rgba(17,17,22,0.82); color: rgba(232,226,214,0.9);
+  font-family: var(--font-mono); font-size: 9.5px; line-height: 1.4; text-align: center;
+  opacity: 0; pointer-events: none; transition: opacity .2s;
 }
+.sd-share-note.is-on { opacity: 1; }
+.sd-share-apps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; flex-shrink: 0; }
+.sd-share-app {
+  min-width: 0; padding: 9px 4px 7px; border-radius: 12px;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  border: 1px solid var(--sd-line); background: var(--sd-card);
+  color: var(--sd-ink2); font-family: var(--font-main); font-size: 9.5px; font-weight: 600;
+  cursor: pointer; transition: background .15s, color .15s;
+}
+.sd-share-app svg { width: 22px; height: 22px; }
+.sd-share-app span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.sd-share-app:hover:not(:disabled) { background: var(--sd-hover); color: var(--sd-ink); }
+.sd-share-app:disabled { opacity: .4; cursor: default; }
 
 /* Previews disabled for now — hide the speaker arm/disarm control */
 .v3-preview-btn { display: none !important; }
@@ -6233,8 +6632,9 @@ body.sd-skin-furry .v3-body { padding-top: 40px; }
 .pl2-card-tag--fav   { color: var(--star, #e8a83c); }
 .pl2-card-tag--staff { color: #6f9fe8; }
 
-/* The customise handle — only on playlists you made. Sits opposite the title
-   block, on the one corner nothing else claims. */
+/* The edit handle — only on playlists you made. Sits opposite the title
+   block, on the one corner nothing else claims. ⚠️ Always visible: it used to
+   fade in on hover, and on the desktop viewer nobody found it. */
 .pl2-card-edit {
   position: absolute; right: 12px; bottom: 12px; z-index: 4;
   width: 28px; height: 28px; border-radius: 999px;
@@ -6244,13 +6644,10 @@ body.sd-skin-furry .v3-body { padding-top: 40px; }
   box-shadow: inset 0 0 0 1px rgba(255,255,255,0.14);
   color: rgba(255,255,255,0.8);
   backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-  opacity: 0; transition: opacity .16s;
+  transition: background .16s;
 }
 .pl2-card:hover .pl2-card-edit,
-.pl2-card:focus-within .pl2-card-edit { opacity: 1; }
-/* ⚠️ On a touch screen there IS no hover — the handle would never appear and the
-   feature would be unreachable on the device this is designed for. */
-@media (hover: none) { .pl2-card-edit { opacity: 1; } }
+.pl2-card:focus-within .pl2-card-edit { background: rgba(12,11,10,0.72); color: #fff; }
 .pl2-card-edit svg { width: 15px; height: 15px; }
 
 /* ⚠️ NO light-theme overrides, and that is deliberate. Every piece of type on
@@ -6838,6 +7235,58 @@ body.sd-skin-furry .v3-body { padding-top: 40px; }
   background: rgba(255,255,255,0.07); color: rgba(232,226,214,0.3); cursor: not-allowed;
 }
 .s-home-v3--light .plnew-create:disabled { background: rgba(26,18,8,0.07); color: rgba(26,18,8,0.32); }
+
+/* — delete — edit mode only. A quiet ghost under Save, red only in the type, so
+   it reads as an option rather than a second call to action. It never acts on
+   its own: it opens the confirm sheet below. */
+.plnew-delete {
+  width: 100%; margin: -8px 0 16px; padding: 11px;
+  border-radius: 12px; border: 1px solid rgba(232,86,86,0.28);
+  background: transparent; color: #e85656;
+  font-family: var(--font-main); font-size: 12px; font-weight: 700; letter-spacing: -0.1px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  cursor: pointer; transition: background .15s, border-color .15s;
+}
+.plnew-delete svg { width: 14px; height: 14px; }
+.plnew-delete:hover { background: rgba(232,86,86,0.08); border-color: rgba(232,86,86,0.5); }
+.s-home-v3--light .plnew-delete { color: #c93b3b; border-color: rgba(201,59,59,0.3); }
+.s-home-v3--light .plnew-delete:hover { background: rgba(201,59,59,0.07); }
+
+/* — the confirm sheet — same material as the badges sheet (.plc-sheet): dark in
+   both themes, sized to its content. Cancel is the wide, easy target; Delete is
+   the filled red one, and it is on the right so a thumb resting on the sheet's
+   natural spot lands on Cancel. */
+.pldel-sheet {
+  width: calc(100% - 20px); margin-bottom: 10px;
+  background: #1c1c22; color: #e8e2d6;
+  border-radius: 20px;
+  padding: 9px 16px 16px;
+  box-shadow: 0 -10px 34px rgba(0,0,0,0.5);
+  transform: translateY(130%);
+  transition: transform .3s cubic-bezier(.22,1,.36,1);
+  font-family: var(--font-main);
+}
+.pldel-overlay.open .pldel-sheet { transform: translateY(0); }
+.pldel-title {
+  font-size: 15px; font-weight: 800; letter-spacing: -0.3px; margin-top: 6px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.pldel-sub {
+  margin: 5px 0 14px;
+  font-family: var(--font-mono); font-size: 9px; line-height: 1.5;
+  color: rgba(232,226,214,0.5);
+}
+.pldel-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.pldel-btns button {
+  padding: 12px; border-radius: 12px; border: 0; cursor: pointer;
+  font-family: var(--font-main); font-size: 13px; font-weight: 800; letter-spacing: -0.1px;
+  transition: filter .15s, background .15s;
+}
+.pldel-cancel { background: rgba(232,226,214,0.09); color: rgba(232,226,214,0.85); }
+.pldel-cancel:hover { background: rgba(232,226,214,0.14); }
+.pldel-go { background: #e85656; color: #fff; }
+.pldel-go:hover { filter: brightness(1.08); }
+@media (prefers-reduced-motion: reduce) { .pldel-sheet { transition: none; } }
 
 .s-home-v3--light .plp-song { border-bottom-color: rgba(26,18,8,0.08); }
 .s-home-v3--light .plp-song-title  { color: #1a1208; }
@@ -8670,7 +9119,7 @@ body.sd-skin-furry .v3-body { padding-top: 40px; }
      padding shrank with the discs (16% → 13%). Reclaim more than is there and
      the title climbs into the wheel. */
   text-align: center; position: relative;
-  margin-top: -20px; padding: 0 8px; min-height: 96px;
+  margin-top: -20px; padding: 0 8px; min-height: 58px;   /* was 96 with stars + a quote under the artist */
 }
 /* Title and year on one line. The year is set quieter and lighter so it reads as
    part of naming the record rather than as a second fact competing with it. */
@@ -8688,35 +9137,24 @@ body.sd-skin-furry .v3-body { padding-top: 40px; }
   font-family: var(--font-mono); letter-spacing: .02em;
 }
 .prof-fav-artist { font-size: 11.5px; font-weight: 700; color: var(--pf-fg2); margin-top: 1px; }
-.prof-fav-sub {
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  margin-top: 5px; flex-wrap: wrap;
+/* The stars / review-count row and the quote under it are GONE (2026-09-11):
+   the panel is name · year · artist. What they wrote is the PINNED REVIEWS
+   section under the rail, which reuses the review-history row. */
+/* The pinned cards sit on the PROFILE, which has a theme (and a cream light
+   mode), not on the album page's dark panel — so the card's hard-coded warm
+   ink is re-pointed at the profile's own tokens here. */
+.prof-pins .v3-rev-card { border-bottom-color: var(--pf-line, rgba(128,128,128,0.16)); }
+.prof-pins .v3-rev-card:last-child { border-bottom: none; }
+.prof-pins .v3-rev-name, .prof-pins .v3-rev-big-n { color: var(--pf-fg); }
+.prof-pins .v3-rev-sub, .prof-pins .v3-rev-text { color: var(--pf-fg2); }
+.prof-pins .v3-rev-av { box-shadow: 0 0 0 1px var(--pf-line, rgba(128,128,128,0.16)); }
+.prof-pins .v3-up { background: var(--sd-pill, rgba(128,128,128,0.12)); color: var(--pf-fg2); }
+.prof-pins .v3-cmt-btn.is-open { background: var(--sd-pill, rgba(128,128,128,0.12)); color: var(--pf-fg2); }
+.prof-pins-empty {
+  padding: 10px 4px; font-family: var(--font-mono); font-size: 9.5px;
+  letter-spacing: .04em; color: var(--pf-fg2);
 }
-.prof-fav-stars { display: inline-flex; line-height: 1; }
-.prof-fav-meta {
-  font-size: 9.5px; letter-spacing: .04em; color: var(--pf-fg2);
-  font-family: var(--font-mono);
-}
-/* ── What they wrote about it ─────────────────────────────────
-   The serif italic is the app's REVIEW VOICE — the same Crimson Text the review
-   composer and `.ntf-quote` are set in — so a line of someone's writing looks
-   like writing wherever it turns up, rather than like another field of the
-   record's metadata. It is the one thing in this panel that is theirs and not
-   the album's, which is exactly why it must not be set in the same face as the
-   title and the counts above it.
-   ⚠ Two lines, then ellipsis. The full text lives in the review history below;
-   under a disc this is a taste, and an unclamped paragraph would push the rail
-   and the next section around as you scroll. */
-.prof-fav-rv {
-  margin: 7px auto 0; max-width: 30ch;
-  font-family: 'Crimson Text', Georgia, serif; font-style: italic;
-  font-size: 13px; line-height: 1.35; color: var(--pf-fg2);
-  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
-  overflow: hidden;
-}
-/* `hidden` on a flex/box display value needs saying twice — `display` in the
-   rule above would otherwise win over the attribute's UA `display: none`. */
-.prof-fav-rv[hidden] { display: none; }
+.pfe-pin-q { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-main); }
 /* ⚠ One menu per slot, all centred over the rail rather than hung off their own
    disc: only the CENTRED album is actionable, so that is the only place a popup
    ever needs to appear. They also sit outside the rail — it is
@@ -10068,6 +10506,10 @@ body.sd-pro .shop-tile--event.is-pro .shop-ev-art { filter: none; opacity: 1; }
 .shop-owned--new { opacity: 0; }
 .shop-owned--new.is-in { opacity: 1; }
 .shop-owned--pro { color: var(--star, #e8a83c); }
+/* A skin you own: the pill is a toggle. Wearing = filled in the star, the same
+   look the buy button gives on hover, so on/off reads at a glance. */
+.shop-wear.is-on { background: var(--star, #e8a83c); border-color: var(--star, #e8a83c); color: #1a1208; }
+.shop-wear.is-on:hover { filter: brightness(1.07); }
 
 .shop-note {
   margin-top: 18px; padding: 0 4px;

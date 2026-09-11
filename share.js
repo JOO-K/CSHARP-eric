@@ -228,7 +228,8 @@ async function buildShareCard(album, review) {
   const songs = (review.songs || []).filter(x => x && x.rating > 0).slice(0, 5);
   const revH = revLines.length * REV_LH;
   const bdH  = songs.length ? 28 + songs.length * BD_ROW : 0;
-  const below = (revH ? GAP1 + revH : 0) + (bdH ? GAP2 + bdH : 0);
+  const scoreH = review.rating ? 96 : 0;         // the big score row (2026-09-11) — see below
+  const below = scoreH + (revH ? GAP1 + revH : 0) + (bdH ? GAP2 + bdH : 0);
 
   const ar = BENTO_VB.h / BENTO_VB.w;
   const BH = Math.max(700 * ar, Math.min(940 * ar, BOTTOM - TOP - below));
@@ -363,12 +364,33 @@ async function buildShareCard(album, review) {
   }
   g.font = '400 ' + f3.toFixed(2) + 'px ' + MONO;
   g.fillStyle = faint;
-  g.fillText('your rating', vx - vstep + 12 * U, y2);   // past the last disc's edge (5.5 + 6.5)
+  g.fillText(review.by ? '@' + review.by : 'your rating', vx - vstep + 12 * U, y2);   // past the last disc's edge (5.5 + 6.5)
 
   g.restore();
 
-  // Review, flowing out of the bento
   let flow = BY + BH;
+
+  /* THE SCORE, big, between the bento and the review (2026-09-11). The strip
+     inside the bento already prints it, but at bento scale it is a footnote —
+     and the score is the thing a shared review is for. Same shape as the album
+     page's headline: the number at 800, the records on its baseline. */
+  if (review.rating) {
+    flow += 72;
+    const sTxt = review.rating.toFixed(1);
+    g.font = '800 72px ' + MAIN;
+    g.fillStyle = 'rgba(232,226,214,0.94)';
+    g.fillText(sTxt, M, flow);
+    let vx = M + g.measureText(sTxt).width + 30 + 15;
+    for (let i = 0; i < 5; i++) { shVinyl(g, vx, flow - 24, 15, gold, empty, '#111116', review.rating - i); vx += 37; }
+    g.font = '400 19px ' + MONO;
+    g.fillStyle = faint;
+    g.letterSpacing = '3px';
+    g.fillText(review.by ? ('@' + review.by).toUpperCase() : 'MY RATING', vx - 37 + 26, flow - 2);
+    g.letterSpacing = '0px';
+    flow += 24;
+  }
+
+  // Review, flowing out of the bento
   if (revLines.length) {
     flow += GAP1;
     g.font = 'italic 400 30px ' + MAIN;
@@ -413,7 +435,7 @@ async function buildShareCard(album, review) {
   const P = window.PROFILE || {};
   g.font = '400 24px ' + MONO;
   g.fillStyle = dim;
-  g.fillText('@' + (P.handle || 'you'), M, FOOT_Y);
+  g.fillText('@' + (review.by || P.handle || 'you'), M, FOOT_Y);
   g.font = '800 24px ' + MAIN;
   g.fillStyle = gold;
   g.textAlign = 'right';
@@ -425,6 +447,261 @@ async function buildShareCard(album, review) {
   return cv;
 }
 
+/* ═══ SHARE — one button, one sheet, several things to share ══════════════
+   `shareBtnHtml(kind, arg)` is the ONE share control, compact enough to sit
+   anywhere (a 28px round icon), and `sdShare(btn)` turns its kind into a JOB —
+   { title, sub, build(), text, url, file } — that the sheet renders. Adding a
+   place to share from is one `shareBtnHtml` call; adding a KIND is one branch
+   in `shareJob` and one card builder.
+
+   Kinds today: `review` (your draft on an album — the arg is the album name,
+   or blank for the shell's album), `playlist` (arg: the playlist's name),
+   `favs` (the profile's five favourite albums; no arg).
+
+   The sheet is 95% tall like the log sheet: the card large on top, then the
+   apps (Instagram · X · Messages · Copy link · Save image), then the TEXT
+   version of the same thing with Copy / Text it — so a review can go out as a
+   picture, as a link, or as words. ⚠️ Every app button is a real gesture:
+   `navigator.share` where the browser has it (that is where Instagram lives —
+   the OS sheet), intent URLs where it doesn't, the clipboard for links and
+   text, `sms:` for a message. Nothing here pretends to post. */
+const SHARE_URL = 'https://joo-k.github.io/CSHARP-eric/';
+const SHARE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v11"/><path d="m7.5 8 4.5-4.5L16.5 8"/><path d="M5 13.5v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg>';
+const SHARE_APPS = {
+  ig:   { label: 'Instagram', svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="1.1" fill="currentColor" stroke="none"/></svg>' },
+  x:    { label: 'X',         svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><path d="M4.5 4.5 19.5 19.5"/><path d="M19.5 4.5 4.5 19.5"/></svg>' },
+  sms:  { label: 'Messages',  svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 11.6a8 8 0 0 1-8.6 8 9 9 0 0 1-3.2-.6L3.5 20.5l1.7-4.4a7.9 7.9 0 0 1-1.7-4.5 8 8 0 0 1 8.6-8 8 8 0 0 1 8.4 8Z"/></svg>' },
+  link: { label: 'Copy link', svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13.5a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1.5 1.5"/><path d="M14 10.5a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1.5-1.5"/></svg>' },
+  copytext: { label: 'Copy text', svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>' },
+  save: { label: 'Save image', svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="m7.5 10.5 4.5 4.5 4.5-4.5"/><path d="M5 18.5h14"/></svg>' },
+};
+
+window.shareBtnHtml = function (kind, arg, cls) {
+  const a = String(arg == null ? '' : arg).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+  return `<button class="sd-share-btn${cls ? ' ' + cls : ''}" type="button" title="Share" aria-label="Share"
+    data-kind="${kind}" data-arg="${a}" onclick="event.stopPropagation(); sdShare(this)">${SHARE_ICON}</button>`;
+};
+
+function shareSlug(s) { return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
+function shareLink(kind, id) { return SHARE_URL + '#' + kind + '=' + encodeURIComponent(shareSlug(id)); }
+function shareFilename(album) { return 'spindeck-' + shareSlug(album && album.album || album || 'card') + '.png'; }
+function shareStars(r) { const f = Math.floor(r || 0), h = (r || 0) - f >= 0.5; return '●'.repeat(f) + (h ? '◐' : '') + '○'.repeat(5 - f - (h ? 1 : 0)); }
+
+/* A job per kind. `text` is the words-only version; `build` paints the card. */
+function shareJob(kind, arg, btn) {
+  const P = window.PROFILE || {};
+  const handle = '@' + (P.handle || 'you');
+  if (kind === 'review') {
+    const arch = window.ARCHIVE || [];
+    const scr = btn && btn.closest && btn.closest('.s-home-v3');
+    const album = (arg && arch.find(a => a.album === arg)) || (window.shellAlbum ? shellAlbum(scr) : null);
+    if (!album) return null;
+    const d = (window.albumDraft && albumDraft(album)) || {};
+    return shareJobReview(album, { rating: d.rating || 0, text: d.text || '', songs: d.songs || [] });
+  }
+  if (kind === 'rev') {
+    // The review page's own card: the REVIEW as it looks there (photo, name,
+    // score, the words), not the bento — see buildReviewCard.
+    const R = (typeof REV_INDEX !== 'undefined') && REV_INDEX[arg];
+    if (!R || !R.album) return null;
+    const P = window.PROFILE || {};
+    const handle = R.handle || (R.mine ? (P.handle || 'you') : shareSlug(R.name).replace(/-/g, '_'));
+    const job = shareJobReview(R.album, { rating: R.rating || 0, text: R.text || '', songs: [], by: R.mine ? '' : handle });
+    job.build = () => buildReviewCard(R, handle);
+    if (!R.mine) job.title = 'Share ' + R.name + "'s review";
+    return job;
+  }
+  if (kind === 'playlist') {
+    const pl = (typeof plLists === 'function' ? plLists() : []).find(l => l.name === arg || l.key === arg);
+    if (!pl) return null;
+    const tracks = (typeof plTracksFor === 'function' ? plTracksFor(pl) : []).slice(0, 6);
+    return {
+      title: 'Share playlist', sub: pl.name + ' · ' + pl.tracks + ' songs',
+      build: () => buildPlaylistCard(pl, tracks),
+      text: pl.name + ' — ' + pl.tracks + ' songs by ' + (pl.creator === 'you' ? handle : pl.creator) + ' on Spindeck',
+      url: shareLink('playlist', pl.name), file: 'spindeck-playlist-' + shareSlug(pl.name) + '.png',
+    };
+  }
+  if (kind === 'favs') {
+    const arch = window.ARCHIVE || [];
+    const favs = (P.favs || []).map(n => arch.find(a => a.album === n)).filter(Boolean);
+    if (!favs.length) return null;
+    return {
+      title: 'Share favourites', sub: handle + ' · ' + favs.length + ' albums',
+      build: () => buildFavsCard(P, favs),
+      text: handle + "'s favourite albums on Spindeck: " + favs.map(a => a.album + ' by ' + a.artist).join(' · '),
+      url: shareLink('profile', P.handle || 'you'), file: 'spindeck-favourites-' + shareSlug(P.handle) + '.png',
+    };
+  }
+  return null;
+}
+function shareJobReview(album, review) {
+  const P = window.PROFILE || {};
+  const who = review.by || P.handle || 'you';                 // whose review this is
+  const r = review.rating ? review.rating.toFixed(1).replace(/\.0$/, '') + '/5 ' + shareStars(review.rating) : '';
+  const quote = (review.text || '').trim() ? '“' + review.text.trim() + '” — ' : '';
+  return {
+    title: 'Share your review', sub: album.album + ' · ' + album.artist,
+    build: () => buildShareCard(album, review),
+    text: quote + (r ? r + ' for ' : 'On ') + album.album + ' by ' + album.artist + ' · @' + who + ' on Spindeck',
+    url: shareLink('review', who + '/' + album.album), file: shareFilename(album),
+  };
+}
+
+window.sdShare = function (btn) {
+  const job = shareJob(btn.dataset.kind, btn.dataset.arg, btn);
+  if (job) openShareSheet(btn, job);
+};
+
+/* ── the review card: the page's hero, as a picture ─────────────
+   Photo · name / @handle on the left, the score big with the records under
+   it on the right, the words at reading size, and the record named at the
+   foot — on the album's wallpaper. What you see on the review page is what
+   goes out. */
+async function buildReviewCard(R, handle) {
+  const MAIN = "'DM Sans', system-ui, sans-serif", MONO = "'SUSE Mono', 'Courier New', monospace";
+  const a = R.album || {};
+  const { cv, g, img, gold } = await shBase(a.image);
+  const P = window.PROFILE || {};
+  const faceSrc = R.mine ? (P.pic || 'images/rp-01.jpg') : (R.pic || (typeof feedFace === 'function' ? feedFace(R.name) : ''));
+  const face = faceSrc ? await shLoadImage(faceSrc) : null;
+  const M = 90, ink = 'rgba(232,226,214,0.94)', dim = 'rgba(232,226,214,0.55)', empty = 'rgba(255,255,255,0.85)';
+  // photo
+  const FR = 66, FX = M + FR, FY = 150 + FR;
+  g.save(); g.shadowColor = 'rgba(0,0,0,0.5)'; g.shadowBlur = 26; g.shadowOffsetY = 10;
+  g.fillStyle = '#333'; g.beginPath(); g.arc(FX, FY, FR, 0, Math.PI * 2); g.fill(); g.restore();
+  if (face) { g.save(); g.beginPath(); g.arc(FX, FY, FR, 0, Math.PI * 2); g.clip(); shCover(g, face, FX - FR, FY - FR, FR * 2, FR * 2); g.restore(); }
+  // name / handle
+  g.textAlign = 'left';
+  g.font = '800 46px ' + MAIN; g.fillStyle = ink;
+  g.fillText(shWrap(g, R.name || 'Listener', 520, 1)[0] || '', M + FR * 2 + 28, FY - 6);
+  g.font = '400 24px ' + MONO; g.fillStyle = dim;
+  g.fillText('@' + handle + (R.ago ? '  ·  ' + R.ago : ''), M + FR * 2 + 28, FY + 34);
+  // score, right
+  const rating = R.rating || 0;
+  g.textAlign = 'right';
+  g.font = '800 112px ' + MAIN; g.fillStyle = ink;
+  g.fillText(rating.toFixed(1), SHARE_W - M, FY + 22);
+  const vr = 15, vstep = 38;
+  let vx = SHARE_W - M - vr;
+  for (let i = 4; i >= 0; i--) { shVinyl(g, vx, FY + 62, vr, gold, empty, '#111116', rating - i); vx -= vstep; }
+  g.textAlign = 'left';
+  // the words
+  g.font = '400 36px ' + MAIN; g.fillStyle = 'rgba(232,226,214,0.9)';
+  const lines = shWrap(g, R.text || '', SHARE_W - M * 2, 16);
+  let y = FY + FR + 96;
+  lines.forEach(ln => { g.fillText(ln, M, y); y += 50; });
+  // the record, named — under the words, not pinned to the foot
+  const RY = Math.min(SHARE_H - 200, y + 40), C = 96;
+  g.save(); g.shadowColor = 'rgba(0,0,0,0.45)'; g.shadowBlur = 22; g.shadowOffsetY = 8;
+  shRoundRect(g, M, RY, C, C, 14); g.fillStyle = '#222'; g.fill(); g.restore();
+  if (img) { g.save(); shRoundRect(g, M, RY, C, C, 14); g.clip(); shCover(g, img, M, RY, C, C); g.restore(); }
+  g.font = '700 30px ' + MAIN; g.fillStyle = ink;
+  g.fillText(shWrap(g, a.album || '', 760, 1)[0] || '', M + C + 24, RY + 40);
+  g.font = '400 26px ' + MAIN; g.fillStyle = dim;
+  g.fillText(shWrap(g, (a.artist || '') + (a.year ? '  ·  ' + a.year : ''), 760, 1)[0] || '', M + C + 24, RY + 78);
+  shFooter(g, MAIN, MONO, gold, handle);
+  return cv;
+}
+
+/* ── the two other cards ────────────────────────────────────── */
+function shFooter(g, MAIN, MONO, gold, handle) {
+  const P = window.PROFILE || {};
+  const M = 90, FOOT_Y = SHARE_H - 56;
+  g.font = '400 24px ' + MONO; g.fillStyle = 'rgba(232,226,214,0.55)'; g.textAlign = 'left';
+  g.fillText('@' + (handle || P.handle || 'you'), M, FOOT_Y);   // whose card this is
+  g.font = '800 24px ' + MAIN; g.fillStyle = gold; g.textAlign = 'right'; g.letterSpacing = '3px';
+  g.fillText('SPINDECK', SHARE_W - M, FOOT_Y);
+  g.textAlign = 'left'; g.letterSpacing = '0px';
+}
+async function shBase(imgSrc) {
+  const cv = document.createElement('canvas');
+  cv.width = SHARE_W; cv.height = SHARE_H;
+  const g = cv.getContext('2d');
+  const img = imgSrc ? await shLoadImage(imgSrc) : null;
+  const cols = (imgSrc && (await computeAlbumColors(imgSrc))) || {};
+  g.fillStyle = '#111116'; g.fillRect(0, 0, SHARE_W, SHARE_H);
+  if (img) shWallpaper(g, img);
+  return { cv, g, img, gold: cols.star || cols.accent || '#e8a83c' };
+}
+/* Playlist: the cover big and square, the name under it, then the first
+   tracks as a typographic list — the playlist card's own hierarchy. */
+async function buildPlaylistCard(pl, tracks) {
+  const MAIN = "'DM Sans', system-ui, sans-serif", MONO = "'SUSE Mono', 'Courier New', monospace";
+  // A moving cover (mp4) cannot be drawn; fall back to the first track's art.
+  const src = (typeof plIsVideo === 'function' && plIsVideo(pl.image)) ? (tracks[0] && tracks[0].image) : pl.image;
+  const { cv, g, img, gold } = await shBase(src);
+  const S = 640, X = (SHARE_W - S) / 2, Y = 110;
+  g.save(); g.shadowColor = 'rgba(0,0,0,0.55)'; g.shadowBlur = 60; g.shadowOffsetY = 24;
+  shRoundRect(g, X, Y, S, S, 28); g.fillStyle = '#222'; g.fill(); g.restore();
+  if (img) { g.save(); shRoundRect(g, X, Y, S, S, 28); g.clip(); shCover(g, img, X, Y, S, S); g.restore(); }
+  let y = Y + S + 92;
+  g.textAlign = 'center';
+  g.font = '800 54px ' + MAIN; g.fillStyle = 'rgba(232,226,214,0.94)';
+  const nm = shWrap(g, pl.name, 900, 2);
+  nm.forEach((ln, i) => g.fillText(ln, SHARE_W / 2, y + i * 62));
+  y += nm.length * 62 + 10;
+  g.font = '400 24px ' + MONO; g.fillStyle = 'rgba(232,226,214,0.5)';
+  g.fillText(pl.tracks + ' SONGS  ·  BY ' + String(pl.creator === 'you' ? '@' + ((window.PROFILE || {}).handle || 'you') : pl.creator).toUpperCase(), SHARE_W / 2, y);
+  g.textAlign = 'left';
+  y += 70;
+  tracks.forEach((t, i) => {
+    const ry = y + i * 44;
+    g.font = '400 26px ' + MONO; g.fillStyle = 'rgba(232,226,214,0.35)';
+    g.fillText(String(i + 1).padStart(2, '0'), 90, ry);
+    g.font = '700 26px ' + MAIN; g.fillStyle = 'rgba(232,226,214,0.9)';
+    const title = shWrap(g, t.title, 560, 1)[0] || '';
+    g.fillText(title, 150, ry);
+    g.font = '400 24px ' + MAIN; g.fillStyle = 'rgba(232,226,214,0.5)';
+    g.textAlign = 'right'; g.fillText(shWrap(g, t.artist || '', 300, 1)[0] || '', SHARE_W - 90, ry); g.textAlign = 'left';
+  });
+  shFooter(g, MAIN, MONO, gold);
+  return cv;
+}
+/* Favourites: the five records as CDs on a ring around the handle — the
+   profile's own wheel, flattened onto a card — clockwise from the top, and
+   the same five named in that order beneath. */
+async function buildFavsCard(P, favs) {
+  const MAIN = "'DM Sans', system-ui, sans-serif", MONO = "'SUSE Mono', 'Courier New', monospace";
+  const { cv, g, gold } = await shBase(favs[0] && favs[0].image);
+  const CX = SHARE_W / 2, CY = 470, RING = 262, R = 104;
+  const imgs = await Promise.all(favs.map(a => shLoadImage(a.image)));
+  favs.forEach((a, i) => {
+    const ang = -Math.PI / 2 + i * (Math.PI * 2 / favs.length);
+    const x = CX + Math.cos(ang) * RING, y = CY + Math.sin(ang) * RING;
+    // disc: shadow, cover clipped to the circle, then the label hole
+    g.save(); g.shadowColor = 'rgba(0,0,0,0.55)'; g.shadowBlur = 34; g.shadowOffsetY = 14;
+    g.fillStyle = '#222'; g.beginPath(); g.arc(x, y, R, 0, Math.PI * 2); g.fill(); g.restore();
+    if (imgs[i]) { g.save(); g.beginPath(); g.arc(x, y, R, 0, Math.PI * 2); g.clip(); shCover(g, imgs[i], x - R, y - R, R * 2, R * 2); g.restore(); }
+    g.fillStyle = 'rgba(17,17,22,0.92)'; g.beginPath(); g.arc(x, y, R * 0.19, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = 'rgba(255,255,255,0.28)'; g.lineWidth = 3; g.beginPath(); g.arc(x, y, R * 0.19, 0, Math.PI * 2); g.stroke();
+    g.strokeStyle = 'rgba(255,255,255,0.14)'; g.lineWidth = 2; g.beginPath(); g.arc(x, y, R - 1, 0, Math.PI * 2); g.stroke();
+    // the order, small, at the disc's foot
+    g.font = '700 22px ' + MONO; g.fillStyle = 'rgba(232,226,214,0.55)'; g.textAlign = 'center';
+    g.fillText(String(i + 1), x, y + R + 34); g.textAlign = 'left';
+  });
+  // the handle in the middle of the ring
+  g.textAlign = 'center';
+  g.font = '800 40px ' + MAIN; g.fillStyle = 'rgba(232,226,214,0.94)';
+  g.fillText('@' + (P.handle || 'you'), CX, CY + 4);
+  g.font = '400 19px ' + MONO; g.fillStyle = 'rgba(232,226,214,0.45)'; g.letterSpacing = '4px';
+  g.fillText('FAVOURITE ALBUMS', CX, CY + 40);
+  g.letterSpacing = '0px'; g.textAlign = 'left';
+  // the five, named, in ring order
+  const y0 = CY + RING + R + 110, ROW = 62, M = 110;
+  favs.forEach((a, i) => {
+    const y = y0 + i * ROW;
+    g.font = '700 24px ' + MONO; g.fillStyle = 'rgba(232,226,214,0.35)';
+    g.fillText(String(i + 1), M, y);
+    g.font = '700 30px ' + MAIN; g.fillStyle = 'rgba(232,226,214,0.92)';
+    const alb = shWrap(g, a.album, 520, 1)[0] || '';
+    g.fillText(alb, M + 46, y);
+    g.font = '400 26px ' + MAIN; g.fillStyle = 'rgba(232,226,214,0.55)';
+    g.textAlign = 'right'; g.fillText(shWrap(g, a.artist + (a.year ? '  ·  ' + a.year : ''), 360, 1)[0] || '', SHARE_W - M, y); g.textAlign = 'left';
+  });
+  shFooter(g, MAIN, MONO, gold);
+  return cv;
+}
 /* ── the sheet ──────────────────────────────────────────────── */
 function ensureShareSheet() {
   let ov = document.getElementById('sd-share');
@@ -432,28 +709,24 @@ function ensureShareSheet() {
   ov = document.createElement('div');
   ov.id = 'sd-share';
   ov.className = 'sd-log-overlay sd-share-overlay';
+  const apps = Object.keys(SHARE_APPS).map(k => `
+        <button class="sd-share-app" type="button" data-app="${k}">${SHARE_APPS[k].svg}<span>${SHARE_APPS[k].label}</span></button>`).join('');
+  /* The card, as large as the sheet allows, and the buttons at the bottom —
+     nothing else (2026-09-11: the title, the "share to / as text" labels and
+     the text block came out; the words are still what Copy text / Messages
+     send). The note is a toast OVER the card, so it costs no height. */
   ov.innerHTML = `
     <div class="sd-log-sheet sd-share-sheet" role="dialog" aria-modal="true">
       <div class="sd-log-grab"></div>
-      <div class="sd-log-head">
-        <div class="sd-log-meta">
-          <div class="sd-log-album">Share to Instagram</div>
-          <div class="sd-log-artist sd-share-sub"></div>
-        </div>
-        <button class="sd-log-x" aria-label="Close">✕</button>
-      </div>
-      <div class="sd-share-preview"><canvas></canvas></div>
-      <div class="sd-share-foot">
-        <button class="sd-share-save">Save image</button>
-        <button class="sd-share-go">Share</button>
-      </div>
-      <div class="sd-share-note"></div>
+      <button class="sd-log-x sd-share-x" aria-label="Close">✕</button>
+      <div class="sd-share-preview"><canvas></canvas><div class="sd-share-note"></div></div>
+      <div class="sd-share-apps">${apps}</div>
     </div>`;
   ov.addEventListener('click', e => { e.stopPropagation(); if (e.target === ov) closeShareSheet(); });
   ov.querySelector('.sd-log-sheet').addEventListener('click', e => e.stopPropagation());
   ov.querySelector('.sd-log-x').addEventListener('click', closeShareSheet);
-  ov.querySelector('.sd-share-save').addEventListener('click', () => shareSave(ov));
-  ov.querySelector('.sd-share-go').addEventListener('click', () => shareNow(ov));
+  ov.querySelectorAll('[data-app]').forEach(b => b.addEventListener('click', () => shareAct(ov, b.dataset.app, b)));
+  if (typeof wireSheetGrab === 'function') wireSheetGrab(ov, '.sd-share-sheet', closeShareSheet);
   return ov;
 }
 window.closeShareSheet = function () {
@@ -461,49 +734,72 @@ window.closeShareSheet = function () {
   if (ov) ov.classList.remove('open');
 };
 
-function shareFilename(album) {
-  return 'spindeck-' + String(album.album || 'album').toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '.png';
-}
-
-window.openShareSheet = async function (triggerEl, album, review) {
-  if (!album) return;
+/* openShareSheet(el, job) — or the old (el, album, review), which becomes a
+   review job so the log sheet's Share and shareMyReview keep working. */
+window.openShareSheet = async function (triggerEl, job, review) {
+  if (job && job.album && !job.build) job = shareJobReview(job, review || {});
+  if (!job) return;
   const host = (triggerEl && triggerEl.closest && triggerEl.closest('.app-screen'))
              || document.querySelector('.app-screen') || document.body;
   const ov = ensureShareSheet();
   host.appendChild(ov);
-  ov.querySelector('.sd-share-sub').textContent = album.album + ' · ' + album.artist;
-  const note = ov.querySelector('.sd-share-note');
-  note.textContent = 'Building your post…';
+  ov._job = job; ov._file = null;
+  shareNote(ov, 'Building your card…', true);
+  const shown = ov.querySelector('.sd-share-preview canvas');
+  shown.getContext('2d').clearRect(0, 0, shown.width, shown.height);
+  ov.querySelector('.sd-log-sheet').scrollTop = 0;
   requestAnimationFrame(() => ov.classList.add('open'));
 
-  const cv = await buildShareCard(album, review || {});
-  const shown = ov.querySelector('.sd-share-preview canvas');
+  const cv = await job.build();
+  if (ov._job !== job) return;                    // another share opened meanwhile
   shown.width = cv.width; shown.height = cv.height;
   shown.getContext('2d').drawImage(cv, 0, 0);
-
-  /* The blob is made HERE, not on the Share click. Safari drops the user-gesture
-     that navigator.share requires if you await anything first, so the click
-     handler has to find the file already waiting. */
-  ov._file = null;
+  /* The blob is made HERE, not on the tap. Safari drops the user gesture that
+     navigator.share needs if you await anything first, so the tap has to find
+     the file already waiting. */
   try {
     const blob = await new Promise(res => cv.toBlob(res, 'image/png'));
-    if (blob) ov._file = new File([blob], shareFilename(album), { type: 'image/png' });
-  } catch (e) { /* tainted canvas — save/share stay disabled below */ }
-
-  const canShare = !!(ov._file && navigator.canShare && navigator.canShare({ files: [ov._file] }));
-  ov.querySelector('.sd-share-go').disabled = !canShare;
-  ov.querySelector('.sd-share-save').disabled = !ov._file;
-  note.textContent = !ov._file
-    ? "Couldn't build the image — the cover blocked the canvas read."
-    : canShare
-      ? 'Opens your phone’s share sheet — pick Instagram there.'
-      : 'This browser can’t share files. Save the image, then post it.';
+    if (blob) ov._file = new File([blob], job.file || 'spindeck.png', { type: 'image/png' });
+  } catch (e) { /* tainted canvas — the image buttons say so below */ }
+  ov.querySelector('[data-app="save"]').disabled = !ov._file;
+  if (!ov._file) shareNote(ov, "Couldn't build the image — the cover blocked the canvas read. Text and links still work.", true);
+  else shareNote(ov, '', false);
 };
 
-function shareNow(ov) {
-  if (!ov._file) return;
-  navigator.share({ files: [ov._file], title: 'Spindeck' }).catch(() => {});
+/* A toast over the card. `sticky` keeps it up (building, or a failure that
+   the buttons need explaining); otherwise it shows for a beat and goes. */
+function shareNote(ov, msg, sticky) {
+  const n = ov.querySelector('.sd-share-note');
+  clearTimeout(n._t);
+  n.textContent = msg;
+  n.classList.toggle('is-on', !!msg);
+  if (msg && !sticky) n._t = setTimeout(() => n.classList.remove('is-on'), 1500);
+}
+function shareCopy(text) {
+  try { return navigator.clipboard.writeText(text); } catch (e) { return Promise.reject(e); }
+}
+function shareAct(ov, app, btn) {
+  const job = ov._job; if (!job) return;
+  const words = job.text + (job.url ? ' ' + job.url : '');
+  const nav = (data) => navigator.share ? navigator.share(data).catch(() => {}) : null;
+  if (app === 'ig') {
+    if (ov._file && navigator.canShare && navigator.canShare({ files: [ov._file] })) nav({ files: [ov._file], title: 'Spindeck', text: job.text });
+    else shareNote(ov, ov._file ? 'Save the image below, then post it to Instagram.' : 'No image to share yet.');
+  } else if (app === 'x') {
+    window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(words), '_blank', 'noopener');
+  } else if (app === 'sms') {
+    if (navigator.share) nav({ text: job.text, url: job.url });
+    else window.location.href = 'sms:?&body=' + encodeURIComponent(words);
+  } else if (app === 'link') {
+    shareCopy(job.url || SHARE_URL).then(() => shareNote(ov, 'Link copied.'), () => shareNote(ov, job.url));
+  } else if (app === 'save') {
+    shareSave(ov);
+  } else if (app === 'copytext') {
+    shareCopy(words).then(() => shareNote(ov, 'Text copied.'), () => shareNote(ov, 'Select the text above to copy it.'));
+  } else if (app === 'sendtext') {
+    if (navigator.share) nav({ text: words });
+    else window.location.href = 'sms:?&body=' + encodeURIComponent(words);
+  }
 }
 function shareSave(ov) {
   if (!ov._file) return;
@@ -512,6 +808,7 @@ function shareSave(ov) {
   a.href = url; a.download = ov._file.name;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+  shareNote(ov, 'Saved.');
 }
 
 /* Resolve the album + your saved draft behind a share button, wherever it sits. */
@@ -522,5 +819,5 @@ window.shareMyReview = function (btn, albumName) {
              || (window.shellAlbum ? shellAlbum(scr) : null);
   if (!album) return;
   const d = (window.albumDraft && albumDraft(album)) || {};
-  openShareSheet(btn, album, { rating: d.rating || 0, text: d.text || '', songs: d.songs || [] });
+  openShareSheet(btn, shareJobReview(album, { rating: d.rating || 0, text: d.text || '', songs: d.songs || [] }));
 };

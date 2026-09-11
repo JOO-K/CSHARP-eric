@@ -536,6 +536,10 @@ const SCREENS = [
             <div class="v3-rev-list"></div>
 
           </div><!-- /v3-review-panel -->
+          <!-- THE REVIEW PANEL: the review page as a STATE of this shell (--rvp),
+               filled by rvpOpenInPlace so opening a review never re-renders
+               the header, the nav or the album colour. -->
+          <div class="v3-rvp-panel"></div>
           </div><!-- /v3-body -->
 
           <!-- NOW-PLAYING TICKER + the CD console that replaces it.
@@ -728,6 +732,10 @@ const SCREENS = [
             <div class="v3-rev-list"></div>
 
           </div><!-- /v3-review-panel -->
+          <!-- THE REVIEW PANEL: the review page as a STATE of this shell (--rvp),
+               filled by rvpOpenInPlace so opening a review never re-renders
+               the header, the nav or the album colour. -->
+          <div class="v3-rvp-panel"></div>
           </div><!-- /v3-body -->
 
           <!-- NOW-PLAYING TICKER + the CD console that replaces it.
@@ -856,6 +864,15 @@ const SCREENS = [
     variants: [
       { label: 'Float·Dark',  version: 'v1', thumb: ['accent','w80','w60','w70','w50'], get html() { return playlistPageHtml(false); } },
       { label: 'Float·Light', version: 'v1', thumb: ['accent','w80','w60','w70','w50'], get html() { return playlistPageHtml(true);  } },
+    ]
+  },
+
+  // ── 12b. REVIEW PAGE (one review, in full, with its comments) ─
+  {
+    id: 'review-page', name: 'Review Page', statusTheme: 'light',
+    variants: [
+      { label: 'Float·Dark',  version: 'v1', thumb: ['accent','w80','w60','w70','w50'], get html() { return reviewPageHtml(false); } },
+      { label: 'Float·Light', version: 'v1', thumb: ['accent','w80','w60','w70','w50'], get html() { return reviewPageHtml(true);  } },
     ]
   },
 
@@ -1925,6 +1942,86 @@ const PROF_FAV_LOOPS = 5;
 /* ⚠ The second parameter is gone. It was `o.edit`, which turned every disc into
    a slot when this rail was drawn on the Edit Profile page — that page is a form
    now and does not render the card or the rail at all. */
+/* One review of theirs as a row — the SAME row the review history is built
+   from, so a pinned review and the history entry for it can never disagree.
+   Every row here has the same author, so the avatar is theirs. `upvoteHtml`
+   and `CMT_SVG` live in app.js, which loads after this file; fine, because
+   this runs at render time. */
+function profReviewRowHtml(P, e) {
+  const esc = s => String(s).replace(/'/g, '\\\'');
+  const rvName  = P.name || 'They';
+  const rvFace  = P.pic || '';
+  const rvBadge = '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/>';
+  const a = e.album;
+  const open = `openAlbumPage(ARCHIVE.find(x=>x.album==='${esc(a.album)}')||ARCHIVE[0])`;
+  // ⚠ Guarded the same way the feed guards it: "Weezer by Weezer" reads as a
+  // bug, and nobody says the artist twice out loud either.
+  const rec = `<i>${a.album}</i>` + (a.artist && a.artist !== a.album ? ` by <b>${a.artist}</b>` : '');
+  const key = 'prof::' + (P.handle || 'you') + '::' + a.album;
+  return `
+    <div class="ntf-row" onclick="${open}">
+      <div class="ntf-who">
+        <div class="ntf-ava" style="background-image:url('${rvFace}')">
+          <span class="ntf-badge ntf-badge--review"><svg viewBox="0 0 24 24" fill="currentColor">${rvBadge}</svg></span>
+        </div>
+        <div class="ntf-time">${e.when}</div>
+      </div>
+      <div class="ntf-body">
+        <div class="ntf-text"><b>${rvName}</b> reviewed ${rec} a <b class="ntf-line-score">${Number(e.rating).toFixed(1)}</b></div>
+        <div class="ntf-quote">${e.text}</div>
+        <div class="ntf-foot">
+          <div class="ntf-acts">
+            ${window.upvoteHtml ? upvoteHtml(key, e.likes, 'v3-up--feed v3-up--prof') : ''}
+            <button class="v3-up v3-up--feed v3-up--prof" type="button" aria-label="Comments"
+              onclick="event.stopPropagation(); ${open}">${typeof CMT_SVG !== 'undefined' ? CMT_SVG : ''}<span class="v3-up-n">${e.comments}</span></button>
+          </div>
+        </div>
+      </div>
+      <div class="ntf-obj">
+        <div class="ntf-art" style="background-image:url('${a.image}')"
+             onclick="event.stopPropagation(); ${open}"></div>
+      </div>
+    </div>`;
+}
+
+/* ── Pinned reviews (2026-09-11) ─────────────────────────────────────────
+   Up to PROF_PIN_MAX of their own reviews, chosen on Edit Profile, under the
+   favourites rail. `P.pins` is a list of album names in slot order ('' = an
+   empty slot). A persona with no `pins` authored shows its two most recent
+   reviews, so the section is never blank on a random profile — "No pins" is
+   still a real state you reach by clearing them. Names resolve against
+   `profReviewLog`, the one source of what they wrote. */
+const PROF_PIN_MAX = 3;
+window.profPins = function (P) {
+  if (Array.isArray(P.pins)) return P.pins.slice(0, PROF_PIN_MAX);
+  return profReviewLog(P).slice(0, 2).map(e => e.album.album);
+};
+function profPinsHtml(P) {
+  const log = profReviewLog(P);
+  /* The ALBUM PAGE's review card (revCardHtml, app.js), not the feed row the
+     history below uses: a pin is the review as a piece of writing, not an
+     event. Same key as the history row for that album, so a like is shared;
+     registered in REV_INDEX so a tap opens the review page like any card. */
+  const handle = P.handle || 'you';
+  const rows = profPins(P)
+    .map(n => n && log.find(e => e.album.album === n))
+    .filter(Boolean)
+    .map(e => {
+      const key = 'prof::' + handle + '::' + e.album.album;
+      if (typeof REV_INDEX !== 'undefined') REV_INDEX[key] = { key, album: e.album, name: P.name || 'They', handle,
+        pic: P.pic || '', rating: e.rating, text: e.text, ago: e.when, likes: e.likes, comments: e.comments };
+      return (typeof revCardHtml === 'function') ? revCardHtml({
+        key, cls: 'v3-rev-card--pin', name: P.name || 'They', handle, face: P.pic || '', ago: e.when,
+        rating: e.rating, text: e.text, likes: e.likes, comments: e.comments,
+      }) : profReviewRowHtml(P, e);
+    }).join('');
+  return `
+            <div class="prof-sec prof-pins">
+              <div class="prof-sec-hd">Pinned reviews</div>
+              ${rows || `<div class="prof-pins-empty">Pin up to ${PROF_PIN_MAX} of your reviews from Edit profile.</div>`}
+            </div>`;
+}
+
 function profFavsHtml(P) {
   const findAlb = name => (window.ARCHIVE || []).find(a => a.album === name);
   const esc = s2 => String(s2).replace(/'/g, '\'');
@@ -1957,7 +2054,7 @@ function profFavsHtml(P) {
      rail's scroll position. */
   return `
             <div class="prof-sec prof-favs">
-              <div class="prof-sec-hd">Favourite albums</div>
+              <div class="prof-sec-hd prof-sec-hd--row"><span>Favourite albums</span>${typeof shareBtnHtml === 'function' ? shareBtnHtml('favs', '') : ''}</div>
               <!-- THE RAIL LOOPS. The same five discs are emitted PROF_FAV_LOOPS
                    times over, and profFavLoop teleports the scroll back to the
                    middle copy by exactly one set width once it settles. The jump
@@ -1983,17 +2080,10 @@ function profFavsHtml(P) {
                      strings are inconsistent enough that it read as noise. -->
                 <div class="prof-fav-alb"><span class="prof-fav-name"></span><span class="prof-fav-yr"></span></div>
                 <div class="prof-fav-artist"></div>
-                <div class="prof-fav-sub">
-                  <span class="prof-fav-stars"></span>
-                  <span class="prof-fav-meta"></span>
-                </div>
-                <!-- What THEY wrote about it, when they wrote anything. Filled
-                     by profFavPaint from the same profReviewLog() the review
-                     history below is built from -- one source of truth, so the
-                     line under the disc and the row further down the page can
-                     never quote the same person differently. Empty and hidden
-                     for a record they have not reviewed. -->
-                <div class="prof-fav-rv" hidden></div>
+                <!-- Name, year, artist and nothing else (2026-09-11). The stars,
+                     the review count and the line they wrote used to sit here;
+                     what they wrote now has a section of its own — PINNED
+                     REVIEWS, right under this rail (profPinsHtml). -->
               </div>
             </div>`;
 }
@@ -2050,41 +2140,7 @@ function profileHtml(light) {
      — every row here has the same author, so the avatar is theirs.
      `upvoteHtml` and `CMT_SVG` live in app.js, which loads after this file;
      fine, because this runs at render time. */
-  const rvName  = P.name || 'They';
-  const rvFace  = P.pic || '';
-  const rvBadge = '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/>';
-  const logHtml = profReviewLog(P).map(e => {
-    const a = e.album;
-    const open = `openAlbumPage(ARCHIVE.find(x=>x.album==='${esc(a.album)}')||ARCHIVE[0])`;
-    // ⚠ Guarded the same way the feed guards it: "Weezer by Weezer" reads as a
-    // bug, and nobody says the artist twice out loud either.
-    const rec = `<i>${a.album}</i>` + (a.artist && a.artist !== a.album ? ` by <b>${a.artist}</b>` : '');
-    const key = 'prof::' + (P.handle || 'you') + '::' + a.album;
-    return `
-    <div class="ntf-row" onclick="${open}">
-      <div class="ntf-who">
-        <div class="ntf-ava" style="background-image:url('${rvFace}')">
-          <span class="ntf-badge ntf-badge--review"><svg viewBox="0 0 24 24" fill="currentColor">${rvBadge}</svg></span>
-        </div>
-        <div class="ntf-time">${e.when}</div>
-      </div>
-      <div class="ntf-body">
-        <div class="ntf-text"><b>${rvName}</b> reviewed ${rec} a <b class="ntf-line-score">${Number(e.rating).toFixed(1)}</b></div>
-        <div class="ntf-quote">${e.text}</div>
-        <div class="ntf-foot">
-          <div class="ntf-acts">
-            ${window.upvoteHtml ? upvoteHtml(key, e.likes, 'v3-up--feed v3-up--prof') : ''}
-            <button class="v3-up v3-up--feed v3-up--prof" type="button" aria-label="Comments"
-              onclick="event.stopPropagation(); ${open}">${typeof CMT_SVG !== 'undefined' ? CMT_SVG : ''}<span class="v3-up-n">${e.comments}</span></button>
-          </div>
-        </div>
-      </div>
-      <div class="ntf-obj">
-        <div class="ntf-art" style="background-image:url('${a.image}')"
-             onclick="event.stopPropagation(); ${open}"></div>
-      </div>
-    </div>`;
-  }).join('');
+  const logHtml = profReviewLog(P).map(e => profReviewRowHtml(P, e)).join('');
 
 
   /* Favourite songs (5) — artwork borrowed from the song's album cover.
@@ -2133,6 +2189,8 @@ function profileHtml(light) {
             ${profStatsHtml(P)}
 
             ${profFavsHtml(P)}
+
+            ${profPinsHtml(P)}
 
             <!-- Top playlists -->
             <div class="prof-sec">
@@ -2253,6 +2311,21 @@ function profileEditHtml(light) {
               </button>`;
   }).join('');
 
+  /* Pinned reviews — 3 tiles, cover + album + "4.5 · what you wrote". Tapping
+     one opens the same category-aware popup on kind 'review' (the log of your
+     own reviews); picking the one already in the slot clears it. */
+  const pinNames = (typeof profPins === 'function') ? profPins(D) : [];
+  const pinLog = profReviewLog(D);
+  const pinsHtml = [0, 1, 2].map(i => {
+    const e = pinNames[i] && pinLog.find(x => x.album.album === pinNames[i]);
+    if (!e) return addTile('review', i, 'Pin a review', 'tile');
+    return `<button class="prof-pl pfe-slot" onclick="openProfEditor('review', '${i}')" title="Replace">
+      <span class="prof-pl-cover" style="background-image:url('${e.album.image}')"></span>
+      <span class="prof-pl-nm">${e.album.album}</span>
+      <span class="prof-pl-meta pfe-pin-q">${Number(e.rating).toFixed(1)} · ${e.text}</span>
+    </button>`;
+  }).join('');
+
   // Playlists — 3 slots
   const allPls = plLists();
   const plNames = (D.playlistNames && D.playlistNames.length)
@@ -2371,6 +2444,11 @@ function profileEditHtml(light) {
             <div class="prof-sec">
               <div class="prof-sec-hd">Favourite albums</div>
               <div class="pfe-discs">${discsHtml}</div>
+            </div>
+
+            <div class="prof-sec">
+              <div class="prof-sec-hd">Pinned reviews</div>
+              <div class="prof-pls">${pinsHtml}</div>
             </div>
 
             <div class="prof-sec">
@@ -2603,7 +2681,10 @@ function plLists() {
      overridden. Every customisation is stored under it — `custom[key]`, not
      `custom[displayed name]` — which is what lets the editor rename a playlist
      without orphaning its badges. */
-  ].map(l => Object.assign({ badges: [] }, l, custom[l.name] || {}, { key: l.name }));
+  ].map(l => Object.assign({ badges: [] }, l, custom[l.name] || {}, { key: l.name }))
+   // A sample the user deleted from the editor carries `deleted: true` in
+   // plCustom (a created one is simply spliced out of PLNEW_CREATED instead).
+   .filter(l => !l.deleted);
 }
 
 // Playlists / Library — adapted to the home shell like the wall. The old five
@@ -2798,6 +2879,11 @@ function playlistNewHtml(light) {
 
             <button class="plnew-create" data-plnew="create" onclick="plnewCreate()"
                     ${S.name.trim() ? '' : 'disabled'}>${call('plnewCreateLabel', 'Create playlist')}</button>
+            ${S.editing ? `
+            <button class="plnew-delete" type="button" onclick="plnewAskDelete(this)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 13h10l1-13"/><path d="M9 7V4h6v3"/></svg>
+              Delete playlist
+            </button>` : ''}
 
             <div class="plnew-find">
               <div class="plnew-searchbar">
@@ -2818,6 +2904,74 @@ function playlistNewHtml(light) {
         </div>
         ${nowBar()}
         ${bottomNav('playlists')}
+      </div>`;
+}
+
+/* ── Review page (2026-09-11) ────────────────────────────────────────────
+   ONE review, in full, with its comments — reached by tapping a review card on
+   the album page (`openReviewPage` in app.js, which sets `window.activeReview`
+   from the card's registry entry). The card is a summary; this is the review.
+   The reviewer leads: their photo (`feedFace` — the same face their comments
+   wear), name, handle and when; then the RECORD as a tappable row (→ album
+   page); the rating as a sentence; the text at reading size, unclamped; the
+   upvote and comment pills; and the thread, always open, under a heading.
+   Colour: the shell wears the album's palette like the album page does —
+   inline from COLOR_CACHE when the cover has been seen, and openReviewPage
+   applies it again once the page exists for the cold case. */
+// A heart, not a thumb, on the review page's like (the pill is upvoteHtml's —
+// same key, same state — with its glyph swapped).
+const RVP_HEART = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>';
+/* The review, as a panel: back pill · Letterboxd-shaped hero · comments.
+   Two hosts — the standalone review-page screen (reached from the profile's
+   pins and the left rail) and, in place, the album page's own shell
+   (`.v3-rvp-panel`, state `--rvp`), which is how a tap on a card opens it
+   without a re-render. */
+window.reviewPanelHtml = function (R) {
+  const a = R.album || {};
+  const dots = '<i class="v3-ring-dot"></i>'.repeat(6);
+  const esc = s => String(s).replace(/'/g, '\\\'');
+  const P = window.PROFILE || {};
+  const face = R.mine ? (P.pic || 'images/rp-01.jpg') : (R.pic || (typeof feedFace === 'function' ? feedFace(R.name) : ''));
+  const handle = R.handle || (R.mine ? (P.handle || 'you') : String(R.name || 'listener').toLowerCase().replace(/[^a-z0-9_]+/g, '_'));
+  const call = (fn, ...args) => (typeof window[fn] === 'function' ? window[fn](...args) : '');
+  return `
+          <div class="rvp-scroll">
+            <button class="plp-back-pill" onclick="rvpBack()" title="Back">
+              <span class="v3-ring plp-ring"><span class="v3-ring-spin">${dots}</span></span>
+            </button>
+
+            <!-- THE CARD, LARGER (Eric, 2026-09-11): the review page's hero is the
+                 album page's own review card — photo · name/@handle · the score
+                 column with like and comments — scaled up, with the text at
+                 reading size and never clamped. One builder (revCardHtml), so
+                 the page cannot drift from the card that opened it. -->
+            ${typeof revCardHtml === 'function' ? revCardHtml({
+              key: R.key, cls: 'v3-rev-card--hero', big: true,
+              name: R.name || 'Listener', handle, face, ago: R.ago || '',
+              rating: R.rating || 0, text: R.text || '',
+              likes: R.mine ? null : (R.likes || 0), comments: R.comments || 0, share: !!R.mine,
+            }) : ''}
+
+            <div class="rvp-cmts">
+              <div class="rvp-cmts-hd">Comments <span class="rvp-cmts-n" data-k="${R.key}" data-n="${R.comments || 0}">${call('cmtCount', R.key, R.comments || 0)}</span></div>
+              ${call('cmtWrapHtml', R.key, R.comments || 0)}
+            </div>
+          </div>`;
+};
+
+function reviewPageHtml(light) {
+  const R = window.activeReview;
+  if (!R) return `<div class="app-screen s-home-v3 s-rvp${light ? ' s-home-v3--light' : ''}"></div>`;
+  const a = R.album || {};
+  const c = (typeof COLOR_CACHE !== 'undefined' && a.image) ? COLOR_CACHE.get(a.image) : null;
+  const vars = c ? `--v3-accent:${c.accent};--v3-star:${c.star || c.accent};--v3-box1-bg:${c.box1};--v3-box2-bg:${c.box2};--v3-box1-color:${c.box1color}` : '';
+  return `
+      <div class="app-screen s-home-v3 s-rvp${light ? ' s-home-v3--light' : ''}" style="${vars}">
+        ${appHeader()}
+        <div class="v3-body">${reviewPanelHtml(R)}
+        </div>
+        ${nowBar()}
+        ${bottomNav('home')}
       </div>`;
 }
 
@@ -2847,9 +3001,12 @@ function playlistPageHtml(light) {
         ${appHeader()}
         <div class="v3-body">
           <div class="plp-scroll">
-            <button class="plp-back-pill" onclick="goBack('playlists')" title="Back">
-              <span class="v3-ring plp-ring"><span class="v3-ring-spin"><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i></span></span>
-            </button>
+             <div class="plp-toprow">
+               <button class="plp-back-pill" onclick="goBack('playlists')" title="Back">
+                 <span class="v3-ring plp-ring"><span class="v3-ring-spin"><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i></span></span>
+               </button>
+               ${typeof shareBtnHtml === 'function' ? shareBtnHtml('playlist', pl.name, 'sd-share-btn--lg') : ''}
+             </div>
             <div class="plp-hero${hot ? ' plp-hero--hl' : ''}">
               ${plArtHtml(pl.image, 'plp-hero-img')}
               <svg class="plp-hero-shape" viewBox="0 0 688 303" preserveAspectRatio="none" aria-hidden="true">
@@ -3180,6 +3337,16 @@ function settingsHtml(light) {
             ${section('Appearance', [
               setRow('Theme', null, seg(['Dark', 'Light', 'Auto'], light ? 'Light' : 'Dark')),
               setRow('Profile theme', 'Funky 01', chev, "navigate('profile-edit')"),
+              // The bento skin is REAL state (body class + localStorage), not a
+              // presentational switch — so it does not go through sdToggle. Its
+              // control is stamped data-skin-wear and syncSkinControls (app.js)
+              // keeps every copy of it, and the shop tile, agreeing.
+              (typeof bentoSkinOwned === 'function' && bentoSkinOwned('furry'))
+                ? setRow('Furry bento', 'Ears and a tail on your home bento', `
+                  <button class="set-sw${(typeof bentoSkin === 'function' && bentoSkin() === 'furry') ? ' is-on' : ''}" role="switch"
+                          aria-checked="${typeof bentoSkin === 'function' && bentoSkin() === 'furry'}" data-skin-wear="furry"
+                          onclick="event.stopPropagation(); toggleBentoSkin('furry')"><span class="set-sw-knob"></span></button>`)
+                : setRow('Furry bento', 'Sold in the shop · $2', chev, "navigate('shop')"),
               setRow('Reduce motion', 'Stops the spinning CD and ticker', sw(false)),
             ].join('')) }
 
@@ -3337,6 +3504,7 @@ function shopHtml(light) {
   const dots = '<i class="v3-ring-dot"></i>'.repeat(6);
   const pro  = typeof isPro === 'function' && isPro();
   const skin = typeof bentoSkin === 'function' ? bentoSkin() : null;
+  const ownsSkin = id => typeof bentoSkinOwned === 'function' && bentoSkinOwned(id);
   const cat  = window.SHOP_CAT;
 
   /* Which aisles a thing belongs to. NO attribute at all = never filtered,
@@ -3509,8 +3677,9 @@ function shopHtml(light) {
               <div class="shop-tile shop-tile--sm" style="--tint:232,168,60" data-cat="general themes">
                 <div class="shop-field shop-field--tint shop-field--skin"><svg viewBox="196 -4 494 92" aria-hidden="true"><path fill="currentColor" d="M271.193 27.1351C260.863 45.1685 243.754 86.9451 203.781 86.9451H379.724C391.991 59.0226 360.127 21.9865 338.605 6.95886C328.91 0.188953 292.216 -9.5636 271.193 27.1351Z"/><path fill="currentColor" d="M561.782 27.1351C551.452 45.1685 534.343 86.9451 494.37 86.9451H670.312C682.58 59.0226 650.716 21.9865 629.194 6.95886C619.498 0.188953 582.804 -9.5636 561.782 27.1351Z"/><path fill="currentColor" opacity=".55" d="M283.856 39.9244C276.538 54.1016 264.419 86.9451 236.103 86.9451H360.736C369.426 64.9933 346.855 35.8768 331.609 24.0625C324.741 18.7402 298.748 11.0731 283.856 39.9244Z"/><path fill="currentColor" opacity=".55" d="M574.445 39.9244C567.127 54.1016 555.008 86.9451 526.692 86.9451H651.325C660.015 64.9933 637.444 35.8768 622.198 24.0625C615.33 18.7402 589.337 11.0731 574.445 39.9244Z"/></svg></div>
                 <div class="shop-tile-name">Furry</div>
-                ${skin === 'furry'
-                  ? `<span class="shop-owned">Owned</span>`
+                ${ownsSkin('furry')
+                  ? `<button class="shop-buy shop-wear${skin === 'furry' ? ' is-on' : ''}" data-skin-wear="furry"
+                             title="Put it on or take it off" onclick="event.stopPropagation(); toggleBentoSkin('furry')">${skin === 'furry' ? 'Wearing' : 'Wear'}</button>`
                   : `<button class="shop-buy" data-skin="furry" onclick="event.stopPropagation(); sdBuy(this)">$2</button>`}
               </div>
             </div>
