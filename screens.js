@@ -2877,13 +2877,16 @@ function playlistNewHtml(light) {
                    style="${S.cover ? `background-image:url('${S.cover}')` : ''}"><div class="v3-cd-hole"></div></div>
             </div>
 
-            <button class="plnew-create" data-plnew="create" onclick="plnewCreate()"
-                    ${S.name.trim() ? '' : 'disabled'}>${call('plnewCreateLabel', 'Create playlist')}</button>
-            ${S.editing ? `
-            <button class="plnew-delete" type="button" onclick="plnewAskDelete(this)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 13h10l1-13"/><path d="M9 7V4h6v3"/></svg>
-              Delete playlist
-            </button>` : ''}
+            <!-- Save (or Create) fills the line; while editing, a square trash sits
+                 at its right end. The trash still only ASKS (plnewAskDelete). -->
+            <div class="plnew-actions">
+              <button class="plnew-create" data-plnew="create" onclick="plnewCreate()"
+                      ${S.name.trim() ? '' : 'disabled'}>${call('plnewCreateLabel', 'Create playlist')}</button>
+              ${S.editing ? `
+              <button class="plnew-delete" type="button" title="Delete playlist" aria-label="Delete playlist" onclick="plnewAskDelete(this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 13h10l1-13"/><path d="M9 7V4h6v3"/></svg>
+              </button>` : ''}
+            </div>
 
             <div class="plnew-find">
               <div class="plnew-searchbar">
@@ -3005,7 +3008,13 @@ function playlistPageHtml(light) {
                <button class="plp-back-pill" onclick="goBack('playlists')" title="Back">
                  <span class="v3-ring plp-ring"><span class="v3-ring-spin"><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i><i class="v3-ring-dot"></i></span></span>
                </button>
-               ${typeof shareBtnHtml === 'function' ? shareBtnHtml('playlist', pl.name, 'sd-share-btn--lg') : ''}
+               <span class="plp-topbtns">
+                 ${pl.creator === 'you' ? `<button class="sd-share-btn sd-share-btn--lg plp-edit" type="button" title="Edit playlist" aria-label="Edit playlist"
+                   onclick="event.stopPropagation(); openEditPlaylist('${String(pl.key || pl.name).replace(/'/g, '\\\'')}')">
+                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4l10-10a2.6 2.6 0 0 0-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg>
+                 </button>` : ''}
+                 ${typeof shareBtnHtml === 'function' ? shareBtnHtml('playlist', pl.name, 'sd-share-btn--lg') : ''}
+               </span>
              </div>
             <div class="plp-hero${hot ? ' plp-hero--hl' : ''}">
               ${plArtHtml(pl.image, 'plp-hero-img')}

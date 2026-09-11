@@ -650,10 +650,12 @@ async function buildPlaylistCard(pl, tracks) {
     g.font = '400 26px ' + MONO; g.fillStyle = 'rgba(232,226,214,0.35)';
     g.fillText(String(i + 1).padStart(2, '0'), 90, ry);
     g.font = '700 26px ' + MAIN; g.fillStyle = 'rgba(232,226,214,0.9)';
-    const title = shWrap(g, t.title, 560, 1)[0] || '';
+    const title = shWrap(g, t.title, 480, 1)[0] || '';
     g.fillText(title, 150, ry);
+    // the artist follows the name directly — one line, read as a pair
+    const tw = g.measureText(title).width;
     g.font = '400 24px ' + MAIN; g.fillStyle = 'rgba(232,226,214,0.5)';
-    g.textAlign = 'right'; g.fillText(shWrap(g, t.artist || '', 300, 1)[0] || '', SHARE_W - 90, ry); g.textAlign = 'left';
+    g.fillText(shWrap(g, t.artist || '', SHARE_W - 90 - (150 + tw + 18), 1)[0] || '', 150 + tw + 18, ry);
   });
   shFooter(g, MAIN, MONO, gold);
   return cv;
@@ -709,7 +711,7 @@ function ensureShareSheet() {
   ov = document.createElement('div');
   ov.id = 'sd-share';
   ov.className = 'sd-log-overlay sd-share-overlay';
-  const apps = Object.keys(SHARE_APPS).map(k => `
+  const apps = ['ig', 'x', 'copytext'].map(k => `
         <button class="sd-share-app" type="button" data-app="${k}">${SHARE_APPS[k].svg}<span>${SHARE_APPS[k].label}</span></button>`).join('');
   /* The card, as large as the sheet allows, and the buttons at the bottom —
      nothing else (2026-09-11: the title, the "share to / as text" labels and
@@ -721,6 +723,7 @@ function ensureShareSheet() {
       <button class="sd-log-x sd-share-x" aria-label="Close">✕</button>
       <div class="sd-share-preview"><canvas></canvas><div class="sd-share-note"></div></div>
       <div class="sd-share-apps">${apps}</div>
+      <button class="sd-share-app sd-share-app--save" type="button" data-app="save">${SHARE_APPS.save.svg}<span>Save image</span></button>
     </div>`;
   ov.addEventListener('click', e => { e.stopPropagation(); if (e.target === ov) closeShareSheet(); });
   ov.querySelector('.sd-log-sheet').addEventListener('click', e => e.stopPropagation());

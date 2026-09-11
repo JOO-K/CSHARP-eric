@@ -6210,6 +6210,7 @@ body.sd-return .s-home-v3--review .v3-body { animation: rvpIn .34s ease-out both
 .v3-rev-cta--rated .sd-share-btn--cta + .v3-rev-cta-edit { margin-left: 0; }
 .v3-rev-share-lbl { margin-left: 8px; font-size: 10.5px; color: rgba(232,226,214,0.5); }
 .plp-toprow { display: flex; align-items: center; justify-content: space-between; }
+.plp-topbtns { display: inline-flex; align-items: center; gap: 8px; }
 .prof-sec-hd--row { display: flex; align-items: center; justify-content: space-between; }
 .prof-sec-hd--row .sd-share-btn { color: var(--pf-fg2); }
 
@@ -6232,6 +6233,15 @@ body.sd-return .s-home-v3--review .v3-body { animation: rvpIn .34s ease-out both
 }
 .sd-share-note.is-on { opacity: 1; }
 .sd-share-apps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; flex-shrink: 0; }
+/* Save image: the biggest thing on the sheet, full width on the bottom edge. */
+.sd-share-app--save {
+  flex-direction: row; justify-content: center; gap: 9px; flex-shrink: 0;
+  margin-top: 8px; padding: 14px;
+  border: none; background: var(--star, #e8a83c); color: #1a1208;
+  font-size: 13px; font-weight: 800;
+}
+.sd-share-app--save svg { width: 20px; height: 20px; }
+.sd-share-app--save:hover:not(:disabled) { background: var(--star, #e8a83c); color: #1a1208; filter: brightness(1.07); }
 .sd-share-app {
   min-width: 0; padding: 9px 4px 7px; border-radius: 12px;
   display: flex; flex-direction: column; align-items: center; gap: 6px;
@@ -7239,15 +7249,17 @@ body.sd-return .s-home-v3--review .v3-body { animation: rvpIn .34s ease-out both
 /* — delete — edit mode only. A quiet ghost under Save, red only in the type, so
    it reads as an option rather than a second call to action. It never acts on
    its own: it opens the confirm sheet below. */
+/* One line: Save fills it, the trash is a SQUARE at its right end (2026-09-11). */
+.plnew-actions { display: flex; align-items: stretch; gap: 8px; margin: 4px 0 16px; }
+.plnew-actions .plnew-create { flex: 1; margin: 0; }
 .plnew-delete {
-  width: 100%; margin: -8px 0 16px; padding: 11px;
-  border-radius: 12px; border: 1px solid rgba(232,86,86,0.28);
+  flex: 0 0 auto; width: 44px; margin: 0; padding: 0; align-self: stretch;
+  border-radius: 12px; border: 1px solid rgba(232,86,86,0.32);
   background: transparent; color: #e85656;
-  font-family: var(--font-main); font-size: 12px; font-weight: 700; letter-spacing: -0.1px;
-  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  display: inline-flex; align-items: center; justify-content: center;
   cursor: pointer; transition: background .15s, border-color .15s;
 }
-.plnew-delete svg { width: 14px; height: 14px; }
+.plnew-delete svg { width: 17px; height: 17px; }
 .plnew-delete:hover { background: rgba(232,86,86,0.08); border-color: rgba(232,86,86,0.5); }
 .s-home-v3--light .plnew-delete { color: #c93b3b; border-color: rgba(201,59,59,0.3); }
 .s-home-v3--light .plnew-delete:hover { background: rgba(201,59,59,0.07); }
