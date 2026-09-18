@@ -5358,7 +5358,7 @@ Desktop viewer shows a screen's variants side by side (single view is a Dark+Lig
 
 ## Mobile Prototype Modes
 
-On mobile (`≤767px`) the page opens **straight into Live, full height, with no bar** (Eric, 2026-09-18): `initMobile` sets `body.mb-bare` (style.css hides `#mobile-bar`) and calls `setMobileView('live')`, which starts on Home (`currentIdx = 2`). Add **`?tools`** to the URL to get the old header back — Single / Multi / Flow / Live segmented control, the persona switcher and the fullscreen button — starting in Single as before.
+On mobile (`≤767px`) the page opens **straight into Live, full height, with no bar** (Eric, 2026-09-18): `initMobile` sets `body.mb-bare` (style.css hides `#mobile-bar`) and calls `setMobileView('live')`, which starts on Home (`currentIdx = 2`). **Page-to-page in Live is a crossfade** (2026-09-18; it was a horizontal slide, which read badly on a real phone): `navigate()` marks the old screen `.fade-exit` and the new one `.fade-enter` (absolute over it, opacity only, style.css), same forwards and back, cleared after `MOBILE_FADE_MS`. The album / review pages, sheets and bento swipe have their own transitions and don't go through it. Add **`?tools`** to the URL to get the old header back — Single / Multi / Flow / Live segmented control, the persona switcher and the fullscreen button — starting in Single as before.
 
 ---
 

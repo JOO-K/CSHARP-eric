@@ -71,16 +71,21 @@ body {
   position: relative;
 }
 
-/* slide transition for mobile */
-.slide-enter  { animation: slideIn  0.28s cubic-bezier(0.4,0,0.2,1) forwards; }
-.slide-exit   { animation: slideOut 0.28s cubic-bezier(0.4,0,0.2,1) forwards; }
-.slide-back-enter { animation: slideBackIn  0.28s cubic-bezier(0.4,0,0.2,1) forwards; }
-.slide-back-exit  { animation: slideBackOut 0.28s cubic-bezier(0.4,0,0.2,1) forwards; }
-
-@keyframes slideIn      { from { transform: translateX(100%); } to { transform: translateX(0); } }
-@keyframes slideOut     { from { transform: translateX(0); }   to { transform: translateX(-30%); } }
-@keyframes slideBackIn  { from { transform: translateX(-30%); } to { transform: translateX(0); } }
-@keyframes slideBackOut { from { transform: translateX(0); }   to { transform: translateX(100%); } }
+/* Page-to-page transition on mobile (Live): a crossfade, the same forwards and
+   back. It was a horizontal slide until 2026-09-18 — see `navigate()` in app.js.
+   The old screen fades out quickly where it stands; the new one is lifted out of
+   flow over it (`position: absolute`) and fades in a beat later, so for a moment
+   you see neither at full strength rather than two pages ghosted together.
+   ⚠ OPACITY ONLY — no transform. A transform on a whole screen puts every
+   masked disc and fillet in it on a resampled layer for the length of the move.
+   ⚠ MOBILE_FADE_MS in app.js must outlast .06s + .22s. */
+#mobile-content > .fade-exit  { animation: fadeScreenOut .16s ease-out forwards; pointer-events: none; }
+#mobile-content > .fade-enter {
+  position: absolute; inset: 0; z-index: 1;
+  animation: fadeScreenIn .22s ease-out .06s both;
+}
+@keyframes fadeScreenOut { from { opacity: 1; } to { opacity: 0; } }
+@keyframes fadeScreenIn  { from { opacity: 0; } to { opacity: 1; } }
 
 /* ============================================================
    TOOLBAR

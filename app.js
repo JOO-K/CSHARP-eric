@@ -5808,7 +5808,12 @@ window.navigate = function(targetId, direction) {
     const isBack  = direction === 'back' || (navHistory.length && navHistory[navHistory.length-1] === idx);
     if (isBack) navHistory.pop(); else navHistory.push(currentIdx);
 
+    /* A tap during a fade leaves two screens in here — the one leaving and the
+       one arriving. The arriving one (last) is the screen you are on; anything
+       before it is already gone as far as the user is concerned. */
+    [...content.children].slice(0, -1).forEach(el => el.remove());
     const oldEl = content.firstElementChild;
+    if (oldEl) oldEl.classList.remove('fade-enter');
     const temp  = document.createElement('div');
     temp.innerHTML = getVariant(SCREENS[idx]).html;
     const newEl = temp.firstElementChild;
@@ -5818,14 +5823,22 @@ window.navigate = function(targetId, direction) {
       applyFilletMasks();
     });
 
+    /* A CROSSFADE, the same both ways (Eric, 2026-09-18). This was a sideways
+       push — new screen in from the right, old one out to the left, mirrored for
+       Back — and on a real phone it was bad: a whole-screen slide between pages
+       that are not spatially left or right of each other, and both screens sat
+       in flow during it. Now the old screen fades out where it stands and the
+       new one fades in over it (`.fade-enter` lifts it out of flow for the
+       duration so the two overlap instead of stacking).
+       ⚠ Only THIS path changed. The album page, the review page, the sheets and
+       the bento swipe have transitions of their own and don't come through here. */
     if (oldEl) {
-      const fwd = !isBack;
-      oldEl.classList.add(fwd ? 'slide-exit' : 'slide-back-exit');
-      newEl.classList.add(fwd ? 'slide-enter' : 'slide-back-enter');
+      oldEl.classList.add('fade-exit');
+      newEl.classList.add('fade-enter');
       setTimeout(() => {
         oldEl.remove();
-        newEl.classList.remove('slide-enter','slide-exit','slide-back-enter','slide-back-exit');
-      }, 300);
+        newEl.classList.remove('fade-enter');
+      }, MOBILE_FADE_MS);
     }
     currentIdx = idx;
   } else {
@@ -5833,6 +5846,8 @@ window.navigate = function(targetId, direction) {
     renderViewer();
   }
 };
+
+const MOBILE_FADE_MS = 300;   // ⚠ must outlast fadeScreenIn's delay + duration in style.css
 
 function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
 
