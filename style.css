@@ -248,6 +248,62 @@ body {
 .tb-plan-star { font-size: 9px; line-height: 1; }
 
 /* ============================================================
+   GUIDES — draggable alignment hairlines over the stage (guides.js).
+   The overlay takes no pointer; the lines do. z 95: over the roadmap.
+   ============================================================ */
+#guides {
+  position: absolute; inset: 0; z-index: 95;
+  pointer-events: none; overflow: hidden;
+}
+.gd-line {
+  position: absolute; pointer-events: auto;
+  --gd: #ff2d95;
+}
+.gd-line--h { left: 0; right: 0; height: 0; cursor: ns-resize; }
+.gd-line--v { top: 0; bottom: 0; width: 0; cursor: ew-resize; }
+/* The ink: 1px. The hit area: 9px (::before), so it can be grabbed. */
+.gd-line::after {
+  content: ''; position: absolute; background: var(--gd); opacity: 0.9;
+}
+.gd-line--h::after { left: 0; right: 0; top: 0; height: 1px; }
+.gd-line--v::after { top: 0; bottom: 0; left: 0; width: 1px; }
+.gd-line::before { content: ''; position: absolute; }
+.gd-line--h::before { left: 0; right: 0; top: -4px; height: 9px; }
+.gd-line--v::before { top: 0; bottom: 0; left: -4px; width: 9px; }
+.gd-line.is-live { --gd: #ff2d95; }
+.gd-line:not(.is-live) { --gd: #2ee6ff; }
+.gd-line.is-drag::after { opacity: 1; }
+.gd-tag {
+  position: absolute; pointer-events: none;
+  font: 600 10px/1 'SUSE Mono', ui-monospace, monospace; color: #0a0a0a;
+  background: var(--gd); padding: 2px 5px; border-radius: 3px; white-space: nowrap;
+}
+.gd-line--h .gd-tag { left: 8px; top: 3px; }
+.gd-line--v .gd-tag { top: 8px; left: 3px; }
+
+#guides-panel {
+  position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 96;
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 8px;
+  background: var(--vsurface); border: 1px solid var(--vborder); border-radius: 8px;
+  box-shadow: 0 8px 26px rgba(0,0,0,0.45);
+  font-size: 11px; color: var(--vtext);
+}
+#guides-panel[hidden] { display: none; }
+.gd-btn {
+  background: none; border: 1px solid var(--vborder); color: var(--vtext);
+  font: inherit; font-size: 11px; padding: 4px 9px; border-radius: 6px; cursor: pointer;
+}
+.gd-btn:hover { border-color: #ff2d95; color: #fff; }
+.gd-btn--clear:hover { border-color: #ff5c5c; }
+.gd-hint { color: var(--vdim); font-size: 10px; margin: 0 4px; }
+.gd-x {
+  background: none; border: none; color: var(--vdim); font-size: 15px; line-height: 1;
+  cursor: pointer; padding: 0 2px;
+}
+.gd-x:hover { color: var(--vtext); }
+
+/* ============================================================
    DEV BOX — live-tune the compact bento's two info lines.
    Floats over #stage on the right; the phone stays centred because
    #phone-container fills the full width (same trick as #page-nav).
@@ -568,11 +624,15 @@ body {
 }
 .screen-content::-webkit-scrollbar { display: none; }
 
-/* Home indicator */
+/* Home indicator — GONE (Eric, 2026-09-18): the app runs to the rounded
+   bottom of the screen instead of stopping 34px short at a bar. The element
+   is still emitted (renderSingle) and paintPhoneChrome still colours it, so
+   flipping this one line brings it back; `.screen-content` is `flex: 1` and
+   simply takes the height. */
 .home-indicator {
+  display: none;   /* was `display: flex` — restore that to bring the bar back */
   flex-shrink: 0;
   height: 34px;
-  display: flex;
   align-items: center;
   justify-content: center;
   /* Follows the status bar's icon theme, now that it sits on the app's colour. */

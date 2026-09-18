@@ -21,6 +21,7 @@
 | `style.css` | Desktop viewer chrome (toolbar, phone frame, variant tray) |
 | `roadmap.js` | Roadmap board — state, render, export (desktop viewer only) |
 | `roadmap.css` | Roadmap board styles |
+| `guides.js` | **Guides** — draggable alignment hairlines over the stage (toolbar → ┼ Guides; H/V add, arrows nudge, dbl-click removes, Clear). Self-contained, loads last; styles in `style.css` |
 | `flowchart.html` | Page map / user flow diagram |
 | `archive.csv` | Source of truth for artist/album metadata |
 | `images/` | Album art (~146 albums, `album-artistslug-albumslug.ext`), playlist covers (`playlist-*.jpg`), and `profile-skin-01.png` (profile theme 01 skin) |
@@ -541,8 +542,8 @@ mobile bar (`renderPersonaBar()` fills both from one markup string).
 |----|-----|------|
 | `eric` | **Eric** — **the default; the app boots into this one.** Seeded from his real Spotify artist capture (`NEWSPOTIFYARTISTS.png`, the same one behind `tools/artists.txt`), then edited by hand | warm amber |
 | `kpop` | **Kpopper** | glossy pink |
-| `oldies` | **Hank** — classic rock + oldies | warm paper, serif |
-| `hyperpop` | **16yearold** — new-age electronic pop | neon mint, mono |
+| `oldies` | **Hank** — classic rock + oldies | warm paper |
+| `hyperpop` | **16yearold** — new-age electronic pop | neon mint |
 | `thomas` | **Thomas** — Eric's friend, from his real Apple Music library export | electric blue |
 
 **There is no "Demo" button any more** — `eric` is the demo. `applyPersona('')`
@@ -640,7 +641,8 @@ scratch. The skin itself is one injected `<style id="persona-skins">`.
 `.persona-<id>.s-home-v3--light, .persona-<id>.sd-theme-light`. **A persona
 with one colour set painted both viewer variants the same** and the Dark|Light
 pair stopped being a comparison — hence `accentD/bgD/inkD/…` **and**
-`accentL/bgL/inkL/…` in the CSV. `font` and `radius` are shared.
+`accentL/bgL/inkL/…` in the CSV. `radius` is shared; `font` is no longer
+applied (see *Design Language*).
 
 ⚠️ Build the descendant selectors per base, not by joining bases with a comma:
 `"a, b .x"` scopes `.x` under `b` only, silently dropping every light screen but
@@ -802,6 +804,18 @@ sitting inside a template literal bite.
 ---
 
 ## Design Language & Aesthetics
+
+**NO SERIF unless Eric says so (2026-09-16).** DM Sans for reviews, comments,
+previews, composers — everything. Crimson Text was the "review voice" for a
+while and came off every review surface today. It survives only on the shop
+wheel's count (a deliberate annotation). **Personas no longer carry a
+typeface** (2026-09-17): Hank's skin set the whole app in Crimson and
+16yearold's in SUSE Mono, and every screen that hadn't pinned its own face
+inherited it — Eric hit it on the review bylines, then the playlist page.
+`personaSkinCss` skips `s.font` now; the CSV column is dead. Eric will name
+the niche places serif can come back; don't reach for it.
+Comment and preview rules pin `font-family: var(--font-main)` explicitly so
+nothing can inherit a serif in.
 
 ### Philosophy
 **Editorial-dark meets floating bento** — a music zine digitized. Between Letterboxd, a vinyl record store, and a Tumblr that cares about typography.
@@ -1088,7 +1102,34 @@ Grid children (in order): `.v3-album`, `.v3-right-col` (spans row 1 only), `.v3-
 - `border-radius: 0 15px 15px 0`
 - Contains: 2 small square album thumbnails (`.v3-red-thumbs` / `.v3-red-thumb`) at top with 9px margin + 5px gap, then one full-width featured album image (`.v3-red-next-img`) filling the rest with 9px margin and 11px border-radius
 
-### The log control — CTA + three quick squares (`.v3-rev-cta-row`)
+### The log control — THE RATE GROUP (`rateGroupHtml()` · `.v3-rate-group`, 2026-09-18)
+
+**Eric's `RateGroupnew2.svg` (the rounder wings, second pass — the lower lobes
+are near-circles and the drawing grew to 1633×1321 round the same disc), replacing the CTA + quick-log
+strip below.** One big circle — **"RATE · REVIEW · LOG"** on an arc inside its
+top, its fill a gradient whose white band a SMIL `animateTransform` sweeps
+left→right every 6s (~1.8s of sweep; SMIL because CSS can't move a gradient),
+and **"_._"** in the middle until you rate; your number over your discs once
+rated, the disc filling with the album gold and the arc going dark ink (a CSS
+`fill`, which beats the gradient attribute); "Reviewed" if you only wrote — with two wings
+hugging its lower half, each holding two lobes: **Listened** beside the circle
+and **Later** under it on the left, **Favorite** beside and **Share** under on
+the right. The SVG (his two wing paths verbatim + the circle) is the surfaces,
+pointer-events off; the five controls are transparent HTML buttons placed in
+% of the 1633×1321 viewBox (`.v3-rg-rate`, `.v3-rg-btn--tl/bl/tr/br`), so
+they scale with the phone and carry real labels. 83% of the column, centred,
+`aspect-ratio: 1633 / 1321` (83%, not the old 80%, so the disc stays the size it
+was when the drawing was 1575 wide — the arc type and the 34px number are
+sized against it). `syncRevCta` paints the circle; `toggleRevAction`
+/ `syncQuickLog` drive the lobes' `.on` (they match `.v3-rg-btn` as well as the
+artist page's surviving `.v3-rev-q` corner pill). Share is a bare button with
+`data-kind="review"` → `sdShare`. **The lobes' labels sit outside the
+bubbles** (2026-09-18): above the two upper lobes, below the two lower ones
+(`.v3-rg-lbl`, absolute off the button; the group's `margin-bottom` is the
+lower pair's room), so each bubble holds its glyph alone. Hidden on the artist page. Edit the drawing,
+not the numbers — the lobe boxes were read off the paths.
+
+### (Retired) CTA + three quick squares (`.v3-rev-cta-row`) — the notes below describe what the rate group replaced; the CSS is still in app.css
 
 - ⚠️ **It spans the ALBUM's width.** `.v3-rev-mine` used `align-items: center`
   in the `--album` state, which left the control floating: 268.2px of button
@@ -1194,6 +1235,12 @@ score → vinyls → count, and the count has to land *beside* the discs.
   mirrored layout) ahead of the cursor, so the stars row — asking for column 1 —
   gets pushed to a *second row*. That is the "rating stacked under the title"
   bug.
+- (If the two columns ever need their baselines matched across — album on the
+  number, artist on the discs — the way to do it is `grid-template-rows:
+  subgrid` on both with `align-items: baseline` on `.v3-blue`; verified exact
+  in Chrome on 2026-09-17 and then backed out, because it was built on a
+  misreading of a request about the FEED card. The feed card is where it
+  shipped — see *Review cards*.)
 - ⚠️ **The title overhangs the rating column, and the artist gives the room
   back.** The rating column's track is sized by its *widest* row — the count
   plus the vinyls — but the title's only neighbour is the compact score above
@@ -1277,9 +1324,19 @@ Fillet positions:
 ### Scroll Area — the activity feed
 `.v3-scroll-area` — `flex: 1; overflow-y: auto; padding: 10px 12px 96px` (matched to `.ntf-scroll`). It holds one thing: `.v3-feed-items`, filled by `renderFriendFeed`.
 
-**The feed IS the Notifications component.** Its rows are `.ntf-group` / `.ntf-row` / `.ntf-ava` / `.ntf-badge` / `.ntf-quote` — not a parallel set of classes — and the `--sd-*` token block is scoped to `.s-home-v3` so the home shell inherits the inbox's look whole, in both themes. `--sd-bg` is already exactly the home shell's own background (`#111116` / `#f0ece3`), which is what makes the badge's punch-through ring cut cleanly on all three screens.
+**Review and rating rows are the ALBUM PAGE'S REVIEW CARD (2026-09-14).** Eric: the album page's review list is what the app is meant to look like, so the feed's reviews wear it — `renderFriendFeed` → `revCardHtml` with `.v3-rev-card--feed` (one builder, see *Review cards*), photo · name over `@handle · when` · the big score column with records, square like and comment pill. Same key as the album page's pinned card (`feedRevKey`), so a like or a comment count is one act on both surfaces. Two things the album page's card doesn't have and the feed's does:
+- **The record line** (`o.record` → `.v3-rev-record`: a square cover under the round photo, with the album (13px regular) over artist (11px bold) beside it, all DM Sans since 2026-09-16 — built by `recordWhoHtml`, which the activity cards use too (a follow row passes `tag: 'Artist'`, an 11px/500 lead on the album's line). **No year on the feed** (Eric, 2026-09-16: it was tried left of the album name and came off the same day as too much; it belongs on the album page); a long album name **fades at its right edge** (`.v3-rev-record-album.is-long`, measured sideways by `markLongReviews`) rather than ellipsing; taps `feedOpenArt`). ⚠️ **The score sits on the RECORD's row, not the person's** (Eric, 2026-09-14): with the score column beside the photo the card read "drumkid 4.5" and what was rated was a row further down. The feed card overrides the grid to `"top top" / "rec big" / "text big" / "foot foot"`, so the byline (photo · name · @handle · when) runs the card's full width and the whole score column — number, discs, like, comment — starts on the record row: "Hyperdrama … 4.5" on one line, the cover (53px) and the like (53×53 in px, `aspect-ratio: auto`) still twins beneath. Cover and number share a row top, so nothing is summed to align them; `--rev-obj-gap` (11px) is the air between byline and record row, on both the record line and the score column. ⚠️ A `subgrid` version of the old alignment **ballooned the like button** — a stretched grid item with `aspect-ratio: 1` feeds its row's height back into its width; don't go back to it. The album page's card keeps its own areas and flex column. The album page *is* the record, so no card there passes it. It has its own grid row (`"rec big"`), 0 tall when empty, so the album page's cards lay out exactly as before. `year` comes from `FRIEND_ACTIVITY` or, for persona rows, the archive (`friendAlbumFor`).
+- **BASELINES (Eric, 2026-09-17):** the album name sits on the 26px number's baseline and the artist on the discs' bottom — exact, not tuned. The record row is TWO grid rows (`"score rec"` twice, so each area spans both) and `.v3-rev-big` and `.v3-rev-record` are `grid-template-rows: subgrid` with `align-items: baseline`, so number/album share track 1 and discs/artist share track 2 across the columns (`.v3-rev-record-who` is `display: contents`). The 53px cover would have grown the rows, so it carries `margin: -60px 0` (contributes nothing) and `align-self: center`; the ~4.5px it overhangs is given back in `--rev-obj-gap` (15.5) and the text margin (17.5). Verified in Chrome: 0.00px on both pairs, both themes; activity rows unaffected (their verb spans the two rows, centred). Then two **optical lifts** on top (Eric, same day — it read a touch low): the album line `top: -1.5px` (up, deliberately NOT on the number's baseline) and the artist `top: -1px` (up to meet the discs, which overshoot like a round letter). Paint-only; the grid underneath stays exact.
+- **FLIPPED (Eric, 2026-09-16)** — after the album page's card landed with its score on the left (see *Review cards*) and he liked it, the feed's record row is now `"score rec"`: the 26px number with the discs **stacked under** it on the LEFT, under the photo, and the record on the RIGHT, mirrored — the cover flush with the card's right edge (`row-reverse`), album / artist / year to the left of it, right-aligned and ellipsing (`max-width: 100%`) so a long title never pushes the cover off the card. The album page's card is the same skeleton with the row's right half empty. ⚠️ The activity cards' verb (`.v3-rev-act`) moved with it into the `score` area — it used to be a hard-coded row/column that now lands on the cover. The grid-override paragraph above describes the layout this replaced; its ⚠️ about `subgrid` still stands.
+- **`o.feed`** (the `_FEED` index) lands on the card as `data-feed`. **Two taps, two places (Eric, 2026-09-18):** the CARD (`cmtCardTap`) → `feedOpen` → the album page with the review pinned; the COMMENT PILL (`cmtCompose`) → `feedOpenReview` → the review page itself. The feed never fills `REV_INDEX` (the album page does as it renders), so `feedOpenReview` writes the entry from the feed event under the same `feedRevKey` the album page's card uses — one thread, one like, whichever way in. The pill is a live button now, shown even at zero (it was `pointer-events: none` and hidden at 0 while it merely restated the card tap).
+- ⚠️ **`.v3-rev-card--feed` re-inks the card off the `--sd-*` tokens** (a `(0,3,0)` block after the `--light .v3-rev-*` overrides in app.css). Every `.v3-rev-*` colour is hard-coded for the album page's surface, the album's procedural colour, dark in both themes; the feed sits on the screen bg, cream in light. Same trap as `--vinyl-empty` and `.v3-up--feed`: the value follows the surface, not the theme. Its 11px side padding matches `.ntf-row`'s so photos share a left edge with the rows between.
+- A rating row is the same card with no text. Cards are flat divider rows like the album page's list — no `--new` fill; the sticky *Today* header says what's new. Their five-line fade runs through `markLongReviews(container)` on the same now / 80ms / 600ms rhythm as the album page.
 
-⚠️ **Do not add home-only row rules.** The feed first shipped with a star line, an upvote pill and its own row spacing, and the result no longer looked like the screen it was copying — which was the whole point. If a row needs to change, change `.ntf-row` and let both screens move together.
+**The other verbs are still the Notifications component** — favourited · logged · saved for later · added to a playlist · followed are one-line facts, not reviews, and stay `.ntf-group` / `.ntf-row` / `.ntf-ava` / `.ntf-badge` — not a parallel set of classes — and the `--sd-*` token block is scoped to `.s-home-v3` so the home shell inherits the inbox's look whole, in both themes. `--sd-bg` is already exactly the home shell's own background (`#111116` / `#f0ece3`), which is what makes the badge's punch-through ring cut cleanly on all three screens. `.ntf-quote` and the `.ntf-acts` pills below are now only reached if a review row falls back to `.ntf-row`, which none does.
+
+**One photo size below the bento** (Eric, 2026-09-14): `.v3-feed-items .ntf-ava` is 36px with a 9px row gap — the card's photo and gap — so every post's portrait is the same size on the same left edge; the badge steps down to 17px with it. The inbox keeps its 44px. This is the one home-only `.ntf-row` rule that is sanctioned.
+
+⚠️ **Otherwise, do not add home-only row rules to `.ntf-row`.** The feed first shipped with a star line, an upvote pill and its own row spacing, and the result no longer looked like the screen it was copying — which was the whole point. If a row needs to change, change `.ntf-row` and let both screens move together.
 
 **The one sanctioned divergence: engagement pills on review rows.** A feed row for a `review`/`rating` now carries a like pill and a comment pill, because the feed's job is other people's reviews and you should be able to see that one has traction — and add to it — without leaving home. It is built from the **shared** vocabulary and changes nothing about the row's anatomy: `.ntf-foot` holds the timestamp and the pills on one line, and with no pills it is a flex row of one child, so an inbox row that adopts it looks exactly as it does now. That's the difference from the attempt this warning was written about, which also added a star line and its own spacing. **The inbox's own like/comment rows can take `.ntf-acts` as-is** when they want the same affordance.
 - The like pill uses **`feedRevKey(e)`**, the same key the album page's pinned card uses — so liking in the feed and liking on the album page are one act, not two counters. ⚠️ Change one and the other has to follow.
@@ -1310,6 +1367,22 @@ The two **"you may know" rails** (`renderKnowRails`, `.v3-rail` / `.v3-kcard`, m
 - `_FEED` is memoised for two reasons: the dark and light shells render separately and would otherwise each deal their own feed, and re-rendering home shouldn't reshuffle it under the user.
 
 **Feed row taps** (rows carry an index into `_FEED`, no attribute escaping — the same idiom the old cards used): tapping the **row** → `feedOpen(n)`, which routes by kind (review/rating → the pinned-review flow, playlist → `openPlaylistPage`, follow → `openArtistPageFor`, release/trending → the album). Tapping the **trailing thumb** → `feedOpenArt(n)` → whatever it's a picture *of*: the album, or the artist on a follow row, where the thumb is their photo and rendered round. The pinned-review flow is unchanged: `openFriendReview(i)` → `openAlbumPage(album, pinnedReview)`, the album page opens, `.v3-body` smooth-scrolls to the review list (rect math divided by the phone-wrap scale), and the tapped review renders **pinned first** in `populateReviewList` (`.v3-rev-card--pinned`, star-outlined with a "from your feed" chip; survives filter switches, cleared whenever an album page opens without a pin).
+
+### The cover's two vertical gestures don't fire into each other (2026-09-14)
+
+Pull-to-refresh (`sdPtr*`, delegated at the document) and Pro's hold-to-open
+the shelf wheel (`proWheelInit`) both live on the cover's vertical axis, and
+they used to trigger each other both ways: a finger pulling down that was
+still on the cover 240ms later armed the wheel (the hold timer ignored
+movement), and once the wheel was open, dragging the list was also a pull, so
+picking a shelf re-dealt the feed. Two rules keep them apart:
+- **Movement before the timer fires cancels the hold** (`HOLD_SLOP`, 8px, a
+  pre-arm `pointermove` on the cover). A moving finger is scrolling, swiping or
+  pulling, never holding. A pull already `active` also refuses to start a hold.
+- **An armed wheel owns the axis**: `window._sdHold` is true from arm to
+  disarm; `sdPtrStart` refuses to begin, `sdPtrMove` drops a pull in flight,
+  and the document `touchmove` guard `preventDefault`s so nothing scrolls
+  under the wheel. Arming also nulls `_ptr` outright.
 
 ### Bottom Nav — the floating glass console (`bottomNav(active)` in screens.js)
 
@@ -1577,9 +1650,9 @@ the other three. Events, Themes and Badges are the full shelf.
 
 | Tab | Shows |
 |-----|-------|
-| General | Pro showcase · Pro pitch · 2 featured events · 4 themes · 4 badges |
+| General | Pro showcase · Pro pitch · 2 featured events · 5 themes (Furry among them) · 4 badges |
 | Events | the Pro pitch + all 6 events |
-| Themes | all 6 themes + the 4 frames |
+| Themes | all 7 themes (Furry is one) + the 4 frames |
 | Badges | all 8 badges |
 
 - **A thing can be in two aisles at once** — `data-cat="general events"`. That's
@@ -1607,7 +1680,14 @@ the other three. Events, Themes and Badges are the full shelf.
   the brief, and a ring around your favourites is the look of your page the same
   way a theme is.
 
-#### Skins — the bento's costume (`SKIN_IDS` · `bentoSkin` · `bentoSkinOwned` in app.js)
+#### The top of the shop (Eric, 2026-09-17)
+
+- **`.shop-top` is ONE ROW**: the back pill on the left and the dot-language SHOP mark in the upper right at the pill's level, 18px tall (it was a 34px heading on a line of its own). A label, not a heading — it must not push the store down.
+- ⚠️ **The aisle bar is NOT sticky any more** — `.shop-cats` scrolls away with the page and paints no background. The `--sd-bg` warning above only matters again if it is ever pinned back.
+
+#### Skins — the FURRY THEME (`SKIN_IDS` · `bentoSkin` · `bentoSkinOwned` in app.js)
+
+**Furry is sold as a THEME now (Eric, 2026-09-17)** — a `.shop-tile--theme` in the Themes shelf (`furryTheme` in `shopHtml`, second after Funky 01), not a "Skins" row of its own; that section is gone. It is the one theme that is real state: the machinery below is unchanged, only where it is sold moved. Worn, it also puts **dog ears on your profile card** — `profEarsHtml()` draws the skin's two ears INSIDE `.prof-base`, standing on the name banner's flat top above the picture pane (x 48→328 of 690; the banner's flat top is 35→340 at its narrowest, so they always have ground), so the card's own emboss shadow shapes them and they take `--pf-base`. Always emitted, shown by `body.sd-skin-furry .prof-ears`. Settings › Appearance calls the switch `Furry theme`.
 
 A skin dresses the **home bento** — Furry (Eric, 2026-09-04) is ears above the
 top edge and a tail curl below, drawn as `bentoSkinBackHtml` /
@@ -3358,6 +3438,34 @@ They're decoupled because a **swipe** already filmstrips the cover art itself, s
 ## Playlists / Library v2 (`playlistsHtml(light)` in screens.js)
 
 Adapted to the home shell like the wall: `.s-home-v3 .s-pl2` + `appHeader()` + `.v3-body > .pl2-scroll` + `nowBar()` + `bottomNav('playlists')`, rendered as a Float·Dark/Float·Light getter pair. **Playlists only** — no page title (the pills ARE the header; the old "Library / yours, catalogued" heading and the Artists/Albums/Songs/Genres tabs are gone). The top bar (`.pl2-topbar`) is two sort pills, then on the right an embossed **Discover** button and an embossed **"+" (new playlist) button** (both share the `.v3-search-pill` neu-emboss; "+" is prototype-only, no handler). Pills reuse the wall's `.wall2-bar`/`.wall2-cat`, switched client-side by `plTab(btn, tab)` in app.js (toggles `hidden` on `.pl2-sec[data-tab]` sections; no re-navigation — `plTab` also clears/sets `.active` on `.pl2-discover`, which acts as a third tab and fills `var(--star)` when active); the pill row scrolls horizontally and **fades out at the right edge** (CSS mask) when it overflows:
+> ⚠️ **2026-09-18 (Eric): Popularity and Discover are OUT "for now"**, and the
+> pill row is your LIBRARY: **All Playlists · Favorite albums · Listened ·
+> Listen later · Favorite songs**, with only the "+" on the right. The bullets
+> below describe the two retired tabs; `.pl2-discover`'s CSS is still in
+> app.css for the day Discover returns.
+>
+> - **`plLibrary()` (screens.js) reads the log drafts — there is no second
+>   store.** Favorite / Listened / Later are the flags the album page's rate
+>   group and the log sheet already write, and a favourite song is a
+>   `song::title::album` draft with `fav`. Newest touch first. ⚠️ A **rated**
+>   album counts as Listened whether or not the lobe was pressed.
+> - Albums render as the trending wall's `.wall2-grid` cell — rated, the discs and number are YOUR
+>   score with a "Your rating" caption under them (`.pl2-lib-mine`); unrated,
+>   the crowd's as on the wall; songs as the playlist page's `.plp-song` row with a
+>   cover where the number was (`.pl2-lib-song`), tapping through to the log
+>   sheet via `plSongTap`.
+> - ⚠️ **Drafts now carry `image` and a `snap`** (`libSnapFor`, app.js). Two
+>   thirds of what you swipe past is the runtime rec pool, gone from ARCHIVE
+>   after a reload; `plLibOpen` rebuilds the record from the snap with
+>   `dzRecord`'s own seeded numbers and adopts it back into ARCHIVE. Drafts
+>   written before this date have no snap, so a rec logged earlier only shows
+>   while it happens to be in the deal.
+> - `plTab` stamps `window.PL_TAB` (the `WALL_SORT` idiom) so Back from an
+>   album lands on the tab you left, and scrolls the picked pill into the row
+>   by hand — `scrollIntoView` would also move `.v3-body`.
+> - The tabs are EMPTY on a fresh browser — they are real state, not seeded —
+>   and each says how to fill it.
+
 - **All Playlists** — chronological (the `plLists()` order)
 - **Popularity** — favs desc
 - **Discover** — community playlists (`creator !== 'you'`), most-loved first (`plays` still lives in `plLists()` data, currently unused)
@@ -4028,6 +4136,19 @@ that is theirs and not the album's.
   rail's scroll position — `profFavPaint` is the only writer.
 - ⚠️ **The edit screen renders the rail too.** The favourites left the card, so
   without it there is no way to change them any more.
+
+### Pins + review history are THE HOME FEED'S CARD (Eric, 2026-09-18)
+
+`profReviewCardHtml(P, e)` (screens.js) renders both — `revCardHtml` with
+`v3-rev-card--feed v3-rev-card--prof`, `timeRight`/`actsTop` and the record
+line — so the profile reads like home. `.prof-pins, .prof-feed` re-point the
+`--sd-*` tokens the feed card inks itself with at the profile's `--pf-*` set
+(one rule, both themes and skins), and pull the divider's full-width bleed
+back to the card. `applyProfColors` runs `tintFeedRecords` + `markLongReviews`
+on the profile after render, as the feed does. The cover on a card with no
+`feed` index opens the album via `revCardArt` (REV_INDEX). The `.ntf-row`
+notes below describe the row this replaced; `profReviewRowHtml` survives only
+as the fallback if app.js is missing.
 
 ### Review history — the last section (`profReviewLog` in `screens.js`)
 
@@ -4726,7 +4847,7 @@ halfStars(rating, size)  // halfStars(4.4, 16) → star span HTML
 
 1. **Draw the disc with a gradient mask, never an SVG `mask-image`.** An SVG mask is rasterised once and then *sampled*. At ~10px, with a fractional size and gap, every disc in a row lands on a different sub-pixel offset and samples that bitmap differently — so they render at visibly different weights and **the first one looks bigger than the other four**. `.hstar` now uses `radial-gradient(circle closest-side, transparent 0 20%, #000 21% 91%, transparent 92%)`, resolved at paint time at device resolution. Stops map 1:1 onto the old artwork (hole radius 10% of the box, outer edge 45.5%). `halfStars` also **rounds** its size and `.hstars` uses a whole-pixel `gap`; the old `×0.72` gave `10.08px` and the gap was `1.5px`.
 2. **`--vinyl-empty` follows the SURFACE, not the theme.** Light mode is mostly cream, so the default flips to dark ink — but the bento stats block and the review panel sit on the album's **procedural colour, which is dark in both themes**. Theming those by variant put dark ink on a dark album and the empty vinyls vanished. `.s-home-v3--light .v3-blue-stars-row, .v3-rev-card, .v3-rev-hist` override back to the light value. (`--text3` remains the fallback for everything else that uses it.)
-3. **`vertical-align` does nothing on `.hstars`** — it's a flex item of `.v3-blue-stars-row`, and flex items ignore it. Alignment there comes from the row's `align-items: baseline`, which already puts the disc **boxes** exactly on the number's text baseline (measured: 0.00px off). A disc is still taller than the digits' cap height, so it looms; `.hstars` carries `transform: translateY(10%)` as an *optical* correction, scale-relative so it holds at every rating size.
+3. **`vertical-align` does nothing on `.hstars`** — it's a flex item of `.v3-blue-stars-row`, and flex items ignore it. Alignment there comes from the row's `align-items: baseline`, which already puts the disc **boxes** exactly on the number's text baseline (measured: 0.00px off). A disc is still taller than the digits' cap height, so it looms; `.hstars` carries `position: relative; top: 1px` as an *optical* correction. ⚠️ It was `transform: translateY(10%)` until 2026-09-18 and **must not go back to a transform**: a transform on a masked element makes it its own compositing layer, which the scaled phone wrap (and WebKit on the real phone) resamples — the discs read blurry. The same goes for every small nudge on the feed card (`.v3-rev-big`, the cover, the verb, the bento's count): all `top`, none `translateY`. Same family as the `animation-fill-mode: both` blur under *Review cards*.
 
 `halfStars(rating, size)` now renders **vinyl records, not stars** — every rating across the app routes through it. Each unit is a `.hstar` span masked by `--vinyl-mask` (a disc-with-center-hole SVG); `full`/`empty`/`half` just set the background (half = a 50/50 `--star`/`--text3` gradient under the mask). Sizes are scaled ×0.72 so a vinyl matches the old ★ glyph's footprint (its top lines up with an adjacent number's cap height). `--text3` still controls the empty color per screen.
 
@@ -4919,7 +5040,9 @@ list — keying the extras against `a.reviews` would put them all at index 0.
 **One builder** (2026-09-11 — it was four copies: pinned, list, and two
 "mine" cards, forever drifting). The card is the **review page's hero at list
 scale**: `.v3-rev-card-top` = 36px photo (`feedFace`) · `.v3-rev-who` (name,
-with the pinned chip beside it, over `@handle · when`) · **`.v3-rev-big`** on
+with the pinned chip beside it, then `@handle · when` **on the same line** —
+one baseline since 2026-09-14, Eric; the name ellipses, the handle and time
+never wrap; only the hero still stacks them) · **`.v3-rev-big`** on
 the right (the score at 21px/800 with the small records under it) — then
 `.v3-rev-text` (3 lines, clamped) — then `.v3-rev-foot` › `.v3-rev-acts`
 (Share on your own card only — the **upvote pill AND the comment pill sit
@@ -4939,6 +5062,26 @@ more** (`.v3-rev-meta` / `.v3-rev-verb` / `.v3-rev-score` are not emitted; the
 CSS is kept for the moment). The handle is derived from the name unless
 given; your own card passes `PROFILE.handle` and your photo, and `likes:
 null` (no upvote pill on yourself).
+- **The album page's cards wear the FEED'S card now (Eric, 2026-09-16):**
+  `populateReviewList` gives every card (list, pinned, mine) `cls:
+  'v3-rev-card--page'` plus the feed's `timeRight` + `actsTop` flags, so the
+  paragraph above describes the DEFAULT card (the shape the profile's pins and
+  anything else calling `revCardHtml` bare still get) — on the album and
+  artist pages the card is: byline (photo · name · @handle) with the bare
+  comment-count · heart · time on the same top row, then a **score row**
+  (26px number with the discs STACKED under it, on the LEFT under the photo — the
+  feed puts its score on the right of the record row, but with no record the
+  left was empty and a right-hung number read as stray), then the text
+  **full width** at the feed's 12.5px / four lines / left-ragged, then the
+  foot. Padding 17px top / 18px bottom like the feed; sides untouched so the
+  pinned card's edge-to-edge bleed still works (the rule sets only top and
+  bottom — see the ⚠️ on it in app.css). Ink stays the album surface's
+  hard-coded warm white, with `--light.--artist` re-inks for the artist
+  page's cream panel. Unlike the feed's, the comment pill on the top row is
+  LIVE (it's `cmtCompose` — this is the page with the thread).
+- **The first two comments ride the card (Eric, 2026-09-16):** `populateReviewList` passes `preview` (two roots from `cmtRoots`, which seeds and caches the same thread the review page shows) and `previewTotal`; `revCardInner` renders them as `.v3-rev-cmts` under the text — face · **name** · text, wrapped to TWO lines that fade out at the BOTTOM when there's more (`.is-long`, set by `markLongReviews` the way the review text's is; it was one line fading off the right edge until 2026-09-17, Eric) — with "View all n comments" when there are more. The page grid has a `cmts` row for it (0 tall when empty). The rows aren't tappable on their own; the card is.
+- **The review page's hero is this card too (rebuilt 2026-09-16):** `reviewPanelHtml` passes `cls: 'v3-rev-card--page v3-rev-card--hero', big, timeRight, actsTop`, so the hero is the album page's card at reading scale — heart then share on the top row (`revCardInner` orders them heart-first when `big`), time hard right, 40px number with 22px discs stacked under it, text full width and unclamped. The hero's CSS sits AFTER the page block so its measures win at equal specificity. **Trimmed 2026-09-17 (Eric):** the number is 32px and the discs 17px, and the HEART left the top row for the score row's right end — `revCardInner` emits it as `.v3-rev-top-acts.v3-rev-score-like` (so the bare-heart styling carries), a second child of the `score` grid area hung `justify-self: end` and exactly the number's height (32px) so the two centre on one line. Share and the time keep the top row. ⚠️ Change the number's size and change `.v3-rev-score-like`'s height with it.
+- ⚠️ **The review page read BLURRY on the phone (2026-09-16).** Not a stylesheet mistake — the desktop viewer rendered it sharp. The body's `rvpIn` fade had `animation-fill-mode: both`; a fill-forwards animation on a masked scroller keeps it on a compositing layer, and WebKit rasterises that layer's text unscaled inside the scaled phone wrap. It's `backwards` now (both `rvpIn` rules): the end state is opacity 1 anyway, so nothing is lost and the layer is released when the fade ends. If any other fade-in ships `both` on a scrolling body and reads soft on device, this is why. **It has now bitten three times** (2026-09-18: the in-place `.v3-rvp-panel`, and the album page's own `v3revin` on `.v3-review-panel` — that one animates a transform, and ending on `transform: none` still keeps the layer). Rule: **no `animation-fill-mode: both`/`forwards` on anything that holds text — `backwards` only.** The only `both` left are the mix dial's spin-in and onboarding's hub label.
 - ⚠️ **The pinned card is a HIGHLIGHTED ROW, not a card in a box.** It first
   shipped outlined in `--star`, inset 10px and rounded, and read as stifled — a
   panel sitting *on top of* the list rather than the first item *in* it. Now
@@ -5006,10 +5149,14 @@ scroll**: `cmtAutoMore` (a capture-phase scroll listener on the page's
 thread pads 60px so it runs out through the body's own bottom fade. Counts
 were raised to feed it — `revMeta` deals 6–43 comments and `revThread` caps
 at 48. On the page the comment like is a 22px heart over its count, a real
-target. **On the review page the rows are the
-hero's shape, smaller** (`.s-rvp .v3-cmt*`, CSS only over the shared
-`cmtNodeHtml`): 28px photo in its own column, "name · when" over the text,
-and the like (heart over count) on the far right, top-aligned. No record line.
+target. **A comment is the REVIEW CARD's shape, minus the score and the
+share** (Eric, 2026-09-17 — the small face beside a column with "♥ n" under
+the text read as Reddit): `cmtNodeHtml` emits `.v3-cmt-top` (30px photo ·
+name over @handle · bare heart + count · time hard right) and then the text
+FULL WIDTH underneath, with a hairline between rows. The handle is derived
+from the name like the card's (`c.handle` wins; yours is `PROFILE.handle`).
+The like is `RVP_HEART`, pink when on like the card's. `.v3-cmt-acts` is only
+emitted for Reply (i.e. never, while `CMT_FLAT`). No record line.
 There's a like on every comment and one composer per
 thread — **Reply aims that composer at a comment** (`CMT_REPLY_TO`) so the post
 nests under it; posting with nothing aimed lands at the **base** of the thread.
@@ -5174,7 +5321,7 @@ On mobile (`≤767px`): Single / Multi / Flow / Live modes via header segmented 
 - **No top nav bar on home** — search and profile icons live in the 46px search corner of the bento
 - **Bottom nav is pinned** — requires `height: 100%` on `.s-home-v3`, not just `flex: 1`
 - **CD is absolutely positioned** — decoupled from row height so it can be any size without pushing the blue box taller
-- **The rating gold follows the album** — `--star` resolves `var(--v3-star, var(--persona-accent, #e8a83c))`, so the vinyls and the review histogram re-tint on every album switch. ⚠️ **Nothing may set `--star` directly** — a persona doing so pinned the vinyls to one colour and stopped them tracking the album.
+- **The rating gold follows the album** — `--star` resolves `var(--v3-star, var(--persona-accent, #e8a83c))`, so the vinyls and the review histogram re-tint on every album switch. ⚠️ **Nothing may set `--star` directly** — a persona doing so pinned the vinyls to one colour and stopped them tracking the album. **One sanctioned exception (2026-09-18): the home feed's cards.** `tintFeedRecords` sets `--star` inline on each `.v3-rev-card--feed` from its own cover (same `computeAlbumColors` + cache), so a card's discs match the record it's about rather than the bento's. It has to be `--star`, not `--v3-star`: `--star` resolves on `.s-home-v3` and inherits down as a plain colour.
 - **Ratings read `--v3-star`, not `--v3-accent`.** A greyscale or black-dominant cover deliberately extracts to a neutral (the `darkFrac` branch hard-codes `#b9b9c1`) — correct for the bento box, dreadful for the vinyls, which just went grey. `computeAlbumColors` therefore also emits `star`: the accent unless its saturation is under 0.22, in which case the house gold. `accent` itself is untouched — the boxes still want the neutral.
 - **`renderSingle()` alone is never enough.** It rebuilds the phones from their static templates, so every screen comes back with the placeholder cover baked into the markup and no data. Anything that rebuilds must follow with `paintAfterRender()` — which is why the resize handler calls `renderViewer()`, not `renderSingle()`.
 - **Colour extraction needs CORS** — `computeAlbumColors` sets `img.crossOrigin = 'anonymous'` for absolute URLs. Without it, `getImageData` throws a tainted-canvas error on the personas' Deezer CDN covers, the `catch` swallows it, and every album silently falls back to the hard-coded flood colour.

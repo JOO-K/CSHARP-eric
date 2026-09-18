@@ -291,6 +291,64 @@ function bentoSkinFrontHtml() {
             <svg class="v3-skin-front v3-skin-front--tail v3-skin--furry" viewBox="0 816.092 689 74.908" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><path class="v3-skin-outer" d="M46.9079 815.661H179.627C185.261 815.661 189.828 811.093 189.828 805.459C189.828 799.825 185.261 795.257 179.627 795.257H47.6451C21.6076 795.257 0.5 816.365 0.5 842.402C0.5 868.44 21.6076 889.547 47.6451 889.547H136.18C142.256 889.547 147.181 884.622 147.181 878.546C147.181 872.471 142.256 867.545 136.18 867.545H46.9079C32.5803 867.545 20.9655 855.93 20.9655 841.603C20.9655 827.275 32.5803 815.661 46.9079 815.661Z"/></svg>`;
 }
 
+/* ── The RATE GROUP — the album page's log control (Eric's RateGroup.svg,
+   2026-09-18) ────────────────────────────────────────────────────────────
+   One big circle with two wings hugging its lower half, drawn 1633×1321.
+   The circle is RATE — the word until you have rated, your number and discs
+   after (syncRevCta paints it). Each wing has two lobes: beside the circle
+   and under it. Left wing: Listened (beside) · Listen later (under). Right
+   wing: Favorite (beside) · Share (under). The shapes are the SVG; the five
+   controls are HTML boxes placed over them in % of the viewBox (see
+   .v3-rate-group in app.css), so the taps are real buttons with real labels
+   and the artwork never has to know. ⚠️ The wing paths are Eric's, verbatim
+   — the offset curve hugging the circle is his, not a computed arc. Edit the
+   drawing, not the numbers. Replaces the CTA + quick-log strip. */
+const RG_L = 'M0.5 763.796V757.089C0.5 672.615 68.9793 604.136 153.453 604.136C225.142 604.136 285.09 655.194 315.489 720.119C383.138 864.602 509.112 967.986 661.7 1014.75C734.176 1036.96 792.994 1098.32 792.994 1174.13C792.994 1254.88 727.533 1320.34 646.784 1320.34H612.657C513.06 1320.34 432.32 1239.6 432.32 1140V1121.9C432.32 1012.3 343.475 923.455 233.879 923.455H160.16C71.982 923.455 0.5 851.973 0.5 763.796Z';
+const RG_R = 'M1631.84 763.796V757.089C1631.84 672.615 1563.36 604.136 1478.89 604.136C1407.2 604.136 1347.25 655.194 1316.85 720.119C1249.21 864.602 1123.23 967.986 970.643 1014.75C898.167 1036.96 839.349 1098.32 839.349 1174.13C839.349 1254.88 904.81 1320.34 985.56 1320.34H1019.69C1119.28 1320.34 1200.02 1239.6 1200.02 1140V1121.9C1200.02 1012.3 1288.87 923.455 1398.46 923.455H1472.18C1560.36 923.455 1631.84 851.973 1631.84 763.796Z';
+const RG_SHARE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4"/><path d="m7.5 8.5 4.5-4.5 4.5 4.5"/><path d="M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/></svg>';
+/* Inside the circle (Eric, 2026-09-18): "RATE · REVIEW · LOG" set along an
+   arc inside the top of the disc (a textPath on a radius-330 arc, centre
+   814,486 — the disc's centre, 156 units in from its edge), and in the middle
+   "_._" — the shape of the rating that isn't there yet (Eric, same day; it
+   was three waving dots for an hour). The arc GLOWS left to right every six
+   seconds: its fill is a gradient with a white band, swept across by a SMIL
+   animateTransform (~1.8s of sweep, then it rests off to the right) — SMIL
+   because a gradient can't be moved from CSS. Rated, the number and discs
+   take the middle, the blank goes, and CSS overrides the fill to dark ink
+   (a CSS `fill` beats the attribute). ⚠️ The arc path and the gradient need
+   ids and the group is rendered once per home variant, so ids are counted.
+   ⚠️ The wings are Eric's RateGroupnew2.svg (2026-09-18, rounder again — the
+   lower lobes are near-circles now and the drawing grew to 1633×1321; the
+   disc is the same 485.6 radius, its centre moved to x 814.345). */
+let _rgN = 0;
+function rateGroupHtml() {
+  const id = 'rg-arc-' + (++_rgN);
+  return `<div class="v3-rate-group">
+                  <svg class="v3-rg-shape" viewBox="0 0 1633 1321" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+                    <path class="v3-rg-wing" d="${RG_L}"/>
+                    <path class="v3-rg-wing" d="${RG_R}"/>
+                    <circle class="v3-rg-disc" cx="814.345" cy="486.103" r="485.603"/>
+                    <defs><path id="${id}" d="M 484.345 486.103 A 330 330 0 0 1 1144.345 486.103"/></defs>
+                    <defs>
+                      <linearGradient id="${id}-g" gradientUnits="userSpaceOnUse" x1="329" x2="1300" y1="0" y2="0">
+                        <stop offset="0.30" stop-color="rgba(232,226,214,0.5)"/>
+                        <stop offset="0.50" stop-color="#ffffff"/>
+                        <stop offset="0.70" stop-color="rgba(232,226,214,0.5)"/>
+                        <animateTransform attributeName="gradientTransform" type="translate"
+                          values="-1000 0; -1000 0; 1000 0; 1000 0" keyTimes="0; 0.55; 0.85; 1" dur="6s" repeatCount="indefinite"/>
+                      </linearGradient>
+                    </defs>
+                    <text class="v3-rg-arc" fill="url(#${id}-g)"><textPath href="#${id}" startOffset="50%" text-anchor="middle">RATE · REVIEW · LOG</textPath></text>
+                    <text class="v3-rg-blank" x="814" y="500" text-anchor="middle" dominant-baseline="central">_._</text>
+                  </svg>
+                  <button class="v3-rg-rate" onclick="event.stopPropagation(); openLogSheet(this);"></button>
+                  <button class="v3-rg-btn v3-rg-btn--tl" data-k="listened" title="Listened" onclick="toggleRevAction(this, event)">${SD_ICONS.ear}<span class="v3-rg-lbl">Listened</span></button>
+                  <button class="v3-rg-btn v3-rg-btn--bl" data-k="later" title="Listen later" onclick="toggleRevAction(this, event)">${SD_ICONS.clock}<span class="v3-rg-lbl">Later</span></button>
+                  <button class="v3-rg-btn v3-rg-btn--tr" data-k="fav" title="Favorite" onclick="toggleRevAction(this, event)">${SD_ICONS.heart}<span class="v3-rg-lbl">Favorite</span></button>
+                  <button class="v3-rg-btn v3-rg-btn--br" title="Share" data-kind="review" data-arg="" onclick="event.stopPropagation(); sdShare(this)">${RG_SHARE}<span class="v3-rg-lbl">Share</span></button>
+                </div>`;
+}
+
 function bentoHtml() {
   return `<!-- BENTO: all children absolutely positioned in 690×670 SVG coordinate space -->
           <div class="v3-bento">
@@ -482,17 +540,7 @@ const SCREENS = [
                    with — the point is that marking something listened / later /
                    favourite costs one tap instead of opening the sheet. -->
               <div class="v3-rev-mine">
-                <div class="v3-rev-cta-row">
-                  <button class="v3-rev-cta" onclick="event.stopPropagation(); openLogSheet(this);">
-                    ${SD_ICONS.logbox}
-                    <span>Review, rate, log</span>
-                  </button>
-                  <div class="v3-rev-quick">
-                    <button class="v3-rev-q" data-k="listened" title="Listened" onclick="toggleRevAction(this, event)">${SD_ICONS.ear}<span class="v3-rev-q-lbl">Listened</span></button>
-                    <button class="v3-rev-q" data-k="later" title="Listen later" onclick="toggleRevAction(this, event)">${SD_ICONS.clock}<span class="v3-rev-q-lbl">Later</span></button>
-                    <button class="v3-rev-q" data-k="fav" title="Favorite" onclick="toggleRevAction(this, event)">${SD_ICONS.heart}<span class="v3-rev-q-lbl">Favorite</span></button>
-                  </div>
-                </div>
+                ${rateGroupHtml()}
               </div>
 
             </div><!-- /v3-rev-top -->
@@ -678,17 +726,7 @@ const SCREENS = [
                    with — the point is that marking something listened / later /
                    favourite costs one tap instead of opening the sheet. -->
               <div class="v3-rev-mine">
-                <div class="v3-rev-cta-row">
-                  <button class="v3-rev-cta" onclick="event.stopPropagation(); openLogSheet(this);">
-                    ${SD_ICONS.logbox}
-                    <span>Review, rate, log</span>
-                  </button>
-                  <div class="v3-rev-quick">
-                    <button class="v3-rev-q" data-k="listened" title="Listened" onclick="toggleRevAction(this, event)">${SD_ICONS.ear}<span class="v3-rev-q-lbl">Listened</span></button>
-                    <button class="v3-rev-q" data-k="later" title="Listen later" onclick="toggleRevAction(this, event)">${SD_ICONS.clock}<span class="v3-rev-q-lbl">Later</span></button>
-                    <button class="v3-rev-q" data-k="fav" title="Favorite" onclick="toggleRevAction(this, event)">${SD_ICONS.heart}<span class="v3-rev-q-lbl">Favorite</span></button>
-                  </div>
-                </div>
+                ${rateGroupHtml()}
               </div>
 
             </div><!-- /v3-rev-top -->
@@ -1666,6 +1704,21 @@ function profTagsHtml(P) {
               <div class="prof-tags">${tags.map(tagChip).join('')}</div>`;
 }
 
+/* FURRY on the profile card (Eric, 2026-09-17): the skin's two ears, standing
+   on the name banner's flat top above the picture pane — "your profile picture
+   has dog ears". Same artwork as the bento's (bentoSkinFrontHtml) and the shop
+   tile's, scaled 0.6 and seated so the bases (y 86.945 in the source) sink 1.5
+   units into the banner, whose fill is drawn after and hides the seam. The
+   pair spans x 48→328, inside the banner's flat top (35→340 at its narrowest).
+   Always emitted; body.sd-skin-furry shows it (.prof-ears in app.css). */
+function profEarsHtml() {
+  return `<g class="prof-ears" transform="translate(48 2) scale(0.6) translate(-203.781 -86.945)">
+                  <path class="prof-ears-outer" d="M271.193 27.1351C260.863 45.1685 243.754 86.9451 203.781 86.9451H379.724C391.991 59.0226 360.127 21.9865 338.605 6.95886C328.91 0.188953 292.216 -9.5636 271.193 27.1351Z"/>
+                  <path class="prof-ears-outer" d="M561.782 27.1351C551.452 45.1685 534.343 86.9451 494.37 86.9451H670.312C682.58 59.0226 650.716 21.9865 629.194 6.95886C619.498 0.188953 582.804 -9.5636 561.782 27.1351Z"/>
+                  <path class="prof-ears-inner" d="M283.856 39.9244C276.538 54.1016 264.419 86.9451 236.103 86.9451H360.736C369.426 64.9933 346.855 35.8768 331.609 24.0625C324.741 18.7402 298.748 11.0731 283.856 39.9244Z"/>
+                  <path class="prof-ears-inner" d="M574.445 39.9244C567.127 54.1016 555.008 86.9451 526.692 86.9451H651.325C660.015 64.9933 637.444 35.8768 622.198 24.0625C615.33 18.7402 589.337 11.0731 574.445 39.9244Z"/>
+                </g>`;
+}
 function profCanvasHtml(P) {
   const findAlb = name => (window.ARCHIVE || []).find(a => a.album === name);
   const esc  = s => String(s).replace(/'/g, '\\\'');
@@ -1693,7 +1746,7 @@ function profCanvasHtml(P) {
     : '';
 
   return `
-            <div class="prof-canvas">
+            <div class="prof-canvas prof-canvas--ears">
               <!-- Embossed card silhouette — retraced from ProfileTheme_Regular4 (1).svg.
                    ⚠ 690×608, NOT the old 690×466: the card grew and the picture
                    pane grew with it (x 0→374.5 where it used to stop at 262.3),
@@ -1710,6 +1763,7 @@ function profCanvasHtml(P) {
                    150 units are the favourite-album circles, and those are their
                    own section now. -->
               <svg class="prof-base" viewBox="0 0 690 556" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+                ${profEarsHtml()}
                 <!-- ⚠ The card's bottom edge moved 449 → 545 and the viewBox 460
                      → 556 with it (the 11 units of slack under the card are
                      unchanged). Those 96 units ARE the tag compartment. Every
@@ -1996,25 +2050,31 @@ window.profPins = function (P) {
   if (Array.isArray(P.pins)) return P.pins.slice(0, PROF_PIN_MAX);
   return profReviewLog(P).slice(0, 2).map(e => e.album.album);
 };
+/* One of their reviews as THE HOME FEED'S CARD (Eric, 2026-09-18) — byline,
+   the number over the discs on the left, the record (cover · year · album ·
+   artist) on the right, the text under — for the pins AND the history, so
+   the profile reads like home. Same `prof::handle::album` key for both, so
+   a like is shared; registered in REV_INDEX so the card tap and the comment
+   pill open the review page and the cover opens the album (revCardArt).
+   `profReviewRowHtml` above is the pre-card fallback if app.js is missing. */
+function profReviewCardHtml(P, e) {
+  const handle = P.handle || 'you';
+  const a = e.album;
+  const key = 'prof::' + handle + '::' + a.album;
+  if (typeof REV_INDEX !== 'undefined') REV_INDEX[key] = { key, album: a, name: P.name || 'They', handle,
+    pic: P.pic || '', rating: e.rating, text: e.text, ago: e.when, likes: e.likes, comments: e.comments };
+  return (typeof revCardHtml === 'function') ? revCardHtml({
+    key, cls: 'v3-rev-card--feed v3-rev-card--prof', name: P.name || 'They', handle, face: P.pic || '', ago: e.when,
+    rating: e.rating, text: e.text, likes: e.likes, comments: e.comments, timeRight: true, actsTop: true,
+    record: { image: a.image, album: a.album, artist: a.artist, year: a.year },
+  }) : profReviewRowHtml(P, e);
+}
 function profPinsHtml(P) {
   const log = profReviewLog(P);
-  /* The ALBUM PAGE's review card (revCardHtml, app.js), not the feed row the
-     history below uses: a pin is the review as a piece of writing, not an
-     event. Same key as the history row for that album, so a like is shared;
-     registered in REV_INDEX so a tap opens the review page like any card. */
-  const handle = P.handle || 'you';
   const rows = profPins(P)
     .map(n => n && log.find(e => e.album.album === n))
     .filter(Boolean)
-    .map(e => {
-      const key = 'prof::' + handle + '::' + e.album.album;
-      if (typeof REV_INDEX !== 'undefined') REV_INDEX[key] = { key, album: e.album, name: P.name || 'They', handle,
-        pic: P.pic || '', rating: e.rating, text: e.text, ago: e.when, likes: e.likes, comments: e.comments };
-      return (typeof revCardHtml === 'function') ? revCardHtml({
-        key, cls: 'v3-rev-card--pin', name: P.name || 'They', handle, face: P.pic || '', ago: e.when,
-        rating: e.rating, text: e.text, likes: e.likes, comments: e.comments,
-      }) : profReviewRowHtml(P, e);
-    }).join('');
+    .map(e => profReviewCardHtml(P, e)).join('');
   return `
             <div class="prof-sec prof-pins">
               <div class="prof-sec-hd">Pinned reviews</div>
@@ -2132,15 +2192,12 @@ function profileHtml(light) {
 
 
 
-  /* Review history — built from the HOME FEED'S row, not a shape of its own.
-     ⚠ Same `.ntf-*` anatomy, same sentence order (SUBJECT · VERB · OBJECT), the
-     same `upvoteHtml` pill and the same comment button: a review is a review,
-     and a profile that renders one differently from the way home renders it is
-     two components that will drift. The only thing that changes is the subject
-     — every row here has the same author, so the avatar is theirs.
-     `upvoteHtml` and `CMT_SVG` live in app.js, which loads after this file;
-     fine, because this runs at render time. */
-  const logHtml = profReviewLog(P).map(e => profReviewRowHtml(P, e)).join('');
+  /* Review history — THE HOME FEED'S CARD (Eric, 2026-09-18; it was the
+     feed's old `.ntf-row` sentence row): a review is a review, and a profile
+     that renders one differently from the way home renders it is two
+     components that will drift. The only thing that changes is the subject —
+     every card here has the same author, so the photo is theirs. */
+  const logHtml = profReviewLog(P).map(e => profReviewCardHtml(P, e)).join('');
 
 
   /* Favourite songs (5) — artwork borrowed from the song's album cover.
@@ -2687,6 +2744,41 @@ function plLists() {
    .filter(l => !l.deleted);
 }
 
+/* YOUR LIBRARY, read out of the log drafts (Eric, 2026-09-18) — the four tabs
+   beside All Playlists. Nothing here is its own store: Favorite / Listened /
+   Later are the same three flags the album page's rate group and the log sheet
+   write (logDrafts in app.js, album::title::artist), and a favourite song is
+   a song::title::album draft with fav set. So the tabs cannot disagree with
+   the lobes. Newest touch first.
+   ⚠️ A rated album counts as LISTENED whether or not the lobe was pressed —
+   you cannot score a record you have not heard.
+   ⚠️ Two thirds of what you swipe past is the runtime rec pool, which is gone
+   from ARCHIVE after a reload. The draft therefore carries a snap of the
+   record (libSnapFor in app.js) — the cell draws from it and plLibOpen
+   rebuilds the album from it, so a record you logged never turns into a hole. */
+function plLibrary() {
+  const drafts = (typeof logDrafts === 'function') ? logDrafts() : {};
+  const arch = window.ARCHIVE || [];
+  const out = { fav: [], listened: [], later: [], songs: [] };
+  Object.keys(drafts)
+    .sort((a, b) => (drafts[b].updated || 0) - (drafts[a].updated || 0))
+    .forEach(k => {
+      const d = drafts[k], p = k.split('::'), kind = p[0], title = p[1], sub = p.slice(2).join('::');
+      if (kind === 'album') {
+        const a = arch.find(x => x.album === title && x.artist === sub) || d.snap;
+        if (!a) return;
+        const it = { album: title, artist: sub, image: a.image, mine: d.rating || 0, rating: a.rating || 0 };
+        if (d.fav) out.fav.push(it);
+        if (d.listened || d.rating > 0) out.listened.push(it);
+        if (d.later) out.later.push(it);
+      } else if (kind === 'song' && d.fav) {
+        const a = arch.find(x => x.album === sub);
+        out.songs.push({ title, album: sub, artist: a ? a.artist : '', image: d.image || (a ? a.image : ''), mine: d.rating || 0 });
+      }
+    });
+  return out;
+}
+
 // Playlists / Library — adapted to the home shell like the wall. The old five
 // variants (My Lists / Artists / Albums / Songs / Genres) are now in-page pill
 // tabs (reusing the wall's .wall2-cat pills) switched client-side by plTab().
@@ -2697,9 +2789,37 @@ function playlistsHtml(light) {
   // Playlists only — data shared with the playlist page via plLists().
   // All Playlists = chronological; Popularity = favs desc;
   // Discover = other people's playlists from the community, most-loved first.
+  // (Popularity and Discover came out 2026-09-18, Eric: "for now". Their CSS —
+  // .pl2-discover — is still in app.css for the day Discover comes back.)
   const lists = plLists();
-  const byFavs = lists.slice().sort((a, b) => b.favs - a.favs);
-  const community = byFavs.filter(l => l.creator !== 'you');
+  const lib = plLibrary();
+  // Attribute-safe AND JS-quote-safe: album titles carry both kinds of quote.
+  const oc = s => String(s).replace(/\\/g, '\\\\').replace(/'/g, '\\\'').replace(/"/g, '&quot;');
+  const TABS = [
+    ['all',      'All Playlists'],
+    ['favs',     'Favorite albums'],
+    ['listened', 'Listened'],
+    ['later',    'Listen later'],
+    ['songs',    'Favorite songs'],
+  ];
+  const tab = TABS.some(t => t[0] === window.PL_TAB) ? window.PL_TAB : 'all';
+  // The trending wall's cell. Rated → the discs and number are YOUR score, and
+  // a caption under them says so; unrated → the crowd's, as on the wall.
+  const albumCell = a => `
+              <div class="wall2-cell" onclick="event.stopPropagation(); plLibOpen('${oc(a.album)}','${oc(a.artist)}')">
+                <div class="wall2-art" style="background-image:url('${a.image}')"></div>
+                <div class="wall2-meta">
+                  <span class="wall2-album">${a.album}</span>
+                  <span class="wall2-artist">${a.artist}</span>
+                  ${(a.mine || a.rating) ? `<div class="wall2-rating">${halfStars(a.mine || a.rating, 11)}<span class="wall2-score">${(a.mine || a.rating).toFixed(1)}</span></div>` : ''}
+                  ${a.mine ? `<span class="pl2-lib-mine">Your rating</span>` : ''}
+                </div>
+              </div>`;
+  const albumSec = (id, items, hint) => `
+            <section class="pl2-sec" data-tab="${id}"${tab === id ? '' : ' hidden'}>
+              ${items.length ? `<div class="wall2-grid">${items.map(albumCell).join('')}</div>`
+                             : `<div class="plp-empty">${hint}</div>`}
+            </section>`;
   // Lower-right tag slot (geometry from PlaylistBox_NEW / PlaylistHLBox_NEW.svg):
   // a screen-bg carve scoops the info panel's lower-right corner and Eric's
   // rounded tag seats in it, recolored per type with a centered icon —
@@ -2761,25 +2881,27 @@ function playlistsHtml(light) {
           <div class="pl2-scroll">
             <div class="pl2-topbar">
               <div class="wall2-bar pl2-bar">
-                <button class="wall2-cat active" onclick="event.stopPropagation(); plTab(this,'all')">All Playlists</button>
-                <button class="wall2-cat" onclick="event.stopPropagation(); plTab(this,'popularity')">Popularity</button>
+                ${TABS.map(t => `<button class="wall2-cat${tab === t[0] ? ' active' : ''}" onclick="event.stopPropagation(); plTab(this,'${t[0]}')">${t[1]}</button>`).join('')}
               </div>
-              <button class="pl2-discover" title="Discover community playlists" onclick="event.stopPropagation(); plTab(this,'discover')">Discover</button>
               <button class="pl2-add" title="New playlist" aria-label="New playlist" onclick="event.stopPropagation(); openNewPlaylist()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
               </button>
             </div>
 
-            <section class="pl2-sec" data-tab="all">
+            <section class="pl2-sec" data-tab="all"${tab === 'all' ? '' : ' hidden'}>
               ${lists.map(listCard).join('')}
             </section>
-
-            <section class="pl2-sec" data-tab="popularity" hidden>
-              ${byFavs.map(listCard).join('')}
-            </section>
-
-            <section class="pl2-sec" data-tab="discover" hidden>
-              ${community.map(listCard).join('')}
+            ${albumSec('favs', lib.fav, 'No favorite albums yet. Tap Favorite on an album page.')}
+            ${albumSec('listened', lib.listened, 'Nothing logged yet. Rate an album or tap Listened.')}
+            ${albumSec('later', lib.later, 'Nothing saved for later. Tap Later on an album page.')}
+            <section class="pl2-sec" data-tab="songs"${tab === 'songs' ? '' : ' hidden'}>
+              ${lib.songs.length ? lib.songs.map(s => `
+              <div class="plp-song pl2-lib-song" onclick="event.stopPropagation(); plSongTap(this)" data-image="${s.image}" data-title="${String(s.title).replace(/"/g, '&quot;')}" data-sub="${String(s.album).replace(/"/g, '&quot;')}">
+                <div class="pl2-lib-song-art" style="background-image:url('${s.image}')"></div>
+                <div class="plp-song-line"><span class="plp-song-title">${s.title}</span><span class="plp-song-album">${s.album}</span>${s.artist ? ` · <span class="plp-song-artist">${s.artist}</span>` : ''}</div>
+                ${s.mine ? `<div class="plp-song-rate">${s.mine.toFixed(1)}</div>` : ''}
+                <span class="pl2-lib-song-heart">♥</span>
+              </div>`).join('') : `<div class="plp-empty">No favorite songs yet. Tap a song, then Favorite.</div>`}
             </section>
           </div>
         </div>
@@ -2944,12 +3066,16 @@ window.reviewPanelHtml = function (R) {
             </button>
 
             <!-- THE CARD, LARGER (Eric, 2026-09-11): the review page's hero is the
-                 album page's own review card — photo · name/@handle · the score
-                 column with like and comments — scaled up, with the text at
+                 album page's own review card, scaled up, with the text at
                  reading size and never clamped. One builder (revCardHtml), so
-                 the page cannot drift from the card that opened it. -->
+                 the page cannot drift from the card that opened it.
+                 REBUILT on the feed card's skeleton (Eric, 2026-09-16): it wears
+                 .v3-rev-card--page like the album page's cards — byline with
+                 the heart and the share button on the top row and the time
+                 hard right, the 40px score with the discs stacked under it on
+                 the left, the text full width beneath. -->
             ${typeof revCardHtml === 'function' ? revCardHtml({
-              key: R.key, cls: 'v3-rev-card--hero', big: true,
+              key: R.key, cls: 'v3-rev-card--page v3-rev-card--hero', big: true, timeRight: true, actsTop: true,
               name: R.name || 'Listener', handle, face, ago: R.ago || '',
               rating: R.rating || 0, text: R.text || '',
               likes: R.mine ? null : (R.likes || 0), comments: R.comments || 0, share: !!R.mine,
@@ -3351,11 +3477,11 @@ function settingsHtml(light) {
               // control is stamped data-skin-wear and syncSkinControls (app.js)
               // keeps every copy of it, and the shop tile, agreeing.
               (typeof bentoSkinOwned === 'function' && bentoSkinOwned('furry'))
-                ? setRow('Furry bento', 'Ears and a tail on your home bento', `
+                ? setRow('Furry theme', 'Ears on your bento and your profile photo', `
                   <button class="set-sw${(typeof bentoSkin === 'function' && bentoSkin() === 'furry') ? ' is-on' : ''}" role="switch"
                           aria-checked="${typeof bentoSkin === 'function' && bentoSkin() === 'furry'}" data-skin-wear="furry"
                           onclick="event.stopPropagation(); toggleBentoSkin('furry')"><span class="set-sw-knob"></span></button>`)
-                : setRow('Furry bento', 'Sold in the shop · $2', chev, "navigate('shop')"),
+                : setRow('Furry theme', 'Sold in the shop · $2', chev, "navigate('shop')"),
               setRow('Reduce motion', 'Stops the spinning CD and ticker', sw(false)),
             ].join('')) }
 
@@ -3592,21 +3718,45 @@ function shopHtml(light) {
                     ${buy(t.price, typeof sdOwnsTag === 'function' && sdOwnsTag(t.id), t.id)}
                   </div>`;
 
+  /* FURRY is a THEME now (Eric, 2026-09-17 — it was a "Skins" row of its own):
+     the one theme that is REAL state rather than a label swap. Buying it goes
+     through buyBentoSkin (data-skin), and once owned the button is the
+     Wear / Wearing toggle syncSkinControls patches. Worn, it puts ears and a
+     tail on the home bento AND dog ears on your profile card, over the photo
+     (profEarsHtml). The preview is the skin's own ears on the tile's field. */
+  const furryTheme = `
+                  <div class="shop-tile shop-tile--theme" data-cat="general themes">
+                    <div class="shop-field shop-field--furry" style="background:linear-gradient(145deg,#3a2a1c,#1d1510)">
+                      <svg viewBox="196 -4 494 92" aria-hidden="true"><path fill="currentColor" d="M271.193 27.1351C260.863 45.1685 243.754 86.9451 203.781 86.9451H379.724C391.991 59.0226 360.127 21.9865 338.605 6.95886C328.91 0.188953 292.216 -9.5636 271.193 27.1351Z"/><path fill="currentColor" d="M561.782 27.1351C551.452 45.1685 534.343 86.9451 494.37 86.9451H670.312C682.58 59.0226 650.716 21.9865 629.194 6.95886C619.498 0.188953 582.804 -9.5636 561.782 27.1351Z"/><path fill="currentColor" opacity=".55" d="M283.856 39.9244C276.538 54.1016 264.419 86.9451 236.103 86.9451H360.736C369.426 64.9933 346.855 35.8768 331.609 24.0625C324.741 18.7402 298.748 11.0731 283.856 39.9244Z"/><path fill="currentColor" opacity=".55" d="M574.445 39.9244C567.127 54.1016 555.008 86.9451 526.692 86.9451H651.325C660.015 64.9933 637.444 35.8768 622.198 24.0625C615.33 18.7402 589.337 11.0731 574.445 39.9244Z"/></svg>
+                      <span class="shop-chip" style="background:#d9a066"></span>
+                    </div>
+                    <div class="shop-tile-name">Furry</div>
+                    <div class="shop-tile-sub">ears, for you too</div>
+                    ${ownsSkin('furry')
+                      ? `<button class="shop-buy shop-wear${skin === 'furry' ? ' is-on' : ''}" data-skin-wear="furry"
+                                 title="Put it on or take it off" onclick="event.stopPropagation(); toggleBentoSkin('furry')">${skin === 'furry' ? 'Wearing' : 'Wear'}</button>`
+                      : `<button class="shop-buy" data-skin="furry" onclick="event.stopPropagation(); sdBuy(this)">$2</button>`}
+                  </div>`;
+
   return `
       <div class="app-screen s-home-v3 s-shop${light ? ' s-home-v3--light' : ''}" data-cat="${cat}">
         ${appHeader()}
         <div class="v3-body">
           <div class="shop-scroll">
-            <button class="plp-back-pill" onclick="navigate('home')" title="Back">
-              <span class="v3-ring plp-ring"><span class="v3-ring-spin">${dots}</span></span>
-            </button>
+            <!-- ONE ROW (Eric, 2026-09-17): the back pill on the left, the name
+                 of the store on the same line in the upper right, out of the
+                 way. It used to be a 34px heading on a line of its own. The
+                 word is spelled in the dot language rather than set in a face
+                 (see SHOP_WORD for why there is no font to use). -->
+            <div class="shop-top">
+              <button class="plp-back-pill" onclick="navigate('home')" title="Back">
+                <span class="v3-ring plp-ring"><span class="v3-ring-spin">${dots}</span></span>
+              </button>
+              <h2 class="shop-title">${SD_DOTS.svg(SHOP_WORD, { cls: 'shop-title-mark' })}<span class="shop-sr">Shop</span></h2>
+            </div>
 
-            <!-- The name of the store, spelled in the dot language rather than
-                 set in a face. See SHOP_WORD for why there is no font to use. -->
-            <h2 class="shop-title">${SD_DOTS.svg(SHOP_WORD, { cls: 'shop-title-mark' })}<span class="shop-sr">Shop</span></h2>
-
-            <!-- The aisles. Sticky, because the name of the store is a greeting
-                 you read once and the aisle you are in is where you ARE. -->
+            <!-- The aisles. They scroll away with the page (Eric, 2026-09-17 —
+                 the bar was sticky until then). -->
             <div class="shop-cats" role="tablist" aria-label="Shop categories">${SHOP_CATS.map(c => `
               <button class="shop-cat${c.id === cat ? ' is-on' : ''}" type="button" role="tab"
                       aria-selected="${c.id === cat}" data-go="${c.id}"
@@ -3656,6 +3806,7 @@ function shopHtml(light) {
             ${sec('Themes', 'the look of your page', 'general themes')}
             <div class="shop-sheet shop-sheet--shelf" data-cat="general themes">
               ${theme('Funky 01', 'the one you have',    '#2a2119', '#171319', '#e8a83c', '$2', true,  'general themes')}
+              ${furryTheme}
               ${theme('Midnight', 'ink &amp; deep blue', '#141824', '#0e1018', '#5b7cc4', '$2', false, 'general themes')}
               ${theme('Bleach',   'paper &amp; red',     '#e9e4d8', '#cfc7b6', '#c8492f', '$2', false, 'general themes')}
               ${theme('Chrome',   'silver &amp; glass',  '#2b2d33', '#1a1b20', '#b8bcc6', '$3', false, 'general themes')}
@@ -3675,22 +3826,6 @@ function shopHtml(light) {
               ${frame('Gold',     'border:4px solid #e8a83c',       '232,168,60',  '$1')}
               ${frame('Dashed',   'border:3px dashed currentColor', '232,226,214', '$1')}
               ${frame('Double',   'border:2px solid #e8a83c; box-shadow:0 0 0 4px rgba(232,168,60,.28)', '232,168,60', '$2')}
-            </div>
-
-            <!-- Skins dress the BENTO — the one thing on your home that is
-                 yours to look at all day. The preview is the skin's own ears,
-                 cropped, in the tile's tint. data-skin routes the purchase
-                 through setBentoSkin, so buying it puts it on straight away. -->
-            ${sec('Skins', 'your bento, dressed up', 'general themes')}
-            <div class="shop-sheet shop-sheet--row" data-cat="general themes">
-              <div class="shop-tile shop-tile--sm" style="--tint:232,168,60" data-cat="general themes">
-                <div class="shop-field shop-field--tint shop-field--skin"><svg viewBox="196 -4 494 92" aria-hidden="true"><path fill="currentColor" d="M271.193 27.1351C260.863 45.1685 243.754 86.9451 203.781 86.9451H379.724C391.991 59.0226 360.127 21.9865 338.605 6.95886C328.91 0.188953 292.216 -9.5636 271.193 27.1351Z"/><path fill="currentColor" d="M561.782 27.1351C551.452 45.1685 534.343 86.9451 494.37 86.9451H670.312C682.58 59.0226 650.716 21.9865 629.194 6.95886C619.498 0.188953 582.804 -9.5636 561.782 27.1351Z"/><path fill="currentColor" opacity=".55" d="M283.856 39.9244C276.538 54.1016 264.419 86.9451 236.103 86.9451H360.736C369.426 64.9933 346.855 35.8768 331.609 24.0625C324.741 18.7402 298.748 11.0731 283.856 39.9244Z"/><path fill="currentColor" opacity=".55" d="M574.445 39.9244C567.127 54.1016 555.008 86.9451 526.692 86.9451H651.325C660.015 64.9933 637.444 35.8768 622.198 24.0625C615.33 18.7402 589.337 11.0731 574.445 39.9244Z"/></svg></div>
-                <div class="shop-tile-name">Furry</div>
-                ${ownsSkin('furry')
-                  ? `<button class="shop-buy shop-wear${skin === 'furry' ? ' is-on' : ''}" data-skin-wear="furry"
-                             title="Put it on or take it off" onclick="event.stopPropagation(); toggleBentoSkin('furry')">${skin === 'furry' ? 'Wearing' : 'Wear'}</button>`
-                  : `<button class="shop-buy" data-skin="furry" onclick="event.stopPropagation(); sdBuy(this)">$2</button>`}
-              </div>
             </div>
 
             ${sec('Badges', 'they sit next to your name', 'general badges')}

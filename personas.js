@@ -50,21 +50,21 @@ window.PERSONAS = [
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4.5,
-      "text": "genuinely reshaped what i thought this genre could do"
+      "text": "listened on the bus. missed my stop. worth it."
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4,
-      "text": "overrated by half a star but still a great time"
+      "text": "hot take: the deluxe is the real album"
      },
      {
       "name": "echoplex",
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4,
-      "text": "the sequencing alone deserves an award"
+      "text": "the way the strings come in on track 6??? hello???"
      }
     ],
     "deezerId": 104755862,
@@ -88,21 +88,21 @@ window.PERSONAS = [
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4.5,
-      "text": "this is the one i put on when i want to feel something"
+      "text": "Honestly? Better than the debut. Not close."
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4,
-      "text": "genuinely reshaped what i thought this genre could do"
+      "text": "Fine, I'll say it: the singles are the weakest part."
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4,
-      "text": "overrated by half a star but still a great time"
+      "text": "Pros: everything.\nCons: ends."
      }
     ],
     "deezerId": 526138472,
@@ -150,21 +150,21 @@ window.PERSONAS = [
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4.5,
-      "text": "i've recommended this to six people and lost two friends"
+      "text": "Skipped this for two years because of the cover. My fault. Genuinely one of the best things I've heard this decade."
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4,
-      "text": "every song earns its place, which is rarer than it should be"
+      "text": "The lyrics are doing a lot here, and I mean that as praise. Every verse is a small short story, and the way the chorus changes one word each time it comes round is the kind of detail you only catch on headphones."
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4,
-      "text": "the closer justifies the entire tracklist"
+      "text": "Criminally underrated. It came out the same month as three bigger records and got buried, which is a shame, because it's better than all of them. The sequencing alone is a masterclass."
      }
     ],
     "deezerId": 129486262,
@@ -188,21 +188,21 @@ window.PERSONAS = [
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4.5,
-      "text": "this is the one i put on when i want to feel something"
+      "text": "it's fine. it's FINE. why is everyone acting like this is scripture"
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4,
-      "text": "genuinely reshaped what i thought this genre could do"
+      "text": "10/10 no notes. ok one note: track 4 could be shorter. 10/10 still."
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4,
-      "text": "overrated by half a star but still a great time"
+      "text": "3.5 rounded up because the closer made me text my ex. rounded back down because the closer made me text my ex."
      }
     ],
     "deezerId": 71552502,
@@ -226,21 +226,21 @@ window.PERSONAS = [
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4.5,
-      "text": "the mixing is doing so much heavy lifting here"
+      "text": "Criminally underrated. It came out the same month as three bigger records and got buried, which is a shame, because it's better than all of them. The sequencing alone is a masterclass."
      },
      {
       "name": "echoplex",
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4,
-      "text": "not their best but their most honest"
+      "text": "no skips. none. i checked twice."
      },
      {
       "name": "staticfog",
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4,
-      "text": "i've recommended this to six people and lost two friends"
+      "text": "this album is my roman empire"
      }
     ],
     "deezerId": 707965,
@@ -292,21 +292,21 @@ window.PERSONAS = [
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 5,
-      "text": "grew on me. first listen confused me, tenth listen floored me"
+      "text": "Great production, wildly overwritten. Half these songs would land twice as hard with a verse cut. Still a four, because the good half is really good."
      },
      {
       "name": "velvetblast",
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4.5,
-      "text": "this is the one i put on when i want to feel something"
+      "text": "Skipped this for two years because of the cover. My fault. Genuinely one of the best things I've heard this decade."
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4,
-      "text": "genuinely reshaped what i thought this genre could do"
+      "text": "The lyrics are doing a lot here, and I mean that as praise. Every verse is a small short story, and the way the chorus changes one word each time it comes round is the kind of detail you only catch on headphones."
      }
     ],
     "deezerId": 192574722,
@@ -330,21 +330,21 @@ window.PERSONAS = [
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4.5,
-      "text": "played this on a night drive and understood it completely"
+      "text": "5 stars because i'm scared of the fans"
      },
      {
       "name": "velvetblast",
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4,
-      "text": "the mixing is doing so much heavy lifting here"
+      "text": "review pending. still crying."
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4,
-      "text": "not their best but their most honest"
+      "text": "wow."
      }
     ],
     "deezerId": 225028,
@@ -393,21 +393,21 @@ window.PERSONAS = [
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 5,
-      "text": "everyone talks about the singles, the deep cuts are the real thing"
+      "text": "Pros: everything.\nCons: ends."
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4.5,
-      "text": "criminally short. i wanted twenty more minutes"
+      "text": "Top 3, no order:\n1. the opener\n2. the one with the choir\n3. whatever track 8 is called"
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4,
-      "text": "a mood more than an album, and that's a compliment"
+      "text": "Highs: the title track, the horns on 4.\nLows: track 9 is a skit and it knows it.\nVerdict: keep."
      }
     ],
     "deezerId": 384180,
@@ -458,21 +458,21 @@ window.PERSONAS = [
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4.5,
-      "text": "grew on me. first listen confused me, tenth listen floored me"
+      "text": "put it on for the dishes. ended up sitting down."
      },
      {
       "name": "echoplex",
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4,
-      "text": "this is the one i put on when i want to feel something"
+      "text": "it's fine. it's FINE. why is everyone acting like this is scripture"
      },
      {
       "name": "staticfog",
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4,
-      "text": "genuinely reshaped what i thought this genre could do"
+      "text": "10/10 no notes. ok one note: track 4 could be shorter. 10/10 still."
      }
     ],
     "deezerId": 680100,
@@ -515,21 +515,21 @@ window.PERSONAS = [
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 5,
-      "text": "this is the one i put on when i want to feel something"
+      "text": "this goes so hard for no reason"
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4.5,
-      "text": "genuinely reshaped what i thought this genre could do"
+      "text": "listened on the bus. missed my stop. worth it."
      },
      {
       "name": "echoplex",
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4,
-      "text": "overrated by half a star but still a great time"
+      "text": "hot take: the deluxe is the real album"
      }
     ],
     "deezerId": 106146,
@@ -578,21 +578,21 @@ window.PERSONAS = [
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4.5,
-      "text": "the kind of record you finish and immediately restart"
+      "text": "wow."
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4,
-      "text": "front to back, not a single skip on this one"
+      "text": "this goes so hard for no reason"
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4,
-      "text": "i was not emotionally prepared for the back half"
+      "text": "listened on the bus. missed my stop. worth it."
      }
     ],
     "deezerId": 65371772,
@@ -626,21 +626,21 @@ window.PERSONAS = [
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4.5,
-      "text": "a mood more than an album, and that's a compliment"
+      "text": "this goes so hard for no reason"
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4,
-      "text": "played this on a night drive and understood it completely"
+      "text": "listened on the bus. missed my stop. worth it."
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4,
-      "text": "the mixing is doing so much heavy lifting here"
+      "text": "hot take: the deluxe is the real album"
      }
     ],
     "deezerId": 79981842,
@@ -687,21 +687,21 @@ window.PERSONAS = [
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4.5,
-      "text": "played this on a night drive and understood it completely"
+      "text": "5 stars because i'm scared of the fans"
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4,
-      "text": "the mixing is doing so much heavy lifting here"
+      "text": "review pending. still crying."
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4,
-      "text": "not their best but their most honest"
+      "text": "wow."
      }
     ],
     "deezerId": 164869492,
@@ -748,21 +748,21 @@ window.PERSONAS = [
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4.5,
-      "text": "i was not emotionally prepared for the back half"
+      "text": "sounds thin on speakers and enormous on headphones, so listen to it the right way. the low end on the title track is the kind of thing you feel in your teeth"
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4,
-      "text": "production is immaculate, lyrics cut deeper every listen"
+      "text": "grew on me. first listen confused me, tenth listen floored me"
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4,
-      "text": "grew on me. first listen confused me, tenth listen floored me"
+      "text": "i've recommended this to six people and lost two friends"
      }
     ],
     "deezerId": 8435920,
@@ -786,21 +786,21 @@ window.PERSONAS = [
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 5,
-      "text": "sounds like a memory i haven't had yet"
+      "text": "mom said it's my turn to be the friend who won't shut up about this record"
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4.5,
-      "text": "perfect headphones album, sounds thin on speakers though"
+      "text": "the vinyl is $60 and i have never clicked add to cart faster"
      },
      {
       "name": "echoplex",
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4,
-      "text": "everyone talks about the singles, the deep cuts are the real thing"
+      "text": "it's giving 3am walk home"
      }
     ],
     "deezerId": 95169442,
@@ -824,21 +824,21 @@ window.PERSONAS = [
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 5,
-      "text": "a mood more than an album, and that's a compliment"
+      "text": "mom said it's my turn to be the friend who won't shut up about this record"
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4.5,
-      "text": "played this on a night drive and understood it completely"
+      "text": "the vinyl is $60 and i have never clicked add to cart faster"
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4,
-      "text": "the mixing is doing so much heavy lifting here"
+      "text": "it's giving 3am walk home"
      }
     ],
     "deezerId": 223971002,
@@ -871,21 +871,21 @@ window.PERSONAS = [
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4.5,
-      "text": "criminally short. i wanted twenty more minutes"
+      "text": "wow."
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4,
-      "text": "a mood more than an album, and that's a compliment"
+      "text": "this goes so hard for no reason"
      },
      {
       "name": "echoplex",
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4,
-      "text": "played this on a night drive and understood it completely"
+      "text": "listened on the bus. missed my stop. worth it."
      }
     ],
     "deezerId": 322197877,
@@ -909,21 +909,21 @@ window.PERSONAS = [
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4.5,
-      "text": "production is immaculate, lyrics cut deeper every listen"
+      "text": "review pending. still crying."
      },
      {
       "name": "staticfog",
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4,
-      "text": "grew on me. first listen confused me, tenth listen floored me"
+      "text": "wow."
      },
      {
       "name": "velvetblast",
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4,
-      "text": "this is the one i put on when i want to feel something"
+      "text": "this goes so hard for no reason"
      }
     ],
     "deezerId": 9138453,
@@ -947,21 +947,21 @@ window.PERSONAS = [
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4.5,
-      "text": "this is the one i put on when i want to feel something"
+      "text": "Honestly? Better than the debut. Not close."
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4,
-      "text": "genuinely reshaped what i thought this genre could do"
+      "text": "Fine, I'll say it: the singles are the weakest part."
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4,
-      "text": "overrated by half a star but still a great time"
+      "text": "Pros: everything.\nCons: ends."
      }
     ],
     "deezerId": 9902710,
@@ -985,21 +985,21 @@ window.PERSONAS = [
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 5,
-      "text": "every song earns its place, which is rarer than it should be"
+      "text": "10/10 no notes. ok one note: track 4 could be shorter. 10/10 still."
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4.5,
-      "text": "the closer justifies the entire tracklist"
+      "text": "3.5 rounded up because the closer made me text my ex. rounded back down because the closer made me text my ex."
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4,
-      "text": "the kind of record you finish and immediately restart"
+      "text": "not for me. i can hear exactly why it's for everyone else."
      }
     ],
     "deezerId": 59826262,
@@ -1023,21 +1023,21 @@ window.PERSONAS = [
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 5,
-      "text": "the mixing is doing so much heavy lifting here"
+      "text": "i put this on expecting background music and ended up sitting on the kitchen floor for the whole second side. the way the drums drop out of the fourth track and leave that one synth line hanging is the best thirty seconds of music i've heard this year"
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4.5,
-      "text": "not their best but their most honest"
+      "text": "took me three listens to get it and now i can't stop. the first half feels like a different album from the second, and then the last song ties them together so neatly you go back to the start to check if it was planned. it was"
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4,
-      "text": "i've recommended this to six people and lost two friends"
+      "text": "everyone i know rates this for the singles and sure, they're great. but the deep cuts are where the record actually lives. track seven especially, which nobody talks about and which is quietly the best thing on it"
      }
     ],
     "deezerId": 428240707,
@@ -1070,21 +1070,21 @@ window.PERSONAS = [
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 5,
-      "text": "every song earns its place, which is rarer than it should be"
+      "text": "Fine, I'll say it: the singles are the weakest part."
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4.5,
-      "text": "the closer justifies the entire tracklist"
+      "text": "Pros: everything.\nCons: ends."
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4,
-      "text": "the kind of record you finish and immediately restart"
+      "text": "Top 3, no order:\n1. the opener\n2. the one with the choir\n3. whatever track 8 is called"
      }
     ],
     "deezerId": 525768842,
@@ -1108,21 +1108,21 @@ window.PERSONAS = [
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4.5,
-      "text": "front to back, not a single skip on this one"
+      "text": "Honestly? Better than the debut. Not close."
      },
      {
       "name": "echoplex",
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4,
-      "text": "i was not emotionally prepared for the back half"
+      "text": "Fine, I'll say it: the singles are the weakest part."
      },
      {
       "name": "staticfog",
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4,
-      "text": "production is immaculate, lyrics cut deeper every listen"
+      "text": "Pros: everything.\nCons: ends."
      }
     ],
     "deezerId": 685307641,
@@ -1146,21 +1146,21 @@ window.PERSONAS = [
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 5,
-      "text": "genuinely reshaped what i thought this genre could do"
+      "text": "the vinyl is $60 and i have never clicked add to cart faster"
      },
      {
       "name": "velvetblast",
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4.5,
-      "text": "overrated by half a star but still a great time"
+      "text": "it's giving 3am walk home"
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4,
-      "text": "the sequencing alone deserves an award"
+      "text": "put it on for the dishes. ended up sitting down."
      }
     ],
     "deezerId": 12977824,
@@ -1191,21 +1191,21 @@ window.PERSONAS = [
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 5,
-      "text": "grew on me. first listen confused me, tenth listen floored me"
+      "text": "took me three listens to get it and now i can't stop. the first half feels like a different album from the second, and then the last song ties them together so neatly you go back to the start to check if it was planned. it was"
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4.5,
-      "text": "this is the one i put on when i want to feel something"
+      "text": "everyone i know rates this for the singles and sure, they're great. but the deep cuts are where the record actually lives. track seven especially, which nobody talks about and which is quietly the best thing on it"
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4,
-      "text": "genuinely reshaped what i thought this genre could do"
+      "text": "sounds thin on speakers and enormous on headphones, so listen to it the right way. the low end on the title track is the kind of thing you feel in your teeth"
      }
     ],
     "deezerId": 165274902,
@@ -1239,21 +1239,21 @@ window.PERSONAS = [
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 5,
-      "text": "a mood more than an album, and that's a compliment"
+      "text": "criminally short. i wanted twenty more minutes"
      },
      {
       "name": "velvetblast",
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4.5,
-      "text": "played this on a night drive and understood it completely"
+      "text": "A remarkable record. The first half is patient, almost withholding, and then the second half pays out everything it saved. Track seven, in particular, is the best thing they have made."
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4,
-      "text": "the mixing is doing so much heavy lifting here"
+      "text": "Not what I wanted from them and exactly what I needed. Slower, sadder and stranger than anything they've done, and the production is so close-mic'd you can hear the room. Give it a night drive and it opens right up."
      }
     ],
     "deezerId": 14879699,
@@ -1299,21 +1299,21 @@ window.PERSONAS = [
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4.5,
-      "text": "genuinely reshaped what i thought this genre could do"
+      "text": "A remarkable record. The first half is patient, almost withholding, and then the second half pays out everything it saved. Track seven, in particular, is the best thing they have made."
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4,
-      "text": "overrated by half a star but still a great time"
+      "text": "Not what I wanted from them and exactly what I needed. Slower, sadder and stranger than anything they've done, and the production is so close-mic'd you can hear the room. Give it a night drive and it opens right up."
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4,
-      "text": "the sequencing alone deserves an award"
+      "text": "Great production, wildly overwritten. Half these songs would land twice as hard with a verse cut. Still a four, because the good half is really good."
      }
     ],
     "deezerId": 277473352,
@@ -1337,21 +1337,21 @@ window.PERSONAS = [
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 5,
-      "text": "criminally short. i wanted twenty more minutes"
+      "text": "Great production, wildly overwritten. Half these songs would land twice as hard with a verse cut. Still a four, because the good half is really good."
      },
      {
       "name": "velvetblast",
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4.5,
-      "text": "a mood more than an album, and that's a compliment"
+      "text": "Skipped this for two years because of the cover. My fault. Genuinely one of the best things I've heard this decade."
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4,
-      "text": "played this on a night drive and understood it completely"
+      "text": "The lyrics are doing a lot here, and I mean that as praise. Every verse is a small short story, and the way the chorus changes one word each time it comes round is the kind of detail you only catch on headphones."
      }
     ],
     "deezerId": 83400402,
@@ -1375,21 +1375,21 @@ window.PERSONAS = [
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4.5,
-      "text": "the kind of record you finish and immediately restart"
+      "text": "the way the strings come in on track 6??? hello???"
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4,
-      "text": "front to back, not a single skip on this one"
+      "text": "mom said it's my turn to be the friend who won't shut up about this record"
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4,
-      "text": "i was not emotionally prepared for the back half"
+      "text": "the vinyl is $60 and i have never clicked add to cart faster"
      }
     ],
     "deezerId": 43839671,
@@ -1413,21 +1413,21 @@ window.PERSONAS = [
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 5,
-      "text": "i've recommended this to six people and lost two friends"
+      "text": "this album is my roman empire"
      },
      {
       "name": "echoplex",
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4.5,
-      "text": "every song earns its place, which is rarer than it should be"
+      "text": "5 stars because i'm scared of the fans"
      },
      {
       "name": "staticfog",
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4,
-      "text": "the closer justifies the entire tracklist"
+      "text": "review pending. still crying."
      }
     ],
     "deezerId": 265701822,
@@ -1451,21 +1451,21 @@ window.PERSONAS = [
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 5,
-      "text": "the closer justifies the entire tracklist"
+      "text": "review pending. still crying."
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4.5,
-      "text": "the kind of record you finish and immediately restart"
+      "text": "wow."
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4,
-      "text": "front to back, not a single skip on this one"
+      "text": "this goes so hard for no reason"
      }
     ],
     "deezerId": 106676,
@@ -1489,21 +1489,21 @@ window.PERSONAS = [
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4.5,
-      "text": "played this on a night drive and understood it completely"
+      "text": "10/10 no notes. ok one note: track 4 could be shorter. 10/10 still."
      },
      {
       "name": "staticfog",
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4,
-      "text": "the mixing is doing so much heavy lifting here"
+      "text": "3.5 rounded up because the closer made me text my ex. rounded back down because the closer made me text my ex."
      },
      {
       "name": "velvetblast",
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4,
-      "text": "not their best but their most honest"
+      "text": "not for me. i can hear exactly why it's for everyone else."
      }
     ],
     "deezerId": 342842077,
@@ -1527,21 +1527,21 @@ window.PERSONAS = [
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 5,
-      "text": "sounds like a memory i haven't had yet"
+      "text": "criminally short. i wanted twenty more minutes"
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4.5,
-      "text": "perfect headphones album, sounds thin on speakers though"
+      "text": "A remarkable record. The first half is patient, almost withholding, and then the second half pays out everything it saved. Track seven, in particular, is the best thing they have made."
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4,
-      "text": "everyone talks about the singles, the deep cuts are the real thing"
+      "text": "Not what I wanted from them and exactly what I needed. Slower, sadder and stranger than anything they've done, and the production is so close-mic'd you can hear the room. Give it a night drive and it opens right up."
      }
     ],
     "deezerId": 767571211,
@@ -1638,21 +1638,21 @@ window.PERSONAS = [
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 5,
-      "text": "sounds like a memory i haven't had yet"
+      "text": "this album is my roman empire"
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4.5,
-      "text": "perfect headphones album, sounds thin on speakers though"
+      "text": "5 stars because i'm scared of the fans"
      },
      {
       "name": "echoplex",
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4,
-      "text": "everyone talks about the singles, the deep cuts are the real thing"
+      "text": "review pending. still crying."
      }
     ],
     "deezerId": 466106885,
@@ -1692,21 +1692,21 @@ window.PERSONAS = [
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4.5,
-      "text": "the closer justifies the entire tracklist"
+      "text": "i put this on expecting background music and ended up sitting on the kitchen floor for the whole second side. the way the drums drop out of the fourth track and leave that one synth line hanging is the best thirty seconds of music i've heard this year"
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4,
-      "text": "the kind of record you finish and immediately restart"
+      "text": "took me three listens to get it and now i can't stop. the first half feels like a different album from the second, and then the last song ties them together so neatly you go back to the start to check if it was planned. it was"
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4,
-      "text": "front to back, not a single skip on this one"
+      "text": "everyone i know rates this for the singles and sure, they're great. but the deep cuts are where the record actually lives. track seven especially, which nobody talks about and which is quietly the best thing on it"
      }
     ],
     "deezerId": 434848357,
@@ -1749,21 +1749,21 @@ window.PERSONAS = [
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 5,
-      "text": "the closer justifies the entire tracklist"
+      "text": "grew on me. first listen confused me, tenth listen floored me"
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4.5,
-      "text": "the kind of record you finish and immediately restart"
+      "text": "i've recommended this to six people and lost two friends"
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4,
-      "text": "front to back, not a single skip on this one"
+      "text": "criminally short. i wanted twenty more minutes"
      }
     ],
     "deezerId": 653112011,
@@ -1787,21 +1787,21 @@ window.PERSONAS = [
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 5,
-      "text": "the closer justifies the entire tracklist"
+      "text": "3.5 rounded up because the closer made me text my ex. rounded back down because the closer made me text my ex."
      },
      {
       "name": "velvetblast",
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4.5,
-      "text": "the kind of record you finish and immediately restart"
+      "text": "not for me. i can hear exactly why it's for everyone else."
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4,
-      "text": "front to back, not a single skip on this one"
+      "text": "Honestly? Better than the debut. Not close."
      }
     ],
     "deezerId": 427059047,
@@ -1835,21 +1835,21 @@ window.PERSONAS = [
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4.5,
-      "text": "overrated by half a star but still a great time"
+      "text": "it's giving 3am walk home"
      },
      {
       "name": "velvetblast",
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4,
-      "text": "the sequencing alone deserves an award"
+      "text": "put it on for the dishes. ended up sitting down."
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4,
-      "text": "sounds like a memory i haven't had yet"
+      "text": "it's fine. it's FINE. why is everyone acting like this is scripture"
      }
     ],
     "deezerId": 106746252,
@@ -1873,21 +1873,21 @@ window.PERSONAS = [
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4.5,
-      "text": "sounds like a memory i haven't had yet"
+      "text": "this goes so hard for no reason"
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4,
-      "text": "perfect headphones album, sounds thin on speakers though"
+      "text": "listened on the bus. missed my stop. worth it."
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4,
-      "text": "everyone talks about the singles, the deep cuts are the real thing"
+      "text": "hot take: the deluxe is the real album"
      }
     ],
     "deezerId": 268310522,
@@ -1929,21 +1929,21 @@ window.PERSONAS = [
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4.5,
-      "text": "everyone talks about the singles, the deep cuts are the real thing"
+      "text": "3.5 rounded up because the closer made me text my ex. rounded back down because the closer made me text my ex."
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4,
-      "text": "criminally short. i wanted twenty more minutes"
+      "text": "not for me. i can hear exactly why it's for everyone else."
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4,
-      "text": "a mood more than an album, and that's a compliment"
+      "text": "Honestly? Better than the debut. Not close."
      }
     ],
     "deezerId": 432208777,
@@ -1967,21 +1967,21 @@ window.PERSONAS = [
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4.5,
-      "text": "not their best but their most honest"
+      "text": "put it on for the dishes. ended up sitting down."
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4,
-      "text": "i've recommended this to six people and lost two friends"
+      "text": "it's fine. it's FINE. why is everyone acting like this is scripture"
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4,
-      "text": "every song earns its place, which is rarer than it should be"
+      "text": "10/10 no notes. ok one note: track 4 could be shorter. 10/10 still."
      }
     ],
     "deezerId": 303671207,
@@ -2028,21 +2028,21 @@ window.PERSONAS = [
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 5,
-      "text": "sounds like a memory i haven't had yet"
+      "text": "this album is my roman empire"
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4.5,
-      "text": "perfect headphones album, sounds thin on speakers though"
+      "text": "5 stars because i'm scared of the fans"
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4,
-      "text": "everyone talks about the singles, the deep cuts are the real thing"
+      "text": "review pending. still crying."
      }
     ],
     "deezerId": 233347232,
@@ -2066,21 +2066,21 @@ window.PERSONAS = [
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 5,
-      "text": "everyone talks about the singles, the deep cuts are the real thing"
+      "text": "i put this on expecting background music and ended up sitting on the kitchen floor for the whole second side. the way the drums drop out of the fourth track and leave that one synth line hanging is the best thirty seconds of music i've heard this year"
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4.5,
-      "text": "criminally short. i wanted twenty more minutes"
+      "text": "took me three listens to get it and now i can't stop. the first half feels like a different album from the second, and then the last song ties them together so neatly you go back to the start to check if it was planned. it was"
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4,
-      "text": "a mood more than an album, and that's a compliment"
+      "text": "everyone i know rates this for the singles and sure, they're great. but the deep cuts are where the record actually lives. track seven especially, which nobody talks about and which is quietly the best thing on it"
      }
     ],
     "deezerId": 336124187,
@@ -2121,21 +2121,21 @@ window.PERSONAS = [
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 5,
-      "text": "not their best but their most honest"
+      "text": "the way the strings come in on track 6??? hello???"
      },
      {
       "name": "echoplex",
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4.5,
-      "text": "i've recommended this to six people and lost two friends"
+      "text": "mom said it's my turn to be the friend who won't shut up about this record"
      },
      {
       "name": "staticfog",
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4,
-      "text": "every song earns its place, which is rarer than it should be"
+      "text": "the vinyl is $60 and i have never clicked add to cart faster"
      }
     ],
     "deezerId": 533684252,
@@ -2175,21 +2175,21 @@ window.PERSONAS = [
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4.5,
-      "text": "the sequencing alone deserves an award"
+      "text": "took me three listens to get it and now i can't stop. the first half feels like a different album from the second, and then the last song ties them together so neatly you go back to the start to check if it was planned. it was"
      },
      {
       "name": "staticfog",
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4,
-      "text": "sounds like a memory i haven't had yet"
+      "text": "everyone i know rates this for the singles and sure, they're great. but the deep cuts are where the record actually lives. track seven especially, which nobody talks about and which is quietly the best thing on it"
      },
      {
       "name": "velvetblast",
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4,
-      "text": "perfect headphones album, sounds thin on speakers though"
+      "text": "sounds thin on speakers and enormous on headphones, so listen to it the right way. the low end on the title track is the kind of thing you feel in your teeth"
      }
     ],
     "deezerId": 177111982,
@@ -2230,21 +2230,21 @@ window.PERSONAS = [
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 5,
-      "text": "the closer justifies the entire tracklist"
+      "text": "Pros: everything.\nCons: ends."
      },
      {
       "name": "echoplex",
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4.5,
-      "text": "the kind of record you finish and immediately restart"
+      "text": "Top 3, no order:\n1. the opener\n2. the one with the choir\n3. whatever track 8 is called"
      },
      {
       "name": "staticfog",
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4,
-      "text": "front to back, not a single skip on this one"
+      "text": "Highs: the title track, the horns on 4.\nLows: track 9 is a skit and it knows it.\nVerdict: keep."
      }
     ],
     "deezerId": 217565572,
@@ -2278,21 +2278,21 @@ window.PERSONAS = [
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4.5,
-      "text": "the kind of record you finish and immediately restart"
+      "text": "not for me. i can hear exactly why it's for everyone else."
      },
      {
       "name": "velvetblast",
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4,
-      "text": "front to back, not a single skip on this one"
+      "text": "Honestly? Better than the debut. Not close."
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4,
-      "text": "i was not emotionally prepared for the back half"
+      "text": "Fine, I'll say it: the singles are the weakest part."
      }
     ],
     "deezerId": 325690137,
@@ -2335,21 +2335,21 @@ window.PERSONAS = [
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4.5,
-      "text": "not their best but their most honest"
+      "text": "not for me. i can hear exactly why it's for everyone else."
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4,
-      "text": "i've recommended this to six people and lost two friends"
+      "text": "Honestly? Better than the debut. Not close."
      },
      {
       "name": "echoplex",
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4,
-      "text": "every song earns its place, which is rarer than it should be"
+      "text": "Fine, I'll say it: the singles are the weakest part."
      }
     ],
     "deezerId": 106879282,
@@ -2373,21 +2373,21 @@ window.PERSONAS = [
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4.5,
-      "text": "genuinely reshaped what i thought this genre could do"
+      "text": "sounds thin on speakers and enormous on headphones, so listen to it the right way. the low end on the title track is the kind of thing you feel in your teeth"
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4,
-      "text": "overrated by half a star but still a great time"
+      "text": "grew on me. first listen confused me, tenth listen floored me"
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4,
-      "text": "the sequencing alone deserves an award"
+      "text": "i've recommended this to six people and lost two friends"
      }
     ],
     "deezerId": 208865052,
@@ -2421,21 +2421,21 @@ window.PERSONAS = [
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4.5,
-      "text": "i was not emotionally prepared for the back half"
+      "text": "The lyrics are doing a lot here, and I mean that as praise. Every verse is a small short story, and the way the chorus changes one word each time it comes round is the kind of detail you only catch on headphones."
      },
      {
       "name": "staticfog",
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4,
-      "text": "production is immaculate, lyrics cut deeper every listen"
+      "text": "Criminally underrated. It came out the same month as three bigger records and got buried, which is a shame, because it's better than all of them. The sequencing alone is a masterclass."
      },
      {
       "name": "velvetblast",
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4,
-      "text": "grew on me. first listen confused me, tenth listen floored me"
+      "text": "no skips. none. i checked twice."
      }
     ],
     "deezerId": 106878232,
@@ -2474,21 +2474,21 @@ window.PERSONAS = [
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4.5,
-      "text": "this is the one i put on when i want to feel something"
+      "text": "mom said it's my turn to be the friend who won't shut up about this record"
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4,
-      "text": "genuinely reshaped what i thought this genre could do"
+      "text": "the vinyl is $60 and i have never clicked add to cart faster"
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4,
-      "text": "overrated by half a star but still a great time"
+      "text": "it's giving 3am walk home"
      }
     ],
     "deezerId": 233173682,
@@ -2525,21 +2525,21 @@ window.PERSONAS = [
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4.5,
-      "text": "genuinely reshaped what i thought this genre could do"
+      "text": "A remarkable record. The first half is patient, almost withholding, and then the second half pays out everything it saved. Track seven, in particular, is the best thing they have made."
      },
      {
       "name": "staticfog",
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4,
-      "text": "overrated by half a star but still a great time"
+      "text": "Not what I wanted from them and exactly what I needed. Slower, sadder and stranger than anything they've done, and the production is so close-mic'd you can hear the room. Give it a night drive and it opens right up."
      },
      {
       "name": "velvetblast",
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4,
-      "text": "the sequencing alone deserves an award"
+      "text": "Great production, wildly overwritten. Half these songs would land twice as hard with a verse cut. Still a four, because the good half is really good."
      }
     ],
     "deezerId": 294550162,
@@ -2589,21 +2589,21 @@ window.PERSONAS = [
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4.5,
-      "text": "the sequencing alone deserves an award"
+      "text": "wow."
      },
      {
       "name": "echoplex",
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4,
-      "text": "sounds like a memory i haven't had yet"
+      "text": "this goes so hard for no reason"
      },
      {
       "name": "staticfog",
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4,
-      "text": "perfect headphones album, sounds thin on speakers though"
+      "text": "listened on the bus. missed my stop. worth it."
      }
     ],
     "deezerId": 755397181,
@@ -2627,21 +2627,21 @@ window.PERSONAS = [
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4.5,
-      "text": "the closer justifies the entire tracklist"
+      "text": "3.5 rounded up because the closer made me text my ex. rounded back down because the closer made me text my ex."
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4,
-      "text": "the kind of record you finish and immediately restart"
+      "text": "not for me. i can hear exactly why it's for everyone else."
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4,
-      "text": "front to back, not a single skip on this one"
+      "text": "Honestly? Better than the debut. Not close."
      }
     ],
     "deezerId": 662608161,
@@ -2665,21 +2665,21 @@ window.PERSONAS = [
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 5,
-      "text": "everyone talks about the singles, the deep cuts are the real thing"
+      "text": "hot take: the deluxe is the real album"
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4.5,
-      "text": "criminally short. i wanted twenty more minutes"
+      "text": "the way the strings come in on track 6??? hello???"
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4,
-      "text": "a mood more than an album, and that's a compliment"
+      "text": "mom said it's my turn to be the friend who won't shut up about this record"
      }
     ],
     "deezerId": 563010272,
@@ -2703,21 +2703,21 @@ window.PERSONAS = [
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 5,
-      "text": "the closer justifies the entire tracklist"
+      "text": "3.5 rounded up because the closer made me text my ex. rounded back down because the closer made me text my ex."
      },
      {
       "name": "velvetblast",
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4.5,
-      "text": "the kind of record you finish and immediately restart"
+      "text": "not for me. i can hear exactly why it's for everyone else."
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4,
-      "text": "front to back, not a single skip on this one"
+      "text": "Honestly? Better than the debut. Not close."
      }
     ],
     "deezerId": 626871541,
@@ -2767,21 +2767,21 @@ window.PERSONAS = [
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4.5,
-      "text": "criminally short. i wanted twenty more minutes"
+      "text": "took me three listens to get it and now i can't stop. the first half feels like a different album from the second, and then the last song ties them together so neatly you go back to the start to check if it was planned. it was"
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4,
-      "text": "a mood more than an album, and that's a compliment"
+      "text": "everyone i know rates this for the singles and sure, they're great. but the deep cuts are where the record actually lives. track seven especially, which nobody talks about and which is quietly the best thing on it"
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4,
-      "text": "played this on a night drive and understood it completely"
+      "text": "sounds thin on speakers and enormous on headphones, so listen to it the right way. the low end on the title track is the kind of thing you feel in your teeth"
      }
     ],
     "deezerId": 729966751,
@@ -2805,21 +2805,21 @@ window.PERSONAS = [
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4.5,
-      "text": "production is immaculate, lyrics cut deeper every listen"
+      "text": "3.5 rounded up because the closer made me text my ex. rounded back down because the closer made me text my ex."
      },
      {
       "name": "velvetblast",
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4,
-      "text": "grew on me. first listen confused me, tenth listen floored me"
+      "text": "not for me. i can hear exactly why it's for everyone else."
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4,
-      "text": "this is the one i put on when i want to feel something"
+      "text": "Honestly? Better than the debut. Not close."
      }
     ],
     "deezerId": 467869945,
@@ -2853,21 +2853,21 @@ window.PERSONAS = [
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4.5,
-      "text": "sounds like a memory i haven't had yet"
+      "text": "mom said it's my turn to be the friend who won't shut up about this record"
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4,
-      "text": "perfect headphones album, sounds thin on speakers though"
+      "text": "the vinyl is $60 and i have never clicked add to cart faster"
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4,
-      "text": "everyone talks about the singles, the deep cuts are the real thing"
+      "text": "it's giving 3am walk home"
      }
     ],
     "deezerId": 550637802,
@@ -2891,21 +2891,21 @@ window.PERSONAS = [
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4.5,
-      "text": "criminally short. i wanted twenty more minutes"
+      "text": "wow."
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4,
-      "text": "a mood more than an album, and that's a compliment"
+      "text": "this goes so hard for no reason"
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4,
-      "text": "played this on a night drive and understood it completely"
+      "text": "listened on the bus. missed my stop. worth it."
      }
     ],
     "deezerId": 256094172,
@@ -2942,21 +2942,21 @@ window.PERSONAS = [
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 5,
-      "text": "grew on me. first listen confused me, tenth listen floored me"
+      "text": "the way the strings come in on track 6??? hello???"
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4.5,
-      "text": "this is the one i put on when i want to feel something"
+      "text": "mom said it's my turn to be the friend who won't shut up about this record"
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4,
-      "text": "genuinely reshaped what i thought this genre could do"
+      "text": "the vinyl is $60 and i have never clicked add to cart faster"
      }
     ],
     "deezerId": 961823341,
@@ -2980,21 +2980,21 @@ window.PERSONAS = [
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 5,
-      "text": "the sequencing alone deserves an award"
+      "text": "the way the strings come in on track 6??? hello???"
      },
      {
       "name": "velvetblast",
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4.5,
-      "text": "sounds like a memory i haven't had yet"
+      "text": "mom said it's my turn to be the friend who won't shut up about this record"
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4,
-      "text": "perfect headphones album, sounds thin on speakers though"
+      "text": "the vinyl is $60 and i have never clicked add to cart faster"
      }
     ],
     "deezerId": 118951582,
@@ -3018,21 +3018,21 @@ window.PERSONAS = [
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4.5,
-      "text": "grew on me. first listen confused me, tenth listen floored me"
+      "text": "put it on for the dishes. ended up sitting down."
      },
      {
       "name": "staticfog",
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4,
-      "text": "this is the one i put on when i want to feel something"
+      "text": "it's fine. it's FINE. why is everyone acting like this is scripture"
      },
      {
       "name": "velvetblast",
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4,
-      "text": "genuinely reshaped what i thought this genre could do"
+      "text": "10/10 no notes. ok one note: track 4 could be shorter. 10/10 still."
      }
     ],
     "deezerId": 606909592,
@@ -3056,21 +3056,21 @@ window.PERSONAS = [
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4.5,
-      "text": "i've recommended this to six people and lost two friends"
+      "text": "it's fine. it's FINE. why is everyone acting like this is scripture"
      },
      {
       "name": "velvetblast",
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4,
-      "text": "every song earns its place, which is rarer than it should be"
+      "text": "10/10 no notes. ok one note: track 4 could be shorter. 10/10 still."
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4,
-      "text": "the closer justifies the entire tracklist"
+      "text": "3.5 rounded up because the closer made me text my ex. rounded back down because the closer made me text my ex."
      }
     ],
     "deezerId": 554234022,
@@ -3094,21 +3094,21 @@ window.PERSONAS = [
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4.5,
-      "text": "criminally short. i wanted twenty more minutes"
+      "text": "Great production, wildly overwritten. Half these songs would land twice as hard with a verse cut. Still a four, because the good half is really good."
      },
      {
       "name": "velvetblast",
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4,
-      "text": "a mood more than an album, and that's a compliment"
+      "text": "Skipped this for two years because of the cover. My fault. Genuinely one of the best things I've heard this decade."
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4,
-      "text": "played this on a night drive and understood it completely"
+      "text": "The lyrics are doing a lot here, and I mean that as praise. Every verse is a small short story, and the way the chorus changes one word each time it comes round is the kind of detail you only catch on headphones."
      }
     ],
     "deezerId": 886977162,
@@ -3140,21 +3140,21 @@ window.PERSONAS = [
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4.5,
-      "text": "sounds like a memory i haven't had yet"
+      "text": "Highs: the title track, the horns on 4.\nLows: track 9 is a skit and it knows it.\nVerdict: keep."
      },
      {
       "name": "velvetblast",
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4,
-      "text": "perfect headphones album, sounds thin on speakers though"
+      "text": "Ranking every song would take a week, so the short version: all of them, in that order."
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4,
-      "text": "everyone talks about the singles, the deep cuts are the real thing"
+      "text": "i put this on expecting background music and ended up sitting on the kitchen floor for the whole second side. the way the drums drop out of the fourth track and leave that one synth line hanging is the best thirty seconds of music i've heard this year"
      }
     ],
     "deezerId": 130999752,
@@ -3249,21 +3249,21 @@ window.PERSONAS = [
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 5,
-      "text": "genuinely reshaped what i thought this genre could do"
+      "text": "5 stars because i'm scared of the fans"
      },
      {
       "name": "staticfog",
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4.5,
-      "text": "overrated by half a star but still a great time"
+      "text": "review pending. still crying."
      },
      {
       "name": "velvetblast",
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4,
-      "text": "the sequencing alone deserves an award"
+      "text": "wow."
      }
     ],
     "deezerId": 12047952,
@@ -3305,21 +3305,21 @@ window.PERSONAS = [
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 5,
-      "text": "front to back, not a single skip on this one"
+      "text": "Highs: the title track, the horns on 4.\nLows: track 9 is a skit and it knows it.\nVerdict: keep."
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4.5,
-      "text": "i was not emotionally prepared for the back half"
+      "text": "Ranking every song would take a week, so the short version: all of them, in that order."
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4,
-      "text": "production is immaculate, lyrics cut deeper every listen"
+      "text": "i put this on expecting background music and ended up sitting on the kitchen floor for the whole second side. the way the drums drop out of the fourth track and leave that one synth line hanging is the best thirty seconds of music i've heard this year"
      }
     ],
     "deezerId": 12114240,
@@ -3363,21 +3363,21 @@ window.PERSONAS = [
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4.5,
-      "text": "a mood more than an album, and that's a compliment"
+      "text": "Highs: the title track, the horns on 4.\nLows: track 9 is a skit and it knows it.\nVerdict: keep."
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4,
-      "text": "played this on a night drive and understood it completely"
+      "text": "Ranking every song would take a week, so the short version: all of them, in that order."
      },
      {
       "name": "echoplex",
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4,
-      "text": "the mixing is doing so much heavy lifting here"
+      "text": "i put this on expecting background music and ended up sitting on the kitchen floor for the whole second side. the way the drums drop out of the fourth track and leave that one synth line hanging is the best thirty seconds of music i've heard this year"
      }
     ],
     "deezerId": 8887733,
@@ -3401,21 +3401,21 @@ window.PERSONAS = [
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4.5,
-      "text": "the mixing is doing so much heavy lifting here"
+      "text": "i put this on expecting background music and ended up sitting on the kitchen floor for the whole second side. the way the drums drop out of the fourth track and leave that one synth line hanging is the best thirty seconds of music i've heard this year"
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4,
-      "text": "not their best but their most honest"
+      "text": "took me three listens to get it and now i can't stop. the first half feels like a different album from the second, and then the last song ties them together so neatly you go back to the start to check if it was planned. it was"
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4,
-      "text": "i've recommended this to six people and lost two friends"
+      "text": "everyone i know rates this for the singles and sure, they're great. but the deep cuts are where the record actually lives. track seven especially, which nobody talks about and which is quietly the best thing on it"
      }
     ],
     "deezerId": 6237061,
@@ -3457,21 +3457,21 @@ window.PERSONAS = [
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4.5,
-      "text": "perfect headphones album, sounds thin on speakers though"
+      "text": "Ranking every song would take a week, so the short version: all of them, in that order."
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4,
-      "text": "everyone talks about the singles, the deep cuts are the real thing"
+      "text": "i put this on expecting background music and ended up sitting on the kitchen floor for the whole second side. the way the drums drop out of the fourth track and leave that one synth line hanging is the best thirty seconds of music i've heard this year"
      },
      {
       "name": "echoplex",
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4,
-      "text": "criminally short. i wanted twenty more minutes"
+      "text": "took me three listens to get it and now i can't stop. the first half feels like a different album from the second, and then the last song ties them together so neatly you go back to the start to check if it was planned. it was"
      }
     ],
     "deezerId": 908516,
@@ -3511,21 +3511,21 @@ window.PERSONAS = [
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4.5,
-      "text": "the mixing is doing so much heavy lifting here"
+      "text": "i put this on expecting background music and ended up sitting on the kitchen floor for the whole second side. the way the drums drop out of the fourth track and leave that one synth line hanging is the best thirty seconds of music i've heard this year"
      },
      {
       "name": "staticfog",
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4,
-      "text": "not their best but their most honest"
+      "text": "took me three listens to get it and now i can't stop. the first half feels like a different album from the second, and then the last song ties them together so neatly you go back to the start to check if it was planned. it was"
      },
      {
       "name": "velvetblast",
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4,
-      "text": "i've recommended this to six people and lost two friends"
+      "text": "everyone i know rates this for the singles and sure, they're great. but the deep cuts are where the record actually lives. track seven especially, which nobody talks about and which is quietly the best thing on it"
      }
     ],
     "deezerId": 11205658,
@@ -3563,21 +3563,21 @@ window.PERSONAS = [
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 5,
-      "text": "sounds like a memory i haven't had yet"
+      "text": "this album is my roman empire"
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4.5,
-      "text": "perfect headphones album, sounds thin on speakers though"
+      "text": "5 stars because i'm scared of the fans"
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4,
-      "text": "everyone talks about the singles, the deep cuts are the real thing"
+      "text": "review pending. still crying."
      }
     ],
     "deezerId": 213021,
@@ -3624,21 +3624,21 @@ window.PERSONAS = [
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4.5,
-      "text": "front to back, not a single skip on this one"
+      "text": "it's fine. it's FINE. why is everyone acting like this is scripture"
      },
      {
       "name": "echoplex",
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4,
-      "text": "i was not emotionally prepared for the back half"
+      "text": "10/10 no notes. ok one note: track 4 could be shorter. 10/10 still."
      },
      {
       "name": "staticfog",
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4,
-      "text": "production is immaculate, lyrics cut deeper every listen"
+      "text": "3.5 rounded up because the closer made me text my ex. rounded back down because the closer made me text my ex."
      }
     ],
     "deezerId": 11692568,
@@ -3669,21 +3669,21 @@ window.PERSONAS = [
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4.5,
-      "text": "everyone talks about the singles, the deep cuts are the real thing"
+      "text": "review pending. still crying."
      },
      {
       "name": "velvetblast",
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4,
-      "text": "criminally short. i wanted twenty more minutes"
+      "text": "wow."
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4,
-      "text": "a mood more than an album, and that's a compliment"
+      "text": "this goes so hard for no reason"
      }
     ],
     "deezerId": 436186197,
@@ -3707,21 +3707,21 @@ window.PERSONAS = [
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4.5,
-      "text": "the mixing is doing so much heavy lifting here"
+      "text": "grew on me. first listen confused me, tenth listen floored me"
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4,
-      "text": "not their best but their most honest"
+      "text": "i've recommended this to six people and lost two friends"
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4,
-      "text": "i've recommended this to six people and lost two friends"
+      "text": "criminally short. i wanted twenty more minutes"
      }
     ],
     "deezerId": 1208585,
@@ -3761,21 +3761,21 @@ window.PERSONAS = [
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4.5,
-      "text": "the closer justifies the entire tracklist"
+      "text": "Criminally underrated. It came out the same month as three bigger records and got buried, which is a shame, because it's better than all of them. The sequencing alone is a masterclass."
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4,
-      "text": "the kind of record you finish and immediately restart"
+      "text": "no skips. none. i checked twice."
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4,
-      "text": "front to back, not a single skip on this one"
+      "text": "this album is my roman empire"
      }
     ],
     "deezerId": 6415260,
@@ -3819,21 +3819,21 @@ window.PERSONAS = [
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 5,
-      "text": "overrated by half a star but still a great time"
+      "text": "Pros: everything.\nCons: ends."
      },
      {
       "name": "staticfog",
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4.5,
-      "text": "the sequencing alone deserves an award"
+      "text": "Top 3, no order:\n1. the opener\n2. the one with the choir\n3. whatever track 8 is called"
      },
      {
       "name": "velvetblast",
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4,
-      "text": "sounds like a memory i haven't had yet"
+      "text": "Highs: the title track, the horns on 4.\nLows: track 9 is a skit and it knows it.\nVerdict: keep."
      }
     ],
     "deezerId": 455130,
@@ -3872,21 +3872,21 @@ window.PERSONAS = [
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4.5,
-      "text": "the kind of record you finish and immediately restart"
+      "text": "wow."
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4,
-      "text": "front to back, not a single skip on this one"
+      "text": "this goes so hard for no reason"
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4,
-      "text": "i was not emotionally prepared for the back half"
+      "text": "listened on the bus. missed my stop. worth it."
      }
     ],
     "deezerId": 81868,
@@ -3933,21 +3933,21 @@ window.PERSONAS = [
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4.5,
-      "text": "genuinely reshaped what i thought this genre could do"
+      "text": "Ranking every song would take a week, so the short version: all of them, in that order."
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4,
-      "text": "overrated by half a star but still a great time"
+      "text": "i put this on expecting background music and ended up sitting on the kitchen floor for the whole second side. the way the drums drop out of the fourth track and leave that one synth line hanging is the best thirty seconds of music i've heard this year"
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4,
-      "text": "the sequencing alone deserves an award"
+      "text": "took me three listens to get it and now i can't stop. the first half feels like a different album from the second, and then the last song ties them together so neatly you go back to the start to check if it was planned. it was"
      }
     ],
     "deezerId": 1399868,
@@ -3987,21 +3987,21 @@ window.PERSONAS = [
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4.5,
-      "text": "i've recommended this to six people and lost two friends"
+      "text": "this album is my roman empire"
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4,
-      "text": "every song earns its place, which is rarer than it should be"
+      "text": "5 stars because i'm scared of the fans"
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4,
-      "text": "the closer justifies the entire tracklist"
+      "text": "review pending. still crying."
      }
     ],
     "deezerId": 901407822,
@@ -4025,21 +4025,21 @@ window.PERSONAS = [
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 5,
-      "text": "not their best but their most honest"
+      "text": "wow."
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4.5,
-      "text": "i've recommended this to six people and lost two friends"
+      "text": "this goes so hard for no reason"
      },
      {
       "name": "echoplex",
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4,
-      "text": "every song earns its place, which is rarer than it should be"
+      "text": "listened on the bus. missed my stop. worth it."
      }
     ],
     "deezerId": 491146635,
@@ -4063,21 +4063,21 @@ window.PERSONAS = [
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 5,
-      "text": "i was not emotionally prepared for the back half"
+      "text": "A remarkable record. The first half is patient, almost withholding, and then the second half pays out everything it saved. Track seven, in particular, is the best thing they have made."
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4.5,
-      "text": "production is immaculate, lyrics cut deeper every listen"
+      "text": "Not what I wanted from them and exactly what I needed. Slower, sadder and stranger than anything they've done, and the production is so close-mic'd you can hear the room. Give it a night drive and it opens right up."
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4,
-      "text": "grew on me. first listen confused me, tenth listen floored me"
+      "text": "Great production, wildly overwritten. Half these songs would land twice as hard with a verse cut. Still a four, because the good half is really good."
      }
     ],
     "deezerId": 345012,
@@ -4101,21 +4101,21 @@ window.PERSONAS = [
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4.5,
-      "text": "a mood more than an album, and that's a compliment"
+      "text": "mom said it's my turn to be the friend who won't shut up about this record"
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4,
-      "text": "played this on a night drive and understood it completely"
+      "text": "the vinyl is $60 and i have never clicked add to cart faster"
      },
      {
       "name": "echoplex",
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4,
-      "text": "the mixing is doing so much heavy lifting here"
+      "text": "it's giving 3am walk home"
      }
     ],
     "deezerId": 6327489,
@@ -4147,21 +4147,21 @@ window.PERSONAS = [
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 5,
-      "text": "genuinely reshaped what i thought this genre could do"
+      "text": "5 stars because i'm scared of the fans"
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4.5,
-      "text": "overrated by half a star but still a great time"
+      "text": "review pending. still crying."
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4,
-      "text": "the sequencing alone deserves an award"
+      "text": "wow."
      }
     ],
     "deezerId": 7014343,
@@ -4200,21 +4200,21 @@ window.PERSONAS = [
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4.5,
-      "text": "the mixing is doing so much heavy lifting here"
+      "text": "3.5 rounded up because the closer made me text my ex. rounded back down because the closer made me text my ex."
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4,
-      "text": "not their best but their most honest"
+      "text": "not for me. i can hear exactly why it's for everyone else."
      },
      {
       "name": "echoplex",
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4,
-      "text": "i've recommended this to six people and lost two friends"
+      "text": "Honestly? Better than the debut. Not close."
      }
     ],
     "deezerId": 184480112,
@@ -4251,21 +4251,21 @@ window.PERSONAS = [
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 5,
-      "text": "everyone talks about the singles, the deep cuts are the real thing"
+      "text": "i put this on expecting background music and ended up sitting on the kitchen floor for the whole second side. the way the drums drop out of the fourth track and leave that one synth line hanging is the best thirty seconds of music i've heard this year"
      },
      {
       "name": "velvetblast",
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4.5,
-      "text": "criminally short. i wanted twenty more minutes"
+      "text": "took me three listens to get it and now i can't stop. the first half feels like a different album from the second, and then the last song ties them together so neatly you go back to the start to check if it was planned. it was"
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4,
-      "text": "a mood more than an album, and that's a compliment"
+      "text": "everyone i know rates this for the singles and sure, they're great. but the deep cuts are where the record actually lives. track seven especially, which nobody talks about and which is quietly the best thing on it"
      }
     ],
     "deezerId": 230976,
@@ -4298,21 +4298,21 @@ window.PERSONAS = [
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 5,
-      "text": "played this on a night drive and understood it completely"
+      "text": "Ranking every song would take a week, so the short version: all of them, in that order."
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4.5,
-      "text": "the mixing is doing so much heavy lifting here"
+      "text": "i put this on expecting background music and ended up sitting on the kitchen floor for the whole second side. the way the drums drop out of the fourth track and leave that one synth line hanging is the best thirty seconds of music i've heard this year"
      },
      {
       "name": "echoplex",
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4,
-      "text": "not their best but their most honest"
+      "text": "took me three listens to get it and now i can't stop. the first half feels like a different album from the second, and then the last song ties them together so neatly you go back to the start to check if it was planned. it was"
      }
     ],
     "deezerId": 71054242,
@@ -4336,21 +4336,21 @@ window.PERSONAS = [
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 5,
-      "text": "the kind of record you finish and immediately restart"
+      "text": "put it on for the dishes. ended up sitting down."
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4.5,
-      "text": "front to back, not a single skip on this one"
+      "text": "it's fine. it's FINE. why is everyone acting like this is scripture"
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4,
-      "text": "i was not emotionally prepared for the back half"
+      "text": "10/10 no notes. ok one note: track 4 could be shorter. 10/10 still."
      }
     ],
     "deezerId": 1444232,
@@ -4399,21 +4399,21 @@ window.PERSONAS = [
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 5,
-      "text": "genuinely reshaped what i thought this genre could do"
+      "text": "Ranking every song would take a week, so the short version: all of them, in that order."
      },
      {
       "name": "staticfog",
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4.5,
-      "text": "overrated by half a star but still a great time"
+      "text": "i put this on expecting background music and ended up sitting on the kitchen floor for the whole second side. the way the drums drop out of the fourth track and leave that one synth line hanging is the best thirty seconds of music i've heard this year"
      },
      {
       "name": "velvetblast",
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4,
-      "text": "the sequencing alone deserves an award"
+      "text": "took me three listens to get it and now i can't stop. the first half feels like a different album from the second, and then the last song ties them together so neatly you go back to the start to check if it was planned. it was"
      }
     ],
     "deezerId": 320916697,
@@ -4454,21 +4454,21 @@ window.PERSONAS = [
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 5,
-      "text": "a mood more than an album, and that's a compliment"
+      "text": "criminally short. i wanted twenty more minutes"
      },
      {
       "name": "velvetblast",
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4.5,
-      "text": "played this on a night drive and understood it completely"
+      "text": "A remarkable record. The first half is patient, almost withholding, and then the second half pays out everything it saved. Track seven, in particular, is the best thing they have made."
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4,
-      "text": "the mixing is doing so much heavy lifting here"
+      "text": "Not what I wanted from them and exactly what I needed. Slower, sadder and stranger than anything they've done, and the production is so close-mic'd you can hear the room. Give it a night drive and it opens right up."
      }
     ],
     "deezerId": 747884691,
@@ -4492,21 +4492,21 @@ window.PERSONAS = [
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 5,
-      "text": "not their best but their most honest"
+      "text": "i've recommended this to six people and lost two friends"
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4.5,
-      "text": "i've recommended this to six people and lost two friends"
+      "text": "criminally short. i wanted twenty more minutes"
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4,
-      "text": "every song earns its place, which is rarer than it should be"
+      "text": "A remarkable record. The first half is patient, almost withholding, and then the second half pays out everything it saved. Track seven, in particular, is the best thing they have made."
      }
     ],
     "deezerId": 11205606,
@@ -4544,21 +4544,21 @@ window.PERSONAS = [
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 5,
-      "text": "sounds like a memory i haven't had yet"
+      "text": "mom said it's my turn to be the friend who won't shut up about this record"
      },
      {
       "name": "staticfog",
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4.5,
-      "text": "perfect headphones album, sounds thin on speakers though"
+      "text": "the vinyl is $60 and i have never clicked add to cart faster"
      },
      {
       "name": "velvetblast",
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4,
-      "text": "everyone talks about the singles, the deep cuts are the real thing"
+      "text": "it's giving 3am walk home"
      }
     ],
     "deezerId": 320445247,
@@ -4582,21 +4582,21 @@ window.PERSONAS = [
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 5,
-      "text": "a mood more than an album, and that's a compliment"
+      "text": "it's fine. it's FINE. why is everyone acting like this is scripture"
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4.5,
-      "text": "played this on a night drive and understood it completely"
+      "text": "10/10 no notes. ok one note: track 4 could be shorter. 10/10 still."
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4,
-      "text": "the mixing is doing so much heavy lifting here"
+      "text": "3.5 rounded up because the closer made me text my ex. rounded back down because the closer made me text my ex."
      }
     ],
     "deezerId": 231727202,
@@ -4633,21 +4633,21 @@ window.PERSONAS = [
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 5,
-      "text": "a mood more than an album, and that's a compliment"
+      "text": "everyone i know rates this for the singles and sure, they're great. but the deep cuts are where the record actually lives. track seven especially, which nobody talks about and which is quietly the best thing on it"
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4.5,
-      "text": "played this on a night drive and understood it completely"
+      "text": "sounds thin on speakers and enormous on headphones, so listen to it the right way. the low end on the title track is the kind of thing you feel in your teeth"
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4,
-      "text": "the mixing is doing so much heavy lifting here"
+      "text": "grew on me. first listen confused me, tenth listen floored me"
      }
     ],
     "deezerId": 85859,
@@ -4694,21 +4694,21 @@ window.PERSONAS = [
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4.5,
-      "text": "this is the one i put on when i want to feel something"
+      "text": "this goes so hard for no reason"
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4,
-      "text": "genuinely reshaped what i thought this genre could do"
+      "text": "listened on the bus. missed my stop. worth it."
      },
      {
       "name": "echoplex",
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4,
-      "text": "overrated by half a star but still a great time"
+      "text": "hot take: the deluxe is the real album"
      }
     ],
     "deezerId": 272469712,
@@ -4739,21 +4739,21 @@ window.PERSONAS = [
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4.5,
-      "text": "this is the one i put on when i want to feel something"
+      "text": "this goes so hard for no reason"
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4,
-      "text": "genuinely reshaped what i thought this genre could do"
+      "text": "listened on the bus. missed my stop. worth it."
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4,
-      "text": "overrated by half a star but still a great time"
+      "text": "hot take: the deluxe is the real album"
      }
     ],
     "deezerId": 345311,
@@ -4777,21 +4777,21 @@ window.PERSONAS = [
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 5,
-      "text": "sounds like a memory i haven't had yet"
+      "text": "it's fine. it's FINE. why is everyone acting like this is scripture"
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4.5,
-      "text": "perfect headphones album, sounds thin on speakers though"
+      "text": "10/10 no notes. ok one note: track 4 could be shorter. 10/10 still."
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4,
-      "text": "everyone talks about the singles, the deep cuts are the real thing"
+      "text": "3.5 rounded up because the closer made me text my ex. rounded back down because the closer made me text my ex."
      }
     ],
     "deezerId": 10154728,
@@ -4832,21 +4832,21 @@ window.PERSONAS = [
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 5,
-      "text": "the kind of record you finish and immediately restart"
+      "text": "Great production, wildly overwritten. Half these songs would land twice as hard with a verse cut. Still a four, because the good half is really good."
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4.5,
-      "text": "front to back, not a single skip on this one"
+      "text": "Skipped this for two years because of the cover. My fault. Genuinely one of the best things I've heard this decade."
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4,
-      "text": "i was not emotionally prepared for the back half"
+      "text": "The lyrics are doing a lot here, and I mean that as praise. Every verse is a small short story, and the way the chorus changes one word each time it comes round is the kind of detail you only catch on headphones."
      }
     ],
     "deezerId": 7472029,
@@ -4870,21 +4870,21 @@ window.PERSONAS = [
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 5,
-      "text": "i've recommended this to six people and lost two friends"
+      "text": "it's fine. it's FINE. why is everyone acting like this is scripture"
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4.5,
-      "text": "every song earns its place, which is rarer than it should be"
+      "text": "10/10 no notes. ok one note: track 4 could be shorter. 10/10 still."
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4,
-      "text": "the closer justifies the entire tracklist"
+      "text": "3.5 rounded up because the closer made me text my ex. rounded back down because the closer made me text my ex."
      }
     ],
     "deezerId": 1422793,
@@ -4993,21 +4993,21 @@ window.PERSONAS = [
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 5,
-      "text": "grew on me. first listen confused me, tenth listen floored me"
+      "text": "took me three listens to get it and now i can't stop. the first half feels like a different album from the second, and then the last song ties them together so neatly you go back to the start to check if it was planned. it was"
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4.5,
-      "text": "this is the one i put on when i want to feel something"
+      "text": "everyone i know rates this for the singles and sure, they're great. but the deep cuts are where the record actually lives. track seven especially, which nobody talks about and which is quietly the best thing on it"
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4,
-      "text": "genuinely reshaped what i thought this genre could do"
+      "text": "sounds thin on speakers and enormous on headphones, so listen to it the right way. the low end on the title track is the kind of thing you feel in your teeth"
      }
     ],
     "deezerId": 208438142,
@@ -5039,21 +5039,21 @@ window.PERSONAS = [
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4.5,
-      "text": "the sequencing alone deserves an award"
+      "text": "i've recommended this to six people and lost two friends"
      },
      {
       "name": "velvetblast",
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4,
-      "text": "sounds like a memory i haven't had yet"
+      "text": "criminally short. i wanted twenty more minutes"
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4,
-      "text": "perfect headphones album, sounds thin on speakers though"
+      "text": "A remarkable record. The first half is patient, almost withholding, and then the second half pays out everything it saved. Track seven, in particular, is the best thing they have made."
      }
     ],
     "deezerId": 907282002,
@@ -5077,21 +5077,21 @@ window.PERSONAS = [
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4.5,
-      "text": "i've recommended this to six people and lost two friends"
+      "text": "everyone i know rates this for the singles and sure, they're great. but the deep cuts are where the record actually lives. track seven especially, which nobody talks about and which is quietly the best thing on it"
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4,
-      "text": "every song earns its place, which is rarer than it should be"
+      "text": "sounds thin on speakers and enormous on headphones, so listen to it the right way. the low end on the title track is the kind of thing you feel in your teeth"
      },
      {
       "name": "echoplex",
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4,
-      "text": "the closer justifies the entire tracklist"
+      "text": "grew on me. first listen confused me, tenth listen floored me"
      }
     ],
     "deezerId": 722106551,
@@ -5122,21 +5122,21 @@ window.PERSONAS = [
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4.5,
-      "text": "i've recommended this to six people and lost two friends"
+      "text": "this goes so hard for no reason"
      },
      {
       "name": "echoplex",
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4,
-      "text": "every song earns its place, which is rarer than it should be"
+      "text": "listened on the bus. missed my stop. worth it."
      },
      {
       "name": "staticfog",
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4,
-      "text": "the closer justifies the entire tracklist"
+      "text": "hot take: the deluxe is the real album"
      }
     ],
     "deezerId": 500727721,
@@ -5160,21 +5160,21 @@ window.PERSONAS = [
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 5,
-      "text": "perfect headphones album, sounds thin on speakers though"
+      "text": "Fine, I'll say it: the singles are the weakest part."
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4.5,
-      "text": "everyone talks about the singles, the deep cuts are the real thing"
+      "text": "Pros: everything.\nCons: ends."
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4,
-      "text": "criminally short. i wanted twenty more minutes"
+      "text": "Top 3, no order:\n1. the opener\n2. the one with the choir\n3. whatever track 8 is called"
      }
     ],
     "deezerId": 159176512,
@@ -5198,21 +5198,21 @@ window.PERSONAS = [
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4.5,
-      "text": "a mood more than an album, and that's a compliment"
+      "text": "everyone i know rates this for the singles and sure, they're great. but the deep cuts are where the record actually lives. track seven especially, which nobody talks about and which is quietly the best thing on it"
      },
      {
       "name": "echoplex",
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4,
-      "text": "played this on a night drive and understood it completely"
+      "text": "sounds thin on speakers and enormous on headphones, so listen to it the right way. the low end on the title track is the kind of thing you feel in your teeth"
      },
      {
       "name": "staticfog",
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4,
-      "text": "the mixing is doing so much heavy lifting here"
+      "text": "grew on me. first listen confused me, tenth listen floored me"
      }
     ],
     "deezerId": 597350882,
@@ -5261,21 +5261,21 @@ window.PERSONAS = [
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4.5,
-      "text": "perfect headphones album, sounds thin on speakers though"
+      "text": "Fine, I'll say it: the singles are the weakest part."
      },
      {
       "name": "velvetblast",
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4,
-      "text": "everyone talks about the singles, the deep cuts are the real thing"
+      "text": "Pros: everything.\nCons: ends."
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4,
-      "text": "criminally short. i wanted twenty more minutes"
+      "text": "Top 3, no order:\n1. the opener\n2. the one with the choir\n3. whatever track 8 is called"
      }
     ],
     "deezerId": 568973201,
@@ -5299,21 +5299,21 @@ window.PERSONAS = [
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 5,
-      "text": "the mixing is doing so much heavy lifting here"
+      "text": "review pending. still crying."
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4.5,
-      "text": "not their best but their most honest"
+      "text": "wow."
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4,
-      "text": "i've recommended this to six people and lost two friends"
+      "text": "this goes so hard for no reason"
      }
     ],
     "deezerId": 492776131,
@@ -5337,21 +5337,21 @@ window.PERSONAS = [
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4.5,
-      "text": "overrated by half a star but still a great time"
+      "text": "hot take: the deluxe is the real album"
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4,
-      "text": "the sequencing alone deserves an award"
+      "text": "the way the strings come in on track 6??? hello???"
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4,
-      "text": "sounds like a memory i haven't had yet"
+      "text": "mom said it's my turn to be the friend who won't shut up about this record"
      }
     ],
     "deezerId": 818268351,
@@ -5375,21 +5375,21 @@ window.PERSONAS = [
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 5,
-      "text": "the mixing is doing so much heavy lifting here"
+      "text": "Not what I wanted from them and exactly what I needed. Slower, sadder and stranger than anything they've done, and the production is so close-mic'd you can hear the room. Give it a night drive and it opens right up."
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4.5,
-      "text": "not their best but their most honest"
+      "text": "Great production, wildly overwritten. Half these songs would land twice as hard with a verse cut. Still a four, because the good half is really good."
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4,
-      "text": "i've recommended this to six people and lost two friends"
+      "text": "Skipped this for two years because of the cover. My fault. Genuinely one of the best things I've heard this decade."
      }
     ],
     "deezerId": 318335407,
@@ -5413,21 +5413,21 @@ window.PERSONAS = [
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4.5,
-      "text": "the closer justifies the entire tracklist"
+      "text": "Pros: everything.\nCons: ends."
      },
      {
       "name": "staticfog",
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4,
-      "text": "the kind of record you finish and immediately restart"
+      "text": "Top 3, no order:\n1. the opener\n2. the one with the choir\n3. whatever track 8 is called"
      },
      {
       "name": "velvetblast",
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4,
-      "text": "front to back, not a single skip on this one"
+      "text": "Highs: the title track, the horns on 4.\nLows: track 9 is a skit and it knows it.\nVerdict: keep."
      }
     ],
     "deezerId": 381445657,
@@ -5465,21 +5465,21 @@ window.PERSONAS = [
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4.5,
-      "text": "perfect headphones album, sounds thin on speakers though"
+      "text": "Ranking every song would take a week, so the short version: all of them, in that order."
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4,
-      "text": "everyone talks about the singles, the deep cuts are the real thing"
+      "text": "i put this on expecting background music and ended up sitting on the kitchen floor for the whole second side. the way the drums drop out of the fourth track and leave that one synth line hanging is the best thirty seconds of music i've heard this year"
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4,
-      "text": "criminally short. i wanted twenty more minutes"
+      "text": "took me three listens to get it and now i can't stop. the first half feels like a different album from the second, and then the last song ties them together so neatly you go back to the start to check if it was planned. it was"
      }
     ],
     "deezerId": 113725342,
@@ -5520,21 +5520,21 @@ window.PERSONAS = [
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 5,
-      "text": "a mood more than an album, and that's a compliment"
+      "text": "this goes so hard for no reason"
      },
      {
       "name": "echoplex",
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4.5,
-      "text": "played this on a night drive and understood it completely"
+      "text": "listened on the bus. missed my stop. worth it."
      },
      {
       "name": "staticfog",
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4,
-      "text": "the mixing is doing so much heavy lifting here"
+      "text": "hot take: the deluxe is the real album"
      }
     ],
     "deezerId": 462170755,
@@ -5558,21 +5558,21 @@ window.PERSONAS = [
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4.5,
-      "text": "the mixing is doing so much heavy lifting here"
+      "text": "3.5 rounded up because the closer made me text my ex. rounded back down because the closer made me text my ex."
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4,
-      "text": "not their best but their most honest"
+      "text": "not for me. i can hear exactly why it's for everyone else."
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4,
-      "text": "i've recommended this to six people and lost two friends"
+      "text": "Honestly? Better than the debut. Not close."
      }
     ],
     "deezerId": 197993572,
@@ -5596,21 +5596,21 @@ window.PERSONAS = [
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4.5,
-      "text": "not their best but their most honest"
+      "text": "the way the strings come in on track 6??? hello???"
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4,
-      "text": "i've recommended this to six people and lost two friends"
+      "text": "mom said it's my turn to be the friend who won't shut up about this record"
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4,
-      "text": "every song earns its place, which is rarer than it should be"
+      "text": "the vinyl is $60 and i have never clicked add to cart faster"
      }
     ],
     "deezerId": 714451151,
@@ -5642,21 +5642,21 @@ window.PERSONAS = [
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 5,
-      "text": "front to back, not a single skip on this one"
+      "text": "Highs: the title track, the horns on 4.\nLows: track 9 is a skit and it knows it.\nVerdict: keep."
      },
      {
       "name": "velvetblast",
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4.5,
-      "text": "i was not emotionally prepared for the back half"
+      "text": "Ranking every song would take a week, so the short version: all of them, in that order."
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4,
-      "text": "production is immaculate, lyrics cut deeper every listen"
+      "text": "i put this on expecting background music and ended up sitting on the kitchen floor for the whole second side. the way the drums drop out of the fourth track and leave that one synth line hanging is the best thirty seconds of music i've heard this year"
      }
     ],
     "deezerId": 1018573931,
@@ -5695,21 +5695,21 @@ window.PERSONAS = [
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 5,
-      "text": "grew on me. first listen confused me, tenth listen floored me"
+      "text": "the way the strings come in on track 6??? hello???"
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4.5,
-      "text": "this is the one i put on when i want to feel something"
+      "text": "mom said it's my turn to be the friend who won't shut up about this record"
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4,
-      "text": "genuinely reshaped what i thought this genre could do"
+      "text": "the vinyl is $60 and i have never clicked add to cart faster"
      }
     ],
     "deezerId": 712171491,
@@ -5741,21 +5741,21 @@ window.PERSONAS = [
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4.5,
-      "text": "sounds like a memory i haven't had yet"
+      "text": "criminally short. i wanted twenty more minutes"
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4,
-      "text": "perfect headphones album, sounds thin on speakers though"
+      "text": "A remarkable record. The first half is patient, almost withholding, and then the second half pays out everything it saved. Track seven, in particular, is the best thing they have made."
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4,
-      "text": "everyone talks about the singles, the deep cuts are the real thing"
+      "text": "Not what I wanted from them and exactly what I needed. Slower, sadder and stranger than anything they've done, and the production is so close-mic'd you can hear the room. Give it a night drive and it opens right up."
      }
     ],
     "deezerId": 684088921,
@@ -5779,21 +5779,21 @@ window.PERSONAS = [
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4.5,
-      "text": "a mood more than an album, and that's a compliment"
+      "text": "this album is my roman empire"
      },
      {
       "name": "velvetblast",
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4,
-      "text": "played this on a night drive and understood it completely"
+      "text": "5 stars because i'm scared of the fans"
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4,
-      "text": "the mixing is doing so much heavy lifting here"
+      "text": "review pending. still crying."
      }
     ],
     "deezerId": 606354742,
@@ -5825,21 +5825,21 @@ window.PERSONAS = [
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 5,
-      "text": "overrated by half a star but still a great time"
+      "text": "3.5 rounded up because the closer made me text my ex. rounded back down because the closer made me text my ex."
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4.5,
-      "text": "the sequencing alone deserves an award"
+      "text": "not for me. i can hear exactly why it's for everyone else."
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4,
-      "text": "sounds like a memory i haven't had yet"
+      "text": "Honestly? Better than the debut. Not close."
      }
     ],
     "deezerId": 406082517,
@@ -5886,21 +5886,21 @@ window.PERSONAS = [
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 5,
-      "text": "this is the one i put on when i want to feel something"
+      "text": "mom said it's my turn to be the friend who won't shut up about this record"
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4.5,
-      "text": "genuinely reshaped what i thought this genre could do"
+      "text": "the vinyl is $60 and i have never clicked add to cart faster"
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4,
-      "text": "overrated by half a star but still a great time"
+      "text": "it's giving 3am walk home"
      }
     ],
     "deezerId": 445255985,
@@ -5924,21 +5924,21 @@ window.PERSONAS = [
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 5,
-      "text": "front to back, not a single skip on this one"
+      "text": "Skipped this for two years because of the cover. My fault. Genuinely one of the best things I've heard this decade."
      },
      {
       "name": "echoplex",
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4.5,
-      "text": "i was not emotionally prepared for the back half"
+      "text": "The lyrics are doing a lot here, and I mean that as praise. Every verse is a small short story, and the way the chorus changes one word each time it comes round is the kind of detail you only catch on headphones."
      },
      {
       "name": "staticfog",
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4,
-      "text": "production is immaculate, lyrics cut deeper every listen"
+      "text": "Criminally underrated. It came out the same month as three bigger records and got buried, which is a shame, because it's better than all of them. The sequencing alone is a masterclass."
      }
     ],
     "deezerId": 304588117,
@@ -5972,21 +5972,21 @@ window.PERSONAS = [
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 5,
-      "text": "overrated by half a star but still a great time"
+      "text": "3.5 rounded up because the closer made me text my ex. rounded back down because the closer made me text my ex."
      },
      {
       "name": "echoplex",
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4.5,
-      "text": "the sequencing alone deserves an award"
+      "text": "not for me. i can hear exactly why it's for everyone else."
      },
      {
       "name": "staticfog",
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4,
-      "text": "sounds like a memory i haven't had yet"
+      "text": "Honestly? Better than the debut. Not close."
      }
     ],
     "deezerId": 304591887,
@@ -6026,21 +6026,21 @@ window.PERSONAS = [
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 5,
-      "text": "the sequencing alone deserves an award"
+      "text": "Top 3, no order:\n1. the opener\n2. the one with the choir\n3. whatever track 8 is called"
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4.5,
-      "text": "sounds like a memory i haven't had yet"
+      "text": "Highs: the title track, the horns on 4.\nLows: track 9 is a skit and it knows it.\nVerdict: keep."
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4,
-      "text": "perfect headphones album, sounds thin on speakers though"
+      "text": "Ranking every song would take a week, so the short version: all of them, in that order."
      }
     ],
     "deezerId": 257989642,
@@ -6080,21 +6080,21 @@ window.PERSONAS = [
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4.5,
-      "text": "i've recommended this to six people and lost two friends"
+      "text": "it's fine. it's FINE. why is everyone acting like this is scripture"
      },
      {
       "name": "staticfog",
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4,
-      "text": "every song earns its place, which is rarer than it should be"
+      "text": "10/10 no notes. ok one note: track 4 could be shorter. 10/10 still."
      },
      {
       "name": "velvetblast",
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4,
-      "text": "the closer justifies the entire tracklist"
+      "text": "3.5 rounded up because the closer made me text my ex. rounded back down because the closer made me text my ex."
      }
     ],
     "deezerId": 261715512,
@@ -6128,21 +6128,21 @@ window.PERSONAS = [
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 5,
-      "text": "not their best but their most honest"
+      "text": "the way the strings come in on track 6??? hello???"
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4.5,
-      "text": "i've recommended this to six people and lost two friends"
+      "text": "mom said it's my turn to be the friend who won't shut up about this record"
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4,
-      "text": "every song earns its place, which is rarer than it should be"
+      "text": "the vinyl is $60 and i have never clicked add to cart faster"
      }
     ],
     "deezerId": 234682722,
@@ -6185,21 +6185,21 @@ window.PERSONAS = [
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4.5,
-      "text": "overrated by half a star but still a great time"
+      "text": "Criminally underrated. It came out the same month as three bigger records and got buried, which is a shame, because it's better than all of them. The sequencing alone is a masterclass."
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4,
-      "text": "the sequencing alone deserves an award"
+      "text": "no skips. none. i checked twice."
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4,
-      "text": "sounds like a memory i haven't had yet"
+      "text": "this album is my roman empire"
      }
     ],
     "deezerId": 97768252,
@@ -6223,21 +6223,21 @@ window.PERSONAS = [
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 5,
-      "text": "overrated by half a star but still a great time"
+      "text": "review pending. still crying."
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4.5,
-      "text": "the sequencing alone deserves an award"
+      "text": "wow."
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4,
-      "text": "sounds like a memory i haven't had yet"
+      "text": "this goes so hard for no reason"
      }
     ],
     "deezerId": 89227412,
@@ -6261,21 +6261,21 @@ window.PERSONAS = [
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 5,
-      "text": "the closer justifies the entire tracklist"
+      "text": "Not what I wanted from them and exactly what I needed. Slower, sadder and stranger than anything they've done, and the production is so close-mic'd you can hear the room. Give it a night drive and it opens right up."
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4.5,
-      "text": "the kind of record you finish and immediately restart"
+      "text": "Great production, wildly overwritten. Half these songs would land twice as hard with a verse cut. Still a four, because the good half is really good."
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4,
-      "text": "front to back, not a single skip on this one"
+      "text": "Skipped this for two years because of the cover. My fault. Genuinely one of the best things I've heard this decade."
      }
     ],
     "deezerId": 264058322,
@@ -6299,21 +6299,21 @@ window.PERSONAS = [
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 5,
-      "text": "production is immaculate, lyrics cut deeper every listen"
+      "text": "3.5 rounded up because the closer made me text my ex. rounded back down because the closer made me text my ex."
      },
      {
       "name": "staticfog",
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4.5,
-      "text": "grew on me. first listen confused me, tenth listen floored me"
+      "text": "not for me. i can hear exactly why it's for everyone else."
      },
      {
       "name": "velvetblast",
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4,
-      "text": "this is the one i put on when i want to feel something"
+      "text": "Honestly? Better than the debut. Not close."
      }
     ],
     "deezerId": 191892312,
@@ -6337,21 +6337,21 @@ window.PERSONAS = [
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4.5,
-      "text": "criminally short. i wanted twenty more minutes"
+      "text": "put it on for the dishes. ended up sitting down."
      },
      {
       "name": "velvetblast",
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4,
-      "text": "a mood more than an album, and that's a compliment"
+      "text": "it's fine. it's FINE. why is everyone acting like this is scripture"
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4,
-      "text": "played this on a night drive and understood it completely"
+      "text": "10/10 no notes. ok one note: track 4 could be shorter. 10/10 still."
      }
     ],
     "deezerId": 443070165,
@@ -6443,21 +6443,21 @@ window.PERSONAS = [
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4.5,
-      "text": "production is immaculate, lyrics cut deeper every listen"
+      "text": "3.5 rounded up because the closer made me text my ex. rounded back down because the closer made me text my ex."
      },
      {
       "name": "velvetblast",
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4,
-      "text": "grew on me. first listen confused me, tenth listen floored me"
+      "text": "not for me. i can hear exactly why it's for everyone else."
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4,
-      "text": "this is the one i put on when i want to feel something"
+      "text": "Honestly? Better than the debut. Not close."
      }
     ],
     "deezerId": 97140952,
@@ -6503,21 +6503,21 @@ window.PERSONAS = [
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 5,
-      "text": "this is the one i put on when i want to feel something"
+      "text": "everyone i know rates this for the singles and sure, they're great. but the deep cuts are where the record actually lives. track seven especially, which nobody talks about and which is quietly the best thing on it"
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4.5,
-      "text": "genuinely reshaped what i thought this genre could do"
+      "text": "sounds thin on speakers and enormous on headphones, so listen to it the right way. the low end on the title track is the kind of thing you feel in your teeth"
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4,
-      "text": "overrated by half a star but still a great time"
+      "text": "grew on me. first listen confused me, tenth listen floored me"
      }
     ],
     "deezerId": 436977427,
@@ -6541,21 +6541,21 @@ window.PERSONAS = [
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 5,
-      "text": "perfect headphones album, sounds thin on speakers though"
+      "text": "10/10 no notes. ok one note: track 4 could be shorter. 10/10 still."
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4.5,
-      "text": "everyone talks about the singles, the deep cuts are the real thing"
+      "text": "3.5 rounded up because the closer made me text my ex. rounded back down because the closer made me text my ex."
      },
      {
       "name": "echoplex",
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4,
-      "text": "criminally short. i wanted twenty more minutes"
+      "text": "not for me. i can hear exactly why it's for everyone else."
      }
     ],
     "deezerId": 356014307,
@@ -6579,21 +6579,21 @@ window.PERSONAS = [
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4.5,
-      "text": "grew on me. first listen confused me, tenth listen floored me"
+      "text": "Great production, wildly overwritten. Half these songs would land twice as hard with a verse cut. Still a four, because the good half is really good."
      },
      {
       "name": "velvetblast",
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4,
-      "text": "this is the one i put on when i want to feel something"
+      "text": "Skipped this for two years because of the cover. My fault. Genuinely one of the best things I've heard this decade."
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4,
-      "text": "genuinely reshaped what i thought this genre could do"
+      "text": "The lyrics are doing a lot here, and I mean that as praise. Every verse is a small short story, and the way the chorus changes one word each time it comes round is the kind of detail you only catch on headphones."
      }
     ],
     "deezerId": 239516692,
@@ -6641,21 +6641,21 @@ window.PERSONAS = [
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4.5,
-      "text": "the kind of record you finish and immediately restart"
+      "text": "the way the strings come in on track 6??? hello???"
      },
      {
       "name": "staticfog",
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4,
-      "text": "front to back, not a single skip on this one"
+      "text": "mom said it's my turn to be the friend who won't shut up about this record"
      },
      {
       "name": "velvetblast",
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4,
-      "text": "i was not emotionally prepared for the back half"
+      "text": "the vinyl is $60 and i have never clicked add to cart faster"
      }
     ],
     "deezerId": 567736181,
@@ -6679,21 +6679,21 @@ window.PERSONAS = [
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4.5,
-      "text": "a mood more than an album, and that's a compliment"
+      "text": "it's fine. it's FINE. why is everyone acting like this is scripture"
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4,
-      "text": "played this on a night drive and understood it completely"
+      "text": "10/10 no notes. ok one note: track 4 could be shorter. 10/10 still."
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4,
-      "text": "the mixing is doing so much heavy lifting here"
+      "text": "3.5 rounded up because the closer made me text my ex. rounded back down because the closer made me text my ex."
      }
     ],
     "deezerId": 93038342,
@@ -6727,21 +6727,21 @@ window.PERSONAS = [
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4.5,
-      "text": "not their best but their most honest"
+      "text": "no skips. none. i checked twice."
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4,
-      "text": "i've recommended this to six people and lost two friends"
+      "text": "this album is my roman empire"
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4,
-      "text": "every song earns its place, which is rarer than it should be"
+      "text": "5 stars because i'm scared of the fans"
      }
     ],
     "deezerId": 127010392,
@@ -6765,21 +6765,21 @@ window.PERSONAS = [
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4.5,
-      "text": "grew on me. first listen confused me, tenth listen floored me"
+      "text": "took me three listens to get it and now i can't stop. the first half feels like a different album from the second, and then the last song ties them together so neatly you go back to the start to check if it was planned. it was"
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4,
-      "text": "this is the one i put on when i want to feel something"
+      "text": "everyone i know rates this for the singles and sure, they're great. but the deep cuts are where the record actually lives. track seven especially, which nobody talks about and which is quietly the best thing on it"
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4,
-      "text": "genuinely reshaped what i thought this genre could do"
+      "text": "sounds thin on speakers and enormous on headphones, so listen to it the right way. the low end on the title track is the kind of thing you feel in your teeth"
      }
     ],
     "deezerId": 133302552,
@@ -6803,21 +6803,21 @@ window.PERSONAS = [
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 5,
-      "text": "sounds like a memory i haven't had yet"
+      "text": "this album is my roman empire"
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4.5,
-      "text": "perfect headphones album, sounds thin on speakers though"
+      "text": "5 stars because i'm scared of the fans"
      },
      {
       "name": "echoplex",
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4,
-      "text": "everyone talks about the singles, the deep cuts are the real thing"
+      "text": "review pending. still crying."
      }
     ],
     "deezerId": 466106885,
@@ -6857,21 +6857,21 @@ window.PERSONAS = [
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4.5,
-      "text": "criminally short. i wanted twenty more minutes"
+      "text": "i've recommended this to six people and lost two friends"
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4,
-      "text": "a mood more than an album, and that's a compliment"
+      "text": "criminally short. i wanted twenty more minutes"
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4,
-      "text": "played this on a night drive and understood it completely"
+      "text": "A remarkable record. The first half is patient, almost withholding, and then the second half pays out everything it saved. Track seven, in particular, is the best thing they have made."
      }
     ],
     "deezerId": 675568361,
@@ -6895,21 +6895,21 @@ window.PERSONAS = [
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4.5,
-      "text": "everyone talks about the singles, the deep cuts are the real thing"
+      "text": "it's giving 3am walk home"
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4,
-      "text": "criminally short. i wanted twenty more minutes"
+      "text": "put it on for the dishes. ended up sitting down."
      },
      {
       "name": "echoplex",
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4,
-      "text": "a mood more than an album, and that's a compliment"
+      "text": "it's fine. it's FINE. why is everyone acting like this is scripture"
      }
     ],
     "deezerId": 116804352,
@@ -6933,21 +6933,21 @@ window.PERSONAS = [
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 5,
-      "text": "criminally short. i wanted twenty more minutes"
+      "text": "Top 3, no order:\n1. the opener\n2. the one with the choir\n3. whatever track 8 is called"
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4.5,
-      "text": "a mood more than an album, and that's a compliment"
+      "text": "Highs: the title track, the horns on 4.\nLows: track 9 is a skit and it knows it.\nVerdict: keep."
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4,
-      "text": "played this on a night drive and understood it completely"
+      "text": "Ranking every song would take a week, so the short version: all of them, in that order."
      }
     ],
     "deezerId": 477668565,
@@ -6971,21 +6971,21 @@ window.PERSONAS = [
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4.5,
-      "text": "criminally short. i wanted twenty more minutes"
+      "text": "no skips. none. i checked twice."
      },
      {
       "name": "echoplex",
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4,
-      "text": "a mood more than an album, and that's a compliment"
+      "text": "this album is my roman empire"
      },
      {
       "name": "staticfog",
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4,
-      "text": "played this on a night drive and understood it completely"
+      "text": "5 stars because i'm scared of the fans"
      }
     ],
     "deezerId": 368463357,
@@ -7009,21 +7009,21 @@ window.PERSONAS = [
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4.5,
-      "text": "sounds like a memory i haven't had yet"
+      "text": "everyone i know rates this for the singles and sure, they're great. but the deep cuts are where the record actually lives. track seven especially, which nobody talks about and which is quietly the best thing on it"
      },
      {
       "name": "echoplex",
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4,
-      "text": "perfect headphones album, sounds thin on speakers though"
+      "text": "sounds thin on speakers and enormous on headphones, so listen to it the right way. the low end on the title track is the kind of thing you feel in your teeth"
      },
      {
       "name": "staticfog",
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4,
-      "text": "everyone talks about the singles, the deep cuts are the real thing"
+      "text": "grew on me. first listen confused me, tenth listen floored me"
      }
     ],
     "deezerId": 260175572,
@@ -7047,21 +7047,21 @@ window.PERSONAS = [
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 5,
-      "text": "criminally short. i wanted twenty more minutes"
+      "text": "Great production, wildly overwritten. Half these songs would land twice as hard with a verse cut. Still a four, because the good half is really good."
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4.5,
-      "text": "a mood more than an album, and that's a compliment"
+      "text": "Skipped this for two years because of the cover. My fault. Genuinely one of the best things I've heard this decade."
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4,
-      "text": "played this on a night drive and understood it completely"
+      "text": "The lyrics are doing a lot here, and I mean that as praise. Every verse is a small short story, and the way the chorus changes one word each time it comes round is the kind of detail you only catch on headphones."
      }
     ],
     "deezerId": 647725701,
@@ -7098,21 +7098,21 @@ window.PERSONAS = [
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4.5,
-      "text": "the mixing is doing so much heavy lifting here"
+      "text": "it's giving 3am walk home"
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4,
-      "text": "not their best but their most honest"
+      "text": "put it on for the dishes. ended up sitting down."
      },
      {
       "name": "echoplex",
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4,
-      "text": "i've recommended this to six people and lost two friends"
+      "text": "it's fine. it's FINE. why is everyone acting like this is scripture"
      }
     ],
     "deezerId": 520058942,
@@ -7152,21 +7152,21 @@ window.PERSONAS = [
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 5,
-      "text": "i was not emotionally prepared for the back half"
+      "text": "5 stars because i'm scared of the fans"
      },
      {
       "name": "velvetblast",
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4.5,
-      "text": "production is immaculate, lyrics cut deeper every listen"
+      "text": "review pending. still crying."
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4,
-      "text": "grew on me. first listen confused me, tenth listen floored me"
+      "text": "wow."
      }
     ],
     "deezerId": 175933532,
@@ -7190,21 +7190,21 @@ window.PERSONAS = [
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 5,
-      "text": "genuinely reshaped what i thought this genre could do"
+      "text": "10/10 no notes. ok one note: track 4 could be shorter. 10/10 still."
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4.5,
-      "text": "overrated by half a star but still a great time"
+      "text": "3.5 rounded up because the closer made me text my ex. rounded back down because the closer made me text my ex."
      },
      {
       "name": "echoplex",
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4,
-      "text": "the sequencing alone deserves an award"
+      "text": "not for me. i can hear exactly why it's for everyone else."
      }
     ],
     "deezerId": 114389382,
@@ -7228,21 +7228,21 @@ window.PERSONAS = [
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4.5,
-      "text": "i was not emotionally prepared for the back half"
+      "text": "the vinyl is $60 and i have never clicked add to cart faster"
      },
      {
       "name": "velvetblast",
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 4,
-      "text": "production is immaculate, lyrics cut deeper every listen"
+      "text": "it's giving 3am walk home"
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4,
-      "text": "grew on me. first listen confused me, tenth listen floored me"
+      "text": "put it on for the dishes. ended up sitting down."
      }
     ],
     "deezerId": 749411161,
@@ -7289,21 +7289,21 @@ window.PERSONAS = [
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 5,
-      "text": "played this on a night drive and understood it completely"
+      "text": "Ranking every song would take a week, so the short version: all of them, in that order."
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4.5,
-      "text": "the mixing is doing so much heavy lifting here"
+      "text": "i put this on expecting background music and ended up sitting on the kitchen floor for the whole second side. the way the drums drop out of the fourth track and leave that one synth line hanging is the best thirty seconds of music i've heard this year"
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4,
-      "text": "not their best but their most honest"
+      "text": "took me three listens to get it and now i can't stop. the first half feels like a different album from the second, and then the last song ties them together so neatly you go back to the start to check if it was planned. it was"
      }
     ],
     "deezerId": 668820061,
@@ -7327,21 +7327,21 @@ window.PERSONAS = [
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 5,
-      "text": "the sequencing alone deserves an award"
+      "text": "put it on for the dishes. ended up sitting down."
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4.5,
-      "text": "sounds like a memory i haven't had yet"
+      "text": "it's fine. it's FINE. why is everyone acting like this is scripture"
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4,
-      "text": "perfect headphones album, sounds thin on speakers though"
+      "text": "10/10 no notes. ok one note: track 4 could be shorter. 10/10 still."
      }
     ],
     "deezerId": 348062427,
@@ -7365,21 +7365,21 @@ window.PERSONAS = [
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4.5,
-      "text": "production is immaculate, lyrics cut deeper every listen"
+      "text": "it's giving 3am walk home"
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4,
-      "text": "grew on me. first listen confused me, tenth listen floored me"
+      "text": "put it on for the dishes. ended up sitting down."
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4,
-      "text": "this is the one i put on when i want to feel something"
+      "text": "it's fine. it's FINE. why is everyone acting like this is scripture"
      }
     ],
     "deezerId": 103731632,
@@ -7411,21 +7411,21 @@ window.PERSONAS = [
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4.5,
-      "text": "the closer justifies the entire tracklist"
+      "text": "Pros: everything.\nCons: ends."
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4,
-      "text": "the kind of record you finish and immediately restart"
+      "text": "Top 3, no order:\n1. the opener\n2. the one with the choir\n3. whatever track 8 is called"
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4,
-      "text": "front to back, not a single skip on this one"
+      "text": "Highs: the title track, the horns on 4.\nLows: track 9 is a skit and it knows it.\nVerdict: keep."
      }
     ],
     "deezerId": 349507667,
@@ -7459,21 +7459,21 @@ window.PERSONAS = [
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4.5,
-      "text": "every song earns its place, which is rarer than it should be"
+      "text": "Ranking every song would take a week, so the short version: all of them, in that order."
      },
      {
       "name": "echoplex",
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4,
-      "text": "the closer justifies the entire tracklist"
+      "text": "i put this on expecting background music and ended up sitting on the kitchen floor for the whole second side. the way the drums drop out of the fourth track and leave that one synth line hanging is the best thirty seconds of music i've heard this year"
      },
      {
       "name": "staticfog",
       "init": "SF",
       "grad": "linear-gradient(135deg,#2f7fe0,#1c3f8a)",
       "rating": 4,
-      "text": "the kind of record you finish and immediately restart"
+      "text": "took me three listens to get it and now i can't stop. the first half feels like a different album from the second, and then the last song ties them together so neatly you go back to the start to check if it was planned. it was"
      }
     ],
     "deezerId": 804904441,
@@ -7497,21 +7497,21 @@ window.PERSONAS = [
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 5,
-      "text": "this is the one i put on when i want to feel something"
+      "text": "everyone i know rates this for the singles and sure, they're great. but the deep cuts are where the record actually lives. track seven especially, which nobody talks about and which is quietly the best thing on it"
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4.5,
-      "text": "genuinely reshaped what i thought this genre could do"
+      "text": "sounds thin on speakers and enormous on headphones, so listen to it the right way. the low end on the title track is the kind of thing you feel in your teeth"
      },
      {
       "name": "echoplex",
       "init": "EP",
       "grad": "linear-gradient(135deg,#e05a6b,#8a2f52)",
       "rating": 4,
-      "text": "overrated by half a star but still a great time"
+      "text": "grew on me. first listen confused me, tenth listen floored me"
      }
     ],
     "deezerId": 353004357,
@@ -7535,21 +7535,21 @@ window.PERSONAS = [
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 5,
-      "text": "the closer justifies the entire tracklist"
+      "text": "Not what I wanted from them and exactly what I needed. Slower, sadder and stranger than anything they've done, and the production is so close-mic'd you can hear the room. Give it a night drive and it opens right up."
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4.5,
-      "text": "the kind of record you finish and immediately restart"
+      "text": "Great production, wildly overwritten. Half these songs would land twice as hard with a verse cut. Still a four, because the good half is really good."
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4,
-      "text": "front to back, not a single skip on this one"
+      "text": "Skipped this for two years because of the cover. My fault. Genuinely one of the best things I've heard this decade."
      }
     ],
     "deezerId": 793816941,
@@ -7591,21 +7591,21 @@ window.PERSONAS = [
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 5,
-      "text": "genuinely reshaped what i thought this genre could do"
+      "text": "the vinyl is $60 and i have never clicked add to cart faster"
      },
      {
       "name": "kira.wav",
       "init": "KW",
       "grad": "linear-gradient(135deg,#e05aa8,#8a2f6b)",
       "rating": 4.5,
-      "text": "overrated by half a star but still a great time"
+      "text": "it's giving 3am walk home"
      },
      {
       "name": "vxblank",
       "init": "VX",
       "grad": "linear-gradient(135deg,#4fc3d0,#1d6b7a)",
       "rating": 4,
-      "text": "the sequencing alone deserves an award"
+      "text": "put it on for the dishes. ended up sitting down."
      }
     ],
     "deezerId": 190809862,
@@ -7654,21 +7654,21 @@ window.PERSONAS = [
       "init": "VB",
       "grad": "linear-gradient(135deg,#3fae7a,#1d6b4a)",
       "rating": 5,
-      "text": "the mixing is doing so much heavy lifting here"
+      "text": "grew on me. first listen confused me, tenth listen floored me"
      },
      {
       "name": "noisegate",
       "init": "NG",
       "grad": "linear-gradient(135deg,#b06ae0,#5f2f8a)",
       "rating": 4.5,
-      "text": "not their best but their most honest"
+      "text": "i've recommended this to six people and lost two friends"
      },
      {
       "name": "dustpan",
       "init": "DP",
       "grad": "linear-gradient(135deg,#e0a53f,#8a5f1d)",
       "rating": 4,
-      "text": "i've recommended this to six people and lost two friends"
+      "text": "criminally short. i wanted twenty more minutes"
      }
     ],
     "deezerId": 673968231,

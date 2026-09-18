@@ -924,7 +924,37 @@ window.plTab = function (btn, tab) {
   // Discover (outside the pill bar) acts as a tab too — clear/set active on both
   scr.querySelectorAll('.pl2-bar .wall2-cat, .pl2-discover').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
+  // Stamped so the choice survives a re-render (coming Back from an album you
+  // opened off the Listened tab should land on Listened) — the wall's WALL_SORT idiom.
+  window.PL_TAB = tab;
+  // Five pills overflow the row; bring the one you picked fully into it. Set
+  // scrollLeft by hand — scrollIntoView would also scroll the page's own body.
+  const bar = btn.parentElement;
+  if (bar && bar.classList.contains('pl2-bar')) {
+    const l = btn.offsetLeft - 16, r = btn.offsetLeft + btn.offsetWidth + 40 - bar.clientWidth;
+    if (bar.scrollLeft > l) bar.scrollLeft = Math.max(0, l);
+    else if (bar.scrollLeft < r) bar.scrollLeft = r;
+  }
   scr.querySelectorAll('.pl2-sec').forEach(s => { s.hidden = s.dataset.tab !== tab; });
+};
+/* Open an album from the library tabs. In ARCHIVE → open it. Not there (a rec
+   the runtime pool dealt in an earlier session) → rebuild it from the draft's
+   `snap` with dzRecord's own seeded numbers, so it is the same record it was,
+   adopt it into ARCHIVE, then open it. */
+window.plLibOpen = function (title, artist) {
+  let a = (window.ARCHIVE || []).find(x => x.album === title && x.artist === artist);
+  if (!a) {
+    const d = logDrafts()[logKey({ title: title, subtitle: artist })];
+    const s = d && d.snap;
+    if (!s) return;
+    const rating = Math.round((3.8 + (dzSeed(artist, title) % 11) * 0.1) * 10) / 10;
+    a = Object.assign({ album: title, artist: artist, rating: rating,
+      reviewCount: 4000 + (dzSeed(title, 'rc') % 86) * 1000,
+      reviews: dzReviews(title, rating), _rec: true, _lite: true }, s);
+    window.ARCHIVE.push(a);
+    window.SEARCH_INDEX = null;
+  }
+  openAlbumPage(a);
 };
 // Open a playlist's page from the Lists tab. plLists() (screens.js) is the
 // shared data source; the playlist screen's getter renders window.activePlaylist.
@@ -1658,13 +1688,13 @@ window.toggleRevAction = function (btn, e) {
   // A quick-log square IS the log sheet's own toggle, so it writes straight
   // into that album's draft — otherwise the square and the sheet would
   // disagree about whether you'd favourited the record.
-  if (!btn.classList.contains('v3-rev-q')) return;
+  if (!btn.classList.contains('v3-rev-q') && !btn.classList.contains('v3-rg-btn')) return;
   const k = btn.dataset.k;
   const scr = btn.closest('.s-home-v3');
   const a = shellAlbum(scr);
   if (!k || !a) return;
   const on = btn.classList.contains('on');
-  writeDraftFlag({ title: a.album, subtitle: a.artist }, k, on);
+  writeDraftFlag({ title: a.album, subtitle: a.artist, image: a.image }, k, on);
   // The dark/light shells show the SAME album, and this is state about the
   // record rather than about the screen — so the twin follows. (Deliberate
   // exception to the usual "scope handlers to the clicked shell" rule.)
@@ -1672,7 +1702,7 @@ window.toggleRevAction = function (btn, e) {
   // Favorite pill and the album page's quick-log square are the same toggle.
   homeShells().forEach(s => {
     if (s !== scr && s._album !== a) return;
-    s.querySelectorAll(`.v3-rev-q[data-k="${k}"]`).forEach(b => {
+    s.querySelectorAll(`.v3-rev-q[data-k="${k}"], .v3-rg-btn[data-k="${k}"]`).forEach(b => {
       if (b !== btn) b.classList.toggle('on', on);
     });
   });
@@ -1693,34 +1723,31 @@ function shellAlbum(scr) {
 function syncQuickLog(scr, album) {
   if (!scr) return;
   const d = albumDraft(album || shellAlbum(scr));
-  scr.querySelectorAll('.v3-rev-q').forEach(b => b.classList.toggle('on', !!d[b.dataset.k]));
+  scr.querySelectorAll('.v3-rev-q[data-k], .v3-rg-btn[data-k]').forEach(b => b.classList.toggle('on', !!d[b.dataset.k]));
   syncRevCta(scr, d);
 }
-/* The CTA answers to the draft (2026-09-11). Untouched record → "Review, rate,
-   log". Once you have rated it, the button becomes your score — the discs and
-   the number — with an "Edit rating?" pill on the right; written but unrated,
-   "You reviewed this · Edit review?". Same button, same handler (it opens the
-   sheet either way); only the face changes, so the page never grows a second
-   control for the same act. The state is stamped in `data-state` and the
+/* The RATE circle answers to the draft (the CTA did, from 2026-09-11; the
+   circle since Eric's rate group, 2026-09-18). Untouched record → the word
+   "Rate". Rated → your number, large, with the discs under it. Written but
+   unrated → "Reviewed". Same button, same handler (it opens the sheet either
+   way); only the face changes. The state is stamped in `data-state` and the
    markup is only rebuilt when it changes — this runs on every autosave. */
 function syncRevCta(scr, d) {
-  const cta = scr.querySelector('.v3-rev-cta');
+  const cta = scr.querySelector('.v3-rg-rate');
   if (!cta) return;
   const rated = d.rating > 0, wrote = !!(d.text || '').trim();
   const state = rated ? 'r' + d.rating : (wrote ? 'w' : '');
   if (cta.dataset.state === state) return;
   cta.dataset.state = state;
-  cta.classList.toggle('v3-rev-cta--rated', !!state);
-  // Once there is something to share, the share icon rides the CTA too — so
-  // posting and sharing are one row, not a trip back into the sheet.
-  const sh = typeof shareBtnHtml === 'function' ? shareBtnHtml('review', '', 'sd-share-btn--cta') : '';
+  cta.classList.toggle('is-rated', rated);
+  cta.classList.toggle('is-written', !rated && wrote);
   if (rated) {
     const n = String(d.rating).replace(/\.0$/, '');
-    cta.innerHTML = `${halfStars(d.rating, 16)}<span class="v3-rev-cta-you">Your rating <b>${n}</b></span>${sh}<span class="v3-rev-cta-edit">Edit</span>`;
+    cta.innerHTML = `<span class="v3-rg-num">${n}</span>${halfStars(d.rating, 12)}`;
   } else if (wrote) {
-    cta.innerHTML = `${SD_ICONS.logbox}<span class="v3-rev-cta-you">You reviewed this</span>${sh}<span class="v3-rev-cta-edit">Edit</span>`;
+    cta.innerHTML = `<span class="v3-rg-word v3-rg-word--sm">Reviewed</span>`;
   } else {
-    cta.innerHTML = `${SD_ICONS.logbox}<span>Review, rate, log</span>`;
+    cta.innerHTML = '';   // the arc and the dots live in the SVG behind the button
   }
 }
 // Friends / Popular / New filter tabs
@@ -1826,7 +1853,31 @@ function populateBigScore(scr, album) {
   // cssSized: the discs take their size from app.css so the dev box can tune
   // them. An inline width/height would beat any rule short of !important.
   const sub = scr.querySelector('.v3-rev-score-sub');
-  if (sub) sub.innerHTML = halfStars(album.rating, 13, true);
+  // The review COUNT rides after the discs (Eric, 2026-09-18) — the one-liner
+  // that used to carry it is hidden on this page (see .v3-blue-stars-row).
+  if (sub) sub.innerHTML = halfStars(album.rating, 13, true) +
+    (album.reviewCount ? `<span class="v3-rev-score-count">${window.fmtRc(album.reviewCount)} reviews</span>` : '');
+}
+/* A favourited song's TRACK NUMBER becomes a heart (Eric, 2026-09-18 — it was
+   a heart left of the rating for a minute; this is cuter), read from the same
+   draft the song's log sheet writes (`song::title::album`). The number cell
+   keeps its width, so the columns hold. */
+function songIsFav(album, title) {
+  const d = logDrafts()[`song::${title}::${album.album}`];
+  return !!(d && d.fav);
+}
+function songNumHtml(album, title, i) {
+  return songIsFav(album, title)
+    ? `<span class="v3-song-fav">${typeof RVP_HEART !== 'undefined' ? RVP_HEART : '♥'}</span>`
+    : String(i + 1);
+}
+function refreshSongFavs(scr) {
+  const a = scr && scr._album; if (!a) return;
+  scr.querySelectorAll('.v3-song-row').forEach((row, i) => {
+    const cell = row.querySelector('.v3-song-num'); if (!cell) return;
+    const want = songNumHtml(a, row.dataset.title, i);
+    if (cell.innerHTML !== want) cell.innerHTML = want;
+  });
 }
 // The tracklist shows its first SONGS_SHOWN rows; a longer album gets a
 // "View all songs" button that expands the list in place (expandSongList).
@@ -1853,7 +1904,7 @@ function populateSongList(scr, all) {
     </div>
     <div class="v3-rev-songs-scroll">` + shown.map((s, i) => `
     <button class="v3-song-row" onclick="event.stopPropagation(); openSongLog(this)" data-title="${s.title}">
-      <span class="v3-song-num">${i + 1}</span>
+      <span class="v3-song-num">${songNumHtml(a, s.title, i)}</span>
       <span class="v3-song-title">${s.title}</span>
       <span class="v3-song-dur">${s.dur}</span>
       <span class="v3-song-rate">${s.rating.toFixed(1)}</span>
@@ -2127,25 +2178,29 @@ function cmtNodeHtml(key, c) {
   const lk = !!CMT_LIKED[key + '::' + c.id];
   const kids = c.kids.length
     ? `<div class="v3-cmt-kids">${c.kids.map(k => cmtNodeHtml(key, k)).join('')}</div>` : '';
+  /* THE REVIEW CARD'S SHAPE, minus the score and the share (Eric, 2026-09-17 —
+     the old row, small face · name · when over the text with "♥ n" under it,
+     read as Reddit): a top row of photo · name over @handle · heart · time,
+     then the text full width underneath, like every review card. */
+  const handle = c.handle || (c.mine ? ((window.PROFILE || {}).handle || 'you') : String(c.user || 'listener').toLowerCase().replace(/[^a-z0-9_]+/g, '_'));
   return `
         <div class="v3-cmt${c.mine ? ' v3-cmt--mine' : ''}">
-          <div class="v3-cmt-av" style="background-image:url('${c.face || feedFace(c.user)}')"></div>
-          <div class="v3-cmt-main">
-            <div class="v3-cmt-hd">
+          <div class="v3-cmt-top">
+            <div class="v3-cmt-av" style="background-image:url('${c.face || feedFace(c.user)}')"></div>
+            <div class="v3-cmt-who">
               <span class="v3-cmt-user">${c.user}</span>
-              <span class="v3-cmt-ago">${c.ago}</span>
+              <span class="v3-cmt-handle">@${handle}</span>
             </div>
-            <div class="v3-cmt-text">${c.text}</div>
-            <div class="v3-cmt-acts">
-              <button class="v3-cmt-like${lk ? ' is-on' : ''}" type="button"
-                data-k="${_revAttr(key)}" data-i="${c.id}" data-n="${c.likes}"
-                aria-pressed="${lk}"
-                onclick="event.stopPropagation(); cmtLike(this)">♥ <span>${c.likes + (lk ? 1 : 0)}</span></button>
-              ${CMT_FLAT ? '' : `<button class="v3-cmt-reply" type="button"
-                data-k="${_revAttr(key)}" data-i="${c.id}"
-                onclick="event.stopPropagation(); cmtReply(this)">Reply</button>`}
-            </div>
+            <button class="v3-cmt-like${lk ? ' is-on' : ''}" type="button"
+              data-k="${_revAttr(key)}" data-i="${c.id}" data-n="${c.likes}"
+              aria-pressed="${lk}" aria-label="Like this comment"
+              onclick="event.stopPropagation(); cmtLike(this)">${typeof RVP_HEART !== 'undefined' ? RVP_HEART : '♥'}<span>${c.likes + (lk ? 1 : 0)}</span></button>
+            <span class="v3-cmt-ago">${c.ago}</span>
           </div>
+          <div class="v3-cmt-text">${c.text}</div>
+          ${CMT_FLAT ? '' : `<div class="v3-cmt-acts"><button class="v3-cmt-reply" type="button"
+            data-k="${_revAttr(key)}" data-i="${c.id}"
+            onclick="event.stopPropagation(); cmtReply(this)">Reply</button></div>`}
         </div>${kids}`;
 }
 
@@ -2344,8 +2399,18 @@ window.openReviewPage = function (key, compose, card) {
 };
 /* Tapping a review card opens its page. (It used to toggle the thread in
    place — see the note above.) The card itself is handed along so it can fly. */
+/* The record line on a card that ISN'T a feed row (the profile's pins and
+   history, 2026-09-18): the cover opens the album, read off REV_INDEX. */
+window.revCardArt = function (el) {
+  const card = el.closest('.v3-rev-card');
+  const R = card && REV_INDEX[card.dataset.k];
+  if (R && R.album && typeof openAlbumPage === 'function') openAlbumPage(R.album);
+};
 window.cmtCardTap = function (card) {
   if (card.classList.contains('v3-rev-card--hero')) return;   // already the page
+  // A feed card: the album page with this review pinned (the review page has
+  // no record line of its own yet, so it would lose the album on the way).
+  if (card.dataset.feed) return feedOpen(+card.dataset.feed);
   const k = card.dataset.k;
   if (k) openReviewPage(k, false, card);
 };
@@ -2361,6 +2426,8 @@ window.cmtCompose = function (btn) {
   // On a card: the conversation lives on the review page — go there with the
   // composer aimed. On the page itself: just put the cursor in it.
   const page = btn.closest('.s-rvp, .s-home-v3--rvp');
+  const feedCard = btn.closest('.v3-rev-card[data-feed]');
+  if (feedCard) return feedOpenReview(+feedCard.dataset.feed);   // home feed → the REVIEW page (Eric, 2026-09-18; the card tap keeps the album page)
   if (!page) { if (REV_INDEX[k]) openReviewPage(k, true, btn); return; }
   if (!CMT_OPEN[k]) { CMT_OPEN[k] = true; cmtRender(k); }
   const input = page.querySelector('.v3-cmt-input');
@@ -2508,28 +2575,63 @@ function revsFor(a) {
    The card echoes the REVIEW PAGE's hero at list scale: photo · name over
    @handle · when on the left, the big score with the small records under it
    on the right, then the text, then the pills at the foot. No "rated" — the
-   number says it. `share` adds the Instagram button (your own card only). */
+   number says it. `share` adds the Instagram button (your own card only).
+   `preview` (2026-09-16) is up to two root comments from the thread, shown
+   under the text as short rows (face · name · text, two lines clamped);
+   `previewTotal` adds a "View all n comments" line when there are more than
+   shown. ⚠️ The album page passes NO preview any more (Eric, 2026-09-18 —
+   the two rows came off; the card is the feed's card now), just the total,
+   so it gets the "View all" line alone. Either alone is enough to render
+   the block.
+   `record` ({image, album, artist}) adds the RECORD LINE under the name — a
+   small square cover with album (regular) over artist (bold) — for a card
+   that sits away from its album (the home feed). On the album page the record
+   is the page, so no card there passes it. `feed` is the row's index into
+   `_FEED`: it lands on the card as `data-feed`, which is how cmtCardTap and
+   cmtCompose know to route a feed card through feedOpen (album page, review
+   pinned, thread open) instead of the review page. */
 function revCardInner(o) {
   const handle = o.handle || String(o.name || 'listener').toLowerCase().replace(/[^a-z0-9_]+/g, '_');
+  /* `timeRight` (the home feed, Eric 2026-09-15): the time leaves the byline
+     and sits hard right on the top row, squaring off the card's corner. */
+  const timeRight = !!(o.timeRight && o.ago);
+  /* `actsTop` (the home feed, Eric 2026-09-15): the like and the comment count
+     ride the top row too, between the byline and the time, so the score
+     column is just number-over-discs and the review runs clean underneath. */
+  // The hero and the feed take the HEART (RVP_HEART); the album page's list keeps the thumb.
+  const likeHtml = o.likes == null ? '' : ((o.big || o.actsTop)
+    ? upvoteHtml(o.key, o.likes, 'v3-up--sm v3-up--like v3-up--heart').replace(/<svg[\s\S]*?<\/svg>/, typeof RVP_HEART !== 'undefined' ? RVP_HEART : '')
+    : upvoteHtml(o.key, o.likes, 'v3-up--sm v3-up--like'));
+  const cmtHtml = o.big
+    ? (typeof shareBtnHtml === 'function' ? shareBtnHtml('rev', o.key, 'sd-share-btn--hero') : '')
+    : cmtBtnHtml(o.key, o.comments || 0, 'v3-up--sm v3-up--cmtcol');
   return `
       <div class="v3-rev-card-top">
         <div class="v3-rev-av" style="background-image:url('${o.face}')"></div>
         <div class="v3-rev-who">
           <span class="v3-rev-name-row"><span class="v3-rev-name">${o.name}</span>${o.chip ? `<span class="v3-rev-pin-chip">${o.chip}</span>` : ''}</span>
-          <span class="v3-rev-sub">@${handle}${o.ago ? ` · ${o.ago}` : ''}</span>
-        </div>
+          <span class="v3-rev-sub">@${handle}${o.ago && !timeRight ? ` · ${o.ago}` : ''}</span>
+        </div>${o.actsTop ? `<span class="v3-rev-top-acts">${o.big ? cmtHtml : cmtHtml + likeHtml}</span>` : ''}${timeRight ? `<span class="v3-rev-time">${o.ago}</span>` : ''}
       </div>
       <!-- A grid AREA beside both the top row and the text (see .v3-rev-card in
            app.css), so the like button's height pushes nothing down. -->
       <div class="v3-rev-big">
         <span class="v3-rev-big-n">${Number(o.rating || 0).toFixed(1)}</span>
-        ${halfStars(o.rating || 0, o.big ? 22 : 13)}
-        ${o.likes == null ? '' : (o.big
-          ? upvoteHtml(o.key, o.likes, 'v3-up--sm v3-up--like v3-up--heart').replace(/<svg[\s\S]*?<\/svg>/, typeof RVP_HEART !== 'undefined' ? RVP_HEART : '')
-          : upvoteHtml(o.key, o.likes, 'v3-up--sm v3-up--like'))}
-        ${o.big ? (typeof shareBtnHtml === 'function' ? shareBtnHtml('rev', o.key, 'sd-share-btn--hero') : '') : cmtBtnHtml(o.key, o.comments || 0, 'v3-up--sm v3-up--cmtcol')}
+        ${halfStars(o.rating || 0, o.big ? 17 : 13)}
+        ${o.actsTop ? '' : likeHtml + cmtHtml}
       </div>
+      ${o.big && o.actsTop && likeHtml ? `<!-- The hero's heart (Eric, 2026-09-17): the score row's right end, level
+           with the number — same grid area as .v3-rev-big, hung the other way. -->
+      <span class="v3-rev-top-acts v3-rev-score-like">${likeHtml}</span>` : ''}
+      ${o.record ? `<div class="v3-rev-record" onclick="event.stopPropagation(); ${o.feed != null ? `feedOpenArt(${o.feed})` : 'revCardArt(this)'}">
+        <div class="v3-rev-record-art" style="background-image:url('${o.record.image}')"></div>
+        <div class="v3-rev-record-who">${recordWhoHtml(o.record)}</div>
+      </div>` : ''}
       ${o.text ? `<div class="v3-rev-text">${revNoWidow(o.text)}</div>` : ''}
+      ${(o.preview && o.preview.length) || o.previewTotal ? `<div class="v3-rev-cmts">${(o.preview || []).map(c => `<div class="v3-rev-cmt">
+          <span class="v3-rev-cmt-av" style="background-image:url('${c.face || feedFace(c.user)}')"></span>
+          <span class="v3-rev-cmt-body"><b>${c.user}</b> ${c.text}</span>
+        </div>`).join('')}${o.previewTotal > (o.preview || []).length ? `<div class="v3-rev-cmt-more">View all ${window.fmtRc(o.previewTotal)} comments</div>` : ''}</div>` : ''}
       ${o.share && !o.big && typeof shareBtnHtml === 'function' ? `<div class="v3-rev-foot">
         <span class="v3-rev-acts">${shareBtnHtml('review', '')}<span class="v3-rev-share-lbl">Share your review</span></span>
       </div>` : ''}`;
@@ -2542,9 +2644,26 @@ function revNoWidow(t) {
   const i = s.lastIndexOf(' ');
   return (i > 0 && s.length > 24) ? s.slice(0, i) + ' ' + s.slice(i + 1) : s;
 }
+/* The record line's titles (the home feed): the ALBUM on one line, the
+   artist under it. The year was here, left of the album name, for an
+   afternoon (2026-09-16) and came off the same day — too much for the feed.
+   `tag` fills the slot on a follow row ("Artist"). The album name never ellipses: it FADES at the right edge when
+   it overflows (`.is-long`, set by markLongReviews the way review text is —
+   a mask on every name would dim the end of short ones too). */
+function recordWhoHtml(r) {
+  /* The YEAR is back, LEFT of the album name (Eric, 2026-09-17) — "2004 Hot
+     Fuss". It left on 2026-09-16 as too much; the deal now is that it is
+     dropped on a long title: markLongReviews measures the line and puts
+     `.no-year` on it when the album can't fit at full width beside it. It
+     takes the same lead slot a follow row's "Artist" tag does. */
+  const lead = r.tag || (r.year ? String(r.year) : '');
+  const cls = r.tag ? 'v3-rev-record-year' : 'v3-rev-record-year v3-rev-record-year--auto';
+  return `<span class="v3-rev-record-line">${lead ? `<span class="${cls}">${lead}</span>` : ''}<span class="v3-rev-record-album">${r.album}</span></span>` +
+    (r.artist && r.artist !== r.album ? `<span class="v3-rev-record-artist">${r.artist}</span>` : '');
+}
 function revCardHtml(o) {
   return `
-    <div class="v3-rev-card${o.cls ? ' ' + o.cls : ''}" data-k="${_revAttr(o.key)}" onclick="cmtCardTap(this)">${revCardInner(o)}
+    <div class="v3-rev-card${o.cls ? ' ' + o.cls : ''}" data-k="${_revAttr(o.key)}"${o.feed != null ? ` data-feed="${o.feed}"` : ''} onclick="cmtCardTap(this)">${revCardInner(o)}
     </div>`;
 }
 
@@ -2566,9 +2685,10 @@ function populateReviewList(scr, filter) {
     rating: pin.rating || 4, text: pin.text || '', ago: pin.ago || '', likes: pin.likes || revUpvotes(pin, 0),
     comments: pin.comments || 0, pinned: true };
   const pinHtml = pin ? revCardHtml({
-    key: pinKey, cls: 'v3-rev-card--pinned', name: pin.name || 'Listener', face: feedFace(pin.name || 'listener'),
+    key: pinKey, cls: 'v3-rev-card--page v3-rev-card--pinned', name: pin.name || 'Listener', face: feedFace(pin.name || 'listener'),
     ago: pin.ago || '', chip: 'from your feed', rating: pin.rating || 4, text: pin.text || '',
-    likes: pin.likes || revUpvotes(pin, 0), comments: pin.comments || 0,
+    likes: pin.likes || revUpvotes(pin, 0), comments: pin.comments || 0, timeRight: true, actsTop: true,
+    previewTotal: pin.comments ? cmtCount(pinKey, pin.comments) : 0,   // the "View all" line only — no preview rows (Eric, 2026-09-18)
   }) : '';
   // Identify each review by its position in the album's OWN list, not its
   // position in the filtered array — otherwise switching filter reshuffles the
@@ -2582,11 +2702,16 @@ function populateReviewList(scr, filter) {
   REV_INDEX[myKey] = { key: myKey, album: a, name: 'You', mine: true, rating: mine.rating || 0, text: myText,
     ago: 'your review', likes: 0, comments: 0 };
   const mineHtml = (mine.rating || myText) ? revCardHtml({
-    key: myKey, cls: 'v3-rev-card--mine', name: 'You', handle: (window.PROFILE || {}).handle || 'you',
+    key: myKey, cls: 'v3-rev-card--page v3-rev-card--mine', name: 'You', handle: (window.PROFILE || {}).handle || 'you',
     face: (window.PROFILE || {}).pic || 'images/rp-01.jpg', ago: 'your review',
-    rating: mine.rating || 0, text: myText, likes: null, comments: 0, share: true,
+    rating: mine.rating || 0, text: myText, likes: null, comments: 0, share: true, timeRight: true, actsTop: true,
   }) : '';
 
+  /* THE FEED'S CARD, on the album page (Eric, 2026-09-16): the home feed's
+     review card is the look — byline with the like · comment count · time on
+     the top row, the score on its own row, the text full width beneath. So
+     every card here wears `.v3-rev-card--page` with `timeRight` + `actsTop`,
+     the feed's flags. No record line: the album is the page. */
   const order = revsFor(a);                // ⚠️ the padded list — see revsFor
   list.innerHTML = mineHtml + pinHtml + revs.map((r) => {
     const i = Math.max(0, order.indexOf(r));
@@ -2595,8 +2720,13 @@ function populateReviewList(scr, filter) {
     REV_INDEX[key] = { key, album: a, name: r.name || 'Listener', init: r.init, grad: r.grad,
       rating: r.rating || 4, text: r.text || '', ago: m.ago, likes: revUpvotes(r, i), comments: m.comments };
     return revCardHtml({
-      key, name: r.name || 'Listener', face: feedFace(r.name || 'listener'), ago: m.ago,
+      key, cls: 'v3-rev-card--page', name: r.name || 'Listener', face: feedFace(r.name || 'listener'), ago: m.ago,
       rating: r.rating || 4, text: r.text || '', likes: revUpvotes(r, i), comments: m.comments,
+      timeRight: true, actsTop: true,
+      // Just the "View all n comments" line (Eric, 2026-09-18) — the two
+      // preview rows it carried from 2026-09-16 came off. cmtCount seeds (and
+      // caches) the thread, the same one the review page shows.
+      previewTotal: m.comments ? cmtCount(key, m.comments) : 0,
     });
   }).join('') || `<div class="v3-rev-empty">No reviews yet — be the first.</div>`;
   /* A long review FADES at the clamp instead of ending in an ellipsis — but only
@@ -2611,9 +2741,25 @@ function populateReviewList(scr, filter) {
 }
 function markLongReviews(list) {
   if (!list || !list.isConnected) return;
-  list.querySelectorAll('.v3-rev-text').forEach(t => {
+  // The review text and the comment previews under it (two lines; they faded
+  // off the right edge until 2026-09-17) both fade out at the BOTTOM.
+  list.querySelectorAll('.v3-rev-text, .v3-rev-cmt-body').forEach(t => {
     if (!t.clientHeight) return;                          // not laid out yet — leave it for the next pass
     t.classList.toggle('is-long', t.scrollHeight > t.clientHeight + 2);
+  });
+  // The record line's album name: the same idea sideways — one line that
+  // fades at the right edge, no ellipsis. ⚠️ The year beside it goes FIRST:
+  // it is shown again (a re-measure after a re-deal must not inherit the last
+  // verdict), and if the name can't fit at full width with it there, the year
+  // is dropped (`.no-year`) before the name is judged long on its own.
+  list.querySelectorAll('.v3-rev-record-album').forEach(t => {
+    if (!t.clientWidth) return;
+    const line = t.closest('.v3-rev-record-line');
+    if (line && line.querySelector('.v3-rev-record-year--auto')) {
+      line.classList.remove('no-year');
+      if (t.scrollWidth > t.clientWidth + 1) line.classList.add('no-year');
+    }
+    t.classList.toggle('is-long', t.scrollWidth > t.clientWidth + 1);
   });
 }
 
@@ -2752,6 +2898,9 @@ function feedEvents() {
          the profile's review history, which builds its own counts. */
       rating: f.rating, quote: f.quote, ago: f.ago,
       likes: f.likes || 0, comments: f.comments || 0,
+      // The record line on a review card names the year too; a persona feed
+      // row may not carry one, so fall back to the archive's.
+      year: f.year || (friendAlbumFor(f) || {}).year || '',
       // The inbox fills its unread rows and leaves the rest flat on the bg —
       // that contrast is most of why the screen reads as well as it does. A
       // feed has no read state, so "today" stands in for it: the newest group
@@ -2764,6 +2913,28 @@ function feedEvents() {
 
 // Where a row takes you. Routed through the event index rather than inlined
 // names so nothing needs quote-escaping into an onclick.
+/* The feed card's COMMENT pill goes to the review page itself (Eric,
+   2026-09-18), not the album page — the card tap still does the album page
+   with the review pinned, so the two taps lead to two different places. The
+   page reads REV_INDEX, which the feed never fills (the album page does, as
+   it renders), so the entry is written here from the feed event, under the
+   SAME key the album page's card would use (feedRevKey) — one thread, one
+   like, wherever you came in. */
+window.feedOpenReview = function (n) {
+  const e = feedEvents()[n];
+  if (!e) return;
+  if (!(e.type === 'review' || e.type === 'rating')) return feedOpen(n);
+  const f = (window.FRIEND_ACTIVITY || [])[e.idx];
+  const album = f && friendAlbumFor(f);
+  if (!album) return feedOpen(n);
+  const key = feedRevKey(f);
+  REV_INDEX[key] = REV_INDEX[key] || {
+    key, album, name: f.user, init: f.init, grad: f.grad,
+    rating: f.rating || 0, text: e.type === 'review' ? feedUnquote(f.quote) : '',
+    ago: f.ago, likes: f.likes || 0, comments: f.comments || 0,
+  };
+  openReviewPage(key, false);
+};
 window.feedOpen = function (n) {
   const e = feedEvents()[n];
   if (!e) return;
@@ -2780,6 +2951,11 @@ window.feedOpenArt = function (n) {
   if (e.type === 'follow') return window.openArtistPageFor && window.openArtistPageFor(e.artist);
   openFriendAlbum(e.idx);
 };
+
+// Strip one pair of wrapping quote marks (straight or curly) off a feed quote.
+function feedUnquote(q) {
+  return String(q || '').trim().replace(/^["“”]+/, '').replace(/["“”]+$/, '').trim();
+}
 
 function renderFriendFeed(screenEl) {
   const container = screenEl.querySelector('.v3-feed-items');
@@ -2801,123 +2977,118 @@ function renderFriendFeed(screenEl) {
     later:     '<circle cx="12" cy="12" r="8.6" fill="none" stroke="currentColor" stroke-width="2.1"/><path d="M12 7.4V12l3 1.8" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/>',
   };
 
-  /* Every row is a person now, so there is no system variant: all of them get an
-     avatar and a trailing album thumb. `isSys` (cover-as-avatar, no thumb) went
-     with `release`/`trending` — the inbox still needs it, the feed doesn't. */
-
-  /* ⚠️ Every line is SUBJECT · VERB · OBJECT, in that order, and so is every
-     line in the inbox — a row reads as a sentence, with the round avatar as its
-     subject and the square thumb as its object. Keep new verbs in that shape;
-     an object-first line ("Loveless was rated by…") breaks the scan even though
-     it says the same thing. Album regular weight, people/artists bold, per the
-     app-wide convention. */
-  /* "<album> by <artist>" — the object of the sentence, named in full. Album
-     regular weight, artist bold, album first: the app-wide convention, and
-     `.ntf-text i` / `.ntf-text b` already carry exactly those two weights.
-     ⚠️ Guarded twice. A row can arrive with no artist at all, and "by
-     undefined" reads as a bug — but so does "Weezer by Weezer", and self-titled
-     records are common enough to hit. Nobody says the artist twice out loud
-     either, so the guard matches how the line would be spoken. */
-  const rec = e => `<i>${e.album}</i>` +
-    (e.artist && e.artist !== e.album ? ` by <b>${e.artist}</b>` : '');
-
-  /* ⚠️ The score is part of the SENTENCE now — "reviewed X by Y a 4.5" — not a
-     number stacked under the cover. Said out loud that's how the verb ends, so
-     the row reads in one pass instead of the eye jumping to the thumbnail to
-     find out what they actually gave it.
-     ⚠️ Still only on review/rating rows. `FRIEND_ACTIVITY` hands every row a
-     `rating` whether the verb earned one or not, so printing it everywhere
-     would claim a friend scored something they only bookmarked. */
-  const score = e => ((e.type === 'review' || e.type === 'rating') && e.rating)
-    ? ` a <b class="ntf-line-score">${Number(e.rating).toFixed(1)}</b>` : '';
-
-  const line = e => {
-    if (e.type === 'follow')   return `<b>${e.user}</b> started following <b>${e.artist}</b>`;
-    // ⚠️ Playlist rows stay short. They already name TWO things (the record and
-    // the playlist), and a third proper noun makes the line unreadable.
-    if (e.type === 'playlist') return `<b>${e.user}</b> added <i>${e.album}</i> to <i>${e.playlist}</i>`;
-    if (e.type === 'rating')   return `<b>${e.user}</b> rated ${rec(e)}${score(e)}`;
-    if (e.type === 'fav')      return `<b>${e.user}</b> favourited ${rec(e)}`;
-    if (e.type === 'listened') return `<b>${e.user}</b> logged ${rec(e)}`;
-    if (e.type === 'later')    return `<b>${e.user}</b> saved ${rec(e)} for later`;
-    return `<b>${e.user}</b> reviewed ${rec(e)}${score(e)}`;
-  };
-
-  /* Engagement, on the row itself. ⚠️ This is the ONE place a feed row diverges
-     from an inbox row, and it is deliberate: the point of the feed is other
-     people's reviews, so you should be able to see that a review has traction —
-     and add to it — without leaving home. It's still built from the SHARED
-     vocabulary (`.ntf-foot` / `.ntf-acts` / `.v3-up`), not a home-only
-     restyling of the row, so the two screens stay one component. The earlier
-     attempt that "broke the resemblance" also added a star line and its own row
-     spacing; this changes nothing about the row's anatomy.
-     Only review/rating rows get it — there is nothing to comment on when
-     someone favourited a record. */
-  const acts = (e, n) => {
-    if (e.type !== 'review' && e.type !== 'rating') return '';
-    return `<div class="ntf-acts">
-                      ${upvoteHtml(feedRevKey(e), e.likes || 0, 'v3-up--sm v3-up--feed')}
-                      <button class="v3-up v3-up--sm v3-up--feed" type="button" aria-label="Comments"
-                        onclick="event.stopPropagation(); feedOpen(${n})">${CMT_SVG}<span class="v3-up-n">${e.comments || 0}</span></button>
-                    </div>`;
-  };
-
-  /* The object of the sentence: the record. ⚠️ The score used to stack UNDER
-     this thumb; it moved into the line itself, so `.ntf-obj` is a single child
-     again and `.ntf-score` is retired. */
-  const obj = (e, n) => `
-                <div class="ntf-obj">
-                  <div class="ntf-art${e.type === 'follow' ? ' ntf-art--round' : ''}"
-                       style="background-image:url('${e.thumb}')"
-                       onclick="event.stopPropagation(); feedOpenArt(${n})"></div>
-                </div>`;
-
-  /* Row anatomy is the inbox's — avatar + badge · copy · time · trailing thumb.
-     `.ntf-foot` holds the timestamp and (on review rows) the pills on one line;
-     with no pills it's a flex row of one child, so an inbox row that adopts it
-     looks exactly as it does now. */
-  const row = (e, n) => {
-    const face = e.face;
-    const pills = acts(e, n);
+  /* ⚠️ ACTIVITY CARDS (Eric, 2026-09-15). The rows that are NOT reviews —
+     favourited, logged, saved for later, added to a playlist, followed — used
+     to be the inbox's `.ntf-row` (avatar · one-line sentence · trailing thumb).
+     They wear the REVIEW CARD's anatomy now, so the feed is one shape top to
+     bottom: byline (photo · name · @handle, the time hard right), then the
+     record row (cover · album / artist / year), with the VERB where the review
+     card puts its score — the kind's badge glyph over a mono label — and the
+     same badge on the photo, as the inbox rows had. The sentence the old row
+     spelled out ("drumkid favourited Loveless by My Bloody Valentine") is now
+     read off the parts: who, badge, what.
+     A follow's object is the ARTIST, so its record row is their photo (round —
+     the app's shape rule for people) over the name, captioned Artist. A
+     playlist row names its second thing in the byline: "@who · to <list>".
+     Taps are the old row's: the card opens what feedOpen opens, the record
+     what feedOpenArt opens. Review and rating rows are `card` above. */
+  const VERB = { fav: 'favourited', listened: 'logged', later: 'saved', playlist: 'playlisted', follow: 'followed' };
+  const act = (e, n) => {
+    const follow = e.type === 'follow';
+    const handle = String(e.user || 'listener').toLowerCase().replace(/[^a-z0-9_]+/g, '_');
+    const sub = e.type === 'playlist' && e.playlist ? `@${handle} · to <i>${e.playlist}</i>` : `@${handle}`;
+    const glyph = `<svg viewBox="0 0 24 24" fill="currentColor">${BADGE[e.type] || ''}</svg>`;
+    /* A LIKE on these too (Eric, 2026-09-15), the review card's heart in the
+       same top-row slot — and no comment count: there is no thread on a
+       favourite. Keyed by kind + record + person so it is its own act, not
+       the review's. */
+    const likeKey = 'act::' + e.type + '::' + e.album + '::' + e.user;
+    const like = upvoteHtml(likeKey, e.likes || 0, 'v3-up--sm v3-up--like v3-up--heart')
+      .replace(/<svg[\s\S]*?<\/svg>/, typeof RVP_HEART !== 'undefined' ? RVP_HEART : '');
+    // A follow row is the artist alone — no "Artist" tag in front (Eric,
+    // 2026-09-18): the round photo already says it isn't a record.
+    const who = follow
+      ? recordWhoHtml({ album: e.artist })
+      : recordWhoHtml({ album: e.album, artist: e.artist, year: e.year });
     return `
-              <div class="ntf-row${e.fresh ? ' ntf-row--new' : ''}" onclick="event.stopPropagation(); feedOpen(${n})">
-                <div class="ntf-who">
-                  <div class="ntf-ava" style="background-image:url('${face}')">
-                    <span class="ntf-badge ntf-badge--${e.type}">
-                      <svg viewBox="0 0 24 24" fill="currentColor">${BADGE[e.type]}</svg>
-                    </span>
+              <div class="v3-rev-card v3-rev-card--feed v3-rev-card--act" data-feed="${n}" onclick="event.stopPropagation(); feedOpen(${n})">
+                <div class="v3-rev-card-top">
+                  <div class="v3-rev-av" style="background-image:url('${e.face}')">
+                    <span class="ntf-badge ntf-badge--${e.type}">${glyph}</span>
                   </div>
-                  <div class="ntf-time">${e.ago}</div>
+                  <div class="v3-rev-who">
+                    <span class="v3-rev-name-row"><span class="v3-rev-name">${e.user}</span></span>
+                    <span class="v3-rev-sub">${sub}</span>
+                  </div><span class="v3-rev-top-acts">${like}</span><span class="v3-rev-time">${e.ago}</span>
                 </div>
-                <div class="ntf-body">
-                  <div class="ntf-text">${line(e)}</div>
-                  ${e.type === 'review' && e.quote ? `<div class="ntf-quote">${e.quote}</div>` : ''}
-                  ${pills ? `<div class="ntf-foot">${pills}</div>` : ''}
+                <div class="v3-rev-record" onclick="event.stopPropagation(); feedOpenArt(${n})">
+                  <div class="v3-rev-record-art${follow ? ' v3-rev-record-art--round' : ''}" style="background-image:url('${e.thumb}')"></div>
+                  <div class="v3-rev-record-who">${who}</div>
                 </div>
-                ${obj(e, n)}
+                <div class="v3-rev-act">${glyph}<span>${VERB[e.type] || e.type}</span></div>
               </div>`;
   };
 
-  // Same sticky time buckets as the inbox. The inbox authors its `bucket` by
-  // hand; the feed's rows are generated, so they're bucketed off `ago`.
-  const BUCKETS = [
-    ['Today',     60 * 24],
-    ['This week', 60 * 24 * 7],
-    ['Earlier',   Infinity],
-  ];
-  let lo = -1;
-  container.innerHTML = BUCKETS.map(([label, hi]) => {
-    const rows = events
-      .map((e, n) => [e, n])
-      .filter(([e]) => agoMins(e.ago) > lo && agoMins(e.ago) <= hi);
-    lo = hi;
-    if (!rows.length) return '';
-    return `
-            <div class="ntf-group">
-              <div class="ntf-group-hd">${label}</div>
-              ${rows.map(([e, n]) => row(e, n)).join('')}
-            </div>`;
-  }).join('');
+  /* Review and rating rows are the ALBUM PAGE'S REVIEW CARD (2026-09-14) —
+     `revCardHtml`, with the same key as the album page's pinned card
+     (`feedRevKey`), so the like and the comment count are the same act on both
+     surfaces. What the album page doesn't need and the feed does: the RECORD
+     LINE (cover · album · artist), tappable to the album; `feed: n` routes the
+     card tap and the comment pill through feedOpen (see cmtCardTap).
+     `.v3-rev-card--feed` re-inks the card off the --sd-* tokens: the album
+     page's card sits on the album's dark colour, this one sits on the screen
+     bg, cream in the light theme. */
+  const card = (e, n) => revCardHtml({
+    key: feedRevKey(e), cls: 'v3-rev-card--feed', feed: n,
+    name: e.user, face: e.face, ago: e.ago, timeRight: true, actsTop: true,
+    /* No quote marks on the feed (Eric, 2026-09-15): the card's shape already
+       says "this is what they wrote". The data carries them for the inbox's
+       one-line rows, so they come off here. */
+    rating: e.rating || 0, text: e.type === 'review' ? feedUnquote(e.quote) : '',
+    likes: e.likes || 0, comments: e.comments || 0,
+    record: { image: e.image, album: e.album, artist: e.artist, year: e.year },
+  });
+
+  const row = (e, n) => (e.type === 'review' || e.type === 'rating') ? card(e, n) : act(e, n);
+
+  // One flat list (Eric, 2026-09-15). The inbox's Today / This week / Earlier
+  // headers were tried here and read as clutter between cards that already
+  // carry their own time — the feed is sorted newest-first, which says it.
+  container.innerHTML = events.map((e, n) => row(e, n)).join('');
+  // The cards' five-line fade, measured the way the album page measures it —
+  // now and again after layout, since the other shell is display:none.
+  markLongReviews(container);
+  setTimeout(() => markLongReviews(container), 80);
+  setTimeout(() => markLongReviews(container), 600);
+  tintFeedRecords(container);
+}
+
+/* Each card's discs take the colour of ITS OWN cover (Eric, 2026-09-18), not
+   the bento's. Same extractor and cache as the bento (`computeAlbumColors` —
+   a 48×48 canvas per cover, once per URL per session), so a feed of ~18
+   cards is ~18 tiny draws the first time and nothing after.
+   ⚠️ `--star` is set on the CARD, on purpose, despite the rule that nothing
+   sets `--star` directly. That rule guards the bento, where `--star` has to
+   FOLLOW the swiped cover through `--v3-star`; here each card IS its own
+   cover. Writing `--v3-star` on the card would do nothing — `--star` is
+   resolved on `.s-home-v3` and inherits down as a plain colour. It is the
+   same `star` value the bento uses (the accent unless it is too grey, then
+   the house gold) — except that a black-and-white sleeve gets a MIDDLE GREY
+   here rather than the gold (Eric, 2026-09-18): on the bento the gold stands
+   in for a colour the cover hasn't got; on a card it's the record's own
+   colour or nothing, and grey is honest about a grey sleeve. `starGrey` is
+   the extractor saying the fallback fired. */
+const FEED_GREY_STAR = '#9c9ca3';
+function tintFeedRecords(container) {
+  container.querySelectorAll('.v3-rev-card--feed').forEach(card => {
+    const art = card.querySelector('.v3-rev-record-art');
+    if (!art || !card.querySelector('.hstars')) return;
+    const m = (art.style.backgroundImage || '').match(/url\(['"]?([^'"]+?)['"]?\)/);
+    if (!m) return;
+    computeAlbumColors(m[1]).then(c => {
+      if (c && card.isConnected) card.style.setProperty('--star', c.starGrey ? FEED_GREY_STAR : (c.star || c.accent));
+    });
+  });
 }
 
 /* ── The pet ─ six dots in the nav's scoop ────────────────────────
@@ -3357,20 +3528,47 @@ function proWheelInit(root, box, opts) {
     clearTimeout(holdT); holdT = null;
     if (!armed) return;
     armed = false;
+    window._sdHold = false;           // the pull may have the axis back
     box.classList.remove('is-armed');
     if (opts.suppressClick) eatNextClick(album);
     commit();
   }
 
+  /* ⚠️ TWO GESTURES SHARE THE COVER'S VERTICAL AXIS (Eric, 2026-09-14): the
+     hold-to-open-the-wheel here, and pull-to-refresh (`sdPtr*`, delegated at
+     the document). They used to fire into each other both ways —
+       · a finger dragging DOWN to refresh, still on the cover 240ms later,
+         armed the wheel under it (the hold timer never looked at movement);
+       · once the wheel WAS open, dragging the list was also a pull, so
+         picking a shelf translated the body and re-dealt the feed.
+     The rules now: a finger that MOVES before the timer fires is scrolling
+     or pulling, not holding — HOLD_SLOP cancels the timer. And the moment
+     the wheel arms it takes the axis: `_sdHold` is read by every pull
+     handler (start, move, and the touchmove guard), and any pull already
+     in flight is dropped (`_ptr = null`). */
+  const HOLD_SLOP = 8;
+  let startX = 0;
   album.addEventListener('pointerdown', e => {
     if (!bentoGesturesOn(root)) return;   // album page: no shelf wheel over the header
-    startY = e.clientY; startIdx = idx;
+    if (e.button != null && e.button > 0) return;
+    if (typeof _ptr !== 'undefined' && _ptr && _ptr.active) return;   // a pull is already going
+    startX = e.clientX; startY = e.clientY; startIdx = idx;
     holdT = setTimeout(() => {
+      holdT = null;
       armed = true;
+      window._sdHold = true;
+      if (typeof _ptr !== 'undefined') _ptr = null;   // whatever pull was pending is not happening
       syncBg();                       // blur the cover that is actually under the finger
       box.classList.add('is-armed');
       album.setPointerCapture?.(e.pointerId);
     }, SHOP_HOLD_MS);
+  });
+  // Before the arm: movement means it is not a hold.
+  album.addEventListener('pointermove', e => {
+    if (armed || !holdT) return;
+    if (Math.abs(e.clientX - startX) > HOLD_SLOP || Math.abs(e.clientY - startY) > HOLD_SLOP) {
+      clearTimeout(holdT); holdT = null;
+    }
   });
   album.addEventListener('pointermove', e => {
     if (!armed) return;
@@ -4944,16 +5142,17 @@ function computeAlbumColors(url) {
            gold whenever the accent has too little colour in it to read as a
            deliberate choice. `accent` itself is left alone: the boxes still want
            the neutral. */
-        const star = (() => {
+        const starGrey = (() => {
           const h = accent.replace('#', '');
           const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
           const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
           const sat = mx ? (mx - mn) / mx : 0;
-          return sat < 0.22 ? '#e8a83c' : accent;
+          return sat < 0.22;
         })();
+        const star = starGrey ? '#e8a83c' : accent;
 
         const colors = {
-          accent, star, box1, box2,
+          accent, star, starGrey, box1, box2,   // starGrey: the star is the gold FALLBACK, not the cover's own colour
           box1color: `rgb(${cl(b1r)},${cl(b1g)},${cl(b1b)})`,
           box1L, box2L,
           box1colorL: `rgb(${L1r},${L1g},${L1b})`,
@@ -5072,6 +5271,13 @@ function applyProfColors(screenEl) {
      finishes immediately; if it does not, its ResizeObserver picks it up when
      one arrives — and observers are not tied to the frame clock. */
   if (screenEl) screenEl.querySelectorAll('.prof-fav-rail').forEach(r => profFavBoot(r));
+  // The pins and the history are the feed's card now (2026-09-18): each one's
+  // discs take its own cover's colour, and the long-text / long-title fades
+  // are measured, exactly as the home feed does after it renders.
+  if (screenEl && typeof tintFeedRecords === 'function') {
+    tintFeedRecords(screenEl);
+    markLongReviews(screenEl); setTimeout(() => markLongReviews(screenEl), 80); setTimeout(() => markLongReviews(screenEl), 600);
+  }
   const pic = screenEl && screenEl.querySelector('.prof-pic');
   if (!pic) return;
   const bg = getComputedStyle(pic).backgroundImage;
@@ -5673,6 +5879,7 @@ function saveLog(now) {
     putDraft(logKey(SDLOG.subject), {
       rating: SDLOG.rating, listened: SDLOG.listened, later: SDLOG.later, fav: SDLOG.fav,
       text: SDLOG.text || '',
+      image: SDLOG.subject.image || '', snap: libSnapFor(SDLOG.subject),   // for the Playlists page's library tabs
       // only tracks the user actually touched — the rest is just the tracklist
       songs: (SDLOG.songs || []).filter(s => s.rating > 0 || (s.text || '').trim()),
     });
@@ -5691,6 +5898,7 @@ function flashLogSaved() {
   if (SDLOG) SDLOG.updated = Date.now();
   paintLogUpdated();
   homeShells().forEach(s => syncQuickLog(s));
+  homeShells().forEach(s => refreshSongFavs(s));   // the tracklist's hearts follow a song's favourite live
   if (typeof populateReviewList === 'function') homeShells().forEach(s => {
     const active = s.querySelector('.v3-rev-filter.active');       // keep the tab the user chose
     populateReviewList(s, active ? active.dataset.f : 'popular');
@@ -5710,12 +5918,25 @@ function paintLogUpdated() {
   el.textContent = t ? `Updated ${logAgo(t)}` : '';
 }
 let _sdlogTick = null;
+/* What the library tabs need to draw — and reopen — an album that has since
+   left ARCHIVE (the rec pool is re-dealt every session). Albums only; a song's
+   draft carries just its `image`. Ratings and reviews are NOT stored: they are
+   seeded off the title, so plLibOpen regenerates identical ones. */
+function libSnapFor(subj) {
+  if (!subj || subj.isSong || subj.isArtist) return undefined;
+  const a = (window.ARCHIVE || []).find(x => x.album === subj.title && x.artist === (subj.subtitle || ''));
+  if (!a) return undefined;
+  return { year: a.year || 0, genre: a.genre || '', tracks: a.tracks || 10, image: a.image || '',
+           deezerId: a.deezerId, artistId: a.artistId };
+}
 // Flip one flag on a subject's draft WITHOUT opening the sheet — the album
 // page's quick-log squares write through here, so the two surfaces agree.
 function writeDraftFlag(subj, k, on) {
   const key = logKey(subj);
   const d = logDrafts()[key] || { rating: 0, listened: false, later: false, fav: false, text: '', songs: [] };
   d[k] = on;
+  if (subj.image) d.image = subj.image;
+  d.snap = libSnapFor(subj) || d.snap;
   putDraft(key, d);
 }
 // The saved draft for an album, as the quick-log squares need it.
@@ -5785,6 +6006,10 @@ function wireSheetGrab(ov, sheetSel, close) {
    the one click that follows an active pull. */
 const PTR_THRESH = 64, PTR_MAX = 112;
 let _ptr = null, _ptrSwallow = false;
+/* `window._sdHold` — true while the cover's shelf wheel is armed (proWheelInit).
+   The wheel drags DOWN the same axis a pull does, so while it is up no pull
+   may start or continue. See the ⚠️ above the wheel's pointerdown. */
+window._sdHold = false;
 function sdPtrTarget(t) {
   const body = t && t.closest && t.closest('.v3-body');
   if (!body) return null;
@@ -5835,7 +6060,7 @@ function sdRefreshShell(kind) {
   }
 }
 function sdPtrStart(t, x, y) {
-  if (_ptr) return;
+  if (_ptr || window._sdHold) return;
   const h = sdPtrTarget(t);
   if (!h || h.body.scrollTop > 0 || h.body.classList.contains('is-refreshing')) return;
   _ptr = { ...h, x0: x, y0: y, pull: 0, armed: false, active: false,
@@ -5844,6 +6069,7 @@ function sdPtrStart(t, x, y) {
 // Returns true while the pull owns the gesture (caller preventDefaults).
 function sdPtrMove(x, y) {
   const s = _ptr; if (!s) return false;
+  if (window._sdHold) { _ptr = null; return false; }     // the wheel armed mid-pull: it owns the axis now
   const dy = (y - s.y0) / s.k, dx = (x - s.x0) / s.k;
   if (!s.active) {
     if (dy < -4 || Math.abs(dx) > 12 && Math.abs(dx) > dy) { _ptr = null; return false; }   // a scroll up or a sideways swipe
@@ -5887,7 +6113,10 @@ function sdPtrEnd() {
   setTimeout(() => { sdRefreshShell(s.kind); done(); }, 700);
 }
 document.addEventListener('touchstart', e => { if (e.touches.length === 1) sdPtrStart(e.target, e.touches[0].clientX, e.touches[0].clientY); }, { passive: true, capture: true });
-document.addEventListener('touchmove',  e => { if (_ptr && e.touches.length === 1 && sdPtrMove(e.touches[0].clientX, e.touches[0].clientY)) e.preventDefault(); }, { passive: false, capture: true });
+document.addEventListener('touchmove',  e => {
+  if (window._sdHold) { if (e.cancelable) e.preventDefault(); return; }   // the wheel's drag: nothing else scrolls
+  if (_ptr && e.touches.length === 1 && sdPtrMove(e.touches[0].clientX, e.touches[0].clientY)) e.preventDefault();
+}, { passive: false, capture: true });
 document.addEventListener('touchend',    sdPtrEnd, true);
 document.addEventListener('touchcancel', sdPtrEnd, true);
 document.addEventListener('mousedown', e => { if (e.button === 0) sdPtrStart(e.target, e.clientX, e.clientY); }, true);
@@ -6033,6 +6262,24 @@ function ensureLogSheet() {
   // Per-song rating + note (event-delegated over the song list)
   const songs = ov.querySelector('.sd-log-songs-list');
   songs.addEventListener('click', e => {
+    // The quick favourite (Eric, 2026-09-18): the heart left of the discs.
+    // It writes the SONG's own draft (`song::title::album`), the one the
+    // song's sheet and the tracklist's heart-for-a-number read, so all three
+    // agree — not the album draft's `songs[]`, which is ratings and notes.
+    const fb = e.target.closest('.sd-log-song-fav');
+    if (fb) {
+      e.stopPropagation();
+      const row = fb.closest('.sd-log-song');
+      const s = SDLOG && SDLOG.songs[+row.dataset.i];
+      if (!s || !SDLOG.subject) return;
+      const key = `song::${s.title}::${SDLOG.subject.title}`;
+      const d = logDrafts()[key] || {};
+      d.fav = !d.fav;
+      putDraft(key, d);
+      fb.classList.toggle('on', d.fav);
+      homeShells().forEach(sc => refreshSongFavs(sc));
+      return;
+    }
     const rt = e.target.closest('.sd-log-song-rate-track');
     if (rt) {
       const row = rt.closest('.sd-log-song');
@@ -6140,11 +6387,13 @@ function fillLogSongs(ov, album) {
     return { title: s.title, rating: (prev && prev.rating) || 0, text: (prev && prev.text) || '' };
   });
   box.hidden = false;
+  const heart = typeof RVP_HEART !== 'undefined' ? RVP_HEART : '♥';
   list.innerHTML = songs.map((s, i) => `
     <div class="sd-log-song" data-i="${i}">
       <span class="sd-log-song-num">${i + 1}</span>
       <span class="sd-log-song-title">${s.title}</span>
       <span class="sd-log-song-val"></span>
+      <button class="sd-log-song-fav${songIsFav(album, s.title) ? ' on' : ''}" type="button" aria-label="Favourite">${heart}</button>
       <span class="sd-log-song-rate-track">
         <span class="sd-log-song-empty">${SDLOG_RECS}</span>
         <span class="sd-log-song-fill" style="width:0">${SDLOG_RECS}</span>
@@ -8256,10 +8505,13 @@ ${each(bases, PERSONA_INK2)} { color: ${t.ink2}; }`;
      app.css could show it, because this rule is (0,3,0) and wins. Same family
      of mistake as `.v3-album`: if the shape is doing structural work, it is not
      a persona knob. */
+  /* ⚠️ `s.font` is NOT emitted (Eric, 2026-09-17). Hank's skin set the whole
+     app in Crimson and 16yearold's in SUSE Mono, and every screen that didn't
+     pin its own face inherited it — the review bylines, the playlist page…
+     "No serif unless Eric names the spot" applies to personas too, so a
+     persona skins colour and radius only. The CSV column stays; nothing reads it. */
   return `
-${k} {${tokens(s.dark)}
-  font-family: ${s.font}, var(--font-main), sans-serif;
-}
+${k} {${tokens(s.dark)}}
 ${lightBases.join(',\n')} {${tokens(s.light)}}
 ${bg(darkBases, s.dark)}
 ${bg(lightBases, s.light)}
@@ -8377,9 +8629,14 @@ function personaFeed(p) {
     const h = 1 + Math.floor(Math.random() * 47);
     return h < 24 ? `${h}h` : `${Math.round(h / 24)}d`;
   };
+  // No quote twice on one feed: the pool is 36 lines across ~100 albums, so
+  // two cards saying "review pending. still crying." was a regular sight.
+  const used = new Set();
   return shuffled(A).slice(0, Math.min(cast.length, A.length)).map(a => {
     const who = pick(cast);
-    const rev = (a.reviews && a.reviews.length) ? pick(a.reviews) : null;
+    const fresh = (a.reviews || []).filter(r => !used.has(r.text));
+    const rev = fresh.length ? pick(fresh) : ((a.reviews && a.reviews.length) ? pick(a.reviews) : null);
+    if (rev) used.add(rev.text);
     return {
       user: who.user, init: who.init, grad: who.grad,
       album: a.album, artist: a.artist, year: a.year, image: a.image,
@@ -9681,27 +9938,50 @@ function populateCredits(screenEl, album) {
 window.populateCredits = populateCredits;
 
 // ── The generated-review algorithm, ported from tools/build_personas.py ──
+/* ⚠️ REALISTIC (Eric, 2026-09-15): the pool used to be twenty tidy one-liners
+   of one voice. Real posts on the music and film sites are a MIX of registers
+   — one-line jokes, lowercase stream-of-thought, punctuated paragraphs,
+   lists — so this is that mix, with a few that run past the feed's four-line
+   clamp. Lists carry real newlines; `.v3-rev-text` is `pre-line` for them.
+   ⚠️ Keep in step with POOL in tools/build_personas.py — the persona
+   archives' reviews are built from that copy, not this one. */
 const DZ_QUOTES = [
-  'the kind of record you finish and immediately restart',
-  'front to back, not a single skip on this one',
-  'i was not emotionally prepared for the back half',
-  'production is immaculate, lyrics cut deeper every listen',
-  'grew on me. first listen confused me, tenth listen floored me',
-  'this is the one i put on when i want to feel something',
-  'genuinely reshaped what i thought this genre could do',
-  'overrated by half a star but still a great time',
-  'the sequencing alone deserves an award',
-  "sounds like a memory i haven't had yet",
-  'perfect headphones album, sounds thin on speakers though',
-  'everyone talks about the singles, the deep cuts are the real thing',
-  'criminally short. i wanted twenty more minutes',
-  "a mood more than an album, and that's a compliment",
-  'played this on a night drive and understood it completely',
-  'the mixing is doing so much heavy lifting here',
-  'not their best but their most honest',
+  "no skips. none. i checked twice.",
+  "this album is my roman empire",
+  "5 stars because i'm scared of the fans",
+  "review pending. still crying.",
+  "wow.",
+  "this goes so hard for no reason",
+  "listened on the bus. missed my stop. worth it.",
+  "hot take: the deluxe is the real album",
+  "the way the strings come in on track 6??? hello???",
+  "mom said it's my turn to be the friend who won't shut up about this record",
+  "the vinyl is $60 and i have never clicked add to cart faster",
+  "it's giving 3am walk home",
+  "put it on for the dishes. ended up sitting down.",
+  "it's fine. it's FINE. why is everyone acting like this is scripture",
+  "10/10 no notes. ok one note: track 4 could be shorter. 10/10 still.",
+  "3.5 rounded up because the closer made me text my ex. rounded back down because the closer made me text my ex.",
+  "not for me. i can hear exactly why it's for everyone else.",
+  "Honestly? Better than the debut. Not close.",
+  "Fine, I'll say it: the singles are the weakest part.",
+  "Pros: everything.\nCons: ends.",
+  "Top 3, no order:\n1. the opener\n2. the one with the choir\n3. whatever track 8 is called",
+  "Highs: the title track, the horns on 4.\nLows: track 9 is a skit and it knows it.\nVerdict: keep.",
+  "Ranking every song would take a week, so the short version: all of them, in that order.",
+  "i put this on expecting background music and ended up sitting on the kitchen floor for the whole second side. the way the drums drop out of the fourth track and leave that one synth line hanging is the best thirty seconds of music i've heard this year",
+  "took me three listens to get it and now i can't stop. the first half feels like a different album from the second, and then the last song ties them together so neatly you go back to the start to check if it was planned. it was",
+  "everyone i know rates this for the singles and sure, they're great. but the deep cuts are where the record actually lives. track seven especially, which nobody talks about and which is quietly the best thing on it",
+  "sounds thin on speakers and enormous on headphones, so listen to it the right way. the low end on the title track is the kind of thing you feel in your teeth",
+  "grew on me. first listen confused me, tenth listen floored me",
   "i've recommended this to six people and lost two friends",
-  'every song earns its place, which is rarer than it should be',
-  'the closer justifies the entire tracklist'
+  "criminally short. i wanted twenty more minutes",
+  "A remarkable record. The first half is patient, almost withholding, and then the second half pays out everything it saved. Track seven, in particular, is the best thing they have made.",
+  "Not what I wanted from them and exactly what I needed. Slower, sadder and stranger than anything they've done, and the production is so close-mic'd you can hear the room. Give it a night drive and it opens right up.",
+  "Great production, wildly overwritten. Half these songs would land twice as hard with a verse cut. Still a four, because the good half is really good.",
+  "Skipped this for two years because of the cover. My fault. Genuinely one of the best things I've heard this decade.",
+  "The lyrics are doing a lot here, and I mean that as praise. Every verse is a small short story, and the way the chorus changes one word each time it comes round is the kind of detail you only catch on headphones.",
+  "Criminally underrated. It came out the same month as three bigger records and got buried, which is a shame, because it's better than all of them. The sequencing alone is a masterclass.",
 ];
 const DZ_NAMES = [['echoplex', 'EP'], ['staticfog', 'SF'], ['velvetblast', 'VB'],
                   ['noisegate', 'NG'], ['dustpan', 'DP'], ['kira.wav', 'KW'], ['vxblank', 'VX']];

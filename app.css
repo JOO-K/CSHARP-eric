@@ -1424,7 +1424,13 @@
    up with the digits' — scale-relative, so it holds at every rating size. */
 .hstars {
   display: inline-flex; gap: 2px; align-items: center; vertical-align: baseline;
-  transform: translateY(10%);
+  /* ⚠️ The optical drop is `top`, NOT `transform: translateY(10%)` (2026-09-18).
+     A transform on a masked element puts it on its own compositing layer,
+     which the scaled phone wrap (and WebKit on the real phone) then
+     resamples — the discs read BLURRY. `top` moves it in layout, no layer,
+     pixel-snapped. 1px ≈ the old 10% at the 9–13px sizes the discs mostly
+     are; the big hero row loses a fraction of a pixel of drop, nothing more. */
+  position: relative; top: 1px;
 }
 /* Each rating unit is a vinyl record: a CSS mask clips the background to the
    disc shape, so full/empty/half coloring (incl. the 50/50 split) still works. */
@@ -3073,6 +3079,11 @@
      bento. Bottom clears the nav/nowbar overlay so nothing is cut off. */
   padding: 10px 12px 75px;
 }
+/* ⚠️ The HOME feed runs to the BENTO's edges (Eric, 2026-09-15): the bento
+   sits 10px in from the body, and the cards want every px of width the
+   record row can get, so the sides here are the bento's 10px and the cards
+   below carry 3px of their own. */
+.s-home-v3 .v3-scroll-area { padding-left: 10px; padding-right: 10px; }
 
 /* ── Review upvote pill (thumbs up + count) ───────────────────
    Replaces the old static "♥ n" on review cards and friend-feed cards.
@@ -3323,7 +3334,24 @@ body.sd-skin-furry .v3-skin--furry { display: block; }
 .s-home-v3--light .v3-skin-outer { fill: var(--v3-box1-color, #f0ece3); }
 .s-home-v3--light .v3-skin-inner { fill: color-mix(in srgb, var(--v3-box1-color, #f0ece3) 75%, #fff); }
 /* The shop tile's preview: the ears, cropped to the field. */
-.shop-field--skin svg { width: 34px; height: auto; }
+/* Furry's tile in the shop's Themes shelf (it was `.shop-field--skin`, a row
+   of its own, until 2026-09-17): the ears on the theme's swatch. */
+.shop-field--furry { color: #d9a066; }
+.shop-field--furry svg { width: 62%; height: auto; }
+
+/* ── FURRY on the PROFILE CARD: dog ears over your photo (Eric, 2026-09-17) ──
+   Drawn INSIDE .prof-base (profEarsHtml in screens.js), standing on the name
+   banner's flat top above the picture pane, so the card's own emboss
+   drop-shadow shapes them and they take the card's colour — the same idea as
+   the bento's ears. Only YOUR card emits them; the body class shows them.
+   They stand ~52 units (≈28px at the 393 frame) above the card. The skin
+   already pads every .v3-body to 40px when worn (for the bento's ears), so
+   the canvas only adds a little air on top of that. */
+.prof-ears { display: none; }
+body.sd-skin-furry .prof-ears { display: block; }
+.prof-ears-outer { fill: var(--pf-base); }
+.prof-ears-inner { fill: color-mix(in srgb, var(--pf-base) 75%, #fff); }
+body.sd-skin-furry .prof-canvas--ears { margin-top: 14px; }
 /* The ears stand ~12% of the bento above its top edge (~47px at the 393
    frame), and the body's 20px clearance plus the bento's 10px margin only
    give them 30 — the scroller would clip the tips. Room for them when worn. */
@@ -3797,10 +3825,13 @@ body.sd-skin-furry .v3-body { padding-top: 40px; }
 .s-home-v3:not(.s-home-v3--review) .v3-blue-score {
   grid-area: 1 / 1 / 2 / 3;   /* spans the count + vinyls beneath it */
   justify-self: end;
-  letter-spacing: -0.02em;    /* big digits open up; pull them back together */
+  letter-spacing: calc(-0.02em + 0.1px);    /* big digits open up; pull them back together — then 0.1px back out (Eric, 2026-09-18) */
   line-height: 1;
 }
-.s-home-v3:not(.s-home-v3--review) .v3-blue-count  { grid-area: 2 / 1; }
+.s-home-v3:not(.s-home-v3--review) .v3-blue-count  {
+  grid-area: 2 / 1;
+  position: relative; top: 2.5px;   /* follows the discs, which ride 2.5px low here (Eric, 2026-09-18). `top`, not a transform — see .hstars */
+}
 /* Bare "12.5k" here; "12.5k reviews" on the album page. The word is a span the
    state hides — see the note in setMainAlbum for why this can't be a JS branch. */
 .s-home-v3:not(.s-home-v3--review) .v3-rc-long { display: none; }
@@ -3842,7 +3873,16 @@ body.sd-skin-furry .v3-body { padding-top: 40px; }
   font-family: var(--font-main); font-size: 10px; font-weight: 500;
   color: rgba(232,226,214,0.62);
 }
-.s-home-v3:not(.s-home-v3--review) .v3-blue-stars-row .hstars { grid-area: 2 / 2; }
+/* ⚠️ An EMPTY names span has no line box, so an empty row used to collapse to
+   the 8px label's height while filled rows stood at the 10px name's — the
+   three lines changed pitch album to album. A no-break space gives the empty
+   span the same line box (and baseline) as a filled one, so every row is the
+   same height whether or not MusicBrainz had anything for it. */
+.v3-cred-names:empty::before { content: '\00a0'; }
+.s-home-v3:not(.s-home-v3--review) .v3-blue-stars-row .hstars {
+  grid-area: 2 / 2;
+  top: 3.5px;   /* the base 1px optical drop, plus 2.5px down in the bento (Eric, 2026-09-18). `top`, not a transform — see .hstars */
+}
 /* ⚠️ The two children take `1em` rather than a number so the ROW's font-size is
    the single lever, which is what the dev box's Line 1 Size slider turns.
    Their base rules declare 10.5px outright, so this has to override them. */
@@ -4307,7 +4347,13 @@ body.sd-skin-furry .v3-body { padding-top: 40px; }
 /* Panel padding matches the bento's 10px margin so % columns align exactly */
 .v3-review-panel { display: none; padding: 4px 10px 18px; }
 .s-home-v3--review .v3-scroll-area { display: none; }
-.s-home-v3--review .v3-review-panel { display: block; animation: v3revin 0.5s ease 0.2s both; }
+/* ⚠️ `backwards`, NOT `both` (2026-09-18) — the third place this bit. A
+   fill-forwards animation keeps the panel on a compositing layer for good
+   (this one even ends on `transform: none`, which still counts), and the
+   scaled phone wrap / WebKit resample that layer: the whole review list read
+   BLURRY after opening an album from the feed. The end state is the natural
+   one, so `backwards` loses nothing. See *Review cards* in CLAUDE.md. */
+.s-home-v3--review .v3-review-panel { display: block; animation: v3revin 0.5s ease 0.2s backwards; }
 
 /* Top row: links (thumb/CD side) + your review (album/stats side).
    Uses the bento's 78/22 split; flips to row-reverse in right-hand mode. */
@@ -4560,6 +4606,14 @@ body.sd-skin-furry .v3-body { padding-top: 40px; }
 /* Sized here rather than inline (populateBigScore passes halfStars' `cssSized`)
    so the dev box can turn it — an inline width would need !important to beat. */
 .s-home-v3--review .v3-rev-score-sub .hstar { width: 18px; height: 18px; }
+/* The review count, right of the discs (Eric, 2026-09-18): DM Sans, grey,
+   on the number's baseline. It replaces the one-liner's count, which this
+   page hides. Light ink in both themes — the surface is the album flood. */
+.v3-rev-score-count {
+  margin-left: 9px; vertical-align: baseline;
+  font-family: var(--font-main); font-size: 12px; font-weight: 500;
+  color: rgba(232,226,214,0.45); white-space: nowrap;
+}
 /* An artist has no score — same rule as the one-liner's. */
 .s-home-v3--artist .v3-rev-score { display: none; }
 
@@ -4676,6 +4730,8 @@ body.sd-skin-furry .v3-body { padding-top: 40px; }
 .s-home-v3--light.s-home-v3--artist .v3-cmt-av { background-color: rgba(26,18,8,0.08); }
 .s-home-v3--light.s-home-v3--artist .v3-cmt-user { color: rgba(26,18,8,0.8); }
 .s-home-v3--light.s-home-v3--artist .v3-cmt-text { color: rgba(26,18,8,0.55); }
+.s-home-v3--light.s-home-v3--artist .v3-cmt { border-top-color: rgba(26,18,8,0.08); }
+.s-home-v3--light.s-home-v3--artist .v3-cmt-handle { color: rgba(26,18,8,0.42); }
 .s-home-v3--light.s-home-v3--artist .v3-cmt-ago,
 .s-home-v3--light.s-home-v3--artist .v3-cmt-like,
 .s-home-v3--light.s-home-v3--artist .v3-cmt-reply { color: rgba(26,18,8,0.32); }
@@ -4733,7 +4789,15 @@ body.sd-skin-furry .v3-body { padding-top: 40px; }
   scrollbar-width: none;
 }
 .v3-aa-row::-webkit-scrollbar { display: none; }
-.v3-aa-row .wall2-cell { flex: 0 0 96px; scroll-snap-align: start; }
+/* A row cover is the SAME size as a grid cover (Eric, 2026-09-18 — it was a
+   fixed 96px, a step smaller): a third of the row's content width less the
+   grid's two 8px column gaps, i.e. exactly what `repeat(3, 1fr)` with
+   `gap: … 8px` gives the grid. The row's own gap is 8px too, so the first
+   three sit where the grid's would and the fourth peeks. ⚠️ The row's content
+   box IS the container's width (its -12px margins are paid back as padding),
+   so the 100% here and the grid's are the same measure. */
+.v3-aa-row { gap: 8px; }
+.v3-aa-row .wall2-cell { flex: 0 0 calc((100% - 16px) / 3); scroll-snap-align: start; }
 /* The reviews heading is emitted as the last block of .v3-artist-albums (it sits
    directly above .v3-rev-filters in the panel), so it hides with the container
    when the page leaves the artist state. */
@@ -4827,7 +4891,7 @@ body.sd-skin-furry .v3-body { padding-top: 40px; }
   display: block; width: 100%; box-sizing: border-box; resize: none;
   overflow: hidden; min-height: 22px;
   background: transparent; border: none; padding: 0;
-  color: #e8e2d6; font-family: 'Crimson Text', Georgia, serif; font-size: 13px; line-height: 1.5;
+  color: #e8e2d6; font-family: var(--font-main); font-size: 13px; line-height: 1.5;   /* DM Sans, no serif (Eric, 2026-09-16) — reviews are sans everywhere now */
 }
 .v3-rev-write::placeholder { color: transparent; }   /* custom hint overlay used instead */
 .v3-rev-write:focus { outline: none; }
@@ -4837,7 +4901,7 @@ body.sd-skin-furry .v3-body { padding-top: 40px; }
 .v3-rev-ph {
   display: none;
   position: absolute; top: 0; left: 0;
-  font-family: 'Crimson Text', Georgia, serif; font-size: 13px; line-height: 1.5;
+  font-family: var(--font-main); font-size: 13px; line-height: 1.5;
   color: rgba(232,226,214,0.3);
   pointer-events: none; white-space: nowrap;
 }
@@ -4983,7 +5047,12 @@ body.sd-skin-furry .v3-body { padding-top: 40px; }
    is the nearest ancestor of both.
    The number: 3 rows × 10px names at line-height 1.28 ≈ 38px, so 40 leaves a
    hair of air. Turn this if the credit rows are ever restyled. */
-.s-home-v3--review.s-home-v3--album { --rev-cred-h: 40px; }
+.s-home-v3--review.s-home-v3--album { --rev-cred-h: 50px; }   /* 40 + the 10px of air over the credits below */
+/* 10px of air between the artist and the credits on the album page (Eric,
+   2026-09-18). The compact bento has its own 7px in its `:not(--review)` rule;
+   this is the review state's. ⚠️ It is overhang too — see --rev-cred-h above,
+   which carries it so the CTA row still clears the block. */
+.s-home-v3--review .v3-blue-credits { padding-top: 10px; }
 /* Coverage is patchy (MusicBrainz is volunteer-entered) and the whole block is
    `hidden` when nothing came back — in which case there is no overhang to clear
    and the reserved space would just be a hole. */
@@ -5003,6 +5072,95 @@ body.sd-skin-furry .v3-body { padding-top: 40px; }
   width: 80%;
   margin-inline: auto;
 }
+
+/* ══ THE RATE GROUP (Eric's RateGroup.svg, 2026-09-18) ═══════════════════
+   Replaces the CTA + quick-log strip: `rateGroupHtml()` in screens.js. The
+   box is the drawing's 1633×1321 (RateGroupnew2.svg) at 83% of the column —
+   the drawing grew wider round the same disc, so 83% keeps the disc the size
+   it was at 80% of the old 1575 — centred like the row it replaces; every control is placed in % of that viewBox, so it scales
+   with the phone. The SVG is the surfaces (wings + disc), pointer-events
+   off; the five buttons are transparent boxes over the zones:
+       circle   x 329→1300 · y 0→972          RATE
+       TL lobe  x 0→306    · y 604→923        Listened
+       BL lobe  x 432→793  · y ~1024→1320     Later     (a near-circle, r 146 about 647,1174)
+       TR / BR  mirrored                      Favorite / Share
+   Ink is the album flood's (light in both themes), like everything on this
+   panel. `.on` (the same class the old squares carried; toggleRevAction and
+   syncQuickLog paint it) lights a lobe's glyph and label in the album gold. */
+.v3-rate-group {
+  position: relative; width: 83%; margin-inline: auto;
+  aspect-ratio: 1633 / 1321;
+  margin-bottom: 16px;   /* room for the lower lobes' labels, which hang below the box */
+  color: rgba(232,226,214,0.82);
+}
+.v3-rg-shape { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+.v3-rg-wing, .v3-rg-disc {
+  fill: rgba(232,226,214,0.06);
+  stroke: rgba(232,226,214,0.14); stroke-width: 1px; vector-effect: non-scaling-stroke;
+}
+/* The circle fills with the album gold once you've rated (syncRevCta →
+   .is-rated on the button; the disc follows through :has). */
+.v3-rate-group:has(.v3-rg-rate.is-rated) .v3-rg-disc { fill: var(--star, #e8a83c); stroke: transparent; }
+.v3-rg-rate, .v3-rg-btn {
+  position: absolute; margin: 0; padding: 0;
+  background: none; border: none; color: inherit; font-family: var(--font-main);
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.v3-rg-rate {
+  left: 20.13%; top: 0.04%; width: 59.47%; height: 73.52%;
+  border-radius: 50%; gap: 4px;
+  transition: color .15s;
+}
+.v3-rg-word--sm { font-size: 14px; font-weight: 700; color: rgba(232,226,214,0.92); }
+/* "RATE · REVIEW · LOG" along the top of the disc, in viewBox units (the box
+   is ~5.25 units per px at phone size, so 58 ≈ 11px). */
+/* ⚠️ No `fill` here in the resting state — the markup's fill attribute is
+   the sweeping-glow gradient (see rateGroupHtml), and a CSS fill would beat
+   it. Hover brightens by opacity for the same reason. */
+.v3-rg-arc {
+  font-family: var(--font-main); font-size: 58px; font-weight: 700; letter-spacing: 0.14em;
+  opacity: 0.9;
+}
+.v3-rate-group:hover .v3-rg-arc { opacity: 1; }
+/* "_._": the rating's shape, before there is one. The number's face, dim. */
+.v3-rg-blank {
+  font-family: var(--font-main); font-size: 180px; font-weight: 800; letter-spacing: -0.03em;
+  fill: rgba(232,226,214,0.28);
+}
+/* Rated or written: the middle belongs to the number / the word. The arc
+   stays as the button's label, in the gold disc's dark ink when rated — a
+   CSS fill, which wins over the gradient attribute. */
+.v3-rate-group:has(.v3-rg-rate.is-rated) .v3-rg-blank,
+.v3-rate-group:has(.v3-rg-rate.is-written) .v3-rg-blank { display: none; }
+.v3-rate-group:has(.v3-rg-rate.is-rated) .v3-rg-arc { fill: rgba(22,19,13,0.6); }
+/* Rated: dark ink on the gold disc — number over the discs. */
+.v3-rg-rate.is-rated { color: #16130d; --vinyl-empty: rgba(22,19,13,0.28); --star: #16130d; }
+.v3-rg-num { font-size: 34px; font-weight: 800; line-height: 1; letter-spacing: -0.03em; }
+.v3-rg-rate.is-rated .hstars { gap: 2px; }
+.v3-rg-btn { gap: 5px; transition: color .15s; }
+.v3-rg-btn svg { width: 17px; height: 17px; }
+/* The lobes' labels sit OUTSIDE the bubbles (Eric, 2026-09-18): above the two
+   upper lobes, below the two lower ones, so each bubble holds its glyph alone.
+   Absolutely placed off the button, so the glyph stays centred in the lobe;
+   they are children of the button, so they still take its hover / .on colour
+   and a tap on the word is a tap on the lobe. The lower pair hang past the
+   drawing's box — .v3-rate-group's margin-bottom is their room. */
+.v3-rg-lbl {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  font-size: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em;
+  white-space: nowrap; line-height: 1;
+}
+.v3-rg-btn--tl .v3-rg-lbl, .v3-rg-btn--tr .v3-rg-lbl { bottom: calc(100% + 5px); }
+.v3-rg-btn--bl .v3-rg-lbl, .v3-rg-btn--br .v3-rg-lbl { top: calc(100% + 5px); }
+.v3-rg-btn:hover { color: #fff; }
+.v3-rg-btn.on { color: var(--star, #e8a83c); }
+.v3-rg-btn--tl { left: 0;      top: 45.73%; width: 18.76%; height: 24.17%; }
+.v3-rg-btn--tr { left: 81.24%; top: 45.73%; width: 18.76%; height: 24.17%; }
+.v3-rg-btn--bl { left: 26.47%; top: 77.5%;  width: 22.09%; height: 22.4%; }  /* the lower lobe, read off RateGroupnew2.svg */
+.v3-rg-btn--br { left: 51.40%; top: 77.5%;  width: 22.09%; height: 22.4%; }
+/* The artist page has no log control here (its corner Favorite pill is it). */
+.s-home-v3--artist .v3-rate-group { display: none; }
 .s-home-v3--review.s-home-v3--album .v3-rev-cta {
   flex: 1 1 auto;
   width: auto;              /* was fit-content — that's what kept it text-sized */
@@ -5083,6 +5241,10 @@ body.sd-skin-furry .v3-body { padding-top: 40px; }
   width: var(--song-rate-w); justify-content: flex-end;
   color: var(--star); font-size: 11.5px; font-weight: 700; font-family: var(--font-mono);
 }
+/* A favourited song's TRACK NUMBER is a heart (Eric, 2026-09-18), in the
+   number cell, so the columns hold. */
+.v3-song-fav { display: inline-flex; align-items: center; justify-content: center; color: #ff5c8a; }
+.v3-song-fav svg { width: 11px; height: 11px; fill: currentColor; }
 /* "View all N songs" — under the eighth row of a longer album. Text, not a
    pill: it belongs to the list, same gutter and hairline as the rows above. */
 .v3-songs-more {
@@ -5112,11 +5274,12 @@ body.sd-skin-furry .v3-body { padding-top: 40px; }
 /* Friend-rec tag — social proof, so it sits with the REVIEWS (below the
    tracklist, directly above the filter tabs), not up by the CTA. It aligns to
    the review list's 12px gutter and is hand-mode agnostic there. */
+/* No bubble (Eric, 2026-09-18) — the photo and the line, bare, on the list's
+   gutter; it was a pill with a fill and a hairline. */
 .v3-rev-rec {
   display: flex; align-items: center; gap: 8px; width: fit-content;
-  margin: 14px 12px 0; padding: 5px 12px 5px 5px;
-  background: rgba(232,226,214,0.06); border: 1px solid rgba(255,255,255,0.07);
-  border-radius: 999px; font-size: 11.5px; color: rgba(232,226,214,0.75);
+  margin: 14px 12px 0; padding: 0;
+  font-size: 11.5px; color: rgba(232,226,214,0.75);
 }
 .v3-rev-rec[hidden] { display: none; }
 /* The pill supplies the gap above the filters when it shows */
@@ -5171,13 +5334,21 @@ body.sd-skin-furry .v3-body { padding-top: 40px; }
    review: it reads as one continuous list with one row lit up. Its own
    `.v3-rev-pin-chip` says why it's lit, so it needs no border to explain
    itself.
-   The negative margin has to match `.v3-rev-list`'s gutter — change one and
-   change the other, or the band goes lopsided. */
-.v3-rev-card--pinned {
-  margin-left: -12px; margin-right: -12px;
-  padding-left: 12px; padding-right: 12px;
+   ⚠️ EDGE TO EDGE (Eric, 2026-09-15): the band runs to the SCREEN's sides,
+   not just past the list's gutter, so `--rev-bleed` is the list's 12px plus
+   the panel's 10px on the album page. The artist page's panel has no side
+   padding, so there it is the 12 alone. Change a gutter, change this.
+   ⚠️ `.v3-rev-card.v3-rev-card--pinned`, two classes: the grid rule for
+   `.v3-rev-card` below sets `padding: 11px 0` and comes later in the file, so
+   a one-class rule lost its side padding and the tint began on the text's
+   own edge — which is how this shipped looking like a box hugging the words. */
+.v3-rev-card.v3-rev-card--pinned {
+  --rev-bleed: 12px;
+  margin-left: calc(-1 * var(--rev-bleed)); margin-right: calc(-1 * var(--rev-bleed));
+  padding-left: var(--rev-bleed); padding-right: var(--rev-bleed);
   background: rgba(232,168,60,0.07);
 }
+.s-home-v3--album .v3-rev-card.v3-rev-card--pinned { --rev-bleed: 22px; }
 .v3-rev-pin-chip {
   font-family: var(--font-mono); font-size: 7.5px; letter-spacing: 0.3px;
   color: #16130d; background: var(--star);
@@ -5195,21 +5366,76 @@ body.sd-skin-furry .v3-body { padding-top: 40px; }
 .v3-rev-card {
   padding: 11px 0;
   display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px;
-  grid-template-areas: "top big" "text big" "foot foot";
-  /* ⚠️ `auto 1fr`: the score column spans rows 1–2 and is taller than a short
-     review, and with two auto rows the grid split its excess between them —
+  grid-template-areas: "top big" "rec big" "text big" "foot foot";
+  /* ⚠️ `auto 1fr`: the score column spans rows 1–3 and is taller than a short
+     review, and with all-auto rows the grid split its excess between them —
      which pushed the text down and read as "centred". The text row takes all
-     of it, so the text sits under the name whatever its length. */
-  grid-template-rows: auto 1fr auto;
+     of it, so the text sits under the name whatever its length.
+     `rec` is the record line (home feed cards only); with nothing in it the
+     row is 0 tall and there is no row-gap, so the album page's cards are
+     laid out exactly as before. */
+  grid-template-rows: auto auto 1fr auto;
   align-items: start;
 }
+/* The record line — a feed card's object, under its subject: a square cover
+   beneath the round photo (the app's shape rule), with album (regular, a step
+   larger) over artist (bold) over year (mono) beside it. Taps to the album.
+   ⚠️ THE COVER IS THE LIKE BUTTON'S TWIN (Eric, 2026-09-14): the like is as
+   wide as the records row — five 9px discs (halfStars(r, 13) → round(13 ×
+   .72)) with four 2px gaps = 53px — and square, so the cover is 53px. Where
+   the score column sits relative to it is the feed card's business (see the
+   `.v3-rev-card--feed` object-row block below the light overrides). */
+.v3-rev-record {
+  grid-area: rec; display: flex; align-items: center; gap: 10px;
+  margin-top: 0; min-width: 0; cursor: pointer;
+}
+.v3-rev-record-art {
+  width: 53px; height: 53px; border-radius: 7px; flex-shrink: 0;
+  background: #333 center/cover no-repeat;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.08);
+}
+.v3-rev-record-who { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+/* YEAR · ALBUM on one line, the artist under it (Eric, 2026-09-16). All DM
+   Sans — the year left its mono. The album name is the only elastic thing:
+   it shrinks and its overflow FADES at the right edge (`.is-long`, measured
+   by markLongReviews) instead of ending in an ellipsis. */
+.v3-rev-record-line { display: flex; align-items: baseline; gap: 5px; min-width: 0; max-width: 100%; }
+.v3-rev-record-album, .v3-rev-record-artist, .v3-rev-record-year {
+  font-family: var(--font-main); white-space: nowrap; overflow: hidden; line-height: 1.2;
+}
+.v3-rev-record-artist { text-overflow: ellipsis; }
+.v3-rev-record-album  { font-size: 13px; font-weight: 400; color: rgba(232,226,214,0.92); min-width: 0; flex-shrink: 1; }
+.v3-rev-record-album.is-long {
+  -webkit-mask-image: linear-gradient(to right, #000 62%, transparent 100%);
+          mask-image: linear-gradient(to right, #000 62%, transparent 100%);
+}
+.v3-rev-record-artist { font-size: 11px; font-weight: 700; color: rgba(232,226,214,0.6); }
+.v3-rev-record-year   { font-size: 11px; font-weight: 500; flex-shrink: 0; color: rgba(232,226,214,0.45); }
+/* The year LEFT of the album name (Eric, 2026-09-17 — it went on the right
+   for an hour first). It never shrinks; the album does — so when the album
+   has had to give way, markLongReviews drops the year instead (`.no-year`)
+   and only then lets the name fade. A long title beats a year. */
+.v3-rev-record-line.no-year .v3-rev-record-year--auto { display: none; }
+.v3-rev-record:hover .v3-rev-record-album { text-decoration: underline; text-underline-offset: 2px; }
+/* A record line above the text wants a little more air than the name did. */
+.v3-rev-record + .v3-rev-text { margin-top: 8px; }
 .v3-rev-card-top { grid-area: top; display: flex; align-items: center; gap: 9px; margin-bottom: 0; }
 .v3-rev-text { grid-area: text; }
 .v3-rev-foot { grid-area: foot; }
-.v3-rev-who { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.v3-rev-name-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
+/* ONE LINE (Eric, 2026-09-14): name · @handle · when run along a single
+   baseline instead of stacking — cleaner on the feed card, where the byline
+   sits over the record row, and on the album page's cards the same way. The
+   name is the only elastic thing: it ellipses, the handle and time never
+   wrap. The review page's hero keeps the stack (its 56px photo wants two
+   lines beside it). */
+.v3-rev-who { flex: 1; min-width: 0; display: flex; flex-direction: row; align-items: baseline; gap: 6px; }
+.v3-rev-name-row { display: flex; align-items: center; gap: 6px; min-width: 0; flex-shrink: 1; }
+.v3-rev-sub { flex-shrink: 0; }
+/* The byline is DM Sans end to end (Eric, 2026-09-17): the name used to
+   INHERIT — so Hank's skin set it in Crimson — beside a mono @handle. Both are
+   pinned now so no persona font can leak in. */
 .v3-rev-sub {
-  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.04em;
+  font-family: var(--font-main); font-size: 10.5px; font-weight: 500;
   color: rgba(232,226,214,0.4);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
@@ -5249,7 +5475,7 @@ body.sd-skin-furry .v3-body { padding-top: 40px; }
   box-shadow: 0 0 0 1px rgba(255,255,255,0.08);
 }
 .v3-rev-name {
-  font-size: 12.5px; font-weight: 700;
+  font-family: var(--font-main); font-size: 12.5px; font-weight: 700;
   color: rgba(232,226,214,0.9);
   /* ⚠️ The name is the only elastic thing in this row. The pills grew a step,
      and on the PINNED card they share the line with the "from your feed" chip
@@ -5287,6 +5513,7 @@ body.sd-skin-furry .v3-body { padding-top: 40px; }
    glyph. `.is-long` is set by populateReviewList only on cards that really
    overflow, so a short review is never dimmed. */
 .v3-rev-text {
+  white-space: pre-line;                              /* reviews can be LISTS — the pool carries real newlines */
   margin-top: 5px;                                    /* the score column already sets the measure */
   font-size: 11.5px; line-height: 1.4; color: rgba(232,226,214,0.68);
   max-height: calc(1.4em * 5); overflow: hidden;              /* five lines (was six) — a long review fades sooner */
@@ -5318,7 +5545,7 @@ body.sd-skin-furry .v3-body { padding-top: 40px; }
    light album page does, so the page reads as the album's. The reviewer's
    photo is ringed in the album accent — the one place on the page the person
    and the record share a colour. The text is the app's review voice
-   (Crimson Text) at reading size, and it is NEVER clamped here: the card
+   (DM Sans — the serif came off 2026-09-16) at reading size, and it is NEVER clamped here: the card
    was the taste, this is the thing. */
 /* A CROSS-FADE, both ways (2026-09-11 — the flying card was jarring): only the
    CONTENT fades (the .v3-body), never the shell, so the album colour behind
@@ -5336,10 +5563,16 @@ body.sd-skin-furry .v3-body { padding-top: 40px; }
 .s-home-v3--rvp-out:not(.s-home-v3--rvp) .v3-bento,
 .s-home-v3--rvp-out:not(.s-home-v3--rvp) .v3-review-panel { animation: none; opacity: 0; transition: opacity .2s ease-out; }
 .s-home-v3--rvp.s-home-v3--rvp-out .v3-rvp-panel { opacity: 0; transition: opacity .2s ease-out; animation: none; }
-.s-home-v3--rvp .v3-rvp-panel { animation: rvpIn .3s ease-out both; }
-:is(.s-rvp, .s-home-v3--rvp) .v3-body { animation: rvpIn .34s ease-out both; }
+.s-home-v3--rvp .v3-rvp-panel { animation: rvpIn .3s ease-out backwards; }   /* `backwards`, NOT `both` — see the blur note just below; `both` crept back here and blurred the in-place page (2026-09-18) */
+/* ⚠️ `backwards`, not `both` (2026-09-16): the page read BLURRY on the phone.
+   A fill-forwards animation on the scrolling body — an element that already
+   carries a mask — keeps it on a compositing layer after the fade, and WebKit
+   rasterises that layer's text at the un-scaled size inside the scaled phone
+   wrap. The end state is opacity 1, the natural value, so `backwards` loses
+   nothing and releases the layer when the fade ends. */
+:is(.s-rvp, .s-home-v3--rvp) .v3-body { animation: rvpIn .34s ease-out backwards; }
 @keyframes rvpIn { from { opacity: 0; } to { opacity: 1; } }
-body.sd-return .s-home-v3--review .v3-body { animation: rvpIn .34s ease-out both; }
+body.sd-return .s-home-v3--review .v3-body { animation: rvpIn .34s ease-out backwards; }
 @media (prefers-reduced-motion: reduce) { :is(.s-rvp, .s-home-v3--rvp) .v3-body, body.sd-return .s-home-v3--review .v3-body { animation: none; } }
 /* ⚠️ The fallback is DARK. The ink on this page is hard-coded light (like the
    album page's review panel), and the palette arrives a beat after the page
@@ -5360,39 +5593,6 @@ body.sd-return .s-home-v3--review .v3-body { animation: rvpIn .34s ease-out both
 :is(.s-rvp, .s-home-v3--rvp).s-home-v3--light .v3-up.is-on svg { fill: rgba(232,168,60,0.2); }
 .rvp-scroll { padding: 16px 12px 96px; }                      /* the back pill sat hard under the header (2026-09-11) */
 .rvp-scroll > .plp-back-pill { margin-bottom: 16px; }
-/* ── The review page's hero is the CARD, larger (2026-09-11) ──────────────
-   Built by revCardHtml with `big` and this class; every measure steps up and
-   the text runs full width at reading size, unclamped. Not tappable — it is
-   already the page (cmtCardTap ignores it). */
-.v3-rev-card--hero { padding: 4px 0 16px; cursor: default; column-gap: 14px; }
-.v3-rev-card--hero .v3-rev-av { width: 56px; height: 56px; }
-.v3-rev-card--hero .v3-rev-card-top { gap: 12px; }
-.v3-rev-card--hero .v3-rev-who { gap: 3px; }
-.v3-rev-card--hero .v3-rev-name { font-size: 16px; }
-.v3-rev-card--hero .v3-rev-sub { font-size: 10.5px; }
-.v3-rev-card--hero .v3-rev-big { gap: 5px; }
-.v3-rev-card--hero .v3-rev-big-n { font-size: 40px; }
-.v3-rev-card--hero .v3-rev-big .hstars { gap: 3px; }
-/* The like a size smaller than the card's, and no comment pill (the count is
-   in the Comments heading below). Text 13.5px. */
-/* A HEART here (the card keeps its thumb), 60% of the column and square, and
-   the review's share button under it at the same size. */
-.v3-rev-card--hero .v3-rev-big .v3-up--like { align-self: flex-end; width: 60%; font-size: 10.5px; margin-top: 4px; border-radius: 10px; padding: 3px; gap: 2px; }
-.v3-rev-card--hero .v3-rev-big .v3-up--like svg { width: 16px; height: 16px; }
-.v3-rev-card--hero .v3-rev-big .v3-up--heart.is-on { color: #ff5c8a; background: rgba(255,92,138,0.14); }
-.v3-rev-card--hero .v3-rev-big .v3-up--heart.is-on svg { fill: currentColor; }
-.v3-rev-card--hero .v3-rev-big .sd-share-btn--hero {
-  align-self: flex-end; width: 60%; height: auto; aspect-ratio: 1; margin-top: 4px;
-  border-radius: 10px; color: rgba(232,226,214,0.6);
-}
-.v3-rev-card--hero .v3-rev-big .sd-share-btn--hero svg { width: 16px; height: 16px; }
-.v3-rev-card--hero .v3-rev-text {
-  margin-top: 10px; max-height: none;
-  font-size: 13.5px; line-height: 1.5; color: rgba(232,226,214,0.92);
-  white-space: pre-wrap; overflow-wrap: anywhere;
-  -webkit-mask-image: none; mask-image: none;
-}
-.v3-rev-card--hero .v3-rev-foot { margin-top: 12px; }
 .rvp-cmts-hd { margin: 14px 0 2px; font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(232,226,214,0.45); }
 .rvp-cmts-n { margin-left: 4px; color: rgba(232,226,214,0.7); }
 
@@ -5406,43 +5606,65 @@ body.sd-return .s-home-v3--review .v3-body { animation: rvpIn .34s ease-out both
    started at the card's own scale (10px body, 8.5px actions) and once you are
    reading a conversation rather than scanning a list, that is too small to
    follow — the card is a summary, the thread is the thing you came for. */
-.v3-cmt { display: flex; align-items: flex-start; gap: 8px; padding: 5px 0; }
+/* THE REVIEW CARD'S SHAPE (Eric, 2026-09-17 — the face-beside-a-column row
+   with "♥ n" under the text read as Reddit): a top row of photo · name over
+   @handle · heart · time, then the text FULL WIDTH underneath — the page
+   card minus the score and the share, a step smaller than the hero above it.
+   A hairline between rows, like the review list. */
+.v3-cmt { padding: 13px 0 14px; border-top: 1px solid rgba(232,226,214,0.07); }
+.v3-cmt-add + .v3-cmt { border-top: none; }
+.v3-cmt-top { display: flex; align-items: center; gap: 9px; min-width: 0; }
 .v3-cmt-av {
-  width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0;
-  margin-top: 1px;
+  width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
   background-size: cover; background-position: center;
   background-color: rgba(255,255,255,0.08);
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.08);
 }
-.v3-cmt-main { flex: 1; min-width: 0; }
-.v3-cmt-hd { display: flex; align-items: baseline; gap: 6px; }
-.v3-cmt-user { font-size: 10.5px; font-weight: 700; color: rgba(232,226,214,0.75); }
+.v3-cmt-who { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.v3-cmt-user {
+  font-family: var(--font-main); font-size: 12px; font-weight: 700; color: rgba(232,226,214,0.9);
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.v3-cmt-handle {
+  font-family: var(--font-main); font-size: 10.5px; font-weight: 500; color: rgba(232,226,214,0.4);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 .v3-cmt-ago {
-  font-family: var(--font-mono); font-size: 9px;
-  color: rgba(232,226,214,0.24);
+  flex-shrink: 0; min-width: 20px; text-align: right;
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.04em;
+  color: rgba(232,226,214,0.4); white-space: nowrap;
 }
 .v3-cmt-text {
-  font-size: 11.5px; line-height: 1.4;
-  color: rgba(232,226,214,0.56);
-  margin: 2px 0 3px;
+  font-family: var(--font-main); font-size: 12.5px; line-height: 1.45;   /* pinned: DM Sans, never a serif (Eric, 2026-09-16) */
+  color: rgba(232,226,214,0.78);
+  margin: 9px 0 0;
   overflow-wrap: anywhere;   /* a pasted handle shouldn't widen the card */
 }
 .v3-cmt--mine .v3-cmt-user { color: var(--star); }
-.v3-cmt-acts { display: flex; align-items: center; gap: 13px; }
+.v3-cmt-acts { display: flex; align-items: center; gap: 13px; margin-top: 6px; }
 .v3-cmt-like, .v3-cmt-reply {
   border: none; background: none; padding: 0; cursor: pointer;
   font-family: var(--font-mono); font-size: 10px; letter-spacing: .02em;
   color: rgba(232,226,214,0.32);
   transition: color .14s;
 }
-.v3-cmt-like:hover, .v3-cmt-reply:hover { color: rgba(232,226,214,0.72); }
-.v3-cmt-like.is-on { color: var(--star); }
+/* The card's bare heart-and-number, in the byline's ink; pink when on. */
+.v3-cmt-like {
+  flex-shrink: 0; display: inline-flex; align-items: center; gap: 5px; padding: 3px 0; margin-right: 4px;
+  font-family: var(--font-main); font-size: 12px; letter-spacing: 0; color: rgba(232,226,214,0.4);
+}
+.v3-cmt-like svg { width: 17px; height: 17px; }
+.v3-cmt-like span { min-width: 14px; text-align: left; }
+.v3-cmt-like:hover, .v3-cmt-reply:hover { color: rgba(232,226,214,0.9); }
+.v3-cmt-like.is-on { color: #ff5c8a; }
+.v3-cmt-like.is-on svg { fill: currentColor; }
 
 /* Default is CMT_DEFAULT threads; the rest hide behind this, and the count it
    promises includes the replies that go down with them. */
 .v3-cmt-more {
   display: block; width: 100%; text-align: left;
   border: none; background: none; cursor: pointer;
-  padding: 7px 0 5px 26px;
+  padding: 7px 0 5px;                                /* flush left: the text runs full width now */
   font-family: var(--font-mono); font-size: 10.5px;
   color: rgba(232,226,214,0.45);
   transition: color .14s;
@@ -5505,6 +5727,472 @@ body.sd-return .s-home-v3--review .v3-body { animation: rvpIn .34s ease-out both
 .s-home-v3--light .v3-rev-likes { color: rgba(232,226,214,0.28); }
 .s-home-v3--light .v3-rev-text { color: rgba(232,226,214,0.5); }
 .s-home-v3--light .v3-rev-empty { color: rgba(232,226,214,0.4); }
+
+/* ── The card on the HOME FEED (2026-09-14) ──────────────────────────────
+   Review and rating rows in the home feed are this same card (renderFriendFeed
+   → revCardHtml, `.v3-rev-card--feed`). Every `.v3-rev-*` colour above is
+   hard-coded for the album page's surface — the album's procedural colour,
+   dark in both themes, which is why the `--light` rules just above are still
+   light ink. The feed sits on the SCREEN bg, cream in the light theme, so
+   this card re-inks itself off the shared --sd-* tokens, the way `.v3-up--feed`
+   and `--vinyl-empty` already do. Same trap, same fix: the value follows the
+   surface, not the theme. Specificity (0,3,0) beats the `--light` overrides
+   in both directions.
+   ⚠️ 3px sides (Eric, 2026-09-15): the record row now carries cover ·
+   titles · score · like across it and needs the width, so the card sits a
+   hair inside the bento's edges — `.s-home-v3 .v3-scroll-area` sets those.
+   Flush with the bento was tried and read as too much.
+   Top and bottom went up 5px each (Eric, 2026-09-15): with the time
+   headers gone the cards sit straight on each other and wanted the air. */
+.s-home-v3 .v3-rev-card.v3-rev-card--feed {
+  /* 20 top (was 17; Eric, 2026-09-18): the byline moved 3px DOWN toward the
+     record row — 3 more here, 3 less in --rev-obj-gap — so it sits closer to
+     its content and everything below it stays exactly where it was.
+     19 bottom: the divider is a pseudo now, not a border, so the px it took
+     comes back as padding. */
+  padding: 20px 3px 19px;
+  position: relative;
+}
+/* The divider runs the FULL width of the screen (Eric, 2026-09-17), not the
+   card's content width: a ::after hung 10px past each side of the card, which
+   is exactly `.v3-scroll-area`'s side padding — so it ends on the screen
+   edge and, staying inside the scroller's padding box, adds no sideways
+   scroll. Change that padding and change this. */
+.s-home-v3 .v3-rev-card.v3-rev-card--feed::after {
+  content: ''; position: absolute; left: -10px; right: -10px; bottom: 0; height: 1px;
+  background: var(--sd-line); pointer-events: none;
+}
+.s-home-v3 .v3-rev-card.v3-rev-card--feed:last-child::after { display: none; }
+.s-home-v3 .v3-rev-card--feed .v3-rev-name  { color: var(--sd-ink); }
+.s-home-v3 .v3-rev-card--feed .v3-rev-sub   { color: var(--sd-ink3); }
+.s-home-v3 .v3-rev-card--feed .v3-rev-big-n { color: var(--sd-ink); }
+.s-home-v3 .v3-rev-card--feed .v3-rev-text  { color: var(--sd-ink2); }
+.s-home-v3--light .v3-rev-card--feed .v3-rev-text { color: rgba(26,18,8,0.9); }   /* 90% ink on cream (Eric, 2026-09-18) — --sd-ink2 read too faint for a paragraph */
+.s-home-v3 .v3-rev-card--feed .v3-rev-av,
+.s-home-v3 .v3-rev-card--feed .v3-rev-record-art { box-shadow: 0 0 0 1px var(--sd-line); background-color: var(--sd-card); }
+.s-home-v3 .v3-rev-card--feed .v3-rev-record-album  { color: var(--sd-ink); }
+.s-home-v3 .v3-rev-card--feed .v3-rev-record-artist { color: var(--sd-ink2); }
+.s-home-v3 .v3-rev-card--feed .v3-rev-record-year   { color: var(--sd-ink3); }
+/* ── ACTIVITY CARDS (Eric, 2026-09-15): the feed's other verbs, in the card's
+   clothes — see `act` in renderFriendFeed. The photo carries the inbox's kind
+   badge, a step down from the inbox's 20px so it reads as a corner mark on
+   the 36px photo, not a second avatar. The verb sits where the review card's
+   number and discs sit (rows 2–3, column 2), glyph over a mono label, in the
+   byline's ink so it reads as a caption, not a button. */
+.s-home-v3 .v3-rev-card--act .v3-rev-av { position: relative; }
+.s-home-v3 .v3-rev-card--act .ntf-badge { width: 17px; height: 17px; right: -2px; bottom: -2px; }
+.s-home-v3 .v3-rev-card--act .ntf-badge svg { width: 9.5px; height: 9.5px; }
+.s-home-v3 .v3-rev-card--act .v3-rev-record-art--round { border-radius: 50%; }
+.s-home-v3 .v3-rev-card--act .v3-rev-sub i { font-style: normal; color: var(--sd-ink2); }
+/* ⚠️ On a playlist card the byline's long token is the LIST's name, in the
+   sub — so here the sub is the elastic one and the person's name holds, the
+   reverse of the review card (where the sub never wraps and the name gives). */
+.s-home-v3 .v3-rev-card--act .v3-rev-name-row { flex-shrink: 0; }
+.s-home-v3 .v3-rev-card--act .v3-rev-sub { flex-shrink: 1; min-width: 0; }
+/* ⚠️ Since the flip (2026-09-16) the record is on the RIGHT, so the verb sits
+   where the review card's SCORE sits — the `score` area, left, under the
+   photo — not in a hard-coded row/column that would now land on the cover. */
+.s-home-v3 .v3-rev-card--act .v3-rev-act {
+  grid-area: score; justify-self: start; align-self: center;
+  margin-top: var(--rev-obj-gap);
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  min-width: 53px; padding: 0 2px;
+  /* DM Sans, not mono (Eric, 2026-09-18) — same family as the score it
+     stands in for. Still small caps-ish: uppercase, tracked. */
+  font-family: var(--font-main); font-size: 8.5px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--sd-ink3);
+  /* 3px down (Eric, 2026-09-18): centred on the two tracks it sat a hair
+     above the album/artist pair's centre — the same correction the review
+     card's score got (8px there, since the number is taller). `top`, not a
+     transform — see .hstars for why. */
+  position: relative; top: 3px;
+}
+.s-home-v3 .v3-rev-card--act .v3-rev-act svg { width: 20px; height: 20px; color: var(--sd-ink2); }
+/* The pills: `.v3-up` is dark-surface ink too (see the ⚠️ above `.v3-up--feed`). */
+.s-home-v3 .v3-rev-card--feed .v3-up { background: var(--sd-pill); color: var(--sd-ink3); }
+.s-home-v3 .v3-rev-card--feed .v3-up:hover { background: var(--sd-pill-hi); color: var(--sd-ink); }
+.s-home-v3 .v3-rev-card--feed .v3-up.is-on { background: rgba(232,168,60,0.18); color: var(--star); }
+/* `is-open` on a card means nothing (the thread lives on the album page /
+   review page) — keep the resting look, in the feed's own colours. */
+.s-home-v3 .v3-rev-card--feed .v3-cmt-btn.is-open { background: var(--sd-pill); color: var(--sd-ink3); }
+/* Empty records follow the surface: cream here, so dark ink (the album-page
+   card forces the light value because ITS surface is dark). */
+.s-home-v3--light .v3-rev-card.v3-rev-card--feed { --vinyl-empty: rgba(26,18,8,0.62); }
+
+/* ── The feed card's SCORE SITS ON THE RECORD'S ROW (Eric, 2026-09-14) ──
+   With the score column starting beside the photo the card read "drumkid
+   4.5" — the number paired with the person, and what was being rated was a
+   row further down. On the album page that pairing is right (the record is
+   the page); on the feed the record is the news. So here the person is a
+   byline — photo · name · @handle · when, the full width of the card — and
+   the score sits on the record row.
+   ⚠️ A CLEAN REVIEW UNDERNEATH (Eric, 2026-09-15): the score used to stack
+   DOWN the right edge — number, discs, like, comment — three things tall
+   beside a one-line review, which left the card mostly air. Now the LIKE and
+   the COMMENT COUNT ride the top row (revCardInner `actsTop`), between the
+   byline and the time, as a bare heart-and-number and bubble-and-number. The
+   record row is cover · album/artist/year with NUMBER OVER DISCS on the
+   right, centred on the cover's 53px. The TEXT then runs the full width of
+   the card under the row with nothing beside it. `.v3-rev-big` is
+   `display: contents` so the number and discs are the card's own grid items
+   (revCardInner is shared with the album page, whose card is untouched).
+
+       top   top
+       rec   n
+       rec   stars
+       text  text
+       foot  foot
+*/
+/* ⚠️ FLIPPED (Eric, 2026-09-16), after the album page's card landed with its
+   score on the left and he liked it: the record row is now SCORE on the left
+   — the 26px number with the discs beside it, one line, under the photo, the
+   same row the album page's card has — and the RECORD on the right, mirrored:
+   the cover flush with the card's right edge (under the time), album /
+   artist / year to the LEFT of it, right-aligned. The two cards now share
+   one skeleton; the feed's just has the record filling the row's right half.
+
+       top    top
+       score  rec
+       text   text
+       foot   foot
+*/
+/* ⚠️ BASELINES ACROSS THE ROW (Eric, 2026-09-17): the album name sits on the
+   big number's baseline and the artist on the discs' — so the record row is
+   TWO grid rows (`score`/`rec` repeated, which makes each area span both),
+   and the score column and the record are SUBGRIDS in the row axis: number
+   and album name in the first track, discs and artist in the second, every
+   one of them `align-self: baseline`, which a subgrid shares with the parent
+   grid's row. Measured exact in Chrome (album = number to the hundredth,
+   artist = disc bottom). The old one-row version — two flex columns each
+   centred on the cover — was 3–5px off and could only ever be nudged.
+   ⚠️ The cover is 53px and the two text lines come to ~44px, so it would
+   have grown both rows and thrown the pairs apart. It is taken OUT of track
+   sizing with a symmetric negative margin (its margin box is under 0px tall,
+   so it contributes nothing) and `align-self: center` still centres its
+   border box on the two rows. The ~4.5px it overhangs each side is given
+   back in `--rev-obj-gap` (11 → 15.5) and the text's margin (13 → 17.5), so
+   byline → cover → text read at the same distances as before. */
+.s-home-v3 .v3-rev-card.v3-rev-card--feed {
+  --rev-obj-gap: 12.5px;                      /* air between the byline and the record row (15.5 − 3, see the padding note above) */
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    "top top"
+    "score rec"
+    "score rec"
+    "text text"
+    "foot foot";
+  grid-template-rows: auto auto auto 1fr auto;
+  column-gap: 12px;
+}
+/* The score: the number over the discs, left, each in its own shared row.
+   ⚠️ `transform: none` on the discs — `.hstars` carries a `translateY(10%)`
+   optical nudge for sitting BESIDE a number on one line; under one, aligned
+   to the artist's baseline, it just drops them a pixel below it. */
+.s-home-v3 .v3-rev-card--feed .v3-rev-big {
+  grid-area: score; display: grid; grid-template-rows: subgrid; grid-template-columns: auto;
+  align-items: baseline; justify-items: start; row-gap: 5px;
+  margin-top: var(--rev-obj-gap);
+  /* 8px DOWN (Eric, 2026-09-18): the number + discs block is taller than the
+     two title lines, so on shared baselines its centre sat above theirs. This
+     brings the two blocks' centres level. Paint-only — the baselines the grid
+     computes are untouched underneath, so the titles and the cover stay put.
+     → 9.75 once the number went 26 → 22.5: the number's baseline stays put,
+     so its top came down 3.5 and the block's centre with it by half that.
+     `top`, not a transform — a transform blurred the discs (see .hstars). */
+  position: relative; top: 9.75px;
+}
+.s-home-v3 .v3-rev-card--feed .v3-rev-big-n { font-size: 22.5px; grid-row: 1; }   /* the bento's size (was 26; Eric, 2026-09-18) */
+.s-home-v3 .v3-rev-card--feed .v3-rev-big .hstars { grid-row: 2; align-self: baseline; top: -0.5px; }   /* was 1px down (Eric, 2026-09-17), then 1.5 back up toward the number (2026-09-18). `top` (relative from .hstars), not a transform — the artist's baseline stays where it is */
+/* The record, mirrored: the cover in the second column (hard right, spanning
+   both rows, centred — see the note above on its margin), the titles in the
+   first, right-aligned so they hang off the cover's edge. `.v3-rev-record-who`
+   is `display: contents` so the album line and the artist are the subgrid's
+   own items; both stretch their track (`min-width: 0`) so a long album name
+   fades and a long artist ellipses instead of pushing the cover off the card. */
+.s-home-v3 .v3-rev-card--feed .v3-rev-record {
+  grid-area: rec; display: grid; grid-template-rows: subgrid;
+  grid-template-columns: minmax(0, 1fr) 53px; column-gap: 10px; row-gap: 5px;
+  align-items: baseline; justify-self: stretch; max-width: none;
+  margin-top: var(--rev-obj-gap); text-align: right;
+}
+.s-home-v3 .v3-rev-card--feed .v3-rev-record-art { grid-column: 2; grid-row: 1 / 3; align-self: center; margin: -60px 0; position: relative; top: 2px; }   /* 2px down (Eric, 2026-09-17) so the titles read centred on it; `top` (not a transform — see .hstars), nothing else moves */
+.s-home-v3 .v3-rev-card--feed .v3-rev-record-who { display: contents; }
+/* ⚠️ OPTICAL LIFTS (Eric, 2026-09-17), on top of the metric alignment above.
+   The grid puts both baselines exactly on their partners and it still read a
+   touch low: a row of circles wants to overshoot the baseline the way a round
+   letter does, so with the discs' bottom sitting dead on it the artist looks
+   sunk. So the artist comes up to meet the discs — Eric's call, not a
+   metric. The album line was lifted 1.5px too for an hour and came back
+   down (Eric, same day): it sits ON the number's baseline, `top: 0`. `top`
+   on a relative box moves the paint only; the tracks and the baseline groups
+   underneath are untouched, so these are the ONLY two numbers to turn. */
+.s-home-v3 .v3-rev-card--feed .v3-rev-record-line { grid-column: 1; grid-row: 1; justify-self: stretch; justify-content: flex-end; min-width: 0; position: relative; top: 0; }
+.s-home-v3 .v3-rev-card--feed .v3-rev-record-artist { grid-column: 1; grid-row: 2; justify-self: stretch; min-width: 0; max-width: 100%; position: relative; top: -1px; }
+/* ── The ACTIVITY cards wear the same geometry (Eric, 2026-09-18) ──────────
+   They share the record row with the review card, but have no 26px number in
+   the first track — so their two title lines sat ~10px closer together, the
+   cover overhung them by ~10px a side instead of ~4.5, and the byline and the
+   divider crowded it. Fixes, in order:
+   - the first track is held at the height it has on a review card, and the
+     album line sits at the FOOT of it (`align-self: end`), which is where the
+     review card's album baseline lands beside the number. So the album /
+     artist pair and the cover sit exactly as they do on a review.
+     ⚠️ That height is NOT the number's 22.5px: a subgrid's top margin
+     (`--rev-obj-gap`) and half its 5px row-gap (the parent has none, so the
+     difference lands as margin on the items) both live INSIDE the track —
+     measured 41px on a review card when the number was 26 = 26 + 12.5 + 2.5.
+     Written as that sum so it follows the number's size and the gap.
+   - a record with NO second line (a followed artist: "Artist" + name) spans
+     both tracks and centres on its round photo, instead of hanging off the
+     top of the pair.
+   - more room under the record: these cards end at the cover, where a review
+     goes on into its text, so the divider sat tight against it. */
+.s-home-v3 .v3-rev-card.v3-rev-card--feed.v3-rev-card--act {
+  grid-template-rows: auto minmax(calc(22.5px + var(--rev-obj-gap) + 2.5px), auto) auto 1fr auto;
+  padding-bottom: 26px;
+}
+.s-home-v3 .v3-rev-card--act .v3-rev-record-line { align-self: end; }
+.s-home-v3 .v3-rev-card--act .v3-rev-record-who > .v3-rev-record-line:only-child { grid-row: 1 / 3; align-self: center; }
+/* The top row's like and comment count: bare, in the byline's ink, the like
+   still a live button (it goes gold when it's yours), the comment a COUNT
+   only — taps fall through to the card, which opens the thread. Nothing to
+   say when the count is zero. */
+.s-home-v3 .v3-rev-card--feed .v3-rev-top-acts {
+  margin-left: auto; margin-right: 6px; flex-shrink: 0;
+  display: flex; align-items: center; gap: 9px;
+}
+/* ⚠️ THE HEART IS ALWAYS IN THE SAME SPOT (Eric, 2026-09-15). Comment count
+   first, then the like, so a card with no thread doesn't shift the heart; the
+   time is a fixed-width box, right-aligned, so "2h" and "11h" don't either;
+   and the like's own count sits in a fixed box AFTER the heart, so "8" and
+   "1.2k" leave the heart where it is. */
+/* The two boxes are sized to their usual contents — "11h", a two-digit count —
+   not their rare ones, so the heart sits close to the time; a "1.2k" like
+   count is what would push it, and that is fine. */
+.s-home-v3 .v3-rev-card--feed .v3-rev-top-acts + .v3-rev-time { margin-left: 0; min-width: 20px; text-align: right; }
+.s-home-v3 .v3-rev-card--feed .v3-rev-top-acts .v3-up--like .v3-up-n { min-width: 16px; text-align: left; }
+/* Two sizes up (Eric, 2026-09-15) so the heart is a real tap target: 19px
+   glyph, 13.5px count, and the 3px of vertical padding is hit area, not look. */
+.s-home-v3 .v3-rev-card--feed .v3-rev-top-acts .v3-up {
+  padding: 3px 0; border-radius: 0; gap: 5px;
+  background: transparent; color: var(--sd-ink3);
+  font-size: 13.5px;
+}
+.s-home-v3 .v3-rev-card--feed .v3-rev-top-acts .v3-up svg { width: 19px; height: 19px; }
+.s-home-v3 .v3-rev-card--feed .v3-rev-top-acts .v3-up--like:hover { background: transparent; color: var(--sd-ink); }
+/* The heart (RVP_HEART, the hero's), pink and filled when it's yours. */
+.s-home-v3 .v3-rev-card--feed .v3-rev-top-acts .v3-up--heart.is-on { background: transparent; color: #ff5c8a; }
+.s-home-v3 .v3-rev-card--feed .v3-rev-top-acts .v3-up--heart.is-on svg { fill: currentColor; }
+/* LIVE since 2026-09-18 (Eric): the comment pill opens the REVIEW PAGE
+   (feedOpenReview), where the card tap opens the album page — so it is a
+   real button now, shown even at zero, and no longer falls through to the
+   card. Its cursor and hover come from `.v3-up`. */
+.s-home-v3 .v3-rev-card--feed .v3-rev-top-acts .v3-up--cmtcol:hover { background: transparent; color: var(--sd-ink); }
+/* The TIME sits hard right on the top row (revCardInner `timeRight`), in the
+   byline's mono, on the name's line. */
+.s-home-v3 .v3-rev-card--feed .v3-rev-time {
+  margin-left: auto; align-self: center;
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.04em;
+  color: var(--sd-ink3); white-space: nowrap;
+}
+/* The text measure is narrower here (the comment runs beside it), and
+   `text-wrap: pretty` was reshuffling the last four lines into a ragged block
+   to avoid a short last line. Plain wrapping; revNoWidow's no-break space
+   still keeps the last line to two words at least.
+   FOUR LINES on the feed (Eric, 2026-09-15), a size up from the album
+   page's 11.5px: a longer review trails off into the fade, so you know there
+   is more, and a card is never taller than four lines of text. The fade is
+   steeper than the album page's five-line one because there is one line to
+   fade, not two.
+   RAGGED RIGHT. Justified was tried (2026-09-15) and, at this measure and
+   size, the word gaps read as holes — Eric's verdict, and it stands. Plain
+   wrapping, no `pretty` (it reshuffled the last lines of a ragged block), no
+   hyphenation; revNoWidow's no-break space still keeps the last line to two
+   words at least. */
+.s-home-v3 .v3-rev-card--feed .v3-rev-text {
+  font-family: var(--font-main);
+  font-size: 12.5px; line-height: 1.4; max-height: calc(1.4em * 4);
+  text-align: left; text-wrap: wrap;
+}
+.s-home-v3 .v3-rev-card--feed .v3-rev-text.is-long {
+  -webkit-mask-image: linear-gradient(to bottom, #000 55%, rgba(0,0,0,0.55) 76%, transparent 100%);
+          mask-image: linear-gradient(to bottom, #000 55%, rgba(0,0,0,0.55) 76%, transparent 100%);
+}
+/* More air between the record row and the review (Eric, 2026-09-15). */
+.s-home-v3 .v3-rev-card--feed .v3-rev-record + .v3-rev-text { margin-top: 21.5px; }   /* 13 + the cover's overhang (see the record row) + 4 more air under the lowered score (Eric, 2026-09-18) */
+
+/* ── The FEED'S CARD on the ALBUM / ARTIST page (Eric, 2026-09-16) ─────────
+   The home feed's review card is the look, so the album page's list wears
+   it: `.v3-rev-card--page` (populateReviewList passes it with the feed's
+   `timeRight` + `actsTop`). Same skeleton as `.v3-rev-card--feed` —
+
+       top    top        photo · name · @handle · [comments · heart] · time
+       score  score      4.5 ●●●●○  — the record's row, minus the record
+       text   text       the review, full width
+       foot   foot
+
+   — minus the record line: the album IS the page. With nothing on the left of
+   that row the score sits on the LEFT, under the photo, number and discs on
+   one line, so the card still reads down as who · what they gave · what they
+   said. (Right-aligned it hung under the time like a stray number.)
+   Ink stays the album surface's hard-coded warm white — this card sits on the
+   album's dark colour in both themes, so nothing here reads the --sd-* tokens;
+   the artist page's cream panel gets its `--light.--artist` re-inks below,
+   the way every other `.v3-rev-*` rule does.
+   ⚠️ Top and bottom padding only: `.v3-rev-card.v3-rev-card--pinned` owns the
+   sides (its edge-to-edge bleed), and this rule is later in the file at the
+   same specificity. */
+/* ⚠️ THE FEED'S CARD, MINUS THE RECORD (Eric, 2026-09-18): every measure
+   here is read off the home feed's review card as it finally landed —
+   20px over the byline, the number at the bento's 22.5px, the discs 4.5px
+   under it, the text 14.75px under the discs, 19px under the card — so the
+   two surfaces read as one card. The feed gets there with a subgrid, a cover
+   and two paint-only shifts; with no album to centre against, this one
+   just stacks, and the numbers below are what those shifts add up to
+   (number top = 12.5 gap + 2.5 half row-gap + 9.75 shift = 24.75 under the
+   byline; text top = 21.5 − 9.75 + 2.5 + 0.5 = 14.75 under the discs).
+   Change the feed's and change these. */
+.v3-rev-card.v3-rev-card--page {
+  --rev-obj-gap: 24.75px;
+  padding-top: 20px; padding-bottom: 19px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "top top"
+    "score score"
+    "text text"
+    "cmts cmts"
+    "foot foot";
+  grid-template-rows: auto auto 1fr auto auto;
+}
+/* STACKED (Eric, 2026-09-16): the number on top, the discs under it, both on
+   the card's left edge. */
+.v3-rev-card--page .v3-rev-big {
+  grid-area: score; justify-self: start;
+  flex-direction: column; align-items: flex-start; gap: 4.5px;
+  margin-top: var(--rev-obj-gap);
+}
+.v3-rev-card--page .v3-rev-big-n { font-size: 22.5px; }
+.v3-rev-card--page .v3-rev-big .hstars { align-self: flex-start; }
+.v3-rev-card--page .v3-rev-text {
+  margin-top: 14.75px;
+  font-family: var(--font-main);                    /* the feed's text, exactly: 12.5px, four lines, left */
+  font-size: 12.5px; line-height: 1.4; max-height: calc(1.4em * 4);
+  text-align: left; text-wrap: wrap;
+}
+.v3-rev-card--page .v3-rev-text.is-long {
+  -webkit-mask-image: linear-gradient(to bottom, #000 55%, rgba(0,0,0,0.55) 76%, transparent 100%);
+          mask-image: linear-gradient(to bottom, #000 55%, rgba(0,0,0,0.55) 76%, transparent 100%);
+}
+/* The top row's like and comment: the feed's bare heart-and-number and
+   bubble-and-number, in the byline's ink. Unlike the feed the comment pill is
+   LIVE here — this is the page with the thread, and the pill is how you
+   write one (cmtCompose). The heart is always in the same spot: comments
+   first, then the like, both with fixed count boxes, the time a fixed box
+   after. */
+.v3-rev-card--page .v3-rev-top-acts {
+  margin-left: auto; margin-right: 6px; flex-shrink: 0;
+  display: flex; align-items: center; gap: 9px;
+}
+.v3-rev-card--page .v3-rev-top-acts + .v3-rev-time { margin-left: 0; min-width: 20px; text-align: right; }
+.v3-rev-card--page .v3-rev-top-acts .v3-up--like .v3-up-n { min-width: 16px; text-align: left; }
+.v3-rev-card--page .v3-rev-top-acts .v3-up {
+  padding: 3px 0; border-radius: 0; gap: 5px;
+  background: transparent; color: rgba(232,226,214,0.4);
+  font-size: 13.5px;
+}
+.v3-rev-card--page .v3-rev-top-acts .v3-up svg { width: 19px; height: 19px; }
+.v3-rev-card--page .v3-rev-top-acts .v3-up:hover { background: transparent; color: rgba(232,226,214,0.9); }
+.v3-rev-card--page .v3-rev-top-acts .v3-up--heart.is-on { background: transparent; color: #ff5c8a; }
+.v3-rev-card--page .v3-rev-top-acts .v3-up--heart.is-on svg { fill: currentColor; }
+.v3-rev-card--page .v3-rev-top-acts .v3-cmt-btn.is-open { background: transparent; color: rgba(232,226,214,0.9); }
+.v3-rev-card--page .v3-rev-top-acts .v3-up--cmtcol[data-n="0"] { display: none; }
+.v3-rev-card--page .v3-rev-time {
+  margin-left: auto; align-self: center;
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.04em;
+  color: rgba(232,226,214,0.4); white-space: nowrap;
+}
+/* The artist page's cream panel: dark ink for the top row's acts and time. */
+.s-home-v3--light.s-home-v3--artist .v3-rev-card--page .v3-rev-top-acts .v3-up { color: rgba(26,18,8,0.42); }
+.s-home-v3--light.s-home-v3--artist .v3-rev-card--page .v3-rev-top-acts .v3-up:hover,
+.s-home-v3--light.s-home-v3--artist .v3-rev-card--page .v3-rev-top-acts .v3-cmt-btn.is-open { color: rgba(26,18,8,0.85); }
+.s-home-v3--light.s-home-v3--artist .v3-rev-card--page .v3-rev-top-acts .v3-up--heart.is-on { color: #e0396e; }
+.s-home-v3--light.s-home-v3--artist .v3-rev-card--page .v3-rev-time { color: rgba(26,18,8,0.42); }
+
+/* ── The first two comments, on the card (Eric, 2026-09-16) ─────────────
+   `preview` on revCardInner: two root comments under the text — face · name ·
+   text, clamped to two lines — and "View all n comments" when there are more.
+   A taste of the thread before the tap that opens it; the rows aren't
+   tappable on their own, the card is. Album-surface ink, artist re-inks below. */
+.v3-rev-cmts { grid-area: cmts; margin-top: 10px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.v3-rev-cmt { display: flex; align-items: flex-start; gap: 7px; min-width: 0; }
+.v3-rev-cmt-av {
+  width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0; margin-top: 1px;
+  background: rgba(255,255,255,0.08) center/cover no-repeat;
+}
+/* TWO LINES, wrapped (`.is-long` set by markLongReviews, like the review
+   text). DM Sans pinned explicitly — no serif on any comment, ever. */
+.v3-rev-cmt-body {
+  min-width: 0; flex: 1; font-family: var(--font-main); font-size: 11.5px; line-height: 1.4; color: rgba(232,226,214,0.6);
+  max-height: calc(1.4em * 2); overflow: hidden; overflow-wrap: anywhere;
+}
+/* Fades at the BOTTOM now, like the review text above it (Eric, 2026-09-17 —
+   it was one line fading off the right edge): two lines, the second dimming
+   out when there's more. */
+.v3-rev-cmt-body.is-long {
+  -webkit-mask-image: linear-gradient(to bottom, #000 50%, rgba(0,0,0,0.5) 78%, transparent 100%);
+          mask-image: linear-gradient(to bottom, #000 50%, rgba(0,0,0,0.5) 78%, transparent 100%);
+}
+.v3-rev-cmt-body b { font-weight: 700; color: rgba(232,226,214,0.85); margin-right: 2px; }
+.v3-rev-cmt-more { font-family: var(--font-main); font-size: 11px; color: rgba(232,226,214,0.38); }
+.s-home-v3--light.s-home-v3--artist .v3-rev-cmt-av { background-color: rgba(26,18,8,0.08); }
+.s-home-v3--light.s-home-v3--artist .v3-rev-cmt-body { color: rgba(26,18,8,0.55); }
+.s-home-v3--light.s-home-v3--artist .v3-rev-cmt-body b { color: rgba(26,18,8,0.85); }
+.s-home-v3--light.s-home-v3--artist .v3-rev-cmt-more { color: rgba(26,18,8,0.4); }
+
+/* ── The review page's hero is the CARD, larger (2026-09-11; rebuilt
+   2026-09-16 on the page card's skeleton) ──────────────────────────────────
+   Built by revCardHtml with `big`, `.v3-rev-card--page` and this class; the
+   heart and the share button ride the top row (heart first), the time hard
+   right, the score is 40px with the discs stacked under it on the left, and
+   the text runs full width at reading size, unclamped. Not tappable — it is
+   already the page (cmtCardTap ignores it). After the page block so its
+   measures win at equal specificity. */
+.v3-rev-card.v3-rev-card--hero { padding: 4px 0 16px; cursor: default; }
+.v3-rev-card--hero .v3-rev-av { width: 44px; height: 44px; }
+.v3-rev-card--hero .v3-rev-card-top { gap: 11px; }
+.v3-rev-card--hero .v3-rev-name { font-size: 15px; }
+.v3-rev-card--hero .v3-rev-sub { font-size: 11.5px; }
+.v3-rev-card--hero .v3-rev-big { gap: 6px; margin-top: 14px; }
+.v3-rev-card--hero .v3-rev-big-n { font-size: 32px; }      /* was 40 (Eric, 2026-09-17); discs 22 → 17 in revCardInner */
+.v3-rev-card--hero .v3-rev-big .hstars { gap: 3px; }
+/* The heart left the top row for the SCORE row's right end (Eric, 2026-09-17):
+   same grid area as .v3-rev-big, hung right, and exactly as tall as the
+   number (32px, line-height 1) so the two centre on one line. Share and the
+   time keep the top row. */
+.v3-rev-card--hero .v3-rev-score-like {
+  grid-area: score; justify-self: end; align-self: start;
+  height: 32px; margin: 14px 0 0;
+}
+.v3-rev-card--hero .v3-rev-top-acts { gap: 12px; margin-right: 8px; }
+.v3-rev-card--hero .v3-rev-top-acts .v3-up { font-size: 14.5px; }
+.v3-rev-card--hero .v3-rev-top-acts .v3-up svg { width: 22px; height: 22px; }
+/* The share button, bare like the heart beside it (sd-share-btn's ring and
+   fill come off), lighting up in the star colour on hover like everywhere. */
+.v3-rev-card--hero .v3-rev-top-acts .sd-share-btn--hero {
+  width: auto; height: auto; padding: 3px 0; border: none; border-radius: 0;
+  background: transparent; color: rgba(232,226,214,0.4);
+}
+.v3-rev-card--hero .v3-rev-top-acts .sd-share-btn--hero:hover { background: transparent; color: var(--star, #e8a83c); }
+.v3-rev-card--hero .v3-rev-top-acts .sd-share-btn--hero svg { width: 20px; height: 20px; }
+.v3-rev-card--hero .v3-rev-text,
+.v3-rev-card--hero .v3-rev-text.is-long {
+  margin-top: 14px; max-height: none;
+  font-size: 13.5px; line-height: 1.5; color: rgba(232,226,214,0.92);
+  white-space: pre-wrap; overflow-wrap: anywhere;
+  -webkit-mask-image: none; mask-image: none;
+}
+.v3-rev-card--hero .v3-rev-foot { margin-top: 12px; }
 
 /* Streaming service sheet */
 .v3-stream-overlay {
@@ -5849,6 +6537,13 @@ body.sd-return .s-home-v3--review .v3-body { animation: rvpIn .34s ease-out both
 /* A song's sheet has no review box and no song list: it ends under the three
    buttons, and the space above it is the page (2026-09-11). */
 .sd-log-sheet.sd-log-sheet--song { height: auto; }
+/* A SONG's sheet is compact (Eric, 2026-09-18): the song's name alone up top
+   — no cover, no album, no year — then the discs and Favourite. You tapped
+   it from the album's own tracklist; the record is behind the sheet. */
+.sd-log-sheet--song .sd-log-cover,
+.sd-log-sheet--song .sd-log-artist,
+.sd-log-sheet--song .sd-log-year { display: none; }
+.sd-log-sheet--song .sd-log-head { margin-top: 26px; gap: 0; }
 
 /* The nub is a CONTROL, not decoration: tap it or drag it down to close
    (wireSheetGrab in app.js, on every bottom sheet). The pseudo-element is the
@@ -6009,6 +6704,11 @@ body.sd-return .s-home-v3--review .v3-body { animation: rvpIn .34s ease-out both
 
 /* Options — one line, three equal cells */
 .sd-log-opts { display: flex; gap: 8px; }
+/* A SONG's sheet offers the rating and Favourite only (Eric, 2026-09-18) —
+   Listened / Listen later are album things. The draft keys stay, so a song
+   marked listened before this still remembers it; there's just no button. */
+.sd-log-sheet--song .sd-log-opt[data-k="listened"],
+.sd-log-sheet--song .sd-log-opt[data-k="later"] { display: none; }
 .sd-log-opt {
   flex: 1;
   display: flex; flex-direction: column; align-items: center; gap: 7px;
@@ -6092,6 +6792,18 @@ body.sd-return .s-home-v3--review .v3-body { animation: rvpIn .34s ease-out both
   flex-shrink: 0; min-width: 12px; text-align: right;
   font-size: 11.5px; font-weight: 700; font-family: var(--font-mono); color: var(--star, #e8a83c);
 }
+/* The quick favourite, left of the discs (Eric, 2026-09-18): a bare heart,
+   pink and filled when on. The 26px box is the tap target; the glyph is 14. */
+.sd-log-song-fav {
+  flex-shrink: 0; width: 26px; height: 26px; padding: 0; margin-right: -2px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: none; border: none; cursor: pointer;
+  color: rgba(232,226,214,0.28); transition: color .15s;
+}
+.sd-log-song-fav svg { width: 14px; height: 14px; }
+.sd-log-song-fav:hover { color: rgba(232,226,214,0.6); }
+.sd-log-song-fav.on { color: #ff5c8a; }
+.sd-log-song-fav.on svg { fill: currentColor; }
 .sd-log-song-rate-track { position: relative; display: inline-flex; cursor: pointer; flex-shrink: 0; --rec: 14px; --gap: 4px; }
 .sd-log-song-empty, .sd-log-song-fill { display: flex; gap: var(--gap); }
 .sd-log-song-empty { color: rgba(232,226,214,0.20); }
@@ -6484,6 +7196,22 @@ body.sd-return .s-home-v3--review .v3-body { animation: rvpIn .34s ease-out both
 }
 .s-home-v3--light .pl2-add:hover { background: #f4f0e8; }
 .pl2-sec[hidden] { display: none; }
+/* The library tabs (plLibrary in screens.js). Albums are the trending wall's
+   grid as-is; a favourite song is the playlist page's row with a cover where
+   the track number was and a heart on the end. */
+.pl2-lib-song-art {
+  width: 30px; height: 30px; border-radius: 3px; flex-shrink: 0;
+  background-size: cover; background-position: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+}
+.pl2-lib-song-heart { flex-shrink: 0; font-size: 12px; color: var(--star, #e8a83c); }
+.pl2-sec .plp-empty { padding-top: 48px; }
+/* "Your rating" — under the discs when the score shown is yours, not the crowd's. */
+.pl2-lib-mine {
+  display: block; margin-top: 2px;
+  font-family: var(--font-mono); font-size: 8px; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--star, #e8a83c);
+}
 
 /* ═══════════════════════════════════════════════════════════════
    THE PLAYLIST WALL — one card, done properly
@@ -9155,13 +9883,20 @@ body.sd-return .s-home-v3--review .v3-body { animation: rvpIn .34s ease-out both
 /* The pinned cards sit on the PROFILE, which has a theme (and a cream light
    mode), not on the album page's dark panel — so the card's hard-coded warm
    ink is re-pointed at the profile's own tokens here. */
-.prof-pins .v3-rev-card { border-bottom-color: var(--pf-line, rgba(128,128,128,0.16)); }
-.prof-pins .v3-rev-card:last-child { border-bottom: none; }
-.prof-pins .v3-rev-name, .prof-pins .v3-rev-big-n { color: var(--pf-fg); }
-.prof-pins .v3-rev-sub, .prof-pins .v3-rev-text { color: var(--pf-fg2); }
-.prof-pins .v3-rev-av { box-shadow: 0 0 0 1px var(--pf-line, rgba(128,128,128,0.16)); }
-.prof-pins .v3-up { background: var(--sd-pill, rgba(128,128,128,0.12)); color: var(--pf-fg2); }
-.prof-pins .v3-cmt-btn.is-open { background: var(--sd-pill, rgba(128,128,128,0.12)); color: var(--pf-fg2); }
+/* The pins and the history are the HOME FEED'S CARD (Eric, 2026-09-18) —
+   `.v3-rev-card--feed`, which inks itself off the `--sd-*` tokens. On the
+   profile those are re-pointed at the profile's own `--pf-*` set here, so the
+   one card reads right on the profile's surface (and its skin) without a
+   parallel rule tree. The divider's full-width bleed (a ::after hung 10px past
+   the card, sized for the feed's scroller) is pulled back to the card's own
+   width — the profile's sections have their own gutters. */
+.prof-pins, .prof-feed {
+  --sd-ink: var(--pf-fg); --sd-ink2: var(--pf-fg2); --sd-ink3: var(--pf-fg2);
+  --sd-line: var(--pf-line, rgba(128,128,128,0.16));
+  --sd-card: var(--pf-well, rgba(128,128,128,0.12));
+  --sd-pill: rgba(128,128,128,0.12);
+}
+.prof-pins .v3-rev-card--feed::after, .prof-feed .v3-rev-card--feed::after { left: 0; right: 0; }
 .prof-pins-empty {
   padding: 10px 4px; font-family: var(--font-mono); font-size: 9.5px;
   letter-spacing: .04em; color: var(--pf-fg2);
@@ -10046,10 +10781,15 @@ body.sd-return .s-home-v3--review .v3-body { animation: rvpIn .34s ease-out both
    ⚠️ The lede under it is gone on purpose. "Make Spindeck yours" told you
    nothing the shelves below don't say better, and the aisle bar needs the room
    more — a store's tagline is the one line a shopper never reads. */
-.shop-title { margin: 8px 0 2px; }
+/* ONE ROW with the back pill (Eric, 2026-09-17): the pill left, the word in
+   the upper right at the pill's level, small enough to be a label rather than
+   a heading — it was 34px on a line of its own and pushed the store down. */
+.shop-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.shop-top .plp-back-pill { margin-bottom: 0; }
+.shop-title { margin: 0 4px 0 0; }
 .shop-title-mark {
   display: block;
-  height: 34px; width: auto;
+  height: 18px; width: auto;
   color: var(--sd-ink);
 }
 /* The word itself, for screen readers and for find-in-page. SD_DOTS ships its
@@ -10075,11 +10815,13 @@ body.sd-return .s-home-v3--review .v3-body { animation: rvpIn .34s ease-out both
    ⚠️ Bled to the frame edges and padded back, the `.shop-sheet--shelf` idiom —
    a sticky bar that stopped 12px short of each edge would leave two columns of
    screen for the tiles to show through as they pass under it. */
+/* ⚠️ NOT STICKY any more (Eric, 2026-09-17): the bar scrolls away with the
+   page, so it needs no opaque background either — the notes above describe
+   the sticky bar it was. Still bled to the frame edges so the row can scroll
+   sideways edge to edge. */
 .shop-cats {
-  position: sticky; top: 0; z-index: 4;
   display: flex; gap: 4px;
   margin: 0 -12px 2px; padding: 7px 12px 9px;
-  background: var(--sd-bg);
   overflow-x: auto; scrollbar-width: none;
 }
 .shop-cats::-webkit-scrollbar { display: none; }
