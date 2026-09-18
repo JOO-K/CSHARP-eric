@@ -5090,7 +5090,7 @@ body.sd-skin-furry .v3-body { padding-top: 40px; }
 .v3-rate-group {
   position: relative; width: 83%; margin-inline: auto;
   aspect-ratio: 1633 / 1321;
-  margin-bottom: 16px;   /* room for the lower lobes' labels, which hang below the box */
+  margin-bottom: 19px;   /* room for the lower lobes' labels, which hang below the box (8px gap + the 8px word + air) */
   color: rgba(232,226,214,0.82);
 }
 .v3-rg-shape { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
@@ -5151,8 +5151,9 @@ body.sd-skin-furry .v3-body { padding-top: 40px; }
   font-size: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em;
   white-space: nowrap; line-height: 1;
 }
-.v3-rg-btn--tl .v3-rg-lbl, .v3-rg-btn--tr .v3-rg-lbl { bottom: calc(100% + 5px); }
-.v3-rg-btn--bl .v3-rg-lbl, .v3-rg-btn--br .v3-rg-lbl { top: calc(100% + 5px); }
+/* 8px off the bubble (Eric, 2026-09-18: was 5 — the words sat too close to the shape). */
+.v3-rg-btn--tl .v3-rg-lbl, .v3-rg-btn--tr .v3-rg-lbl { bottom: calc(100% + 8px); }
+.v3-rg-btn--bl .v3-rg-lbl, .v3-rg-btn--br .v3-rg-lbl { top: calc(100% + 8px); }
 .v3-rg-btn:hover { color: #fff; }
 .v3-rg-btn.on { color: var(--star, #e8a83c); }
 .v3-rg-btn--tl { left: 0;      top: 45.73%; width: 18.76%; height: 24.17%; }
@@ -6543,7 +6544,8 @@ body.sd-return .s-home-v3--review .v3-body { animation: rvpIn .34s ease-out back
 .sd-log-sheet--song .sd-log-cover,
 .sd-log-sheet--song .sd-log-artist,
 .sd-log-sheet--song .sd-log-year { display: none; }
-.sd-log-sheet--song .sd-log-head { margin-top: 26px; gap: 0; }
+.sd-log-sheet--song .sd-log-head { margin-top: 24px; gap: 0; }
+.sd-log-sheet--song .sd-log-actions { margin-bottom: 14px; }
 
 /* The nub is a CONTROL, not decoration: tap it or drag it down to close
    (wireSheetGrab in app.js, on every bottom sheet). The pseudo-element is the
@@ -6603,6 +6605,9 @@ body.sd-return .s-home-v3--review .v3-body { animation: rvpIn .34s ease-out back
    a row of its own, so the cover can sit 12px from the top like it does from
    the left. (Badges + delete sheets keep it in flow — their heads are short.) */
 .sd-log-sheet .sd-log-grab { position: absolute; top: 5px; left: 50%; margin: 0; transform: translateX(-50%); }
+/* With no ✕ the swipe down IS the way out, so here the nub's hit area runs the
+   sheet's whole top edge (it stops 1px short of Save / Share below it). */
+#sd-log .sd-log-grab::before { inset: -5px -170px -14px; }
 .sd-log-sheet.is-dragging, .plc-sheet.is-dragging, .pldel-sheet.is-dragging { transition: none; }
 /* ── The header IS the album page's info box, restated ───────────────────
    A centred column (2026-09-11): the cover, then the text under it, full
@@ -6614,11 +6619,11 @@ body.sd-return .s-home-v3--review .v3-body { animation: rvpIn .34s ease-out back
    rules verbatim: Roboto Flex, title 22px/400 at 92% ink condensed to
    wdth 85, the year inline after it at 14px/300 and 50%, the artist
    14.5px/700 at 88%. If those rules move on the album page, move these too.
-   Share and ✕ leave the flow and sit in the top corners either side of the
-   nub, which is why the head starts 30px down. */
+   Save and Share are the head's first row, centred under the nub — the head
+   starts 24px down to clear it. */
 .sd-log-head {
   display: flex; flex-direction: column; align-items: center; gap: 12px;
-  margin: 30px 0 4px; text-align: center;
+  margin: 24px 0 4px; text-align: center;
 }
 .sd-log-cover {
   width: calc((200% - 8px) / 3); aspect-ratio: 1; flex-shrink: 0;
@@ -6639,18 +6644,11 @@ body.sd-return .s-home-v3--review .v3-body { animation: rvpIn .34s ease-out back
   margin-top: 5px;
   font-size: 14.5px; font-weight: 700; color: rgba(232,226,214,0.88);
 }
-.sd-log-head .sd-log-share { position: absolute; top: 9px; left: 12px; }
-.sd-log-head .sd-log-x     { position: absolute; top: 8px; right: 10px; }
-/* "Updated 5 min ago" — centred between Share and ✕, under the nub, in the
-   album's accent (`--star` re-tints per record, like the vinyls). Empty until
-   the first write, so a fresh sheet shows nothing rather than "never". */
-.sd-log-updated {
-  position: absolute; top: 17px; left: 50%; transform: translateX(-50%);
-  max-width: 55%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase;
-  color: var(--star, #e8a83c);
-  pointer-events: none;
-}
+/* Save + Share — one centred pair over the cover (Eric, 2026-09-18). They are
+   the head's first row, in flow, so the cover simply starts under them. There is
+   no ✕ on this sheet: the nub (tap / drag down) and a tap outside dismiss it. */
+.sd-log-actions { display: flex; justify-content: center; align-items: center; gap: 8px; }
+.sd-log-actions .sd-log-save, .sd-log-actions .sd-log-share { min-width: 84px; padding: 8px 16px; font-size: 12.5px; }
 .sd-log-x {
   background: none; border: none; color: rgba(232,226,214,0.5);
   font-size: 15px; cursor: pointer; padding: 4px; line-height: 1;
@@ -6887,6 +6885,16 @@ body.sd-return .s-home-v3--review .v3-body { animation: rvpIn .34s ease-out back
 }
 .sd-log-share:hover { background: var(--star); border-color: var(--star); color: #16130d; }
 .sd-log-share[hidden] { display: none; }
+/* Save is Share's twin, filled with the album's accent while there is something
+   to save; with nothing pending it reads "Saved" and goes quiet. */
+.sd-log-save {
+  flex-shrink: 0;
+  border-radius: 999px; border: 1px solid var(--star, #e8a83c);
+  background: var(--star, #e8a83c); color: #16130d;
+  font-family: var(--font-main); font-weight: 700; cursor: pointer;
+  transition: background .15s, border-color .15s, color .15s, opacity .15s;
+}
+.sd-log-save:disabled { background: none; border-color: var(--sd-line); color: var(--sd-ink); opacity: 0.45; cursor: default; }
 
 /* On the review card the share sits in `.v3-rev-acts`, where the upvote pill
    lives on everyone else's cards — same slot, so the row doesn't reflow. */

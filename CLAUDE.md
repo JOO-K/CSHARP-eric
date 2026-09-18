@@ -4898,40 +4898,50 @@ deterministic, so the wall refresh is the gesture more than new data).
   `openLogSheet`): no review box and no song list, so it ends under the three
   buttons with the page showing above it, instead of 95% of empty sheet.
 - **The sheet is almost fullscreen** (2026-09-11, was 75%): `height: calc(95% - 10px)` — the 10px bottom float is taken out of the 95% so a true 5% of the screen stays clear at the top.
-- **The header restates the album page's info box** (2026-09-11). Sheet padding is **12px all round** — 12 is the album page's gutter (review panel 10px + row padding 12px = song text 22px from the screen edge; the sheet is 10px in + 12px = the same 22px), and top = left so the cover sits an even distance from the corner; the nub is absolutely positioned over the header's top edge so it takes no row. The head is a **centred column**: the cover, **two option buttons wide** (`calc((200% - 8px) / 3)`, square, 12px radius — the width two `.sd-log-opt` cells plus their gap resolve to), then the text under it at full width and centred, **never clamped or ellipsised** — the album page wraps its title, so does this. Share and ✕ are absolutely positioned in the top corners either side of the nub, which is why the head starts 30px down. Type is the review-state `.v3-blue` rules verbatim: Roboto Flex, title 22px/400 at 92% condensed to `wdth 85`, the **year** inline after it (`.sd-log-year`, 14px/300 at 50%; the subject carries `year`, and `:empty` hides it for artists), artist 14.5px/700 at 88%. Move these with the album page's rules if those change.
+- **The header restates the album page's info box** (2026-09-11). Sheet padding is **12px all round** — 12 is the album page's gutter (review panel 10px + row padding 12px = song text 22px from the screen edge; the sheet is 10px in + 12px = the same 22px), and top = left so the cover sits an even distance from the corner; the nub is absolutely positioned over the header's top edge so it takes no row. The head is a **centred column**: the cover, **two option buttons wide** (`calc((200% - 8px) / 3)`, square, 12px radius — the width two `.sd-log-opt` cells plus their gap resolve to), then the text under it at full width and centred, **never clamped or ellipsised** — the album page wraps its title, so does this. Save + Share are the head's first row, centred under the nub (see *Save is a button* below); there is no ✕. Type is the review-state `.v3-blue` rules verbatim: Roboto Flex, title 22px/400 at 92% condensed to `wdth 85`, the **year** inline after it (`.sd-log-year`, 14px/300 at 50%; the subject carries `year`, and `:empty` hides it for artists), artist 14.5px/700 at 88%. Move these with the album page's rules if those change.
 - **The grab nub closes the sheet** — tap, or drag it down past 70px (`wireSheetGrab` in app.js, pointer events with capture, finger travel divided by the viewer zoom). It is wired on all three bottom sheets (log, badges, delete-confirm) so they behave alike. The `::before` on `.sd-log-grab` is the hit area.
 - **The per-song rows are the album page's tracklist rows** — `.sd-log-song` restates `.v3-song-row` (9px rhythm, 10px gap, 12px type, hairline between rows, mono track number in a 14px cell at the head). A negative side margin keeps the title flush with the sheet's left margin while the hover / logged tint bleeds 12px past it. The logged rail is an inset box-shadow in the gutter, not a border, so it never shifts the text. Retune both lists together.
 - **The review box grows on tap** — `min-height` 88 → 132px (~50%) on `:focus`, with a short ease, and it stays grown via `.has-text` while there is anything in it (toggled on input and on draft restore) so a saved review comes back readable rather than folded.
 
-### There is no Save button — it autosaves
-Every change writes through to `localStorage['spindeck-logs']`, so a half-typed
-review survives closing the sheet, swiping to another album, and a reload. The
-sheet **reopens where you left off** rather than blank.
+### Save is a button — and unsaved work is still never lost (2026-09-18)
+Eric: "instead of having it auto update we're gonna have a dedicated save
+button at the top centered above the album image and the share next to it …
+no close button, people will just swipe down from the top or click outside."
+It autosaved (and re-rendered your review card on every keystroke) before.
 
-- `saveLog()` debounces (~400ms) so typing isn't a write per keystroke; taps
-  (rating, toggles, per-song ratings) pass `true` and write immediately.
-  `closeLogSheet` flushes a pending debounce — closing must never drop the last
-  few characters.
+- **`.sd-log-actions`** is the head's first row, in flow: **Save + Share**, two
+  matching pills centred over the cover. Save (`.sd-log-save`) is filled with
+  `--star` while there is something unsaved; otherwise it is disabled and reads
+  "Saved" (`paintLogSave`, off `SDLOG.dirty`). Share hides for songs / artists,
+  leaving Save centred alone.
+- **There is no ✕ on this sheet.** Dismiss = the nub (tap / drag down past 70px)
+  or a tap on the overlay. `#sd-log .sd-log-grab::before` stretches the nub's
+  hit area across the sheet's whole top edge, since the swipe is now the way
+  out; it stops just above the buttons. (`.sd-log-x` CSS stays — share.js's
+  sheet still uses it.) The "Updated 5 min ago" stamp, `logAgo` and the 30s
+  tick are gone with the autosave.
+- **Two stores.** `spindeck-logs` is what is SAVED — everything else in the app
+  reads only this (review card, quick-log squares, CTA face, library tabs).
+  `spindeck-logs-wip` is the sheet's unsaved work. `saveLog()` (every edit;
+  typing debounced ~400ms, taps immediate) writes the WIP and lights Save — it
+  publishes nothing. **`commitLog()`** (the Save button) `putDraft`s the
+  snapshot, drops the WIP, runs `flashLogSaved()` (re-renders your review card,
+  `syncQuickLog`, `refreshSongFavs`) and closes the sheet.
+- `openLogSheet` loads **WIP first, else saved**, and sets `dirty = !!wip`, so a
+  dismissed half-typed review comes back with Save lit. `fillLogSongs` merges
+  per-song ratings from the same source. `closeLogSheet` flushes a pending
+  debounce **into the WIP** (only if one is pending — an unconditional
+  `saveLog(true)` there would mark an untouched sheet dirty).
 - ⚠️ **`_sdlogRestoring` guards the restore.** `openLogSheet` repaints through
   the same helpers the user's taps go through (`setLogRating` / `setSongRating`),
-  so without the flag, loading a draft would immediately re-save it.
-- `putDraft` **drops a draft that has nothing left in it**, so opening a sheet
-  and touching nothing doesn't leave an empty record that reads as "in progress".
-- `logKey(subj)` is `kind::title::subtitle` — the title alone collides (two
-  albums can share a name; song titles are not unique across the catalogue).
-- Per-song ratings are merged back **by title, not index**: the draft only
-  stores tracks that were touched, so its indices aren't the tracklist's.
-- With no Save button, the **"Updated 5 min ago" stamp at the top** of the
-  sheet (`.sd-log-updated`, centred between Share and ✕, in the album's
-  `--star` accent) is the *only* signal the work is kept (2026-09-11; it
-  replaced the footer's "Saves as you type / Draft saved"). `flashLogSaved`
-  stamps `SDLOG.updated`, `paintLogUpdated` renders it via `logAgo` (just now
-  / N min / N h / N d), a 30s interval ages it while the sheet is open (cleared
-  in `closeLogSheet`), and it comes back from the draft's `updated` on reopen.
-  Empty until the first write.
-- **Every write also re-renders YOUR review card on the album page** behind the
-  sheet (`flashLogSaved` → `populateReviewList` on every shell), so the review
-  updates as you type and is already there when the sheet closes.
+  so without the flag, loading a draft would immediately mark it dirty.
+- `putDraft` **drops a draft that has nothing left in it**.
+- `logKey(subj)` is `kind::title::subtitle` — the title alone collides.
+- Per-song ratings are merged back **by title, not index**.
+- The quick-log squares still write straight to the saved store
+  (`writeDraftFlag`) — and patch the same flag into a WIP for that record if one
+  exists, so the sheet doesn't reopen with the old value.
+- There is no "discard changes" yet: to drop unsaved work you undo it by hand.
 - **Light theme**: the sheet is a child of the shell that opened it, so
   `.s-home-v3--light .sd-log-*` overrides re-ink it (#f7f4ee, a shade lighter
   than the #f0ece3 page, the same relationship as the dark pair). The badges

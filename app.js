@@ -5839,13 +5839,17 @@ const SDLOG_RECS = SDLOG_REC.repeat(5);
 const SDLOG_PENCIL = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>`;
 let SDLOG = null;   // { subject, rating, listened, later, fav, text, songs:[{title,rating,text}] }
 
-/* ── Log drafts — autosaved, never explicitly "saved" ──────────
-   The sheet has no Save button. Every change writes through to localStorage, so
-   a half-typed review survives closing the sheet, swiping to another album, and
-   a reload. Typing is debounced (~400ms) so a keystroke isn't a storage write;
-   taps (rating, toggles) write immediately, and closing the sheet flushes
-   whatever is still pending. */
+/* ── Log drafts — an explicit SAVE, with the unsaved work kept aside ─────
+   The sheet has a Save button (Eric, 2026-09-18; it autosaved before). Nothing
+   you do in the sheet reaches your review — the album page's card, the quick-log
+   squares, the library — until Save. But an edit is never LOST either: every
+   change writes through to a second store (`spindeck-logs-wip`), so a half-typed
+   review survives dismissing the sheet, swiping to another album, and a reload,
+   and the sheet reopens on it with Save lit. Typing is debounced (~400ms) so a
+   keystroke isn't a storage write; taps write immediately, and closing the
+   sheet flushes whatever is still pending. */
 const SDLOG_STORE = 'spindeck-logs';
+const SDLOG_WIP = 'spindeck-logs-wip';
 const SDLOG_DEBOUNCE = 400;
 let _sdlogT = null;
 // Set while openLogSheet is repainting the sheet from a saved draft. The paint
@@ -5856,6 +5860,15 @@ let _sdlogRestoring = false;
 function logDrafts() {
   try { return JSON.parse(localStorage.getItem(SDLOG_STORE)) || {}; }
   catch (e) { return {}; }        // corrupt or blocked storage → behave as empty
+}
+function logWips() {
+  try { return JSON.parse(localStorage.getItem(SDLOG_WIP)) || {}; }
+  catch (e) { return {}; }
+}
+function putWip(key, d) {               // d = null drops it (saved, so nothing is pending)
+  const all = logWips();
+  if (d) all[key] = d; else delete all[key];
+  try { localStorage.setItem(SDLOG_WIP, JSON.stringify(all)); } catch (e) {}
 }
 // Subject identity. The title alone collides — two albums can share a name, and
 // a song title is not unique across the catalogue — so kind and subtitle ride along.
@@ -5872,31 +5885,42 @@ function putDraft(key, d) {
   if (empty) delete all[key]; else all[key] = { ...d, updated: Date.now() };
   try { localStorage.setItem(SDLOG_STORE, JSON.stringify(all)); } catch (e) {}
 }
+// The sheet as it stands, in the shape both stores keep.
+function logSnapshot() {
+  return {
+    rating: SDLOG.rating, listened: SDLOG.listened, later: SDLOG.later, fav: SDLOG.fav,
+    text: SDLOG.text || '',
+    image: SDLOG.subject.image || '', snap: libSnapFor(SDLOG.subject),   // for the Playlists page's library tabs
+    // only tracks the user actually touched — the rest is just the tracklist
+    songs: (SDLOG.songs || []).filter(s => s.rating > 0 || (s.text || '').trim()),
+  };
+}
+// Every edit lands here. It keeps the work (WIP store) and lights Save — it does
+// NOT publish; commitLog does.
 function saveLog(now) {
   if (_sdlogRestoring || !SDLOG || !SDLOG.subject) return;
-  clearTimeout(_sdlogT);
-  const write = () => {
-    putDraft(logKey(SDLOG.subject), {
-      rating: SDLOG.rating, listened: SDLOG.listened, later: SDLOG.later, fav: SDLOG.fav,
-      text: SDLOG.text || '',
-      image: SDLOG.subject.image || '', snap: libSnapFor(SDLOG.subject),   // for the Playlists page's library tabs
-      // only tracks the user actually touched — the rest is just the tracklist
-      songs: (SDLOG.songs || []).filter(s => s.rating > 0 || (s.text || '').trim()),
-    });
-    flashLogSaved();
-  };
+  clearTimeout(_sdlogT); _sdlogT = null;
+  SDLOG.dirty = true;
+  paintLogSave();
+  const write = () => { _sdlogT = null; putWip(logKey(SDLOG.subject), logSnapshot()); };
   if (now) write(); else _sdlogT = setTimeout(write, SDLOG_DEBOUNCE);
 }
-/* Every write does two things beyond the localStorage put:
-   1. YOUR review card on the album page behind the sheet is re-rendered, so
-      the review "updates as you write it" — close the sheet and it is already
-      there, rating and text, with nothing to post.
-   2. The "Updated …" stamp at the top of the sheet repaints. With no Save
-      button it is the only signal the work is kept; it reads "just now" on a
-      write and ages every 30s while the sheet is open (`_sdlogTick`). */
+// The Save button: publish the sheet, drop the WIP, close.
+function commitLog() {
+  if (!SDLOG || !SDLOG.subject) return;
+  clearTimeout(_sdlogT); _sdlogT = null;
+  const key = logKey(SDLOG.subject);
+  putDraft(key, logSnapshot());
+  putWip(key, null);
+  SDLOG.dirty = false;
+  flashLogSaved();
+  closeLogSheet();
+}
+/* A save does two things beyond the localStorage put: YOUR review card on the
+   album page behind the sheet is re-rendered (rating and text), and the
+   quick-log squares / CTA / tracklist hearts follow. */
 function flashLogSaved() {
-  if (SDLOG) SDLOG.updated = Date.now();
-  paintLogUpdated();
+  paintLogSave();
   homeShells().forEach(s => syncQuickLog(s));
   homeShells().forEach(s => refreshSongFavs(s));   // the tracklist's hearts follow a song's favourite live
   if (typeof populateReviewList === 'function') homeShells().forEach(s => {
@@ -5904,20 +5928,14 @@ function flashLogSaved() {
     populateReviewList(s, active ? active.dataset.f : 'popular');
   });
 }
-function logAgo(t) {
-  const s = Math.max(0, (Date.now() - t) / 1000);
-  if (s < 45) return 'just now';
-  if (s < 3600) return `${Math.max(1, Math.round(s / 60))} min ago`;
-  if (s < 86400) return `${Math.round(s / 3600)} h ago`;
-  return `${Math.round(s / 86400)} d ago`;
+// Save is lit only while there is something unsaved; otherwise it reads "Saved".
+function paintLogSave() {
+  const b = document.querySelector('#sd-log .sd-log-save');
+  if (!b) return;
+  const dirty = !!(SDLOG && SDLOG.dirty);
+  b.disabled = !dirty;
+  b.textContent = dirty ? 'Save' : 'Saved';
 }
-function paintLogUpdated() {
-  const el = document.querySelector('#sd-log .sd-log-updated');
-  if (!el) return;
-  const t = SDLOG && SDLOG.updated;
-  el.textContent = t ? `Updated ${logAgo(t)}` : '';
-}
-let _sdlogTick = null;
 /* What the library tabs need to draw — and reopen — an album that has since
    left ARCHIVE (the rec pool is re-dealt every session). Albums only; a song's
    draft carries just its `image`. Ratings and reviews are NOT stored: they are
@@ -5938,6 +5956,9 @@ function writeDraftFlag(subj, k, on) {
   if (subj.image) d.image = subj.image;
   d.snap = libSnapFor(subj) || d.snap;
   putDraft(key, d);
+  // unsaved sheet work for this record must not reopen with the old flag
+  const w = logWips()[key];
+  if (w) { w[k] = on; putWip(key, w); }
 }
 // The saved draft for an album, as the quick-log squares need it.
 function albumDraft(a) {
@@ -6133,17 +6154,18 @@ function ensureLogSheet() {
   ov.innerHTML = `
     <div class="sd-log-sheet" role="dialog" aria-modal="true">
       <div class="sd-log-grab"></div>
-      <!-- "Updated 5 min ago" — the only signal the work is kept, now that the
-           footer is gone. Sits between Share and ✕, in the album's accent. -->
-      <div class="sd-log-updated" aria-live="polite"></div>
       <div class="sd-log-head">
+        <!-- Save + Share, side by side, centred over the cover. No ✕: the sheet
+             is dismissed by the nub (tap / drag down) or a tap outside it. -->
+        <div class="sd-log-actions">
+          <button class="sd-log-save" type="button" disabled>Saved</button>
+          <button class="sd-log-share" type="button">Share</button>
+        </div>
         <div class="sd-log-cover"></div>
         <div class="sd-log-meta">
           <div class="sd-log-title"><span class="sd-log-album"></span><span class="sd-log-year"></span></div>
           <div class="sd-log-artist"></div>
         </div>
-        <button class="sd-log-share" type="button">Share</button>
-        <button class="sd-log-x" aria-label="Close">✕</button>
       </div>
       <div class="sd-log-rate">
         <span class="sd-log-stars-track" role="slider" tabindex="0" aria-label="Rating"
@@ -6169,10 +6191,10 @@ function ensureLogSheet() {
   ov.addEventListener('click', e => { e.stopPropagation(); if (e.target === ov) closeLogSheet(); });
   ov.addEventListener('mousedown', e => e.stopPropagation());
   ov.querySelector('.sd-log-sheet').addEventListener('click', e => e.stopPropagation());
-  ov.querySelector('.sd-log-x').addEventListener('click', closeLogSheet);
+  ov.querySelector('.sd-log-save').addEventListener('click', commitLog);
   wireSheetGrab(ov, '.sd-log-sheet', closeLogSheet);
   /* Share what you just wrote. Reads live SDLOG rather than the saved draft so
-     the post reflects the sheet as it stands, debounce or no debounce. */
+     the post reflects the sheet as it stands, saved or not. */
   ov.querySelector('.sd-log-share').addEventListener('click', function (e) {
     if (!SDLOG || !SDLOG.subject) return;
     const arch = window.ARCHIVE || [];
@@ -6184,7 +6206,7 @@ function ensureLogSheet() {
     });
   });
   ov.querySelectorAll('.sd-log-opt').forEach(b => b.addEventListener('click', () => toggleLogOpt(b.dataset.k, b)));
-  // The review itself — debounced autosave on every keystroke.
+  // The review itself — kept (debounced) on every keystroke; published on Save.
   ov.querySelector('.sd-log-write').addEventListener('input', e => {
     if (!SDLOG) return;
     SDLOG.text = e.target.value;
@@ -6322,8 +6344,10 @@ window.openLogSheet = function(triggerEl, subject) {
   const ov = ensureLogSheet();
   host.appendChild(ov);   // mount into the triggering phone screen so it stays in-frame
 
-  // Reopen where you left off — the sheet never starts blank if there's a draft.
-  const saved = logDrafts()[logKey(subj)] || {};
+  // Reopen where you left off — unsaved work first (Save comes back lit), else
+  // what was last saved.
+  const wip = logWips()[logKey(subj)];
+  const saved = wip || logDrafts()[logKey(subj)] || {};
   _sdlogRestoring = true;
   SDLOG = {
     subject: subj,
@@ -6331,11 +6355,9 @@ window.openLogSheet = function(triggerEl, subject) {
     listened: !!saved.listened, later: !!saved.later, fav: !!saved.fav,
     text: saved.text || '',
     songs: [],
-    updated: saved.updated || 0,        // putDraft stamps it; 0 = never saved
+    dirty: !!wip,
   };
-  paintLogUpdated();
-  clearInterval(_sdlogTick);
-  _sdlogTick = setInterval(paintLogUpdated, 30000);
+  paintLogSave();
   ov.querySelector('.sd-log-cover').style.backgroundImage = `url("${subj.image}")`;
   ov.querySelector('.sd-log-album').textContent = subj.title;
   ov.querySelector('.sd-log-year').textContent = subj.year || '';   // :empty hides it (songs / artists)
@@ -6366,7 +6388,7 @@ window.openLogSheet = function(triggerEl, subject) {
     // three buttons instead of standing 95% tall over nothing (2026-09-11).
     sheet.classList.toggle('sd-log-sheet--song', !!subj.isSong);
   }
-  _sdlogRestoring = false;              // paints done — live edits save from here
+  _sdlogRestoring = false;              // paints done — live edits count from here
   requestAnimationFrame(() => ov.classList.add('open'));
 };
 
@@ -6380,7 +6402,7 @@ function fillLogSongs(ov, album) {
   // Merge any saved per-song ratings back in, keyed by TITLE rather than index:
   // the draft only stores the tracks that were touched, so its indices are not
   // the tracklist's.
-  const savedSongs = (SDLOG && logDrafts()[logKey(SDLOG.subject)] || {}).songs || [];
+  const savedSongs = (SDLOG && (logWips()[logKey(SDLOG.subject)] || logDrafts()[logKey(SDLOG.subject)]) || {}).songs || [];
   const byTitle = new Map(savedSongs.map(s => [s.title, s]));
   if (SDLOG) SDLOG.songs = songs.map(s => {
     const prev = byTitle.get(s.title);
@@ -6425,8 +6447,7 @@ function markSongLogged(row, i) {
 }
 
 window.closeLogSheet = function() {
-  saveLog(true);          // flush a pending debounce — closing must never drop keystrokes
-  clearInterval(_sdlogTick); _sdlogTick = null;
+  if (_sdlogT) saveLog(true);   // flush a pending debounce into the WIP — dismissing must never drop keystrokes
   const ov = document.getElementById('sd-log');
   if (ov) ov.classList.remove('open');
   // Whatever was just logged may light the album page's quick-log squares.
