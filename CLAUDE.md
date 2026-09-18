@@ -1814,6 +1814,25 @@ Confirming calls `commitShelf({kind:'mix', genres:[…]})`.
 - `MIX` lives outside the DOM, so closing and reopening returns you to the mix
   you were building.
 
+#### The info box while mixing: pills on top, count + New deck on the floor (2026-09-18)
+
+`.v3-blue-mix` is a column: **`.v3-blue-mix-picks`** (the pills, full width, wrapping,
+`flex: 1; min-height: 0`) over **`.v3-blue-mix-row`** (`.v3-blue-mix-n` — "41 albums
+· related" — on the left, `.v3-blue-mix-go` on the right). It was the other way up,
+with the pills in a sideways scroller beside the button.
+
+- **The pills shrink the more you add (`mixFitChips`)**. Every measure on
+  `.v3-mix-chip` is in `em` off one property, `--chip` (the font size, set inline on
+  the picks row): 9px, stepped down by .5 until the wrapped rows fit the picks
+  area, to a floor of 5.5px; past that the tail is folded into a **"+N"** chip
+  (`.v3-mix-more`, no `data-g`, so the delegated remove-on-tap ignores it).
+  Nothing scrolls and nothing can reach the bottom row — `overflow: hidden` is
+  only a safety net.
+- Measured at 393px with 1 → 64 picks: 9px up to ~6 pills, 6.5px to ~16, 5.5px
+  +N beyond ~20; chips always end above the row and inside the box.
+- ⚠️ `mixFitChips` skips a bar that is not laid out (0 tall) and
+  `mixHomeReadout` runs it again in a rAF for that reason.
+
 #### Dial contexts (`MIX` · `OB_MIX` · the `d` argument)
 
 The dial has **two hosts** — the bento and onboarding's step 3 — and one set of
@@ -1895,6 +1914,18 @@ needs more than fifteen, split it into two mains rather than growing its ring.
 Measured at this geometry across all 17 rings / 272 holes: **0 labels overflow,
 0 trimmed, 0 size-reduced** — every name fits at full width and full size, so
 the three-step fit is pure safety net again.
+
+##### Stepping between rings turns — right going in, left coming out (2026-09-18)
+
+The ring swap (`mixDialRender('in' | 'out')`) still shrinks the old ring into the
+record and grows the new one out of it, but both now **rotate 50° as they go**:
+clockwise on the way INTO a main's subgenres, anticlockwise on the way back OUT
+(`.ob-dial--leave-in/enter-in/leave-out/enter-out` in app.css — pure CSS, the
+JS is unchanged). Both rings of one step turn the same way, so it reads as one
+motion handed from ring to ring. The record does not turn and the held hole
+(`mixStayHole`) still stands still. ⚠️ An earlier note said directional variants
+"only ever read as inconsistency" — those had the two rings turning *against*
+each other. Keep the angle small; past ~50° the arriving labels smear.
 
 ##### Opening: the dial spins into place (`.is-opening` / `mixSpinIn`)
 

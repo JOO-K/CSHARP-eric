@@ -7899,8 +7899,8 @@ function mixHomeReadout() {
      several rings, the ring in front of you can only ever show one main's
      worth. This row is the only place the whole mix is visible, so it lists it,
      and each chip removes its own pick: the thing you can see is the thing you
-     can undo. It scrolls sideways rather than wrapping — `.v3-blue` is a fixed
-     strip and a second line would push the button out of it. */
+     can undo. It WRAPS across the top of the box and `mixFitChips` shrinks the
+     chips until every one of them fits above the count / New deck row. */
   const picks = host.querySelector('.v3-blue-mix-picks');
   if (picks) {
     if (!picked) {
@@ -7913,6 +7913,10 @@ function mixHomeReadout() {
       picks.innerHTML = [...MIX.genres].map(g =>
         `<button class="v3-mix-chip" type="button" data-g="${obEsc(g)}" title="Remove ${obEsc(g)}">` +
         `${obEsc(mixChipLabel(g))}<i>×</i></button>`).join('');
+      mixFitChips(picks);
+      // The bar may have only just been shown (or the mono face only just
+      // loaded) — measure again once layout has settled.
+      requestAnimationFrame(() => mixFitChips(picks));
     }
   }
 
@@ -7929,6 +7933,39 @@ function mixHomeReadout() {
     go.textContent = !picked ? 'Pick a genre'
                    : n < 2   ? (n ? 'Too few' : 'None yet')
                    : 'New deck';
+  }
+}
+
+/* THE PILLS SHRINK TO FIT (Eric, 2026-09-18): the more you add, the smaller
+   they get, so the whole mix is always visible and none of it overflows the
+   box or drops under the New deck row. Every measure on `.v3-mix-chip` is in
+   `em`, so one custom property (`--chip`, the font size) scales the lot.
+   Steps down from 9px until the wrapped rows fit the picks area; at the floor
+   (5.5px — below that a name stops being a word) the tail is folded into a
+   "+N" chip instead. ⚠ scrollHeight / clientHeight are LAYOUT px, so the
+   viewer's zoom and the shop's scale() don't skew this. Skips when the bar is
+   not laid out yet (0 tall) — the caller's rAF pass catches that. */
+const MIX_CHIP_MAX = 9, MIX_CHIP_MIN = 5.5;
+function mixFitChips(picks) {
+  if (!picks || !picks.clientHeight) return;
+  const fits = () => picks.scrollHeight <= picks.clientHeight + 1 && picks.scrollWidth <= picks.clientWidth + 1;
+  picks.querySelectorAll('.v3-mix-more').forEach(m => m.remove());
+  picks.querySelectorAll('.v3-mix-chip[hidden]').forEach(c => { c.hidden = false; });
+  let fs = MIX_CHIP_MAX;
+  picks.style.setProperty('--chip', fs + 'px');
+  while (!fits() && fs > MIX_CHIP_MIN) {
+    fs = Math.max(MIX_CHIP_MIN, fs - 0.5);
+    picks.style.setProperty('--chip', fs + 'px');
+  }
+  if (fits()) return;
+  const chips = [...picks.querySelectorAll('.v3-mix-chip')];
+  const more = document.createElement('span');
+  more.className = 'v3-mix-chip v3-mix-more';
+  picks.appendChild(more);
+  let cut = 0;
+  while (!fits() && cut < chips.length - 1) {
+    chips[chips.length - 1 - cut].hidden = true;
+    more.textContent = '+' + (++cut);
   }
 }
 
@@ -8038,18 +8075,22 @@ function mixInlineBuild(host) {
   if (!blue.querySelector('.v3-blue-mix')) {
     const bar = document.createElement('div');
     bar.className = 'v3-blue-mix';
-    bar.innerHTML = `<div class="v3-blue-mix-txt">` +
+    /* Pills on TOP, the count and the button on the FLOOR (Eric, 2026-09-18 —
+       it was the other way up, with the pills in a sideways scroller beside the
+       button). The pills get the box's whole width and shrink to fit it
+       (`mixFitChips`), so nothing scrolls and nothing reaches the bottom row. */
+    bar.innerHTML = `<div class="v3-blue-mix-picks"></div>` +
+                    `<div class="v3-blue-mix-row">` +
                       `<span class="v3-blue-mix-n"></span>` +
-                      `<div class="v3-blue-mix-picks"></div>` +
-                    `</div>` +
-                    `<button class="v3-blue-mix-go" type="button"></button>`;
+                      `<button class="v3-blue-mix-go" type="button"></button>` +
+                    `</div>`;
     /* ⚠ `.v3-blue` opens the album page on click. The bar covers it completely
        and stops the bubble, so choosing a mix cannot navigate away from the
        screen you are choosing it for. */
     bar.addEventListener('click', e => e.stopPropagation());
     // Delegated: the chips are rebuilt on every pick.
     bar.addEventListener('click', e => {
-      const chip = e.target.closest && e.target.closest('.v3-mix-chip');
+      const chip = e.target.closest && e.target.closest('.v3-mix-chip[data-g]');
       if (chip) { MIX.genres.delete(chip.dataset.g); mixDialSync(); }
     });
     bar.querySelector('.v3-blue-mix-go').addEventListener('click', () => {

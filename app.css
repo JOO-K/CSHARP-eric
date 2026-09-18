@@ -8517,20 +8517,22 @@ body.sd-return .s-home-v3--review .v3-body { animation: rvpIn .34s ease-out back
 .v3-blue-mix {
   position: absolute; inset: 0; z-index: 3;
   display: none;
-  /* ⚠ BOTTOM aligned, not centred. The box is the same strip the album's own
-     one-liner uses, and floating the readout in the middle of it left the mix
-     looking unanchored — sitting on the floor of the box puts it where every
-     other line in this bento sits. */
-  align-items: flex-end; justify-content: space-between; gap: 8px;
+  /* A column (Eric, 2026-09-18): the PILLS take the top of the box at its full
+     width, and the count + New deck sit on the floor — where every other line
+     in this bento sits. The pills' area is whatever the row leaves, and
+     `mixFitChips` shrinks them to stay inside it. */
+  flex-direction: column; justify-content: space-between; gap: 5px;
   padding: 9px 12px 10px;
 }
+.v3-blue-mix-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; flex-shrink: 0; }
 .s-home-v3--mixing .v3-blue-mix { display: flex; }
 /* Everything the box normally says is about ONE album, and while you are
    building a mix there isn't one yet. `visibility` rather than `display` so the
    box keeps the height its own content gives it and nothing below shifts. */
 .s-home-v3--mixing .v3-blue > *:not(.v3-blue-mix) { visibility: hidden; }
-.v3-blue-mix-txt { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .v3-blue-mix-n {
+  min-width: 0; padding-bottom: 2px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   font-family: var(--font-head); font-size: 15px; font-weight: 800;
   letter-spacing: -.2px; color: var(--text);
 }
@@ -8539,15 +8541,16 @@ body.sd-return .s-home-v3--review .v3-body { animation: rvpIn .34s ease-out back
    rings, the ring in front of you can only ever show one main's worth, so this
    row is the only place the whole mix is visible — and each chip removes its
    own pick, so the thing you can see is the thing you can undo.
-   ⚠ It SCROLLS sideways and never wraps: `.v3-blue` is a fixed strip, and a
-   second line of chips pushes the New deck button out of the box. */
+   ⚠ It WRAPS and never scrolls (it was a sideways scroller until 2026-09-18).
+   `flex: 1; min-height: 0` makes it exactly the space above the bottom row, and
+   `overflow: hidden` is only the safety net — `mixFitChips` (app.js) steps
+   `--chip` down until the rows fit, then folds the tail into a "+N". */
 .v3-blue-mix-picks {
-  display: flex; align-items: center; gap: 4px;
-  overflow-x: auto; overflow-y: hidden;
-  scrollbar-width: none; -ms-overflow-style: none;
-  max-width: 100%;
+  flex: 1 1 0; min-height: 0;
+  display: flex; flex-wrap: wrap; align-content: flex-start; align-items: flex-start;
+  gap: calc(var(--chip, 9px) * .42);
+  overflow: hidden;
 }
-.v3-blue-mix-picks::-webkit-scrollbar { display: none; }
 /* Nothing picked yet — an instruction, in the mono the app uses for readouts.
    ⚠ It was the shelf wheel's serif italic, borrowed as an "annotation" voice.
    That voice is for a COUNT sitting beside something it describes; this line
@@ -8559,15 +8562,19 @@ body.sd-return .s-home-v3--review .v3-body { animation: rvpIn .34s ease-out back
   font-family: var(--font-mono);
   font-size: 9.5px; letter-spacing: .3px; color: var(--text2); white-space: nowrap;
 }
+/* ⚠ EVERY measure is in em off `--chip`, so the one property scales the pill
+   whole — type, padding, gap and the × together. */
 .v3-mix-chip {
-  flex: 0 0 auto; display: inline-flex; align-items: center; gap: 3px;
-  border: 0; border-radius: 999px; padding: 3px 7px 3px 8px;
+  flex: 0 0 auto; display: inline-flex; align-items: center; gap: .33em;
+  border: 0; border-radius: 999px; padding: .33em .78em .33em .89em;
   background: color-mix(in srgb, var(--v3-accent, #e6b866) 22%, transparent);
   color: var(--text);
-  font-family: var(--font-mono); font-size: 9px; letter-spacing: .3px;
+  font-family: var(--font-mono); font-size: var(--chip, 9px); line-height: 1.25; letter-spacing: .03em;
   white-space: nowrap; cursor: pointer;
 }
-.v3-mix-chip i { font-style: normal; opacity: .5; font-size: 10px; }
+.v3-mix-chip[hidden] { display: none; }
+.v3-mix-more { cursor: default; opacity: .7; }
+.v3-mix-chip i { font-style: normal; opacity: .5; font-size: 1.1em; }
 .v3-mix-chip:hover i { opacity: 1; }
 .v3-blue-mix-go {
   flex-shrink: 0; border: 0; border-radius: 999px;
@@ -8640,13 +8647,24 @@ body.sd-return .s-home-v3--review .v3-body { animation: rvpIn .34s ease-out back
 .mix-inline .ob-dial--enter-in,
 .mix-inline .ob-dial--enter-out { transition: none; }
 
-/* ⚠ ONE state for all four cases. In and out are the same movement because the
-   record is the same place either way — directional variants were tried
-   (opposite spins, opposite Z) and only ever read as inconsistency. .18 is
-   about the hub's own radius, so the ring disappears at the size of the
-   record. */
-.ob-dial--leave-in, .ob-dial--enter-in,
-.ob-dial--leave-out, .ob-dial--enter-out { transform: scale(.18); opacity: 0; }
+/* The rings still go into the record and come back out of it (.18 is about the
+   hub's own radius), but they now TURN as they do (Eric, 2026-09-18): going
+   INTO a genre everything turns to the RIGHT — the old ring winds clockwise
+   down into the record, the new one unwinds clockwise out of it — and coming
+   back OUT it all turns to the LEFT. Same travel both ways, mirrored, so the
+   direction itself says deeper / shallower.
+   ⚠ This WAS one state for all four cases: directional variants had been tried
+   (opposite spins, opposite Z) and read as inconsistency. What is different
+   here is that both rings of a step turn the SAME way — it is one motion
+   handed from ring to ring, not two rings disagreeing.
+   ⚠ Keep it small. The labels are readable through 50°; much more and the
+   arriving ring is a smear for most of its .26s. The record does not turn —
+   it is still the fixed thing the rings are read against — and the held hole
+   (`.ob-dial--stay`) stands still through all of it, as before. */
+.ob-dial--leave-in  { transform: rotate(50deg)  scale(.18); opacity: 0; }   /* in: old ring winds right, into the record */
+.ob-dial--enter-in  { transform: rotate(-50deg) scale(.18); opacity: 0; }   /* in: new ring arrives still turning right */
+.ob-dial--leave-out { transform: rotate(-50deg) scale(.18); opacity: 0; }   /* out: mirrored — everything turns left */
+.ob-dial--enter-out { transform: rotate(50deg)  scale(.18); opacity: 0; }
 
 /* The held hole (see mixStayHole in app.js): a copy of the genre you tapped,
    on its own layer, standing still while the rings swap under it. The real
@@ -8660,8 +8678,8 @@ body.sd-return .s-home-v3--review .v3-body { animation: rvpIn .34s ease-out back
 
 @media (prefers-reduced-motion: reduce) {
   .mix-inline .ob-dial, .mix-inline .ob-dial.is-ghost { transition: opacity .15s ease; }
-  .ob-dial--leave-in, .ob-dial--enter-in,
-  .ob-dial--leave-out, .ob-dial--enter-out { transform: none; }
+  .mix-inline .ob-dial--leave-in, .mix-inline .ob-dial--enter-in,
+  .mix-inline .ob-dial--leave-out, .mix-inline .ob-dial--enter-out { transform: none; }
 }
 
 /* ── Opening: the dial spins into place ──────────────────────────────────
