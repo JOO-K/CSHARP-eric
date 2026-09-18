@@ -5642,7 +5642,12 @@ function initMobile() {
   document.getElementById('mb-fs').innerHTML = SVG_EXPAND;
   bindMobileBarEvents();
   window.addEventListener('resize', debounce(scaleMobilePhone, 100));
-  setMobileView('single');
+  /* A phone gets the APP, not the viewer (Eric, 2026-09-18): Live, edge to edge,
+     full screen height, and no Single / Multi / Flow / Live bar. `?tools` on the
+     URL brings the bar (and the persona switcher in it) back for design work. */
+  const tools = /[?&]tools/.test(location.search);
+  document.body.classList.toggle('mb-bare', !tools);
+  setMobileView(tools ? 'single' : 'live');
 }
 
 function bindMobileBarEvents() {

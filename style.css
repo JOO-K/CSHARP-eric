@@ -771,6 +771,9 @@ body {
 /* ============================================================
    MOBILE TOOLBAR & VIEWS
    ============================================================ */
+/* Phones open straight into Live with no bar (initMobile sets body.mb-bare;
+   `?tools` on the URL leaves it off and the bar shows). */
+body.mb-bare #mobile-bar { display: none; }
 #mobile-bar {
   flex-shrink: 0;
   height: 48px;

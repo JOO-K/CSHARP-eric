@@ -5319,7 +5319,7 @@ Desktop viewer shows a screen's variants side by side (single view is a Dark+Lig
 
 ## Mobile Prototype Modes
 
-On mobile (`≤767px`): Single / Multi / Flow / Live modes via header segmented control.
+On mobile (`≤767px`) the page opens **straight into Live, full height, with no bar** (Eric, 2026-09-18): `initMobile` sets `body.mb-bare` (style.css hides `#mobile-bar`) and calls `setMobileView('live')`, which starts on Home (`currentIdx = 2`). Add **`?tools`** to the URL to get the old header back — Single / Multi / Flow / Live segmented control, the persona switcher and the fullscreen button — starting in Single as before.
 
 ---
 
