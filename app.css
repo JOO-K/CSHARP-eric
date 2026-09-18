@@ -2541,6 +2541,7 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;   /* the page is the phone's width, always — `overflow-y: auto` alone makes x scrollable too */
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   padding-top: 20px;   /* clearance so the bento's top drop shadow isn't clipped by the header edge */
@@ -3458,7 +3459,9 @@ body.sd-skin-furry .v3-body { padding-top: 40px; }
    ⚠ Specificity is what orders these, not source order: `--review` is (0,2,0)
    and beats `--wheel`'s (0,1,0) wherever the two meet. */
 .v3-album { touch-action: pan-y; }
-.v3-album--wheel { touch-action: none; }
+/* A HOLD opens the wheel, so the phone's own long-press (callout, selection
+   loupe) must stay out of it — it cancels the pointer mid-hold. */
+.v3-album--wheel { touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 /* Nothing here answers a tap either — `enterAlbumPage` early-returns when the
    shell is already fullscreen — so stop advertising one. */
 .s-home-v3--review .v3-album { touch-action: pan-y; cursor: default; }
@@ -4592,6 +4595,11 @@ body.sd-skin-furry .v3-body { padding-top: 40px; }
   top: 5.5px;
   gap: 9px;
   padding: 23px 0 2px;
+  /* ⚠️ Sized to its content, NOT the row. As a full-width block the `left`
+     nudge pushed its box 15.5px past the panel's right edge, and a relative
+     offset still counts as scrollable overflow — the whole album page slid
+     sideways by 6px on a phone (Eric, 2026-09-18). */
+  width: fit-content; max-width: calc(100% - 15.5px);
 }
 .s-home-v3--review .v3-rev-score-n {
   font-family: var(--font-main);

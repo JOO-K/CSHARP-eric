@@ -3581,6 +3581,8 @@ function proWheelInit(root, box, opts) {
   }, true);
   ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev =>
     album.addEventListener(ev, disarm));
+  // Android's long-press menu would land exactly when the wheel arms.
+  album.addEventListener('contextmenu', e => { if (bentoGesturesOn(root)) e.preventDefault(); });
 
   paint();
 }
@@ -4180,6 +4182,12 @@ function renderNowBar(screenEl) {
 const PLAN_KEY = 'spindeck-pro';
 let SD_PRO = false;
 try { SD_PRO = localStorage.getItem(PLAN_KEY) === '1'; } catch (e) {}
+/* A PHONE IS PRO (Eric, 2026-09-18). The mobile prototype has no Free | Pro
+   switch, so it was stuck on Free unless you bought Pro in the shop — which is
+   why the cover's hold did nothing there and the drag fell through to
+   pull-to-refresh. Not persisted: the desktop viewer keeps its own choice.
+   `?free` on the URL opts a phone back out. */
+if (window.matchMedia('(max-width: 767px)').matches && !/[?&]free/.test(location.search)) SD_PRO = true;
 
 window.isPro = function () { return SD_PRO; };
 

@@ -1462,6 +1462,14 @@ app's reserved-for-paid accent, so the viewer chrome agrees with the storefront.
   live phones on stage at once and the mobile prototype has no toolbar at all;
   one write on `body` covers every shell and survives every screen rebuild.
   CSS gates with `body.sd-pro .x`, JS gates with `isPro()`.
+- **A phone is always Pro** (Eric, 2026-09-18): at `≤767px` `SD_PRO` is forced
+  true at load, not persisted (the desktop viewer keeps its own choice); `?free`
+  on the URL opts out. The mobile prototype has no switch, so it used to be
+  stuck on Free — the cover's hold did nothing and the drag fell through to
+  pull-to-refresh, which read as "the refresh is eating the hold".
+  `.v3-album--wheel` also turns off the OS long-press (`-webkit-touch-callout`,
+  `user-select`) and the cover swallows `contextmenu`, both of which cancel the
+  pointer mid-hold on a real phone.
 - **`setPlan()` re-renders**, it does not patch. Pro changes what screens are
   *made of* — same reason `applyPersona` rebuilds. Persisted to
   `localStorage['spindeck-pro']`; `initPlan()` runs in `init()` **before** the
@@ -5329,6 +5337,7 @@ On mobile (`≤767px`) the page opens **straight into Live, full height, with no
 - **The header bubbles are real entry points** — `appHeader()`'s bell → `navigate('notifications')` and gear → `navigate('settings')`. The bell used to just toggle its own unread dot. Note the header exists in **three** places: `appHeader()` plus an inline copy in each of the two home v3 variants — change all three together.
 - **The trending wall keeps its margins** — `.wall2-scroll` is inset `12px` and the grid keeps its gutters, rounded tiles, shadows and hung-off rank badges (the generic `.wall2-grid`, shared with the artist page). An edge-to-edge flush mosaic (no side inset, `column-gap: 0`, square tiles, badge moved inside) was tried in `c4c77a5` and reverted — the artwork ran into the frame and read as one ugly slab. Don't reintroduce it.
 - **No top nav bar on home** — search and profile icons live in the 46px search corner of the bento
+- **The page is the phone's width, always** — `.v3-body` is `overflow-x: hidden` (`overflow-y: auto` alone makes x scrollable). ⚠️ A `position: relative; left: N` nudge on a full-width block still counts as scrollable overflow: `.v3-rev-score`'s 15.5px did exactly that and slid the whole album page sideways on a phone, so it is `width: fit-content` now. To find the next one: load the page at 393px and list elements whose `getBoundingClientRect().right` exceeds `documentElement.clientWidth`.
 - **Bottom nav is pinned** — requires `height: 100%` on `.s-home-v3`, not just `flex: 1`
 - **CD is absolutely positioned** — decoupled from row height so it can be any size without pushing the blue box taller
 - **The rating gold follows the album** — `--star` resolves `var(--v3-star, var(--persona-accent, #e8a83c))`, so the vinyls and the review histogram re-tint on every album switch. ⚠️ **Nothing may set `--star` directly** — a persona doing so pinned the vinyls to one colour and stopped them tracking the album. **One sanctioned exception (2026-09-18): the home feed's cards.** `tintFeedRecords` sets `--star` inline on each `.v3-rev-card--feed` from its own cover (same `computeAlbumColors` + cache), so a card's discs match the record it's about rather than the bento's. It has to be `--star`, not `--v3-star`: `--star` resolves on `.s-home-v3` and inherits down as a plain colour.
